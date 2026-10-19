@@ -6,14 +6,14 @@ import { ActionError } from '@/lib/actions/_shared/errors';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { logError } from '@/lib/actions/_shared/logger';
 import { db } from '@/lib/db/client';
-import { invoices, businesses, customers, payments } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { invoices, businesses, customers, payments, creditNotes } from '@/lib/db/schema';
+import { eq, and, sql } from 'drizzle-orm';
 import { resend } from '@/lib/email/resend';
 import PaymentReminderEmail from '@/lib/email/templates/payment-reminder-email';
 import { revalidatePath } from 'next/cache';
 import { formatPaiseAsInr } from '@/lib/money';
 import { getDisplayInvoiceStatus } from '@/lib/invoices/status';
-import { getIstDateParts, formatIstDateAsIso } from '@/lib/invoices/ist-date';
+import { getIstDateParts } from '@/lib/invoices/ist-date';
 
 const SendPaymentReminderSchema = z.object({
   invoiceId: z.string().uuid(),
@@ -40,16 +40,37 @@ export const sendPaymentReminder = createAuthenticatedAction(
 
     const invoice = invoiceRecords[0];
 
-    // 2. Fetch payments to compute balance and current status correctly
-    const invoicePayments = await db
-      .select()
-      .from(payments)
-      .where(eq(payments.invoice_id, invoice.id));
+    // 2. Fetch active payments and active finalized credit notes to compute net balance accurately
+    const [[{ totalPaid }], [{ totalCredited }]] = await Promise.all([
+      db
+        .select({
+          totalPaid: sql<number>`coalesce(sum(${payments.amount_paise}), 0)::int`,
+        })
+        .from(payments)
+        .where(and(eq(payments.invoice_id, invoice.id), eq(payments.status, 'active'))),
+      db
+        .select({
+          totalCredited: sql<number>`coalesce(sum(${creditNotes.grand_total_paise}), 0)::int`,
+        })
+        .from(creditNotes)
+        .where(
+          and(
+            eq(creditNotes.original_invoice_id, invoice.id),
+            eq(creditNotes.lifecycle_status, 'finalized'),
+            eq(creditNotes.status, 'active')
+          )
+        ),
+    ]);
 
-    // Calculate sum of payments (ignoring failed ones if any, assuming all in payments table are successful unless marked otherwise, but let's assume they are all valid as per current app logic)
-    // Looking at other places, we just sum amount_paise.
-    const sumOfPayments = invoicePayments.reduce((acc, p) => acc + p.amount_paise, 0);
-    const balancePaise = invoice.grand_total_paise - sumOfPayments;
+    const sumOfPayments = Number(totalPaid ?? 0);
+    const sumOfCredits = Number(totalCredited ?? 0);
+    const balancePaise = invoice.grand_total_paise - sumOfPayments - sumOfCredits;
+
+    if (balancePaise <= 0) {
+      throw new ActionError('This invoice has already been settled in full.', {
+        code: 'ALREADY_PAID',
+      });
+    }
 
     // Verify overdue status
     const displayStatus = getDisplayInvoiceStatus({
@@ -79,6 +100,13 @@ export const sendPaymentReminder = createAuthenticatedAction(
     const daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     // 3. Fetch customer email
+    if (!invoice.customer_id) {
+      throw new ActionError(
+        'This is a retail/ad-hoc customer invoice with no email address on file.',
+        { code: 'NO_CUSTOMER_EMAIL' }
+      );
+    }
+
     const customerRecords = await db
       .select()
       .from(customers)
@@ -133,6 +161,7 @@ export const sendPaymentReminder = createAuthenticatedAction(
         throw new ActionError(`Failed to send email: ${result.error.message}`);
       }
     } catch (error) {
+      if (error instanceof ActionError) throw error;
       logError('send-payment-reminder', error);
       throw new ActionError('We could not send the email. Please try again.');
     }

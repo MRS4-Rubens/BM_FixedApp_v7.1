@@ -6,25 +6,28 @@ import { verifyArchivalToken } from '@/lib/security/archival-token';
 import { exportLimiter, checkRateLimit, getClientIp } from '@/lib/rate-limit/upstash';
 const { renderToStaticMarkup } = require('react-dom/server');
 import { InvoicePrintView } from '@/components/app/invoices/invoice-print-view';
+import { getFileBuffer } from '@/lib/storage/idrive';
 import fs from 'fs';
 import path from 'path';
 
-function getCompiledCss() {
-  try {
-    const cssDir = path.join(process.cwd(), '.next', 'static', 'css');
-    if (!fs.existsSync(cssDir)) return '';
-    const files = fs.readdirSync(cssDir);
-    let css = '';
-    for (const file of files) {
-      if (file.endsWith('.css')) {
-        css += fs.readFileSync(path.join(cssDir, file), 'utf8') + '\n';
+function getCompiledCss(): string {
+  const dirs = [
+    path.join(process.cwd(), '.next', 'static', 'css'),
+    path.join(process.cwd(), '.next', 'static', 'chunks'),
+  ];
+  const chunks: string[] = [];
+  for (const dir of dirs) {
+    try {
+      if (!fs.existsSync(dir)) continue;
+      const files = fs.readdirSync(dir).filter((f) => f.endsWith('.css'));
+      for (const f of files) {
+        chunks.push(fs.readFileSync(path.join(dir, f), 'utf8'));
       }
+    } catch {
+      // Ignore missing build subdirectories in dev
     }
-    return css;
-  } catch (e) {
-    console.error('Failed to read compiled CSS', e);
-    return '';
   }
+  return chunks.join('\n');
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -64,15 +67,36 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const lineItems = await db.select().from(invoiceLineItems).where(eq(invoiceLineItems.invoice_id, id)).orderBy(invoiceLineItems.sort_order);
 
+  let logoBase64: string | null = null;
+  if (business.logo_storage_key) {
+    try {
+      const buffer = await getFileBuffer(business.logo_storage_key);
+      let mime = 'image/png';
+      const k = business.logo_storage_key.toLowerCase();
+      if (k.endsWith('.jpg') || k.endsWith('.jpeg')) mime = 'image/jpeg';
+      else if (k.endsWith('.webp')) mime = 'image/webp';
+      else if (k.endsWith('.svg')) mime = 'image/svg+xml';
+      logoBase64 = `data:${mime};base64,${buffer.toString('base64')}`;
+    } catch (e) {
+      console.warn('Could not load logo for archival render:', e);
+    }
+  }
+
   const invoiceData = {
     ...invoice,
     business_name: business.legal_name,
     city: business.city,
     phone: business.phone,
+    nature_of_business: business.nature_of_business,
+    alternate_phone: business.alternate_phone,
+    address_line1: business.address_line1,
+    address_line2: business.address_line2,
+    pincode: business.pincode,
     bank_name: business.bank_name,
     bank_account_number: business.bank_account_number,
     bank_ifsc: business.bank_ifsc,
     invoice_terms: business.invoice_terms,
+    logo_base64: logoBase64,
     lineItems
   };
 

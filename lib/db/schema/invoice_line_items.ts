@@ -5,7 +5,7 @@ import { products } from './products';
 
 export const invoiceLineItems = pgTable('invoice_line_items', {
   id: uuid('id').primaryKey().defaultRandom(),
-  invoice_id: uuid('invoice_id').notNull().references(() => invoices.id),
+  invoice_id: uuid('invoice_id').notNull().references(() => invoices.id, { onDelete: 'cascade' }),
   product_id: uuid('product_id').references(() => products.id),
   description: text('description').notNull(),
   hsn_sac_code: varchar('hsn_sac_code', { length: 8 }).notNull(),

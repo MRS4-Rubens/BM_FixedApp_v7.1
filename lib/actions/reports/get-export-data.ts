@@ -1,8 +1,9 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
-import { businesses, invoices, invoiceLineItems, creditNotes } from '@/lib/db/schema';
+import { businesses, invoices, invoiceLineItems, creditNotes, creditNoteLineItems } from '@/lib/db/schema';
 import { eq, and, between, inArray, asc } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -75,7 +76,9 @@ export interface ExportData {
 export const getExportData = createAuthenticatedAction(getExportDataSchema, async (input, context) => {
   const businessId = context.appUser.business_id;
   if (!businessId) {
-    throw new Error('Your account is not linked to a business profile.');
+    throw new ActionError('Your account is not linked to a business profile.', {
+      code: 'NO_BUSINESS_LINKED',
+    });
   }
 
   // 1. Fetch business profile
@@ -85,7 +88,9 @@ export const getExportData = createAuthenticatedAction(getExportDataSchema, asyn
     .where(eq(businesses.id, businessId));
 
   if (!business) {
-    throw new Error('Business profile not found.');
+    throw new ActionError('Business profile not found.', {
+      code: 'BUSINESS_NOT_FOUND',
+    });
   }
 
   // 2. Fetch all finalized invoices in period
@@ -138,6 +143,7 @@ export const getExportData = createAuthenticatedAction(getExportDataSchema, asyn
   // 4. Fetch credit_notes
   const rawCreditNotes = await db
     .select({
+      id: creditNotes.id,
       credit_note_number: creditNotes.credit_note_number,
       issue_date: creditNotes.issue_date,
       subtotal_paise: creditNotes.subtotal_paise,
@@ -152,10 +158,30 @@ export const getExportData = createAuthenticatedAction(getExportDataSchema, asyn
       and(
         eq(creditNotes.business_id, businessId),
         eq(creditNotes.lifecycle_status, 'finalized'),
+        eq(creditNotes.status, 'active'),
         between(creditNotes.issue_date, input.startDate, input.endDate)
       )
     )
     .orderBy(asc(creditNotes.issue_date), asc(creditNotes.credit_note_number));
+
+  const cnIds = rawCreditNotes.map((cn) => cn.id);
+
+  const rawCnLineItems = cnIds.length > 0
+    ? await db
+        .select({
+          hsn_sac_code: creditNoteLineItems.hsn_sac_code,
+          description: creditNoteLineItems.description,
+          unit_of_measurement: creditNoteLineItems.unit_of_measurement,
+          quantity: creditNoteLineItems.quantity,
+          taxable_value_paise: creditNoteLineItems.taxable_value_paise,
+          tax_rate_percentage: creditNoteLineItems.tax_rate_percentage,
+          cgst_paise: creditNoteLineItems.cgst_paise,
+          sgst_paise: creditNoteLineItems.sgst_paise,
+          igst_paise: creditNoteLineItems.igst_paise,
+        })
+        .from(creditNoteLineItems)
+        .where(inArray(creditNoteLineItems.credit_note_id, cnIds))
+    : [];
 
   // 5. Group HSN Summary
   const hsnMap = new Map<string, ExportHsnSummary>();
@@ -190,9 +216,39 @@ export const getExportData = createAuthenticatedAction(getExportDataSchema, asyn
     group.total_value_paise += item.taxable_value_paise + itemTotalTax;
   }
 
+  // Deduct returned goods from credit note line items
+  for (const cnItem of rawCnLineItems) {
+    const key = `${cnItem.hsn_sac_code}_${cnItem.unit_of_measurement}_${cnItem.tax_rate_percentage}`;
+    if (!hsnMap.has(key)) {
+      hsnMap.set(key, {
+        hsn_sac_code: cnItem.hsn_sac_code,
+        description: cnItem.description,
+        unit_of_measurement: cnItem.unit_of_measurement,
+        total_quantity: 0,
+        taxable_value_paise: 0,
+        tax_rate_percentage: Number(cnItem.tax_rate_percentage),
+        cgst_paise: 0,
+        sgst_paise: 0,
+        igst_paise: 0,
+        total_tax_paise: 0,
+        total_value_paise: 0,
+      });
+    }
+
+    const group = hsnMap.get(key)!;
+    group.total_quantity = Math.max(0, group.total_quantity - Number(cnItem.quantity));
+    group.taxable_value_paise -= cnItem.taxable_value_paise;
+    group.cgst_paise -= cnItem.cgst_paise;
+    group.sgst_paise -= cnItem.sgst_paise;
+    group.igst_paise -= cnItem.igst_paise;
+    const cnTotalTax = cnItem.cgst_paise + cnItem.sgst_paise + cnItem.igst_paise;
+    group.total_tax_paise -= cnTotalTax;
+    group.total_value_paise -= (cnItem.taxable_value_paise + cnTotalTax);
+  }
+
   const hsnSummary = Array.from(hsnMap.values());
 
-  // 6. Compute period-level totals
+  // 6. Compute period-level totals (net of credit notes)
   let totalTaxableValuePaise = 0;
   let totalCgstPaise = 0;
   let totalSgstPaise = 0;
@@ -207,6 +263,15 @@ export const getExportData = createAuthenticatedAction(getExportDataSchema, asyn
     totalIgstPaise += inv.total_igst_paise;
     totalTaxPaise += inv.total_tax_paise;
     totalInvoiceValuePaise += inv.grand_total_paise;
+  }
+
+  for (const cn of rawCreditNotes) {
+    totalTaxableValuePaise -= cn.subtotal_paise;
+    totalCgstPaise -= cn.total_cgst_paise;
+    totalSgstPaise -= cn.total_sgst_paise;
+    totalIgstPaise -= cn.total_igst_paise;
+    totalTaxPaise -= cn.total_tax_paise;
+    totalInvoiceValuePaise -= cn.grand_total_paise;
   }
 
   const periodTotals = {

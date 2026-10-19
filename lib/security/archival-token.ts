@@ -12,42 +12,49 @@ if (!SECRET) {
 export function createArchivalToken(invoiceId: string, expiresInSeconds = 600): string {
   const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresInSeconds;
   const payload = `${invoiceId}.${expiryTimestamp}`;
-  
+
   const signature = crypto
     .createHmac('sha256', SECRET!)
     .update(payload)
     .digest('base64url');
-    
+
   return `${payload}.${signature}`;
 }
 
 /**
- * Verifies the archival token and ensures it hasn't expired.
+ * Verifies the archival token in constant time and ensures it hasn't expired.
  */
 export function verifyArchivalToken(token: string): { valid: boolean; invoiceId?: string } {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return { valid: false };
-    
+
     const [invoiceId, expiryStr, signature] = parts;
+    if (!invoiceId || !expiryStr || !signature) {
+      return { valid: false };
+    }
+
     const expiryTimestamp = parseInt(expiryStr, 10);
-    
+
     if (isNaN(expiryTimestamp) || Math.floor(Date.now() / 1000) > expiryTimestamp) {
       return { valid: false };
     }
-    
+
     const payload = `${invoiceId}.${expiryTimestamp}`;
     const expectedSignature = crypto
       .createHmac('sha256', SECRET!)
       .update(payload)
       .digest('base64url');
-      
-    if (signature !== expectedSignature) {
+
+    const sigBuf = Buffer.from(signature, 'utf8');
+    const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+
+    if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
       return { valid: false };
     }
-    
+
     return { valid: true, invoiceId };
-  } catch (error) {
+  } catch {
     return { valid: false };
   }
 }

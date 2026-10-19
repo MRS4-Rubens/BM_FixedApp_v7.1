@@ -5,7 +5,7 @@ import { products } from './products';
 
 export const creditNoteLineItems = pgTable('credit_note_line_items', {
   id: uuid('id').primaryKey().defaultRandom(),
-  credit_note_id: uuid('credit_note_id').notNull().references(() => creditNotes.id),
+  credit_note_id: uuid('credit_note_id').notNull().references(() => creditNotes.id, { onDelete: 'cascade' }),
   product_id: uuid('product_id').references(() => products.id),
   description: text('description').notNull(),
   hsn_sac_code: varchar('hsn_sac_code', { length: 8 }).notNull(),

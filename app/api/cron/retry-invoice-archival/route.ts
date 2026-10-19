@@ -1,14 +1,29 @@
-import { NextRequest } from 'next/server';
+import crypto from 'crypto';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db/client';
 import { invoices } from '@/lib/db/schema';
-import { eq, inArray, lt, and, asc } from 'drizzle-orm';
+import { inArray, lt, and, asc } from 'drizzle-orm';
 import { archiveInvoicePdf } from '@/lib/storage/archive-invoice';
 
 export async function GET(request: NextRequest) {
-  // 1. Verify Vercel Cron Secret
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response('Unauthorized', { status: 401 });
+  // 1. Verify Vercel Cron Secret (fail-closed if unset/weak + constant-time check)
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  if (!cronSecret || cronSecret.length < 16) {
+    console.error('[Cron] CRON_SECRET is not configured properly.');
+    return new NextResponse('Server Configuration Error', { status: 500 });
+  }
+
+  const authHeader = request.headers.get('authorization') ?? '';
+  const expectedHeader = `Bearer ${cronSecret}`;
+
+  const authBuf = Buffer.from(authHeader, 'utf8');
+  const expectedBuf = Buffer.from(expectedHeader, 'utf8');
+
+  if (
+    authBuf.length !== expectedBuf.length ||
+    !crypto.timingSafeEqual(authBuf, expectedBuf)
+  ) {
+    return new NextResponse('Unauthorized', { status: 401 });
   }
 
   // 2. Query for up to 20 invoices pending/failed, max 5 attempts, oldest first

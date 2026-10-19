@@ -24,10 +24,14 @@ export const config = {
   matcher: [
     '/dashboard/:path*',
     '/invoices/:path*',
+    '/credit-notes/:path*',
     '/customers/:path*',
     '/products/:path*',
+    '/payments/:path*',
     '/reports/:path*',
     '/settings/:path*',
+    '/checkout/:path*',
     '/admin/:path*',
+    '/dev-sentry-test/:path*',
   ],
 };

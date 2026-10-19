@@ -11,7 +11,7 @@ export default async function ProductsPage() {
   }
 
   if (!appUser.business_id) {
-    redirect('/settings/business');
+    redirect('/settings');
   }
 
   const result = await listProducts({});

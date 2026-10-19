@@ -1,10 +1,7 @@
 'use server'
 
 import { auth } from '@/lib/auth/server'
-import { db } from '@/lib/db/client'
-import { users } from '@/lib/db/schema'
 import { redirect } from 'next/navigation'
-
 import { ensureAppUser } from '@/lib/auth/ensure-app-user'
 import { headers } from 'next/headers'
 import { authLimiter, checkRateLimit, getClientIp } from '@/lib/rate-limit/upstash'
@@ -41,7 +38,8 @@ export async function signupAction(prevState: any, formData: FormData) {
     if (signUpResponse && signUpResponse.data && signUpResponse.data.user) {
       await ensureAppUser({
         authUserId: signUpResponse.data.user.id,
-        displayName: name
+        displayName: name,
+        email: email
       });
     }
   } catch (err: any) {
