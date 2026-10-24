@@ -1,20 +1,16 @@
 import crypto from 'crypto';
-
-const SECRET = process.env.ARCHIVAL_SIGNING_SECRET;
-
-if (!SECRET) {
-  throw new Error('Missing ARCHIVAL_SIGNING_SECRET environment variable');
-}
+import { getArchivalEnv } from '@/lib/env';
 
 /**
  * Generates a signed token to authorize access to the archival render route.
  */
 export function createArchivalToken(invoiceId: string, expiresInSeconds = 600): string {
+  const secret = getArchivalEnv().ARCHIVAL_SIGNING_SECRET;
   const expiryTimestamp = Math.floor(Date.now() / 1000) + expiresInSeconds;
   const payload = `${invoiceId}.${expiryTimestamp}`;
 
   const signature = crypto
-    .createHmac('sha256', SECRET!)
+    .createHmac('sha256', secret)
     .update(payload)
     .digest('base64url');
 
@@ -25,6 +21,7 @@ export function createArchivalToken(invoiceId: string, expiresInSeconds = 600): 
  * Verifies the archival token in constant time and ensures it hasn't expired.
  */
 export function verifyArchivalToken(token: string): { valid: boolean; invoiceId?: string } {
+  const secret = getArchivalEnv().ARCHIVAL_SIGNING_SECRET;
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return { valid: false };
@@ -42,7 +39,7 @@ export function verifyArchivalToken(token: string): { valid: boolean; invoiceId?
 
     const payload = `${invoiceId}.${expiryTimestamp}`;
     const expectedSignature = crypto
-      .createHmac('sha256', SECRET!)
+      .createHmac('sha256', secret)
       .update(payload)
       .digest('base64url');
 

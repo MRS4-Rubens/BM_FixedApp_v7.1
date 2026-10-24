@@ -4,13 +4,19 @@ import { db } from '@/lib/db/client';
 import { invoices } from '@/lib/db/schema';
 import { inArray, lt, and, asc } from 'drizzle-orm';
 import { archiveInvoicePdf } from '@/lib/storage/archive-invoice';
+import { getCronEnv, isEnvConfigError } from '@/lib/env';
 
 export async function GET(request: NextRequest) {
   // 1. Verify Vercel Cron Secret (fail-closed if unset/weak + constant-time check)
-  const cronSecret = process.env.CRON_SECRET?.trim();
-  if (!cronSecret || cronSecret.length < 16) {
-    console.error('[Cron] CRON_SECRET is not configured properly.');
-    return new NextResponse('Server Configuration Error', { status: 500 });
+  let cronSecret: string;
+  try {
+    cronSecret = getCronEnv().CRON_SECRET;
+  } catch (error: unknown) {
+    if (isEnvConfigError(error)) {
+      console.error('[Cron] CRON_SECRET is not configured properly.', error.message);
+      return new NextResponse('Server Configuration Error', { status: 500 });
+    }
+    throw error;
   }
 
   const authHeader = request.headers.get('authorization') ?? '';

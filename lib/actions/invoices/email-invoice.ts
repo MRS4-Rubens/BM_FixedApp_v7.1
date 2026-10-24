@@ -9,7 +9,8 @@ import { db } from '@/lib/db/client';
 import { invoices, businesses, customers } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { getFileBuffer } from '@/lib/storage/idrive';
-import { resend } from '@/lib/email/resend';
+import { getResend } from '@/lib/email/resend';
+import { getEmailEnv } from '@/lib/env';
 import InvoiceDeliveryEmail from '@/lib/email/templates/invoice-delivery-email';
 import { revalidatePath } from 'next/cache';
 import { formatPaiseAsInr } from '@/lib/money';
@@ -103,8 +104,8 @@ export const emailInvoice = createAuthenticatedAction(
     const dueDateStr = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-IN') : null;
     
     try {
-      const result = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL!,
+      const result = await getResend().emails.send({
+        from: getEmailEnv().RESEND_FROM_EMAIL,
         to: customer.email,
         subject: `Invoice ${invoice.invoice_number} from ${business.legal_name}`,
         react: InvoiceDeliveryEmail({

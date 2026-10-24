@@ -4,8 +4,7 @@ import { eq } from 'drizzle-orm';
 import { createArchivalToken } from '@/lib/security/archival-token';
 import { renderUrlToPdfBuffer } from '@/lib/pdf/html-to-pdf-provider';
 import { uploadFileToStorage } from '@/lib/storage/idrive';
-
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+import { getAppEnv, isEnvConfigError } from '@/lib/env';
 
 export async function archiveInvoicePdf(invoiceId: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -26,6 +25,7 @@ export async function archiveInvoicePdf(invoiceId: string): Promise<{ success: b
     const token = createArchivalToken(invoiceId);
 
     // 3. Build full URL to the archival-render route
+    const baseUrl = getAppEnv().NEXT_PUBLIC_APP_URL;
     const renderUrl = `${baseUrl}/api/invoices/${invoiceId}/archival-render?token=${token}`;
 
     // 4. Render PDF
@@ -43,7 +43,13 @@ export async function archiveInvoicePdf(invoiceId: string): Promise<{ success: b
     }).where(eq(invoices.id, invoiceId));
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    if (isEnvConfigError(error)) {
+      // Configuration problem, not an archival failure: leave status/attempts untouched so the record
+      // stays retryable once the environment is fixed (the cron must not burn its 5 attempts on this).
+      return { success: false, error: error.message };
+    }
+
     // Best-effort strategy: never crash the caller, just record the failure for the cron to retry later.
     try {
       const existing = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
@@ -53,10 +59,10 @@ export async function archiveInvoicePdf(invoiceId: string): Promise<{ success: b
           archival_attempts: existing[0].archival_attempts + 1
         }).where(eq(invoices.id, invoiceId));
       }
-    } catch (fallbackError) {
+    } catch {
       // Ignore errors updating the fallback status
     }
     
-    return { success: false, error: error.message || 'Unknown archival error' };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown archival error' };
   }
 }

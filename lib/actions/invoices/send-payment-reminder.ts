@@ -8,7 +8,8 @@ import { logError } from '@/lib/actions/_shared/logger';
 import { db } from '@/lib/db/client';
 import { invoices, businesses, customers, payments, creditNotes } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { resend } from '@/lib/email/resend';
+import { getResend } from '@/lib/email/resend';
+import { getEmailEnv } from '@/lib/env';
 import PaymentReminderEmail from '@/lib/email/templates/payment-reminder-email';
 import { revalidatePath } from 'next/cache';
 import { formatPaiseAsInr } from '@/lib/money';
@@ -141,8 +142,8 @@ export const sendPaymentReminder = createAuthenticatedAction(
     const dueDateStr = new Date(invoice.due_date).toLocaleDateString('en-IN');
     
     try {
-      const result = await resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL!,
+      const result = await getResend().emails.send({
+        from: getEmailEnv().RESEND_FROM_EMAIL,
         to: customer.email,
         subject: `Payment Reminder: Invoice ${invoice.invoice_number} from ${business.legal_name}`,
         react: PaymentReminderEmail({
