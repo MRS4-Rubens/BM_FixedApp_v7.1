@@ -125,8 +125,24 @@ interface AdminConsoleProps {
     accName: string;
     accNo: string;
     ifsc: string;
-  };
+  } | null;
+  payeeConfigIssue?: string | null;
   adminEmailAllowlist?: string;
+}
+
+function PayeeNotConfiguredNotice({ issue }: { issue: string | null }) {
+  return (
+    <div
+      role="alert"
+      className="rounded-lg border border-amber-300/60 bg-amber-50 p-3.5 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+    >
+      <p className="font-bold">Payee details are not configured.</p>
+      <p className="mt-1 text-xs leading-relaxed">
+        Customers cannot see payment instructions on /checkout until the server environment is fixed.
+        {issue ? ` Affected variables: ${issue}.` : ''}
+      </p>
+    </div>
+  );
 }
 
 export function AdminConsole({
@@ -135,6 +151,7 @@ export function AdminConsole({
   businesses,
   users,
   upiConfig,
+  payeeConfigIssue = null,
   adminEmailAllowlist = '',
 }: AdminConsoleProps) {
   const router = useRouter();
@@ -777,37 +794,43 @@ export function AdminConsole({
                   Current active manual payout endpoints
                 </p>
 
-                <div className="mt-3.5 space-y-2 text-sm">
-                  <div className="flex items-center justify-between rounded-lg bg-muted/50 p-2.5 border border-border/50">
-                    <span className="text-muted-foreground font-medium">Payee UPI:</span>
-                    <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
-                      <span>{upiConfig.upiId}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(upiConfig.upiId, 'upi-quick')}
-                        className="text-muted-foreground hover:text-indigo-600 cursor-pointer"
-                        title="Copy UPI ID"
-                      >
-                        {copiedKey === 'upi-quick' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
-                      </button>
+                {upiConfig ? (
+                  <div className="mt-3.5 space-y-2 text-sm">
+                    <div className="flex items-center justify-between rounded-lg bg-muted/50 p-2.5 border border-border/50">
+                      <span className="text-muted-foreground font-medium">Payee UPI:</span>
+                      <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
+                        <span>{upiConfig.upiId}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(upiConfig.upiId, 'upi-quick')}
+                          className="text-muted-foreground hover:text-indigo-600 cursor-pointer"
+                          title="Copy UPI ID"
+                        >
+                          {copiedKey === 'upi-quick' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center justify-between rounded-lg bg-muted/50 p-2.5 border border-border/50">
-                    <span className="text-muted-foreground font-medium">Direct Bank IFSC:</span>
-                    <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
-                      <span>{upiConfig.ifsc}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(upiConfig.ifsc, 'ifsc-quick')}
-                        className="text-muted-foreground hover:text-indigo-600 cursor-pointer"
-                        title="Copy IFSC"
-                      >
-                        {copiedKey === 'ifsc-quick' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
-                      </button>
+                    <div className="flex items-center justify-between rounded-lg bg-muted/50 p-2.5 border border-border/50">
+                      <span className="text-muted-foreground font-medium">Direct Bank IFSC:</span>
+                      <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
+                        <span>{upiConfig.ifsc}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(upiConfig.ifsc, 'ifsc-quick')}
+                          className="text-muted-foreground hover:text-indigo-600 cursor-pointer"
+                          title="Copy IFSC"
+                        >
+                          {copiedKey === 'ifsc-quick' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-3.5">
+                    <PayeeNotConfiguredNotice issue={payeeConfigIssue} />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1552,26 +1575,30 @@ export function AdminConsole({
                 </div>
               </div>
 
-              <div className="space-y-2.5 rounded-lg bg-muted/40 p-3.5 border border-border/50 text-sm">
-                <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                  <span className="text-muted-foreground font-medium">Payee VPA / UPI ID:</span>
-                  <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
-                    <span>{upiConfig.upiId}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(upiConfig.upiId, 'upi-full')}
-                      className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
-                    >
-                      {copiedKey === 'upi-full' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
-                    </button>
+              {upiConfig ? (
+                <div className="space-y-2.5 rounded-lg bg-muted/40 p-3.5 border border-border/50 text-sm">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                    <span className="text-muted-foreground font-medium">Payee VPA / UPI ID:</span>
+                    <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
+                      <span>{upiConfig.upiId}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(upiConfig.upiId, 'upi-full')}
+                        className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
+                      >
+                        {copiedKey === 'upi-full' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground font-medium">Recipient Display Name:</span>
+                    <span className="font-bold text-foreground">{upiConfig.upiName}</span>
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground font-medium">Recipient Display Name:</span>
-                  <span className="font-bold text-foreground">{upiConfig.upiName}</span>
-                </div>
-              </div>
+              ) : (
+                <PayeeNotConfiguredNotice issue={payeeConfigIssue} />
+              )}
             </div>
 
             {/* Direct Bank Account */}
@@ -1590,42 +1617,46 @@ export function AdminConsole({
                 </div>
               </div>
 
-              <div className="space-y-2.5 rounded-lg bg-muted/40 p-3.5 border border-border/50 text-sm">
-                <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                  <span className="text-muted-foreground font-medium">Bank Name:</span>
-                  <span className="font-bold text-foreground">{upiConfig.bankName}</span>
-                </div>
-                <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                  <span className="text-muted-foreground font-medium">Account Name:</span>
-                  <span className="font-bold text-foreground">{upiConfig.accName}</span>
-                </div>
-                <div className="flex items-center justify-between pb-2 border-b border-border/40">
-                  <span className="text-muted-foreground font-medium">Account Number:</span>
-                  <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
-                    <span>{upiConfig.accNo}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(upiConfig.accNo, 'acc-no')}
-                      className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
-                    >
-                      {copiedKey === 'acc-no' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
-                    </button>
+              {upiConfig ? (
+                <div className="space-y-2.5 rounded-lg bg-muted/40 p-3.5 border border-border/50 text-sm">
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                    <span className="text-muted-foreground font-medium">Bank Name:</span>
+                    <span className="font-bold text-foreground">{upiConfig.bankName}</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                    <span className="text-muted-foreground font-medium">Account Name:</span>
+                    <span className="font-bold text-foreground">{upiConfig.accName}</span>
+                  </div>
+                  <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                    <span className="text-muted-foreground font-medium">Account Number:</span>
+                    <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
+                      <span>{upiConfig.accNo}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(upiConfig.accNo, 'acc-no')}
+                        className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
+                      >
+                        {copiedKey === 'acc-no' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground font-medium">IFSC Code:</span>
+                    <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
+                      <span>{upiConfig.ifsc}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(upiConfig.ifsc, 'ifsc-full')}
+                        className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
+                      >
+                        {copiedKey === 'ifsc-full' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground font-medium">IFSC Code:</span>
-                  <div className="flex items-center gap-1.5 font-mono font-bold text-foreground">
-                    <span>{upiConfig.ifsc}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(upiConfig.ifsc, 'ifsc-full')}
-                      className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
-                    >
-                      {copiedKey === 'ifsc-full' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
+              ) : (
+                <PayeeNotConfiguredNotice issue={payeeConfigIssue} />
+              )}
             </div>
 
             {/* Platform Security Allowlist */}
