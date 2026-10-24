@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { normalizeS3Endpoint } from './normalize-endpoint';
 
 const endpoint = process.env.IDRIVE_E2_ENDPOINT;
 const region = process.env.IDRIVE_E2_REGION;
@@ -11,9 +12,20 @@ if (!endpoint || !region || !accessKeyId || !secretAccessKey || !bucketName) {
   throw new Error('Missing one or more required iDrive e2 environment variables: IDRIVE_E2_ENDPOINT, IDRIVE_E2_REGION, IDRIVE_E2_ACCESS_KEY, IDRIVE_E2_SECRET_KEY, IDRIVE_E2_BUCKET_NAME');
 }
 
+function resolveEndpoint(raw: string): string {
+  try {
+    return normalizeS3Endpoint(raw);
+  } catch (error: unknown) {
+    const reason = error instanceof Error ? error.message : 'unrecognised value';
+    throw new Error(`Invalid IDRIVE_E2_ENDPOINT: ${reason}`);
+  }
+}
+
+const normalizedEndpoint: string = resolveEndpoint(endpoint);
+
 // S3 client configured with forcePathStyle: true, which is often required for S3-compatible providers like iDrive e2
 const s3Client = new S3Client({
-  endpoint: `https://${endpoint}`,
+  endpoint: normalizedEndpoint,
   region,
   credentials: {
     accessKeyId,

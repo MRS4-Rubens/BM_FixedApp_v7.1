@@ -30,6 +30,8 @@ A GST billing and invoicing web application for Indian small businesses.
    cp .env.example .env.local
    ```
 
+   **IDRIVE_E2_ENDPOINT** — the iDrive e2 S3 endpoint. Both `s3.<region>.idrivee2.com` and `https://s3.<region>.idrivee2.com` are accepted; a trailing slash is ignored. The value must be a bare host (no bucket path, query string, or credentials).
+
 5. Start the local development server:
    ```bash
    pnpm dev
