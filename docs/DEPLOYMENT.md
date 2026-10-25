@@ -26,3 +26,11 @@ Migrations are NOT applied automatically. Use GitHub -> Actions -> "Production D
 ## Required GitHub settings (done in the GitHub website)
 - Branch ruleset on `main`: require a pull request and require the **Quality gates** check.
 - Repository secret `DATABASE_URL_UNPOOLED` (only needed for the migration workflow).
+
+## Database integrity guards (DB-001)
+- CHECK constraints reject negative money, zero/negative payments, non-positive quantities, and finalized invoices/credit notes missing their number, finalization time or date.
+- Triggers make FINALIZED invoices and credit notes immutable: only payment status, archive/PDF fields, email counters (invoices) and void/PDF fields (credit notes) may change; finalized records cannot be deleted; their line items cannot be inserted, updated or deleted. Drafts stay fully editable.
+- The guards use an ALLOW-LIST. A new column on invoices/credit_notes is immutable after finalization by default. If a future feature must write a new column on a finalized record, add a migration that replaces `bm_guard_invoices()` / `bm_guard_credit_notes()` with the column added to `mutable_cols`, and update `tests/integration/db001-immutability.test.ts`.
+- Finalize code must update line items BEFORE flipping the invoice to `finalized`.
+- Emergency maintenance on a finalized record is a deliberate, manual act by the database owner (backup branch first, then temporarily `ALTER TABLE ... DISABLE TRIGGER`, then re-enable). TRUNCATE is not guarded by row triggers.
+

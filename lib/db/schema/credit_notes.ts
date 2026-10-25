@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp, uuid, integer, date, unique, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { pgTable, text, timestamp, uuid, integer, date, unique, index, check } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { invoices } from './invoices';
 import { financialYears } from './financial_years';
@@ -47,7 +47,11 @@ export const creditNotes = pgTable('credit_notes', {
     table.lifecycle_status,
     table.status,
     table.issue_date
-  )
+  ),
+  // DB-001: money can never be negative.
+  check('credit_notes_money_nonneg', sql`${table.subtotal_paise} >= 0 AND ${table.total_tax_paise} >= 0 AND ${table.grand_total_paise} >= 0`),
+  // DB-001: a finalized credit note must carry its number, finalization time and issue date.
+  check('credit_notes_final_requires_number', sql`${table.lifecycle_status} = 'draft' OR (${table.credit_note_sequence} IS NOT NULL AND ${table.finalized_at} IS NOT NULL AND ${table.issue_date} IS NOT NULL)`)
 ]);
 
 export const creditNotesRelations = relations(creditNotes, ({ one, many }) => ({
