@@ -1,0 +1,79 @@
+name: Production DB migration (manual)
+
+# Manual only. Nothing here ever runs automatically.
+on:
+  workflow_dispatch:
+    inputs:
+      backup_branch_created:
+        description: 'Did you create a fresh Neon backup branch of production just now? (yes/no)'
+        required: true
+        default: 'no'
+        type: choice
+        options: ['no', 'yes']
+      confirm:
+        description: 'Type MIGRATE (capital letters) to confirm you want to change the PRODUCTION database'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# Never run two production migrations at once, and never cancel one halfway.
+concurrency:
+  group: production-db-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply pending migrations to production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CONFIRM_INPUT: ${{ inputs.confirm }}
+      BACKUP_INPUT: ${{ inputs.backup_branch_created }}
+      DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+    steps:
+      - name: Safety guards
+        run: |
+          if [ "$BACKUP_INPUT" != "yes" ]; then
+            echo "::error::Create a Neon backup branch first, then re-run and choose 'yes'."
+            exit 1
+          fi
+          if [ "$CONFIRM_INPUT" != "MIGRATE" ]; then
+            echo "::error::Confirmation text must be exactly MIGRATE."
+            exit 1
+          fi
+          if [ -z "$DATABASE_URL_UNPOOLED" ]; then
+            echo "::error::Repository secret DATABASE_URL_UNPOOLED is not set."
+            exit 1
+          fi
+          echo "Branch/ref: $GITHUB_REF_NAME"
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # pnpm version comes from "packageManager" in package.json (single source of truth).
+      - name: Set up pnpm
+        uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+
+      # Node version comes from .nvmrc (single source of truth).
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # Refuse to touch production if the migration history is inconsistent.
+      - name: Migration history check
+        run: pnpm db:check
+
+      - name: Migration history tests
+        run: pnpm test
+
+      - name: Apply migrations (idempotent, transactional)
+        run: pnpm db:migrate

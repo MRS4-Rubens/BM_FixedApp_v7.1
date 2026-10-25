@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: CI only needs to read the repository.
+permissions:
+  contents: read
+
+# A newer push to the same branch/PR cancels the older, now-pointless run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      # Skips runtime env validation (lib/env.ts, ARCH-002) during `next build` only.
+      SKIP_ENV_VALIDATION: '1'
+      # ---- BUILD-TIME PLACEHOLDERS: obviously fake, NOT secrets. Never put real credentials in this file. ----
+      NEXT_PUBLIC_APP_URL: https://ci.example.invalid
+      NEXT_PUBLIC_SUPPORT_EMAIL: support@ci.example.invalid
+      FEEDBACK_RECIPIENT_EMAIL: feedback@ci.example.invalid
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      NEON_AUTH_BASE_URL: https://ci.example.invalid/neondb/auth
+      NEON_AUTH_COOKIE_SECRET: ci-placeholder-cookie-secret-at-least-32-characters
+      RESEND_API_KEY: re_ci_placeholder
+      RESEND_FROM_EMAIL: billing@ci.example.invalid
+      UPSTASH_REDIS_REST_URL: https://ci.example.invalid
+      UPSTASH_REDIS_REST_TOKEN: ci-placeholder-token
+      ARCHIVAL_SIGNING_SECRET: ci-placeholder-signing-secret-at-least-32-characters
+      CRON_SECRET: ci-placeholder-cron-secret-at-least-32-characters
+      HTML_TO_PDF_API_KEY: ci-placeholder-key
+      PLATFORM_ADMIN_EMAILS: admin@ci.example.invalid
+      IDRIVE_E2_ENDPOINT: https://s3.ci.example.invalid
+      IDRIVE_E2_REGION: ci-region
+      IDRIVE_E2_BUCKET_NAME: ci-bucket
+      IDRIVE_E2_ACCESS_KEY: ci-access-key
+      IDRIVE_E2_SECRET_KEY: ci-secret-key
+      ADMIN_UPI_ID: ci@upi
+      ADMIN_UPI_NAME: CI Placeholder
+      ADMIN_BANK_NAME: CI Placeholder Bank
+      ADMIN_BANK_ACC_NAME: CI Placeholder
+      ADMIN_BANK_ACC_NO: '000000000000'
+      ADMIN_BANK_IFSC: CIPH0000000
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # pnpm version comes from "packageManager" in package.json (single source of truth).
+      - name: Set up pnpm
+        uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+
+      # Node version comes from .nvmrc (single source of truth).
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint (ratchet - problems may not increase)
+        run: pnpm lint:ratchet
+
+      - name: Migration history check
+        run: pnpm db:check
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Production build
+        run: pnpm build
+
+  # Report-only for now: the dependency tree already has known advisories (tracked as a separate
+  # follow-up). Do NOT make this blocking until those are resolved.
+  dependency-audit:
+    name: Dependency audit (report only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level=high
