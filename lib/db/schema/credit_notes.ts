@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, integer, date, unique, index, check } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, integer, date, unique, index, check, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { invoices } from './invoices';
@@ -48,6 +48,13 @@ export const creditNotes = pgTable('credit_notes', {
     table.status,
     table.issue_date
   ),
+  // DB-002: composite key target + tenant-safe link to the original invoice.
+  unique('credit_notes_biz_id_uq').on(table.business_id, table.id),
+  foreignKey({
+    name: 'credit_notes_invoice_same_biz',
+    columns: [table.business_id, table.original_invoice_id],
+    foreignColumns: [invoices.business_id, invoices.id]
+  }),
   // DB-001: money can never be negative.
   check('credit_notes_money_nonneg', sql`${table.subtotal_paise} >= 0 AND ${table.total_tax_paise} >= 0 AND ${table.grand_total_paise} >= 0`),
   // DB-001: a finalized credit note must carry its number, finalization time and issue date.

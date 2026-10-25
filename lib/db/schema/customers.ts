@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, timestamp, uuid, boolean, check, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, timestamp, uuid, boolean, check, index, unique } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { invoices } from './invoices';
@@ -20,7 +20,9 @@ export const customers = pgTable('customers', {
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [
   check('customers_gstin_length', sql`length(${table.gstin}) = 15`),
-  index('customers_business_id_idx').on(table.business_id)
+  index('customers_business_id_idx').on(table.business_id),
+  // DB-002: lets other tables reference (business_id, id) so a link can never cross tenants.
+  unique('customers_biz_id_uq').on(table.business_id, table.id)
 ]);
 
 export const customersRelations = relations(customers, ({ one, many }) => ({

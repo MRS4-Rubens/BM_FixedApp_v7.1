@@ -34,3 +34,10 @@ Migrations are NOT applied automatically. Use GitHub -> Actions -> "Production D
 - Finalize code must update line items BEFORE flipping the invoice to `finalized`.
 - Emergency maintenance on a finalized record is a deliberate, manual act by the database owner (backup branch first, then temporarily `ALTER TABLE ... DISABLE TRIGGER`, then re-enable). TRUNCATE is not guarded by row triggers.
 
+## Tenant (business) isolation guards (DB-002)
+- `UNIQUE (business_id, id)` exists on customers, products, invoices and credit_notes. Composite foreign keys `invoices_customer_same_biz`, `credit_notes_invoice_same_biz` and `payments_invoice_same_biz` make it impossible for an invoice, credit note or payment to point at another business's customer/invoice.
+- Line items: triggers `bm_invoice_line_items_tenant` / `bm_credit_note_line_items_tenant` reject a product that belongs to another business.
+- Status: the three foreign keys are `NOT VALID` (they check every NEW or changed row; existing rows are validated in DB-002 PART B, after API-001 is deployed and the cross-tenant audit queries return zero rows). The older single-column foreign keys stay until PART B.
+- If the audit queries ever return rows, treat it as a data-leak incident: stop, quarantine the rows, and inform the affected businesses.
+
+
