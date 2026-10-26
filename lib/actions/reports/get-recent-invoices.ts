@@ -41,7 +41,7 @@ export const getRecentInvoices = createAuthenticatedAction(getRecentInvoicesSche
     customer_name: sql<string>`coalesce(${invoices.billing_name_snapshot}, ${customers.name}, 'One-Time Customer')`
   })
   .from(invoices)
-  .leftJoin(customers, eq(invoices.customer_id, customers.id))
+  .leftJoin(customers, and(eq(invoices.customer_id, customers.id), eq(customers.business_id, invoices.business_id)))
   .where(and(
     eq(invoices.business_id, businessId),
     eq(invoices.lifecycle_status, 'finalized')

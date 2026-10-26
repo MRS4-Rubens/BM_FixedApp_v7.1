@@ -31,7 +31,7 @@ export const getTopCustomers = createAuthenticatedAction(getTopCustomersSchema, 
         total_revenue_paise: sql<number>`coalesce(sum(${invoices.grand_total_paise}), 0)::bigint`.mapWith(Number),
       })
       .from(invoices)
-      .leftJoin(customers, eq(invoices.customer_id, customers.id))
+      .leftJoin(customers, and(eq(invoices.customer_id, customers.id), eq(customers.business_id, invoices.business_id)))
       .where(
         and(
           eq(invoices.business_id, businessId),

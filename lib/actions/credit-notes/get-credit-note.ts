@@ -35,7 +35,7 @@ export const getCreditNote = createAuthenticatedAction(
     const invRows = await db
       .select()
       .from(invoices)
-      .where(eq(invoices.id, creditNote.original_invoice_id));
+      .where(and(eq(invoices.id, creditNote.original_invoice_id), eq(invoices.business_id, businessId)));
 
     if (invRows.length === 0) {
       throw new ActionError('Original invoice not found.', { code: 'NOT_FOUND' });

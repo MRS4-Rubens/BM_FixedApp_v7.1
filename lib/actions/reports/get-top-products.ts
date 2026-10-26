@@ -33,7 +33,7 @@ export const getTopProducts = createAuthenticatedAction(getTopProductsSchema, as
       })
       .from(invoiceLineItems)
       .innerJoin(invoices, eq(invoiceLineItems.invoice_id, invoices.id))
-      .leftJoin(products, eq(invoiceLineItems.product_id, products.id))
+      .leftJoin(products, and(eq(invoiceLineItems.product_id, products.id), eq(products.business_id, invoices.business_id)))
       .where(
         and(
           eq(invoices.business_id, businessId),

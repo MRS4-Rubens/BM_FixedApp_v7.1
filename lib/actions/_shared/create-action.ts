@@ -5,8 +5,7 @@ import { logError } from './logger';
 import { getCurrentAppUser } from '@/lib/auth/session';
 import { users } from '@/lib/db/schema';
 import { headers } from 'next/headers';
-import { checkRateLimit, getClientIp } from '@/lib/rate-limit/upstash';
-import type { Ratelimit } from '@upstash/ratelimit';
+import { checkRateLimit, getClientIp, type RateLimiter } from '@/lib/rate-limit/upstash';
 
 type AppUser = typeof users.$inferSelect;
 
@@ -62,7 +61,7 @@ export function createAction<TSchema extends z.ZodTypeAny, TOutput>(
   schema: TSchema,
   handler: (parsedData: z.infer<TSchema>, context: undefined) => Promise<TOutput>,
   scopeName: string,
-  options?: { rateLimit?: { limiter: Ratelimit; keyPrefix: string } }
+  options?: { rateLimit?: { limiter: RateLimiter; keyPrefix: string } }
 ) {
   return async (rawInput: unknown): Promise<ActionResult<TOutput>> => {
     return runValidatedHandler(schema, rawInput, scopeName, async () => {
@@ -82,7 +81,7 @@ export function createAuthenticatedAction<TSchema extends z.ZodTypeAny, TOutput>
   schema: TSchema,
   handler: (parsedData: z.infer<TSchema>, context: { appUser: AppUser }) => Promise<TOutput>,
   scopeName: string,
-  options?: { rateLimit?: { limiter: Ratelimit; keyPrefix: string } }
+  options?: { rateLimit?: { limiter: RateLimiter; keyPrefix: string } }
 ) {
   return async (rawInput: unknown): Promise<ActionResult<TOutput>> => {
     return runValidatedHandler(schema, rawInput, scopeName, async () => {

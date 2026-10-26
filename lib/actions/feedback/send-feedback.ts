@@ -8,7 +8,8 @@ import { auth } from '@/lib/auth/server';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { resend } from '@/lib/email/resend';
+import { getResend } from '@/lib/email/resend';
+import { getEmailEnv } from '@/lib/env';
 import { FeedbackNotificationEmail } from '@/lib/email/templates/feedback-notification-email';
 import { logError } from '@/lib/actions/_shared/logger';
 import { FEEDBACK_RECIPIENT_EMAIL } from '@/lib/config/contact';
@@ -65,7 +66,7 @@ export const sendFeedbackAction = createAuthenticatedAction(
 
     // 4. Determine sender and recipient addresses
     const recipientEmail = FEEDBACK_RECIPIENT_EMAIL;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Bill Matrix <onboarding@resend.dev>';
+    const fromEmail = getEmailEnv().RESEND_FROM_EMAIL;
 
     // Format the Reply-To address with the user's name if available
     const replyToAddress = appUser.display_name
@@ -74,7 +75,7 @@ export const sendFeedbackAction = createAuthenticatedAction(
 
     // 5. Send notification email via Resend
     try {
-      const result = await resend.emails.send({
+      const result = await getResend().emails.send({
         from: fromEmail,
         to: recipientEmail,
         replyTo: replyToAddress,

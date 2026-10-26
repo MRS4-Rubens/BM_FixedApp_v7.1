@@ -2,6 +2,7 @@
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { assertOwnedCustomer, assertOwnedProducts } from '@/lib/actions/_shared/ownership';
 import { invoiceDraftSchema } from '@/lib/validations/invoice';
 import { db } from '@/lib/db/client';
 import { invoices, invoiceLineItems, businesses, customers, taxRates } from '@/lib/db/schema';
@@ -49,6 +50,13 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
       }).from(businesses).where(eq(businesses.id, businessId));
       if (businessResult.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
       const business = businessResult[0];
+
+      // 2a. Tenant isolation (API-001): every referenced customer/product must belong to THIS business.
+      if (input.customer_id) {
+        await assertOwnedCustomer(tx, businessId, input.customer_id);
+      }
+      await assertOwnedProducts(tx, businessId, input.line_items.map((li) => li.product_id));
+
       const businessStateCode = business.state_code;
       const defaultTemplate = business.default_invoice_template || 'template_1';
 

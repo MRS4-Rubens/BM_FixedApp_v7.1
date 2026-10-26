@@ -1,5 +1,11 @@
+import { existsSync } from 'node:fs';
 import { defineConfig } from 'drizzle-kit';
-process.loadEnvFile('.env.local');
+
+// Local development convenience only. CI/CD and Vercel inject real environment variables,
+// and a missing .env.local must not crash non-database commands such as `drizzle-kit check`.
+if (existsSync('.env.local')) {
+  process.loadEnvFile('.env.local');
+}
 
 export default defineConfig({
   schema: './lib/db/schema/index.ts',
