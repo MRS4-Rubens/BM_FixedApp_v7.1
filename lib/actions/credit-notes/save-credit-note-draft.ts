@@ -2,6 +2,7 @@
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { assertOwnedProducts } from '@/lib/actions/_shared/ownership';
 import { creditNoteDraftSchema } from '@/lib/validations/credit-note';
 import { db } from '@/lib/db/client';
 import { invoices, invoiceLineItems, creditNotes, creditNoteLineItems, businesses, taxRates } from '@/lib/db/schema';
@@ -58,6 +59,9 @@ export const saveCreditNoteDraft = createAuthenticatedAction(
         const bizRows = await tx.select().from(businesses).where(eq(businesses.id, businessId));
         if (bizRows.length === 0) throw new ActionError('Business profile not found.', { code: 'NOT_FOUND' });
         const business = bizRows[0];
+
+        // 3a. Tenant isolation (API-001): every referenced product must belong to THIS business.
+        await assertOwnedProducts(tx, businessId, input.line_items.map((li) => li.product_id));
 
         // 4. Validate line item quantities against remaining creditable quantities
         const origItems = await tx

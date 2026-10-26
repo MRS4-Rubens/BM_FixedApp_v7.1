@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { CheckoutForm } from './checkout-form';
@@ -6,6 +7,8 @@ import { getCurrentAppUser } from '@/lib/auth/session';
 import { db } from '@/lib/db/client';
 import { businesses, subscriptionRequests } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { loadPayeeConfig, describePayeeProblems } from '@/lib/config/payee';
+import { SUPPORT_EMAIL } from '@/lib/config/contact';
 
 export const metadata: Metadata = {
   title: 'Upgrade Subscription',
@@ -40,7 +43,16 @@ export default async function CheckoutPage({
   }
   const business = bizResult[0];
 
-  // 3. Fetch any existing pending claim requests
+  // 3. Resolve payee details. FAIL CLOSED: never show customers placeholder or partial payment details.
+  const payee = loadPayeeConfig();
+  if (payee.status === 'unavailable') {
+    console.error(
+      `[checkout] Payments unavailable - payee configuration problems: ${describePayeeProblems(payee.problems)}`
+    );
+    return <PaymentsUnavailable supportEmail={SUPPORT_EMAIL} />;
+  }
+
+  // 4. Fetch any existing pending claim requests
   const pendingRequests = await db
     .select()
     .from(subscriptionRequests)
@@ -62,16 +74,6 @@ export default async function CheckoutPage({
         created_at: pendingRequests[0].created_at.toISOString(),
       }
     : null;
-
-  // 4. Load payee payment details securely from server-side environment variables
-  const upiConfig = {
-    upiId: process.env.ADMIN_UPI_ID || 'admin@okaxis',
-    upiName: process.env.ADMIN_UPI_NAME || 'Bill Matrix Billing',
-    bankName: process.env.ADMIN_BANK_NAME || 'State Bank of India',
-    accName: process.env.ADMIN_BANK_ACC_NAME || 'Bill Matrix Admin',
-    accNo: process.env.ADMIN_BANK_ACC_NO || '12345678901',
-    ifsc: process.env.ADMIN_BANK_IFSC || 'SBIN0001234',
-  };
 
   const businessProp = {
     id: business.id,
@@ -108,11 +110,44 @@ export default async function CheckoutPage({
       <CheckoutForm
         business={businessProp}
         pendingRequest={pending}
-        upiConfig={upiConfig}
+        upiConfig={payee.config}
         initialPlan={initialPlan}
         initialCycle={initialCycle}
         initialAction={initialAction}
       />
+    </div>
+  );
+}
+
+function PaymentsUnavailable({ supportEmail }: { supportEmail: string }) {
+  return (
+    <div className="w-full space-y-5">
+      <div className="flex flex-col gap-1 border-b border-border/40 pb-3 mb-5">
+        <span className="inline-flex w-fit items-center rounded-lg bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 text-sm font-bold text-indigo-700 shadow-xs">
+          Billing & Plans
+        </span>
+        <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-foreground font-heading uppercase">
+          Subscription Portal
+        </h1>
+      </div>
+
+      <div
+        role="status"
+        className="rounded-2xl border border-amber-300/60 bg-amber-50 p-6 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/5 dark:text-amber-300"
+      >
+        <h2 className="text-lg font-bold">Payments are temporarily unavailable</h2>
+        <p className="mt-2 text-sm leading-relaxed">
+          We can&apos;t accept subscription payments right now. Please do not send any money until this is
+          resolved. Contact{' '}
+          <a className="font-semibold underline" href={`mailto:${supportEmail}`}>
+            {supportEmail}
+          </a>{' '}
+          and we will help you upgrade.
+        </p>
+        <Link href="/dashboard" className="mt-4 inline-block text-sm font-semibold underline">
+          Back to dashboard
+        </Link>
+      </div>
     </div>
   );
 }

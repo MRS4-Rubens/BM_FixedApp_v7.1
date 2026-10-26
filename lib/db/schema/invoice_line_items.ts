@@ -1,5 +1,5 @@
-import { pgTable, text, varchar, timestamp, uuid, integer, numeric, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { pgTable, text, varchar, timestamp, uuid, integer, numeric, index, check } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
 import { invoices } from './invoices';
 import { products } from './products';
 
@@ -22,7 +22,9 @@ export const invoiceLineItems = pgTable('invoice_line_items', {
   sort_order: integer('sort_order').notNull().default(0),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [
-  index('invoice_line_items_invoice_id_idx').on(table.invoice_id)
+  index('invoice_line_items_invoice_id_idx').on(table.invoice_id),
+  // DB-001: quantities must be positive; money columns may not be negative.
+  check('ili_nonneg', sql`${table.quantity} > 0 AND ${table.unit_price_paise} >= 0 AND ${table.discount_paise} >= 0 AND ${table.taxable_value_paise} >= 0`)
 ]);
 
 export const invoiceLineItemsRelations = relations(invoiceLineItems, ({ one }) => ({

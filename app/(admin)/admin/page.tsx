@@ -6,6 +6,7 @@ import { getPendingRequests } from '@/lib/actions/subscriptions/get-pending-requ
 import { getAllBusinesses } from '@/lib/actions/subscriptions/get-all-businesses';
 import { getAllUsers } from '@/lib/actions/subscriptions/get-all-users';
 import { getSignedDownloadUrl } from '@/lib/storage/idrive';
+import { loadPayeeConfig, describePayeeProblems } from '@/lib/config/payee';
 
 export const metadata: Metadata = {
   title: 'Platform Admin Console',
@@ -72,15 +73,14 @@ export default async function AdminPage() {
     createdAt: u.createdAt.toISOString(),
   }));
 
-  // 5. Pass down payee UPI and bank details from environment variables
-  const upiConfig = {
-    upiId: process.env.ADMIN_UPI_ID || 'admin@okaxis',
-    upiName: process.env.ADMIN_UPI_NAME || 'Bill Matrix Billing',
-    bankName: process.env.ADMIN_BANK_NAME || 'State Bank of India',
-    accName: process.env.ADMIN_BANK_ACC_NAME || 'Bill Matrix Admin',
-    accNo: process.env.ADMIN_BANK_ACC_NO || '12345678901',
-    ifsc: process.env.ADMIN_BANK_IFSC || 'SBIN0001234',
-  };
+  // 5. Resolve payee details. FAIL CLOSED: never fabricate values; the console shows a notice instead.
+  const payee = loadPayeeConfig();
+  const upiConfig = payee.status === 'configured' ? payee.config : null;
+  const payeeConfigIssue =
+    payee.status === 'unavailable' ? describePayeeProblems(payee.problems) : null;
+  if (payeeConfigIssue !== null) {
+    console.error(`[admin] Payee configuration problems: ${payeeConfigIssue}`);
+  }
 
   const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
 
@@ -92,6 +92,7 @@ export default async function AdminPage() {
         businesses={businessesProp}
         users={usersProp}
         upiConfig={upiConfig}
+        payeeConfigIssue={payeeConfigIssue}
         adminEmailAllowlist={adminEmailsEnv}
       />
     </div>

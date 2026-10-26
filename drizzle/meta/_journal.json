@@ -96,8 +96,22 @@
     {
       "idx": 13,
       "version": "7",
-      "when": 1788200000000,
+      "when": 1792911819693,
       "tag": "0013_schema_sync_and_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792935861447,
+      "tag": "0014_db001_constraints_and_immutability",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1792954608402,
+      "tag": "0015_db002_tenant_integrity",
       "breakpoints": true
     }
   ]

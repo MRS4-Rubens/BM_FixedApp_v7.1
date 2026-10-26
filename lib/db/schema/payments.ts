@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp, uuid, integer, date, index } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { pgTable, text, timestamp, uuid, integer, date, index, check, foreignKey } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { invoices } from './invoices';
 import { users } from './users';
@@ -28,7 +28,15 @@ export const payments = pgTable('payments', {
   index('payments_business_id_idx').on(table.business_id),
   index('payments_payment_date_idx').on(table.payment_date),
   index('payments_status_idx').on(table.status),
-  index('payments_invoice_status_idx').on(table.invoice_id, table.status)
+  index('payments_invoice_status_idx').on(table.invoice_id, table.status),
+  // DB-002: a payment can only point at an invoice of the SAME business.
+  foreignKey({
+    name: 'payments_invoice_same_biz',
+    columns: [table.business_id, table.invoice_id],
+    foreignColumns: [invoices.business_id, invoices.id]
+  }),
+  // DB-001: a payment must be a positive amount.
+  check('payments_amount_positive', sql`${table.amount_paise} > 0`)
 ]);
 
 export const paymentsRelations = relations(payments, ({ one }) => ({

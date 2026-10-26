@@ -1,10 +1,5 @@
 import { Buffer } from 'buffer';
-
-const API_KEY = process.env.HTML_TO_PDF_API_KEY;
-
-if (!API_KEY) {
-  throw new Error('Missing HTML_TO_PDF_API_KEY environment variable');
-}
+import { getPdfEnv } from '@/lib/env';
 
 /**
  * This is the ONLY place in the codebase that knows which third-party PDF rendering vendor is in use.
@@ -14,11 +9,12 @@ if (!API_KEY) {
  * Fetches the provided URL using CustomJS and renders it as an A4 PDF.
  */
 export async function renderUrlToPdfBuffer(url: string): Promise<Buffer> {
+  const { HTML_TO_PDF_API_KEY } = getPdfEnv();
   const response = await fetch('https://e.customjs.io/html2pdf', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': API_KEY as string,
+      'x-api-key': HTML_TO_PDF_API_KEY,
     },
     body: JSON.stringify({
       input: { url },

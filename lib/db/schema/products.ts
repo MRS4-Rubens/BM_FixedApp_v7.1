@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, timestamp, uuid, integer, boolean, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, timestamp, uuid, integer, boolean, index, unique } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { taxRates } from './tax_rates';
@@ -19,7 +19,9 @@ export const products = pgTable('products', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [
-  index('products_business_id_idx').on(table.business_id)
+  index('products_business_id_idx').on(table.business_id),
+  // DB-002: prepares tenant-safe references to products (see the line-item tenant triggers).
+  unique('products_biz_id_uq').on(table.business_id, table.id)
 ]);
 
 export const productsRelations = relations(products, ({ one, many }) => ({

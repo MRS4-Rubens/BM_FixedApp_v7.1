@@ -2,10 +2,11 @@
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { z } from 'zod';
 import { db } from '@/lib/db/client';
-import { invoices, invoiceLineItems, businesses, customers, taxRates } from '@/lib/db/schema';
+import { invoices, invoiceLineItems, businesses, taxRates } from '@/lib/db/schema';
 import { calculateInvoiceTax } from '@/lib/gst/calculate';
 import { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
 import { eq, inArray, and, between, sql } from 'drizzle-orm';
@@ -78,9 +79,8 @@ export const finalizeInvoice = createAuthenticatedAction(z.object({ id: z.string
       }
 
       const hasCustomer = !!invoice.customer_id;
-      const customer = hasCustomer
-        ? (await tx.select().from(customers).where(eq(customers.id, invoice.customer_id!)))[0]
-        : null;
+      // Tenant isolation (API-001): only a customer of THIS business may be copied into the invoice snapshot.
+      const customer = invoice.customer_id ? await findOwnedCustomer(tx, businessId, invoice.customer_id) : null;
 
       if (hasCustomer && !customer) throw new ActionError('Customer not found.', { code: 'NOT_FOUND' });
       const placeOfSupplyStateCode = customer ? customer.state_code : invoice.place_of_supply_state_code;

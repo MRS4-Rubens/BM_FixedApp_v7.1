@@ -4,8 +4,7 @@ import { eq } from 'drizzle-orm';
 import { createArchivalToken } from '@/lib/security/archival-token';
 import { renderUrlToPdfBuffer } from '@/lib/pdf/html-to-pdf-provider';
 import { uploadFileToStorage } from '@/lib/storage/idrive';
-
-const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+import { getAppEnv, isEnvConfigError } from '@/lib/env';
 
 export async function archiveCreditNotePdf(creditNoteId: string): Promise<{ success: boolean; error?: string }> {
   try {
@@ -26,6 +25,7 @@ export async function archiveCreditNotePdf(creditNoteId: string): Promise<{ succ
     const token = createArchivalToken(creditNoteId);
 
     // 3. Build full URL to the archival-render route
+    const baseUrl = getAppEnv().NEXT_PUBLIC_APP_URL;
     const renderUrl = `${baseUrl}/api/credit-notes/${creditNoteId}/archival-render?token=${token}`;
 
     // 4. Render PDF
@@ -46,6 +46,12 @@ export async function archiveCreditNotePdf(creditNoteId: string): Promise<{ succ
 
     return { success: true };
   } catch (error: unknown) {
+    if (isEnvConfigError(error)) {
+      // Configuration problem, not an archival failure: leave status/attempts untouched so the record
+      // stays retryable once the environment is fixed (the cron must not burn its 5 attempts on this).
+      return { success: false, error: error.message };
+    }
+
     const message = error instanceof Error ? error.message : 'Unknown archival error';
     // Best-effort strategy: log and return failure without crashing caller
     console.error(`[ArchiveCreditNote] Failed to archive credit note ${creditNoteId}:`, message);

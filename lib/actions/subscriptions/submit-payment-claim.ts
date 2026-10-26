@@ -10,7 +10,8 @@ import { subscriptionRequests, businesses } from '@/lib/db/schema';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { uploadFileToStorage, getSignedDownloadUrl } from '@/lib/storage/idrive';
-import { resend } from '@/lib/email/resend';
+import { getResend } from '@/lib/email/resend';
+import { getAppEnv, getEmailEnv } from '@/lib/env';
 import { SubscriptionRequestEmail } from '@/lib/email/templates/subscription-request-email';
 import { formatPaiseAsInr } from '@/lib/money';
 import { auth } from '@/lib/auth/server';
@@ -150,7 +151,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
         // Generate a temporary signed S3 URL for the admin to view the screenshot (expires in 7 days)
         const screenshotUrl = screenshotKey ? await getSignedDownloadUrl(screenshotKey, 604800) : null;
 
-        const approveLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/admin?request=${requestRecord.id}`;
+        const approveLink = `${getAppEnv().NEXT_PUBLIC_APP_URL}/admin?request=${requestRecord.id}`;
 
         const emailContent = SubscriptionRequestEmail({
           businessName: business.legal_name,
@@ -165,8 +166,8 @@ export const submitPaymentClaim = createAuthenticatedAction(
           approveLink,
         });
 
-        await resend.emails.send({
-          from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+        await getResend().emails.send({
+          from: getEmailEnv().RESEND_FROM_EMAIL,
           to: adminEmails,
           subject: `🔔 Payment Claim: ${business.legal_name} - ${input.plan_name.toUpperCase()}`,
           react: emailContent,
