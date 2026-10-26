@@ -3,10 +3,11 @@
 import { z } from 'zod';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { logError } from '@/lib/actions/_shared/logger';
 import { db } from '@/lib/db/client';
-import { invoices, businesses, customers, payments, creditNotes } from '@/lib/db/schema';
+import { invoices, businesses, payments, creditNotes } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { getResend } from '@/lib/email/resend';
 import { getEmailEnv } from '@/lib/env';
@@ -108,16 +109,11 @@ export const sendPaymentReminder = createAuthenticatedAction(
       );
     }
 
-    const customerRecords = await db
-      .select()
-      .from(customers)
-      .where(eq(customers.id, invoice.customer_id));
-
-    if (customerRecords.length === 0) {
+    // Tenant isolation (API-001): never email a customer that belongs to another business.
+    const customer = await findOwnedCustomer(db, appUser.business_id, invoice.customer_id);
+    if (!customer) {
       throw new ActionError('Customer not found.');
     }
-
-    const customer = customerRecords[0];
 
     if (!customer.email || customer.email.trim() === '') {
       throw new ActionError(

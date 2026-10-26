@@ -40,4 +40,11 @@ Migrations are NOT applied automatically. Use GitHub -> Actions -> "Production D
 - Status: the three foreign keys are `NOT VALID` (they check every NEW or changed row; existing rows are validated in DB-002 PART B, after API-001 is deployed and the cross-tenant audit queries return zero rows). The older single-column foreign keys stay until PART B.
 - If the audit queries ever return rows, treat it as a data-leak incident: stop, quarantine the rows, and inform the affected businesses.
 
+## Tenant isolation rules for server actions (API-001)
+- Never load a customer or product by id alone. Use `findOwnedCustomer` / `assertOwnedCustomer` / `assertOwnedProducts` from `lib/actions/_shared/ownership.ts`, or write `and(eq(x.id, id), eq(x.business_id, businessId))`.
+- Every join of `customers` or `products` must include `eq(<table>.business_id, invoices.business_id)` in its ON condition.
+- Return the same NOT_FOUND for "not yours" and "does not exist" so ids cannot be probed.
+- `tests/unit/tenant-scoping.test.ts` fails CI when an unscoped customer/product lookup or join is added; do not add exceptions to it.
+- These application checks complement the database guards from DB-002 (composite foreign keys, line-item triggers).
+
 

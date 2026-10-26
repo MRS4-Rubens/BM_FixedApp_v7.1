@@ -3,7 +3,7 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { db } from '@/lib/db/client';
 import { invoices, customers } from '@/lib/db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { and, eq, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 export const listInvoices = createAuthenticatedAction(z.object({}), async (_, context) => {
@@ -23,7 +23,7 @@ export const listInvoices = createAuthenticatedAction(z.object({}), async (_, co
       place_of_supply_state_code: invoices.place_of_supply_state_code
     })
     .from(invoices)
-    .leftJoin(customers, eq(invoices.customer_id, customers.id))
+    .leftJoin(customers, and(eq(invoices.customer_id, customers.id), eq(customers.business_id, invoices.business_id)))
     .where(eq(invoices.business_id, businessId))
     .orderBy(desc(invoices.created_at));
 
