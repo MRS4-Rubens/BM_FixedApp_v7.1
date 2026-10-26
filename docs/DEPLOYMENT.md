@@ -37,7 +37,7 @@ Migrations are NOT applied automatically. Use GitHub -> Actions -> "Production D
 ## Tenant (business) isolation guards (DB-002)
 - `UNIQUE (business_id, id)` exists on customers, products, invoices and credit_notes. Composite foreign keys `invoices_customer_same_biz`, `credit_notes_invoice_same_biz` and `payments_invoice_same_biz` make it impossible for an invoice, credit note or payment to point at another business's customer/invoice.
 - Line items: triggers `bm_invoice_line_items_tenant` / `bm_credit_note_line_items_tenant` reject a product that belongs to another business.
-- Status: the three foreign keys are `NOT VALID` (they check every NEW or changed row; existing rows are validated in DB-002 PART B, after API-001 is deployed and the cross-tenant audit queries return zero rows). The older single-column foreign keys stay until PART B.
+- Status: the three composite foreign keys are VALIDATED (DB-002 part B). The three older single-column keys (`invoices_customer_id_customers_id_fk`, `credit_notes_original_invoice_id_invoices_id_fk`, `payments_invoice_id_invoices_id_fk`) were removed because the composite keys also guarantee existence. The two product keys on line items are intentionally kept.
 - If the audit queries ever return rows, treat it as a data-leak incident: stop, quarantine the rows, and inform the affected businesses.
 
 ## Tenant isolation rules for server actions (API-001)
@@ -46,5 +46,9 @@ Migrations are NOT applied automatically. Use GitHub -> Actions -> "Production D
 - Return the same NOT_FOUND for "not yours" and "does not exist" so ids cannot be probed.
 - `tests/unit/tenant-scoping.test.ts` fails CI when an unscoped customer/product lookup or join is added; do not add exceptions to it.
 - These application checks complement the database guards from DB-002 (composite foreign keys, line-item triggers).
+
+## Rule for new tenant-linked columns (DB-002 part B)
+- A new column that points at another business-owned table must be declared with a composite foreign key `(business_id, <column>) -> <table> (business_id, id)` (the target table needs `UNIQUE (business_id, id)`), plus an ownership check in the server action (`lib/actions/_shared/ownership.ts`).
+- If a migration is ever blocked by `*_same_biz` during VALIDATE, a cross-business row exists: treat it as a data-leak incident (stop, quarantine, inform the affected businesses); never drop the constraint to make the migration pass.
 
 

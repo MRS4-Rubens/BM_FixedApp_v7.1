@@ -12,7 +12,7 @@ import { creditNotes } from './credit_notes';
 export const invoices = pgTable('invoices', {
   id: uuid('id').primaryKey().defaultRandom(),
   business_id: uuid('business_id').notNull().references(() => businesses.id),
-  customer_id: uuid('customer_id').references(() => customers.id),
+  customer_id: uuid('customer_id'),
   financial_year_id: uuid('financial_year_id').notNull().references(() => financialYears.id),
   invoice_sequence: integer('invoice_sequence'),
   invoice_number: text('invoice_number').notNull(),

@@ -10,7 +10,7 @@ import { creditNoteLineItems } from './credit_note_line_items';
 export const creditNotes = pgTable('credit_notes', {
   id: uuid('id').primaryKey().defaultRandom(),
   business_id: uuid('business_id').notNull().references(() => businesses.id),
-  original_invoice_id: uuid('original_invoice_id').notNull().references(() => invoices.id),
+  original_invoice_id: uuid('original_invoice_id').notNull(),
   financial_year_id: uuid('financial_year_id').notNull().references(() => financialYears.id),
   credit_note_sequence: integer('credit_note_sequence'),
   credit_note_number: text('credit_note_number').notNull(),

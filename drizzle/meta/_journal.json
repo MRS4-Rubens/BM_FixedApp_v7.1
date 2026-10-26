@@ -113,6 +113,13 @@
       "when": 1792954608402,
       "tag": "0015_db002_tenant_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793042276056,
+      "tag": "0016_db002b_validate_tenant_fks",
+      "breakpoints": true
     }
   ]
 }

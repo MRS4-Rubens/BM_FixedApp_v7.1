@@ -46,6 +46,7 @@ import { getTopProducts } from '@/lib/actions/reports/get-top-products';
 
 const DRIZZLE_DIR = join(process.cwd(), 'drizzle');
 const DB002_SUFFIX = '_db002_tenant_integrity';
+const DB002_PART_B_SUFFIX = '_db002b_validate_tenant_fks';
 const VICTIM_CUSTOMER_NAME = 'ZZ Victim Customer B';
 const VICTIM_CUSTOMER_EMAIL = 'victim-b@example.com';
 const VICTIM_PRODUCT_NAME = 'ZZ Victim Product B';
@@ -250,7 +251,12 @@ describe('API-001: tenant isolation of customers, products and invoices', () => 
     );
 
     // Phase 2: apply DB-002 and everything after it (the legacy leaks above stay, because the keys are NOT VALID).
-    await applyMigrations(pg, journal.slice(db002Position));
+    // DB-002 PART B is skipped on purpose: it validates the keys and would (correctly) refuse to run while the planted
+    // legacy leaks exist. Its behaviour is tested in db002b-validate-tenant-fks.test.ts.
+    await applyMigrations(
+      pg,
+      journal.slice(db002Position).filter((entry) => !entry.tag.endsWith(DB002_PART_B_SUFFIX)),
+    );
     state.businessId = a.businessId;
   }, 180_000);
 

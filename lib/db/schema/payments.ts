@@ -8,7 +8,7 @@ import { paymentMethodEnum } from './enums';
 export const payments = pgTable('payments', {
   id: uuid('id').primaryKey().defaultRandom(),
   business_id: uuid('business_id').notNull().references(() => businesses.id),
-  invoice_id: uuid('invoice_id').notNull().references(() => invoices.id),
+  invoice_id: uuid('invoice_id').notNull(),
   amount_paise: integer('amount_paise').notNull(),
   payment_date: date('payment_date').notNull(),
   payment_method: paymentMethodEnum('payment_method').notNull(),
