@@ -1,31 +1,25 @@
 'use client';
 
-import { useState, useTransition, useMemo } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, CheckCircle, Trash2, AlertCircle, CornerDownRight } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle, CornerDownRight, Save, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { CREDIT_NOTE_REASONS, CreditNoteReasonCode } from '@/lib/validations/credit-note';
-import { saveCreditNoteDraft } from '@/lib/actions/credit-notes/save-credit-note-draft';
 import { finalizeCreditNote } from '@/lib/actions/credit-notes/finalize-credit-note';
+import { saveCreditNoteDraft } from '@/lib/actions/credit-notes/save-credit-note-draft';
+import {
+  CreditNoteRuleError,
+  deriveCreditLines,
+  milliToQuantity,
+  quantityToMilli,
+  resolveCreditNoteGrandTotal,
+  sumDerivedLines,
+  type CreditLineState,
+  type CreditNoteTotals,
+  type DerivedCreditLine,
+} from '@/lib/credit-notes/derivation';
 import { formatPaiseAsInr } from '@/lib/money';
-import { UNIT_OF_MEASUREMENT_OPTIONS } from '@/lib/gst/units';
-import { calculateInvoiceTax } from '@/lib/gst/calculate';
-import { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
-
-interface LineItemFormData {
-  product_id?: string | null;
-  description: string;
-  hsn_sac_code: string;
-  unit_of_measurement: string;
-  unit_price: number; // in Rupees
-  discount: number; // percentage
-  tax_rate_id: string;
-  tax_rate_percentage: number;
-  original_quantity: number;
-  remaining_creditable_quantity: number;
-  quantity: number;
-}
+import { CREDIT_NOTE_REASONS, type CreditNoteReasonCode } from '@/lib/validations/credit-note';
 
 export interface OriginalInvoiceInfo {
   id: string;
@@ -44,111 +38,130 @@ export interface OriginalInvoiceInfo {
 interface CreditNoteFormProps {
   originalInvoice: OriginalInvoiceInfo;
   previouslyCreditedPaise?: number;
+  previouslyCreditedExactPaise?: number;
+  invoiceExactTotalPaise: number;
   business: {
     id: string;
     legal_name: string;
     gstin: string;
     state_code: string;
   };
-  initialLineItems: LineItemFormData[];
-  taxRates?: Array<{
-    id: string;
-    label: string;
-    rate_percentage: string;
-  }>;
+  initialLineStates: CreditLineState[];
   existingCreditNoteId?: string;
   initialReason?: CreditNoteReasonCode;
   initialNotes?: string;
 }
 
+type Preview =
+  | { ok: true; lines: DerivedCreditLine[]; totals: CreditNoteTotals; grandTotalPaise: number }
+  | { ok: false; message: string | null };
+
 export function CreditNoteForm({
   originalInvoice,
   previouslyCreditedPaise = 0,
+  previouslyCreditedExactPaise = 0,
+  invoiceExactTotalPaise,
   business,
-  initialLineItems,
+  initialLineStates,
   existingCreditNoteId,
   initialReason = '01-sales-return',
-  initialNotes = ''
+  initialNotes = '',
 }: CreditNoteFormProps) {
   const router = useRouter();
   const [reason, setReason] = useState<CreditNoteReasonCode>(initialReason);
   const [notes, setNotes] = useState(initialNotes);
-  const [lineItems, setLineItems] = useState<LineItemFormData[]>(() =>
-    initialLineItems.map(item => ({
-      ...item,
-      // Default credited quantity to the remaining creditable quantity
-      quantity: item.remaining_creditable_quantity > 0 ? item.remaining_creditable_quantity : 0
-    }))
+
+  const [lineStates, setLineStates] = useState<CreditLineState[]>(initialLineStates);
+  const remainingMilli = (s: CreditLineState): number =>
+    Math.max(0, s.original.quantityMilli - s.credited.quantityMilli);
+
+  const [quantities, setQuantities] = useState<Record<string, number>>(() =>
+    Object.fromEntries(
+      initialLineStates.map((s) => [s.original.originalLineItemId, milliToQuantity(remainingMilli(s))]),
+    ),
   );
 
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleQuantityChange = (idx: number, newQty: number) => {
-    setLineItems(prev =>
-      prev.map((item, i) => {
-        if (i !== idx) return item;
-        const validQty = Math.max(0, Math.min(newQty, item.remaining_creditable_quantity));
-        return { ...item, quantity: validQty };
-      })
-    );
+  const handleQuantityChange = (id: string, raw: number): void => {
+    const state = lineStates.find((s) => s.original.originalLineItemId === id);
+    if (!state) return;
+    const bounded = Math.max(0, Math.min(Number.isFinite(raw) ? raw : 0, milliToQuantity(remainingMilli(state))));
+    setQuantities((prev) => ({ ...prev, [id]: Math.round(bounded * 1000) / 1000 }));
   };
 
-  const handleRemoveItem = (idx: number) => {
-    setLineItems(prev => prev.filter((_, i) => i !== idx));
+  const handleRemoveItem = (id: string): void => {
+    setLineStates((prev) => prev.filter((s) => s.original.originalLineItemId !== id));
   };
 
-  // Live calculation of totals
-  const activeItems = lineItems.filter(item => item.quantity > 0);
-
-  const calcLineItems: TaxLineItemInput[] = useMemo(() => {
-    return activeItems.map(item => {
-      const grossPaise = Math.round(item.quantity * Math.round(item.unit_price * 100));
-      const discountPaise = Math.round(grossPaise * ((item.discount ?? 0) / 100));
-      return {
-        quantity: item.quantity,
-        unitPricePaise: Math.round(item.unit_price * 100),
-        discountPaise,
-        taxRatePercentage: item.tax_rate_percentage,
-      };
-    });
-  }, [activeItems]);
-
-  const taxPreview = useMemo(() => {
-    if (calcLineItems.length === 0) return null;
+  const preview: Preview = useMemo(() => {
     try {
-      return calculateInvoiceTax({
-        sellerStateCode: originalInvoice.supplier_state_code,
-        supplierStateCode: originalInvoice.supplier_state_code,
-        placeOfSupplyStateCode: originalInvoice.place_of_supply_state_code,
-        gstRateType: originalInvoice.gst_rate_type,
-        lineItems: calcLineItems,
-      } as TaxCalculationInput & { supplierStateCode: string });
-    } catch {
-      return null;
+      const requests = lineStates.flatMap((s) => {
+        const q = quantities[s.original.originalLineItemId] ?? 0;
+        return q > 0
+          ? [{ originalLineItemId: s.original.originalLineItemId, quantityMilli: quantityToMilli(q) }]
+          : [];
+      });
+      if (requests.length === 0) return { ok: false, message: null };
+      const states = new Map(lineStates.map((s) => [s.original.originalLineItemId, s] as const));
+      const lines = deriveCreditLines(states, requests);
+      const totals = sumDerivedLines(lines);
+      const grandTotalPaise = resolveCreditNoteGrandTotal({
+        exactTotalPaise: totals.exactTotalPaise,
+        invoiceGrandTotalPaise: originalInvoice.grand_total_paise,
+        invoiceExactTotalPaise,
+        otherCreditNotesGrandPaise: previouslyCreditedPaise,
+        otherCreditNotesExactPaise: previouslyCreditedExactPaise,
+      });
+      return { ok: true, lines, totals, grandTotalPaise };
+    } catch (err: unknown) {
+      return {
+        ok: false,
+        message: err instanceof CreditNoteRuleError ? err.message : 'Unable to calculate this credit note.',
+      };
     }
-  }, [originalInvoice.supplier_state_code, originalInvoice.place_of_supply_state_code, originalInvoice.gst_rate_type, calcLineItems]);
+  }, [
+    lineStates,
+    quantities,
+    originalInvoice.grand_total_paise,
+    invoiceExactTotalPaise,
+    previouslyCreditedPaise,
+    previouslyCreditedExactPaise,
+  ]);
 
-  const isIntraState = taxPreview
-    ? taxPreview.supplyType === 'intra_state'
-    : (originalInvoice.supplier_state_code || business.state_code) === (originalInvoice.place_of_supply_state_code || business.state_code);
+  const isIntraState =
+    (originalInvoice.supplier_state_code || business.state_code) ===
+    (originalInvoice.place_of_supply_state_code || business.state_code);
 
-  const subtotalRupees = taxPreview ? taxPreview.subtotalPaise / 100 : 0;
-  const cgstRupees = taxPreview ? taxPreview.totalCgstPaise / 100 : 0;
-  const sgstRupees = taxPreview ? taxPreview.totalSgstPaise / 100 : 0;
-  const igstRupees = taxPreview ? taxPreview.totalIgstPaise / 100 : 0;
-  const totalTaxRupees = taxPreview ? taxPreview.totalTaxPaise / 100 : 0;
-  const grandTotalRupees = taxPreview ? Math.round(taxPreview.grandTotalPaise / 100) : 0;
+  const subtotalRupees = preview.ok ? preview.totals.subtotalPaise / 100 : 0;
+  const cgstRupees = preview.ok ? preview.totals.totalCgstPaise / 100 : 0;
+  const sgstRupees = preview.ok ? preview.totals.totalSgstPaise / 100 : 0;
+  const igstRupees = preview.ok ? preview.totals.totalIgstPaise / 100 : 0;
+  const grandTotalRupees = preview.ok ? preview.grandTotalPaise / 100 : 0;
 
-  // Cumulative multi-credit note tracking
-  const currentCreditPaise = taxPreview ? taxPreview.grandTotalPaise : 0;
+  const currentCreditPaise = preview.ok ? preview.grandTotalPaise : 0;
   const totalCumulativeCreditedPaise = previouslyCreditedPaise + currentCreditPaise;
   const netAdjustedBalancePaise = Math.max(0, originalInvoice.grand_total_paise - totalCumulativeCreditedPaise);
 
-  const handleSave = (shouldFinalize: boolean) => {
+  const displayedError = errorMessage ?? (preview.ok ? null : preview.message);
+
+  const handleSave = (shouldFinalize: boolean): void => {
     setErrorMessage(null);
 
-    if (activeItems.length === 0) {
+    if (!preview.ok) {
+      setErrorMessage(preview.message || 'Please specify at least one line item with a quantity greater than 0.');
+      return;
+    }
+
+    const payloadLines = lineStates
+      .filter((s) => (quantities[s.original.originalLineItemId] ?? 0) > 0)
+      .map((s) => ({
+        original_line_item_id: s.original.originalLineItemId,
+        quantity: quantities[s.original.originalLineItemId] ?? 0,
+      }));
+
+    if (payloadLines.length === 0) {
       setErrorMessage('Please specify at least one line item with a quantity greater than 0.');
       return;
     }
@@ -160,17 +173,7 @@ export function CreditNoteForm({
           original_invoice_id: originalInvoice.id,
           reason,
           notes: notes || undefined,
-          line_items: activeItems.map((li, idx) => ({
-            product_id: li.product_id,
-            description: li.description,
-            hsn_sac_code: li.hsn_sac_code,
-            quantity: li.quantity,
-            unit_of_measurement: li.unit_of_measurement as (typeof UNIT_OF_MEASUREMENT_OPTIONS)[number],
-            unit_price: li.unit_price,
-            discount: li.discount,
-            tax_rate_id: li.tax_rate_id,
-            sort_order: idx
-          }))
+          line_items: payloadLines,
         });
 
         if (!draftRes.success) {
@@ -229,7 +232,7 @@ export function CreditNoteForm({
           <Button
             type="button"
             variant="outline"
-            disabled={isPending}
+            disabled={isPending || !preview.ok}
             onClick={() => handleSave(false)}
             className="h-9 px-3.5 flex items-center gap-2 text-sm font-medium shadow-xs"
           >
@@ -238,7 +241,7 @@ export function CreditNoteForm({
           </Button>
           <Button
             type="button"
-            disabled={isPending || activeItems.length === 0}
+            disabled={isPending || !preview.ok}
             onClick={() => handleSave(true)}
             className="h-9 px-4 flex items-center gap-2 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors"
           >
@@ -248,16 +251,15 @@ export function CreditNoteForm({
         </div>
       </div>
 
-      {errorMessage && (
+      {displayedError && (
         <div className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-3.5 text-sm text-destructive font-medium animate-shake">
           <AlertCircle className="size-5 shrink-0 mt-0.5" />
-          <span>{errorMessage}</span>
+          <span>{displayedError}</span>
         </div>
       )}
 
-      {/* Original Invoice Info Card - Compact 2-Line Format */}
+      {/* Original Invoice Info Card */}
       <div className="rounded-xl border border-border bg-card px-4 pt-2 pb-2 shadow-xs space-y-1.5">
-        {/* Line 1: Header + Invoice Reference */}
         <div className="flex items-center justify-between text-[13px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/60 pb-1.5">
           <div className="flex items-center gap-1.5">
             <span>ORIGINAL INVOICE REFERENCE :</span>
@@ -267,7 +269,6 @@ export function CreditNoteForm({
           </div>
         </div>
 
-        {/* Line 2: Customer, Date, Amount, Region in a single horizontal flex line */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs sm:text-[15px] text-foreground">
           <div>
             <span className="text-muted-foreground font-medium">Customer: </span>
@@ -290,7 +291,7 @@ export function CreditNoteForm({
                 ? new Date(originalInvoice.invoice_date).toLocaleDateString('en-IN', {
                     day: '2-digit',
                     month: '2-digit',
-                    year: 'numeric'
+                    year: 'numeric',
                   })
                 : 'N/A'}
             </span>
@@ -332,10 +333,10 @@ export function CreditNoteForm({
             </label>
             <select
               value={reason}
-              onChange={e => setReason(e.target.value as CreditNoteReasonCode)}
+              onChange={(e) => setReason(e.target.value as CreditNoteReasonCode)}
               className="w-full h-9 px-3 py-1.5 text-[15px] border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-xs transition-colors"
             >
-              {CREDIT_NOTE_REASONS.map(r => (
+              {CREDIT_NOTE_REASONS.map((r) => (
                 <option key={r.code} value={r.code}>
                   {r.label}
                 </option>
@@ -352,7 +353,7 @@ export function CreditNoteForm({
               type="text"
               placeholder="e.g. 2 pens returned due to leaking ink, cash refunded"
               value={notes}
-              onChange={e => setNotes(e.target.value)}
+              onChange={(e) => setNotes(e.target.value)}
               className="w-full h-9 px-3 py-1.5 text-[15px] border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary shadow-xs transition-colors"
             />
             <p className="text-[12px] text-muted-foreground mt-[3px]">
@@ -390,68 +391,65 @@ export function CreditNoteForm({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {lineItems.map((item, idx) => {
-                let lineTotal = 0;
-                if (item.quantity > 0) {
-                  const activeIdx = activeItems.findIndex((ai) => ai === item);
-                  if (activeIdx >= 0 && taxPreview && taxPreview.lineItems[activeIdx]) {
-                    lineTotal = taxPreview.lineItems[activeIdx].lineTotalPaise / 100;
-                  } else {
-                    const lineGross = item.quantity * item.unit_price;
-                    const lineTaxable = lineGross * (1 - item.discount / 100);
-                    lineTotal = lineTaxable * (1 + item.tax_rate_percentage / 100);
-                  }
-                }
+              {lineStates.map((item, idx) => {
+                const id = item.original.originalLineItemId;
+                const q = quantities[id] ?? 0;
+                const remMilli = remainingMilli(item);
+                const remQty = milliToQuantity(remMilli);
+                const lineCreditPaise = preview.ok
+                  ? preview.lines.find((l) => l.originalLineItemId === id)?.lineTotalPaise ?? 0
+                  : 0;
+                const lineCreditRupees = lineCreditPaise / 100;
+                const rateRupees = item.original.unitPricePaise / 100;
+                const taxPercent = Number(item.original.taxRatePercentage);
 
                 return (
                   <tr
-                    key={idx}
+                    key={id}
                     className={`transition-colors ${
-                      item.quantity === 0
-                        ? 'bg-muted/10 opacity-60 hover:opacity-100'
-                        : 'hover:bg-muted/30'
+                      q === 0 ? 'bg-muted/10 opacity-60 hover:opacity-100' : 'hover:bg-muted/30'
                     }`}
                   >
                     <td className="px-3 pt-[7px] pb-[7px] text-center text-muted-foreground font-medium">{idx + 1}</td>
                     <td className="px-3 pt-[7px] pb-[7px]">
-                      <p className="font-semibold text-foreground">{item.description}</p>
+                      <p className="font-semibold text-foreground">{item.original.description}</p>
                       <span className="inline-block text-[12px] text-muted-foreground font-normal mt-0.5">
-                        Unit: {item.unit_of_measurement}
+                        Unit: {item.original.unitOfMeasurement}
                       </span>
                     </td>
                     <td className="px-3 pt-[7px] pb-[7px] text-center font-mono text-[13px] text-muted-foreground">
-                      {item.hsn_sac_code || '—'}
+                      {item.original.hsnSacCode || '—'}
                     </td>
                     <td className="px-3 pt-[7px] pb-[7px] text-center text-muted-foreground font-mono">
-                      {item.original_quantity}
+                      {milliToQuantity(item.original.quantityMilli)}
                     </td>
                     <td className="px-3 pt-[7px] pb-[7px] text-center font-semibold text-foreground font-mono">
-                      {item.remaining_creditable_quantity}
+                      {remQty}
                     </td>
                     <td className="px-3 pt-[7px] pb-[7px] text-center">
                       <input
                         type="number"
                         min="0"
-                        max={item.remaining_creditable_quantity}
-                        step="any"
-                        value={item.quantity === 0 ? '' : item.quantity}
+                        max={remQty}
+                        step="0.001"
+                        value={q === 0 ? '' : q}
                         placeholder="0"
-                        onChange={e => handleQuantityChange(idx, Number(e.target.value))}
-                        disabled={item.remaining_creditable_quantity <= 0}
+                        onChange={(e) => handleQuantityChange(id, Number(e.target.value))}
+                        disabled={remMilli <= 0}
                         className="w-24 h-8 px-2 py-1 mx-auto border border-border rounded-md text-center font-mono font-semibold text-[15px] focus:ring-2 focus:ring-primary focus:outline-none bg-background shadow-xs disabled:opacity-50"
                       />
                     </td>
-                    <td className="px-3 pt-[7px] pb-[7px] text-right font-mono">₹{item.unit_price.toFixed(2)}</td>
-                    <td className="px-3 pt-[7px] pb-[7px] text-center font-mono text-[13px]">{item.tax_rate_percentage}%</td>
+                    <td className="px-3 pt-[7px] pb-[7px] text-right font-mono">₹{rateRupees.toFixed(2)}</td>
+                    <td className="px-3 pt-[7px] pb-[7px] text-center font-mono text-[13px]">{taxPercent}%</td>
                     <td className="px-3 pt-[7px] pb-[7px] text-right font-mono font-bold text-red-600">
-                      ₹{lineTotal.toFixed(2)}
+                      ₹{lineCreditRupees.toFixed(2)}
                     </td>
                     <td className="px-3 pt-[7px] pb-[7px] text-center">
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleRemoveItem(idx)}
+                        onClick={() => handleRemoveItem(id)}
                         className="size-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                         title="Remove item"
                       >
@@ -495,11 +493,12 @@ export function CreditNoteForm({
             )}
           </div>
           <div className="pt-1.5 border-t border-blue-200/60 flex flex-col 2xl:flex-row 2xl:items-center gap-y-1 text-[13px]">
-            {/* Pair 1: Original Invoice + Previously Credited */}
             <div className="flex items-center">
               <div className="whitespace-nowrap">
                 <span className="text-muted-foreground">Original Invoice:</span>{' '}
-                <span className="font-mono font-medium text-foreground">{formatPaiseAsInr(originalInvoice.grand_total_paise)}</span>
+                <span className="font-mono font-medium text-foreground">
+                  {formatPaiseAsInr(originalInvoice.grand_total_paise)}
+                </span>
               </div>
               <span className="text-blue-300 px-[3px] select-none">|</span>
               <div className="whitespace-nowrap">
@@ -510,10 +509,8 @@ export function CreditNoteForm({
               </div>
             </div>
 
-            {/* Middle Divider: Visible ONLY on wide 2xl screens when all 4 sit on one line */}
             <span className="hidden 2xl:inline text-blue-300 px-[3px] select-none">|</span>
 
-            {/* Pair 2: This Credit Note + Net Adjusted Balance */}
             <div className="flex items-center">
               <div className="whitespace-nowrap">
                 <span className="text-muted-foreground">This Credit Note:</span>{' '}

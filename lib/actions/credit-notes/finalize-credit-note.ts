@@ -3,6 +3,7 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
+import { CreditNoteRuleError } from '@/lib/credit-notes/derivation';
 import { db } from '@/lib/db/client';
 import { toBusyActionError, withTransactionRetry } from '@/lib/db/transaction';
 import { finalizeDraftCreditNoteInTransaction } from '@/lib/invoices/finalize-credit-note-tx';
@@ -44,6 +45,7 @@ export const finalizeCreditNote = createAuthenticatedAction(
       };
     } catch (error: unknown) {
       if (error instanceof ActionError) throw error;
+      if (error instanceof CreditNoteRuleError) throw new ActionError(error.message, { code: error.code });
       const busy = toBusyActionError(error);
       if (busy) throw busy;
       logError('finalize-credit-note', error, { creditNoteId: input.id });

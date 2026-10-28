@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { UNIT_OF_MEASUREMENT_OPTIONS } from '@/lib/gst/units';
 
 export const CREDIT_NOTE_REASONS = [
   { code: '01-sales-return', label: '01 - Sales Return' },
@@ -14,40 +13,58 @@ export const CREDIT_NOTE_REASON_CODES = [
   '02-post-sale-discount',
   '03-defective-goods',
   '04-cancellation',
-  '05-other'
+  '05-other',
 ] as const;
 
 export type CreditNoteReasonCode = (typeof CREDIT_NOTE_REASON_CODES)[number];
 
 export function getCreditNoteReasonLabel(code: string): string {
-  const found = CREDIT_NOTE_REASONS.find(r => r.code === code);
+  const found = CREDIT_NOTE_REASONS.find((r) => r.code === code);
   return found ? found.label : code;
 }
 
-export const creditNoteLineItemSchema = z.object({
-  product_id: z.string().uuid().optional().nullable().or(z.literal('')),
-  description: z.string().min(1, 'Description is required').max(300, 'Description cannot exceed 300 characters'),
-  hsn_sac_code: z.string().regex(/^\d{4}$|^\d{6}$|^\d{8}$/, 'HSN/SAC must be 4, 6, or 8 digits'),
-  quantity: z.coerce.number().positive('Quantity must be greater than 0'),
-  unit_of_measurement: z.enum(UNIT_OF_MEASUREMENT_OPTIONS),
-  unit_price: z.coerce.number().min(0, 'Rate cannot be negative'), // in Rupees
-  discount: z.coerce.number().min(0, 'Discount percentage cannot be negative').max(100, 'Discount percentage cannot exceed 100%').default(0),
-  tax_rate_id: z.string().uuid('Select a valid GST Rate'),
-  sort_order: z.number().int().optional().default(0)
-});
+export const creditNoteLineItemSchema = z
+  .object({
+    original_line_item_id: z.string().uuid('Select a valid invoice line to credit'),
+    quantity: z
+      .number()
+      .positive('Quantity must be greater than 0')
+      .max(9_999_999.999, 'Quantity is too large'),
+  })
+  .strict(); // unit_price / discount / tax_rate_id / hsn / description are REJECTED, not ignored
 
-export const creditNoteDraftSchema = z.object({
-  id: z.string().uuid().optional(),
-  original_invoice_id: z.string().uuid('Original invoice ID is required'),
-  reason: z.enum(CREDIT_NOTE_REASON_CODES),
-  issue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format').optional(),
-  notes: z.string().max(1000).optional().nullable().or(z.literal('')),
-  line_items: z.array(creditNoteLineItemSchema).min(1, 'Credit note must have at least one line item')
-});
+export const creditNoteDraftSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    original_invoice_id: z.string().uuid('Original invoice ID is required'),
+    reason: z.enum(CREDIT_NOTE_REASON_CODES),
+    issue_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format').optional(),
+    notes: z.string().max(1000).optional().nullable().or(z.literal('')),
+    line_items: z
+      .array(creditNoteLineItemSchema)
+      .min(1, 'Credit note must have at least one line item')
+      .max(200, 'A credit note cannot have more than 200 lines')
+      .superRefine((items, ctx) => {
+        const seen = new Set<string>();
+        items.forEach((item, index) => {
+          if (seen.has(item.original_line_item_id)) {
+            ctx.addIssue({
+              code: 'custom',
+              path: [index, 'original_line_item_id'],
+              message: 'Each invoice line can only appear once.',
+            });
+          }
+          seen.add(item.original_line_item_id);
+        });
+      }),
+  })
+  .strict();
 
-export const finalizeCreditNoteSchema = z.object({
-  id: z.string().uuid('Credit note ID is required')
-});
+export const finalizeCreditNoteSchema = z
+  .object({
+    id: z.string().uuid('Credit note ID is required'),
+  })
+  .strict();
 
 export const VOID_CREDIT_NOTE_REASONS = [
   { id: 'clerical_error', label: 'Clerical Error in Amount / Items' },
@@ -57,12 +74,14 @@ export const VOID_CREDIT_NOTE_REASONS = [
   { id: 'other', label: 'Other Statutory Reason' },
 ] as const;
 
-export const voidCreditNoteSchema = z.object({
-  id: z.string().uuid('Credit note ID is required'),
-  reason: z.string().min(1, 'Please select a reason for voiding this credit note'),
-  notes: z.string().max(500, 'Notes must be under 500 characters').optional().nullable(),
-  confirm: z.boolean().refine(val => val === true, 'You must acknowledge the cancellation')
-});
+export const voidCreditNoteSchema = z
+  .object({
+    id: z.string().uuid('Credit note ID is required'),
+    reason: z.string().min(1, 'Please select a reason for voiding this credit note'),
+    notes: z.string().max(500, 'Notes must be under 500 characters').optional().nullable(),
+    confirm: z.boolean().refine((val) => val === true, 'You must acknowledge the cancellation'),
+  })
+  .strict();
 
 export type CreditNoteDraftInput = z.infer<typeof creditNoteDraftSchema>;
 export type CreditNoteLineItemInput = z.infer<typeof creditNoteLineItemSchema>;

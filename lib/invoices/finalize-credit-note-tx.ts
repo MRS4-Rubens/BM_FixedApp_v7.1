@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { loadCreditContext } from '@/lib/actions/_shared/credit-note-context';
 import type { DbTransaction } from '@/lib/db/client';
 import { businesses, creditNoteLineItems, creditNotes } from '@/lib/db/schema';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
@@ -8,6 +9,14 @@ import { getNextCreditNoteNumber } from '@/lib/invoices/credit-note-numbering';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
 import { formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { recomputePaymentStatus } from '@/lib/invoices/payment-status';
+import {
+  CreditNoteRuleError,
+  assertCreditNoteMatchesDerivation,
+  deriveCreditLines,
+  quantityToMilli,
+  resolveCreditNoteGrandTotal,
+  sumDerivedLines,
+} from '@/lib/credit-notes/derivation';
 
 export interface FinalizeCreditNoteTxParams {
   readonly creditNoteId: string;
@@ -68,6 +77,80 @@ export async function finalizeDraftCreditNoteInTransaction(
     throw new ActionError('Credit note must contain at least one line item before finalization.', { code: 'NO_ITEMS' });
   }
 
+  // 5b. API-004: Re-validation under lock against fresh derivation
+  const ctx = await loadCreditContext(tx, {
+    businessId: params.businessId,
+    invoiceId: originalInvoice.id,
+    excludeCreditNoteId: creditNote.id,
+  });
+
+  const derived = deriveCreditLines(
+    ctx.states,
+    lineItemRows.map((li) => {
+      if (li.original_line_item_id === null) {
+        throw new CreditNoteRuleError(
+          'LEGACY_CREDIT_UNLINKED',
+          'This draft was created before item-level validation. Delete it and create a new credit note.',
+        );
+      }
+      return {
+        originalLineItemId: li.original_line_item_id,
+        quantityMilli: quantityToMilli(li.quantity),
+      };
+    }),
+  );
+
+  const derivedTotals = sumDerivedLines(derived);
+  const derivedGrand = resolveCreditNoteGrandTotal({
+    exactTotalPaise: derivedTotals.exactTotalPaise,
+    invoiceGrandTotalPaise: originalInvoice.grand_total_paise,
+    invoiceExactTotalPaise: ctx.invoiceExactTotalPaise,
+    otherCreditNotesGrandPaise: ctx.otherCreditNotesGrandPaise,
+    otherCreditNotesExactPaise: ctx.otherCreditNotesExactPaise,
+  });
+
+  assertCreditNoteMatchesDerivation(
+    {
+      header: {
+        subtotalPaise: creditNote.subtotal_paise,
+        totalCgstPaise: creditNote.total_cgst_paise,
+        totalSgstPaise: creditNote.total_sgst_paise,
+        totalIgstPaise: creditNote.total_igst_paise,
+        totalTaxPaise: creditNote.total_tax_paise,
+        grandTotalPaise: creditNote.grand_total_paise,
+      },
+      lines: lineItemRows.map((li) => {
+        if (li.original_line_item_id === null) {
+          throw new CreditNoteRuleError(
+            'LEGACY_CREDIT_UNLINKED',
+            'This draft was created before item-level validation. Delete it and create a new credit note.',
+          );
+        }
+        return {
+          originalLineItemId: li.original_line_item_id,
+          quantityMilli: quantityToMilli(li.quantity),
+          unitPricePaise: li.unit_price_paise,
+          discountPaise: li.discount_paise,
+          taxableValuePaise: li.taxable_value_paise,
+          cgstPaise: li.cgst_paise,
+          sgstPaise: li.sgst_paise,
+          igstPaise: li.igst_paise,
+        };
+      }),
+    },
+    {
+      header: {
+        subtotalPaise: derivedTotals.subtotalPaise,
+        totalCgstPaise: derivedTotals.totalCgstPaise,
+        totalSgstPaise: derivedTotals.totalSgstPaise,
+        totalIgstPaise: derivedTotals.totalIgstPaise,
+        totalTaxPaise: derivedTotals.totalTaxPaise,
+        grandTotalPaise: derivedGrand,
+      },
+      lines: derived,
+    },
+  );
+
   // 6. Fetch business profile
   const bizRows = await tx.select().from(businesses).where(eq(businesses.id, params.businessId));
   if (bizRows.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
@@ -122,4 +205,3 @@ export async function finalizeDraftCreditNoteInTransaction(
     originalInvoiceId: originalInvoice.id,
   };
 }
-
