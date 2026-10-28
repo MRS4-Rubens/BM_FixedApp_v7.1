@@ -5,11 +5,12 @@ import { ActionError } from '@/lib/actions/_shared/errors';
 import { assertOwnedCustomer, assertOwnedProducts } from '@/lib/actions/_shared/ownership';
 import { invoiceDraftSchema } from '@/lib/validations/invoice';
 import { db } from '@/lib/db/client';
-import { invoices, invoiceLineItems, businesses, customers, taxRates } from '@/lib/db/schema';
+import { invoices, invoiceLineItems, businesses, taxRates } from '@/lib/db/schema';
 import { calculateInvoiceTax } from '@/lib/gst/calculate';
 import { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
 import { eq, inArray, and, gte, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { lockDraftInvoice } from '@/lib/invoices/document-locks';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
 import { parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { canCreateInvoice, canUseTemplate } from '@/lib/subscriptions/entitlements';
@@ -24,19 +25,12 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
   try {
     return await db.transaction(async (tx) => {
       // 1. Check if updating existing
-      let currentInvoice = null;
       if (input.id) {
-        const existing = await tx.select().from(invoices).where(eq(invoices.id, input.id));
-        if (existing.length === 0) {
-          throw new ActionError('Invoice not found.', { code: 'NOT_FOUND' });
-        }
-        currentInvoice = existing[0];
-        if (currentInvoice.business_id !== businessId) {
-          throw new ActionError('Invoice not found.', { code: 'NOT_FOUND' });
-        }
-        if (currentInvoice.lifecycle_status !== 'draft') {
-          throw new ActionError('This invoice has already been finalized and cannot be edited. Issue a credit note instead.', { code: 'ALREADY_FINALIZED' });
-        }
+        await lockDraftInvoice(
+          tx,
+          { id: input.id, businessId },
+          { alreadyFinalized: 'This invoice has already been finalized and cannot be edited. Issue a credit note instead.' },
+        );
       }
 
       // 2. Fetch dependencies for tax calculation and subscription verification
@@ -159,10 +153,27 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
         }).returning({ id: invoices.id });
         invoiceId = newInv.id;
       } else {
-        await tx.update(invoices).set({
-          ...invoiceData,
-          financial_year_id: activeFy.id
-        }).where(eq(invoices.id, invoiceId));
+        const updated = await tx
+          .update(invoices)
+          .set({
+            ...invoiceData,
+            financial_year_id: activeFy.id,
+          })
+          .where(
+            and(
+              eq(invoices.id, invoiceId),
+              eq(invoices.business_id, businessId),
+              eq(invoices.lifecycle_status, 'draft'),
+            ),
+          )
+          .returning({ id: invoices.id });
+
+        if (updated.length !== 1) {
+          throw new ActionError(
+            'This invoice has already been finalized and cannot be edited. Issue a credit note instead.',
+            { code: 'ALREADY_FINALIZED' },
+          );
+        }
       }
 
       // 6. Replace Line Items

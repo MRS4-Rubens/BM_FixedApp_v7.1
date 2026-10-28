@@ -139,3 +139,25 @@ To maximize data visibility and prevent table horizontal blowout on financial re
 - **Sidebar Collapse Toggle:** Explicitly locked to `size-6` (24×24px) at `-right-3` with `size-3.5` chevron icon (`components/app/app-sidebar.tsx`).
 - **Invoice Line-Item Actions:** Delete button locked to `size-7` (28×28px) with `size-3.5` icon; drag handle locked to `20×24px` with universal touch-drag gesture (`components/app/invoices/invoice-form.tsx`).
 
+
+## Concurrency and lock order (established Phase 1 / API-002)
+
+To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53) under concurrent finalizations and draft edits:
+
+1. **Global Lock-Order Contract:**
+   All transactional modifications must acquire locks in the strict hierarchical sequence:
+   `invoice row -> credit-note row -> financial_years row -> invoice_number_counters row`
+   Never acquire an earlier lock after a later one in the same transaction. Draft-save actions lock only the specific document they edit (`FOR UPDATE`).
+
+2. **Pure Transactional Modules (`lib/invoices/finalize-*-tx.ts`):**
+   Finalize transactions are extracted into pure, side-effect-free library modules (`finalizeDraftInvoiceInTransaction` and `finalizeDraftCreditNoteInTransaction`).
+   - Server Actions (`finalize-invoice.ts`, `finalize-credit-note.ts`) act as thin wrappers handling authorization, rate limiting, retry execution, post-commit revalidations, and non-blocking background tasks.
+   - The document row is locked `FOR UPDATE` as the very first data statement in the transaction, ensuring waiters block until the first finalizer commits and immediately re-evaluate the updated committed state before any counters are touched.
+   - Final updates are self-guarding (`WHERE ... AND lifecycle_status = 'draft'` + `.returning()` with an exactly-one-row check). If the status already changed, the transaction aborts and rolls back sequence counter increments.
+
+3. **Transaction Resilience & Fail-Fast Timing:**
+   - Transactions begin with `await setLocalLockTimeout(tx)` (`SET LOCAL lock_timeout = '8000ms'`) so waiters fail fast rather than hanging serverless invocations.
+   - Transactions are wrapped in `withTransactionRetry` to automatically retry transient deadlocks (`40P01`) and serialization failures (`40001`) with exponential backoff and jitter. Lock timeouts (`55P03`) and exhausted retries map to safe, user-friendly `BUSY` ActionErrors.
+
+4. **Post-Commit Side Effects:**
+   `revalidatePath`, PDF archival, email dispatch, and user notifications occur strictly **after** transaction commit, ensuring external side-effects only run for the winner and never cache stale uncommitted state.

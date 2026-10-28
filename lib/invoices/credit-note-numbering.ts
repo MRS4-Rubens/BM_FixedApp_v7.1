@@ -1,4 +1,4 @@
-import { sql, eq } from 'drizzle-orm';
+import { sql, eq, and } from 'drizzle-orm';
 import { financialYears } from '@/lib/db/schema';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import type { DbTransaction } from '@/lib/db/client';
@@ -9,6 +9,11 @@ export interface NextCreditNoteNumberResult {
 }
 
 /**
+ * MUST only be called inside a transaction in which the caller already holds
+ * the document row lock (see lib/invoices/document-locks.ts); the counter UPDATE
+ * serialises concurrent finalizations of different documents on the financial_years
+ * row and is rolled back with the transaction, which is what keeps the series gap-free.
+ *
  * Generates the next sequential, GST Rule 53-compliant Credit Note number.
  * Format: CN/26-27/001 (prefix/short-FY/seq)
  * Enforces strictly <= 16 characters and financial-year resets.
@@ -22,13 +27,13 @@ export async function getNextCreditNoteNumber(
     prefix?: string; // e.g. "CN"
   }
 ): Promise<NextCreditNoteNumberResult> {
-  const { financialYearId, fyLabel, prefix = 'CN' } = params;
+  const { businessId, financialYearId, fyLabel, prefix = 'CN' } = params;
 
   // 1. Atomically increment the credit_note_sequence_counter on financial_years
   const updatedFy = await tx
     .update(financialYears)
     .set({ credit_note_sequence_counter: sql`${financialYears.credit_note_sequence_counter} + 1` })
-    .where(eq(financialYears.id, financialYearId))
+    .where(and(eq(financialYears.id, financialYearId), eq(financialYears.business_id, businessId)))
     .returning({ counter: financialYears.credit_note_sequence_counter });
 
   if (!updatedFy || updatedFy.length === 0) {

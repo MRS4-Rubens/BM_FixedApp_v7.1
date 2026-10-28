@@ -2,13 +2,16 @@
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { logError } from '@/lib/actions/_shared/logger';
 import { assertOwnedProducts } from '@/lib/actions/_shared/ownership';
 import { creditNoteDraftSchema } from '@/lib/validations/credit-note';
 import { db } from '@/lib/db/client';
+import { toBusyActionError } from '@/lib/db/transaction';
+import { lockDraftCreditNote } from '@/lib/invoices/document-locks';
 import { invoices, invoiceLineItems, creditNotes, creditNoteLineItems, businesses, taxRates } from '@/lib/db/schema';
 import { calculateInvoiceTax } from '@/lib/gst/calculate';
 import { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
-import { eq, and, inArray, sql, ne } from 'drizzle-orm';
+import { eq, and, inArray, ne } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
 import { parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
@@ -41,18 +44,11 @@ export const saveCreditNoteDraft = createAuthenticatedAction(
         // 2. If updating existing draft, verify it is still a draft
         let creditNoteId = input.id;
         if (creditNoteId) {
-          const existingCn = await tx
-            .select()
-            .from(creditNotes)
-            .where(and(eq(creditNotes.id, creditNoteId), eq(creditNotes.business_id, businessId)));
-
-          if (existingCn.length === 0) {
-            throw new ActionError('Credit note not found.', { code: 'NOT_FOUND' });
-          }
-
-          if (existingCn[0].lifecycle_status !== 'draft') {
-            throw new ActionError('This credit note has already been finalized and cannot be edited.', { code: 'ALREADY_FINALIZED' });
-          }
+          await lockDraftCreditNote(
+            tx,
+            { id: creditNoteId, businessId },
+            { alreadyFinalized: 'This credit note has already been finalized and cannot be edited.' },
+          );
         }
 
         // 3. Fetch business profile
@@ -199,10 +195,21 @@ export const saveCreditNoteDraft = createAuthenticatedAction(
             .returning({ id: creditNotes.id });
           creditNoteId = newCn.id;
         } else {
-          await tx
+          const updated = await tx
             .update(creditNotes)
             .set(cnData)
-            .where(eq(creditNotes.id, creditNoteId));
+            .where(
+              and(
+                eq(creditNotes.id, creditNoteId),
+                eq(creditNotes.business_id, businessId),
+                eq(creditNotes.lifecycle_status, 'draft'),
+                eq(creditNotes.status, 'active'),
+              ),
+            )
+            .returning({ id: creditNotes.id });
+          if (updated.length !== 1) {
+            throw new ActionError('This credit note has already been finalized and cannot be edited.', { code: 'ALREADY_FINALIZED' });
+          }
         }
 
         // 8. Replace line items
@@ -239,8 +246,10 @@ export const saveCreditNoteDraft = createAuthenticatedAction(
       });
     } catch (error: unknown) {
       if (error instanceof ActionError) throw error;
-      const message = error instanceof Error ? error.message : 'Failed to save credit note draft.';
-      throw new ActionError(message, { code: 'SAVE_FAILED' });
+      const busy = toBusyActionError(error);
+      if (busy) throw busy;
+      logError('save-credit-note-draft', error, { creditNoteId: input.id });
+      throw new ActionError('We could not save the credit note. Please try again.', { code: 'SAVE_FAILED' });
     }
   },
   'save-credit-note-draft'
