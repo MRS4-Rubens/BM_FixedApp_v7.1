@@ -4,7 +4,8 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
-import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
+import { uploadFileToStorage } from '@/lib/storage/idrive';
+import { deleteLogoObjectIfUnreferenced } from '@/lib/storage/logo';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -65,10 +66,10 @@ export const uploadBusinessLogo = createAuthenticatedAction(
       });
     }
 
-    // Delete previous logo from iDrive E2 if present
+    // Delete previous logo from iDrive E2 if present and unreferenced
     if (existing[0]?.logo_storage_key) {
       try {
-        await deleteFileFromStorage(existing[0].logo_storage_key);
+        await deleteLogoObjectIfUnreferenced(businessId, existing[0].logo_storage_key);
       } catch (delError) {
         console.warn('Failed to delete previous logo from storage:', delError);
       }

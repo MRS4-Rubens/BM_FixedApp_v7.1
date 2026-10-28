@@ -281,8 +281,8 @@ describe('API-004: Credit note binding to original invoice lines', () => {
       [financialYearId],
     );
 
-    // 3. Now apply migration 0017!
-    await applyMigrations(pg, [journal[api004Pos]]);
+    // 3. Now apply migration 0017 and all subsequent migrations!
+    await applyMigrations(pg, journal.slice(api004Pos));
   }, 60_000);
 
   afterAll(async () => {
@@ -392,7 +392,10 @@ describe('API-004: Credit note binding to original invoice lines', () => {
       );
 
       await pg.query(
-        `UPDATE invoices SET lifecycle_status = 'finalized', invoice_sequence = 10, finalized_at = now() WHERE id = $1`,
+        `UPDATE invoices SET lifecycle_status = 'finalized', invoice_sequence = 10, finalized_at = now(),
+           seller_name_snapshot = 'Acme Corp', seller_address_snapshot = '{"city":"Bengaluru"}'::jsonb,
+           seller_state_code_snapshot = '29', seller_snapshot_source = 'captured_at_finalization'
+         WHERE id = $1`,
         [cleanInvId],
       );
     });

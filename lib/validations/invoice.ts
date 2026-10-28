@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { UNIT_OF_MEASUREMENT_OPTIONS } from '@/lib/gst/units';
 import { GSTIN_REGEX } from '@/lib/validations/patterns';
+import { isValidIsoCalendarDate } from '@/lib/invoices/invoice-date-policy';
+import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 
 export const invoiceLineItemSchema = z.object({
   product_id: z.string().uuid().optional().nullable().or(z.literal('')),
@@ -19,7 +21,12 @@ export const invoiceDraftSchema = z.object({
   billing_name: z.string().min(1, 'Customer name is required').max(200),
   billing_gstin: z.string().transform((v) => v.toUpperCase()).pipe(z.string().regex(GSTIN_REGEX, 'Invalid GSTIN format')).optional().nullable().or(z.literal('')),
   place_of_supply_state_code: z.string().length(2, 'Select a valid place of supply state'),
-  invoice_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format').optional(),
+  invoice_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format')
+    .refine((value) => isValidIsoCalendarDate(value), 'Invalid date')
+    .refine((value) => value <= formatIstDateAsIso(new Date()), 'Invoice date cannot be in the future')
+    .optional(),
   notes: z.string().max(1000).optional().or(z.literal('')),
   invoice_template: z.string().optional(),
   // Validation for active GST rate calculation type of this invoice (inclusive vs exclusive)

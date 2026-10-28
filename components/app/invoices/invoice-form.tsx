@@ -794,7 +794,17 @@ export function InvoiceForm({
         setIsFinalizing(false)
         return
       }
-      const finRes = await finalizeInvoice({ id: draftRes.data?.invoiceId as string })
+      const invoiceId = draftRes.data?.invoiceId
+      if (!invoiceId) {
+        setIsFinalizing(false)
+        return
+      }
+      let finRes = await finalizeInvoice({ id: invoiceId })
+      if (!finRes.success && finRes.error.code === 'INVOICE_DATE_CROSS_FY') {
+        if (confirm(`${finRes.error.message}\n\nProceed with this back-dated invoice?`)) {
+          finRes = await finalizeInvoice({ id: invoiceId, confirm_cross_financial_year: true })
+        }
+      }
       if (finRes.success) {
         router.push(`/invoices/${finRes.data?.invoiceId}`)
       } else {

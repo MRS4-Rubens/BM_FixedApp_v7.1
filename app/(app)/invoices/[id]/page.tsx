@@ -10,6 +10,8 @@ import { resolveInvoiceNumber } from '@/lib/invoices/number-format';
 import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
 import { listPayments } from '@/lib/actions/payments/list-payments';
 import { listCreditNotes } from '@/lib/actions/credit-notes/list-credit-notes';
+import { resolveSellerDetails, toInvoicePrintFields, type SellerDetails } from '@/lib/invoices/seller-snapshot';
+import { buildLogoUrl } from '@/lib/storage/logo-url';
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -86,6 +88,17 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   }
 
   // Finalized
+  let seller: SellerDetails;
+  try {
+    seller = resolveSellerDetails(invoice, null);
+  } catch {
+    return (
+      <div className="p-4 text-destructive">
+        The seller snapshot for this finalized invoice is missing or corrupt.
+      </div>
+    );
+  }
+
   let payments: any[] = [];
   let creditNotesList: any[] = [];
   if (invoice?.lifecycle_status === 'finalized') {
@@ -101,21 +114,10 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     <InvoiceDetail 
       invoice={{
         ...invoice, 
-        business_name: business.legal_name,
-        city: business.city,
-        phone: business.phone,
-        nature_of_business: business.nature_of_business,
-        alternate_phone: business.alternate_phone,
-        address_line1: business.address_line1,
-        address_line2: business.address_line2,
-        pincode: business.pincode,
-        bank_name: business.bank_name,
-        bank_account_number: business.bank_account_number,
-        bank_ifsc: business.bank_ifsc,
-        invoice_terms: business.invoice_terms,
+        ...toInvoicePrintFields(seller),
+        logo_url: seller.logoStorageKey ? buildLogoUrl(invoice.business_id, seller.logoStorageKey) : null,
         customer_email: invoice.customer?.email,
         customer_phone: invoice.customer?.phone,
-        logo_storage_key: business.logo_storage_key,
         upi_id: ((business as Record<string, unknown>).upi_id as string) || null,
         subscription_plan: business.subscription_plan,
         subscription_status: business.subscription_status,
@@ -123,7 +125,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       }} 
       payments={payments} 
       creditNotes={creditNotesList}
-      businessStateCode={business.state_code}
+      businessStateCode={seller.stateCode}
       business={business}
     />
   );

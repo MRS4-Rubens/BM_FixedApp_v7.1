@@ -7,8 +7,9 @@ import { invoiceTypeEnum, lifecycleStatusEnum, paymentStatusEnum, archivalStatus
 import { invoiceLineItems } from './invoice_line_items';
 import { payments } from './payments';
 import { creditNotes } from './credit_notes';
+import { sellerSnapshotColumns } from './_seller_snapshot';
 
-// The *_snapshot fields: once an invoice is finalized, these fields freeze the seller/buyer details as they were at that moment, so later edits to the business profile or customer record never silently alter a finalized invoice's legal content.
+// COMP-001: The *_snapshot fields freeze both seller and buyer details at finalization, ensuring subsequent edits to business profile or customer record never alter the legal content of a finalized invoice.
 export const invoices = pgTable('invoices', {
   id: uuid('id').primaryKey().defaultRandom(),
   business_id: uuid('business_id').notNull().references(() => businesses.id),
@@ -24,6 +25,7 @@ export const invoices = pgTable('invoices', {
   due_date: date('due_date'),
   place_of_supply_state_code: varchar('place_of_supply_state_code', { length: 2 }),
   seller_gstin_snapshot: varchar('seller_gstin_snapshot', { length: 15 }),
+  ...sellerSnapshotColumns(),
   billing_name_snapshot: text('billing_name_snapshot'),
   billing_gstin_snapshot: varchar('billing_gstin_snapshot', { length: 15 }),
   billing_address_snapshot: text('billing_address_snapshot'),
@@ -72,7 +74,10 @@ export const invoices = pgTable('invoices', {
   // DB-001: money can never be negative.
   check('invoices_money_nonneg', sql`${table.subtotal_paise} >= 0 AND ${table.total_tax_paise} >= 0 AND ${table.grand_total_paise} >= 0`),
   // DB-001: a finalized invoice must carry its number, finalization time and date.
-  check('invoices_final_requires_number', sql`${table.lifecycle_status} = 'draft' OR (${table.invoice_sequence} IS NOT NULL AND ${table.finalized_at} IS NOT NULL AND ${table.invoice_date} IS NOT NULL)`)
+  check('invoices_final_requires_number', sql`${table.lifecycle_status} = 'draft' OR (${table.invoice_sequence} IS NOT NULL AND ${table.finalized_at} IS NOT NULL AND ${table.invoice_date} IS NOT NULL)`),
+  // COMP-001: a finalized invoice must freeze the seller snapshot and declare its source.
+  check('invoices_final_requires_seller_snapshot', sql`${table.lifecycle_status} = 'draft' OR (${table.seller_name_snapshot} IS NOT NULL AND ${table.seller_address_snapshot} IS NOT NULL AND ${table.seller_state_code_snapshot} IS NOT NULL AND ${table.seller_snapshot_source} IS NOT NULL)`),
+  check('invoices_seller_snapshot_source_valid', sql`${table.seller_snapshot_source} IS NULL OR ${table.seller_snapshot_source} IN ('captured_at_finalization', 'backfilled_from_profile')`)
 ]);
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({

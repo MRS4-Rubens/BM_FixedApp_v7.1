@@ -2,6 +2,8 @@
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { logError } from '@/lib/actions/_shared/logger';
+import { resolveSellerDetails, toCreditNotePrintBusiness, SellerSnapshotError, type SellerDetails } from '@/lib/invoices/seller-snapshot';
 import { db } from '@/lib/db/client';
 import { creditNotes, creditNoteLineItems, invoices, businesses, users } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -67,6 +69,19 @@ export const getCreditNote = createAuthenticatedAction(
     const bizRows = await db.select().from(businesses).where(eq(businesses.id, businessId));
     if (bizRows.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
     const business = bizRows[0];
+    let sellerDetails: SellerDetails;
+    try {
+      sellerDetails = resolveSellerDetails(creditNote, business);
+    } catch (error: unknown) {
+      if (error instanceof SellerSnapshotError) {
+        logError('get-credit-note', error, { creditNoteId: creditNote.id });
+        throw new ActionError('The seller details of this credit note are unavailable.', {
+          code: 'SNAPSHOT_UNAVAILABLE',
+        });
+      }
+      throw error;
+    }
+    const businessData = toCreditNotePrintBusiness(sellerDetails, business.id);
 
     // 4. Fetch line items
     const lineItems = await db
@@ -77,21 +92,7 @@ export const getCreditNote = createAuthenticatedAction(
 
     return {
       ...creditNote,
-      business: {
-        id: business.id,
-        legal_name: business.legal_name,
-        trade_name: business.trade_name,
-        gstin: business.gstin,
-        pan: business.pan,
-        address_line1: business.address_line1,
-        address_line2: business.address_line2,
-        city: business.city,
-        state_code: business.state_code,
-        pincode: business.pincode,
-        phone: business.phone,
-        email: business.email,
-        logo_storage_key: business.logo_storage_key
-      },
+      business: businessData,
       originalInvoice: {
         id: originalInvoice.id,
         invoice_number: originalInvoice.invoice_number,

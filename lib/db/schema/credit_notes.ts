@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, integer, date, unique, index, check, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, timestamp, uuid, integer, date, unique, index, check, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { invoices } from './invoices';
@@ -6,6 +6,7 @@ import { financialYears } from './financial_years';
 import { users } from './users';
 import { lifecycleStatusEnum } from './enums';
 import { creditNoteLineItems } from './credit_note_line_items';
+import { sellerSnapshotColumns } from './_seller_snapshot';
 
 export const creditNotes = pgTable('credit_notes', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -25,6 +26,8 @@ export const creditNotes = pgTable('credit_notes', {
   grand_total_paise: integer('grand_total_paise').notNull().default(0),
   pdf_storage_key: text('pdf_storage_key'),
   finalized_at: timestamp('finalized_at', { withTimezone: true }),
+  seller_gstin_snapshot: varchar('seller_gstin_snapshot', { length: 15 }),
+  ...sellerSnapshotColumns(),
 
   // Anti-fraud & Statutory Audit Trail Lifecycle Fields (CGST Rule 53 / GSTR-1 Table 13 Compliant)
   status: text('status').notNull().default('active'), // 'active' | 'voided'
@@ -58,7 +61,10 @@ export const creditNotes = pgTable('credit_notes', {
   // DB-001: money can never be negative.
   check('credit_notes_money_nonneg', sql`${table.subtotal_paise} >= 0 AND ${table.total_tax_paise} >= 0 AND ${table.grand_total_paise} >= 0`),
   // DB-001: a finalized credit note must carry its number, finalization time and issue date.
-  check('credit_notes_final_requires_number', sql`${table.lifecycle_status} = 'draft' OR (${table.credit_note_sequence} IS NOT NULL AND ${table.finalized_at} IS NOT NULL AND ${table.issue_date} IS NOT NULL)`)
+  check('credit_notes_final_requires_number', sql`${table.lifecycle_status} = 'draft' OR (${table.credit_note_sequence} IS NOT NULL AND ${table.finalized_at} IS NOT NULL AND ${table.issue_date} IS NOT NULL)`),
+  // COMP-001: a finalized credit note must freeze the seller snapshot (including GSTIN) and declare its source.
+  check('credit_notes_final_requires_seller_snapshot', sql`${table.lifecycle_status} = 'draft' OR (${table.seller_name_snapshot} IS NOT NULL AND ${table.seller_address_snapshot} IS NOT NULL AND ${table.seller_state_code_snapshot} IS NOT NULL AND ${table.seller_snapshot_source} IS NOT NULL AND ${table.seller_gstin_snapshot} IS NOT NULL)`),
+  check('credit_notes_seller_snapshot_source_valid', sql`${table.seller_snapshot_source} IS NULL OR ${table.seller_snapshot_source} IN ('captured_at_finalization', 'backfilled_from_profile')`)
 ]);
 
 export const creditNotesRelations = relations(creditNotes, ({ one, many }) => ({

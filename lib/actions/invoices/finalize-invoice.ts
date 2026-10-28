@@ -12,8 +12,11 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 export const finalizeInvoice = createAuthenticatedAction(
-  z.object({ id: z.string().uuid() }),
-  async ({ id }, context) => {
+  z.object({
+    id: z.string().uuid(),
+    confirm_cross_financial_year: z.boolean().optional(),
+  }),
+  async ({ id, confirm_cross_financial_year }, context) => {
     const businessId = context.appUser.business_id;
     if (!businessId) {
       throw new ActionError('Your account is not linked to a business profile.', { code: 'NO_BUSINESS_LINKED' });
@@ -21,7 +24,13 @@ export const finalizeInvoice = createAuthenticatedAction(
 
     try {
       const result = await withTransactionRetry(() =>
-        db.transaction((tx) => finalizeDraftInvoiceInTransaction(tx, { invoiceId: id, businessId })),
+        db.transaction((tx) =>
+          finalizeDraftInvoiceInTransaction(tx, {
+            invoiceId: id,
+            businessId,
+            confirmCrossFinancialYear: confirm_cross_financial_year,
+          }),
+        ),
       );
 
       // Cache invalidation only AFTER commit.

@@ -1,4 +1,4 @@
-import { and, between, eq, sql } from 'drizzle-orm';
+import { and, between, eq, gte, lte, sql } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import type { DbTransaction } from '@/lib/db/client';
@@ -7,15 +7,19 @@ import { calculateInvoiceTax } from '@/lib/gst/calculate';
 import type { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
 import { lockDraftInvoice } from '@/lib/invoices/document-locks';
+import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
+import { evaluateInvoiceDate } from '@/lib/invoices/invoice-date-policy';
 import { formatIstDateAsIso, getIstDateParts, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
+import { captureSellerSnapshot } from '@/lib/invoices/seller-snapshot';
 import { getCurrentMonthRange } from '@/lib/reports/period';
 import { canCreateInvoice, canUseTemplate, getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 
 export interface FinalizeInvoiceTxParams {
   readonly invoiceId: string;
   readonly businessId: string;
+  readonly confirmCrossFinancialYear?: boolean;
 }
 
 export interface FinalizeInvoiceTxResult {
@@ -120,8 +124,28 @@ export async function finalizeDraftInvoiceInTransaction(
     }).where(eq(invoiceLineItems.id, li.id));
   }
 
-  // 6. Get Next Invoice Number
-  const invoiceDate = invoice.invoice_date ? parseIsoDateToIstDate(invoice.invoice_date) : new Date();
+  // 6. Date validation & FY resolution
+  const todayIso = formatIstDateAsIso(new Date());
+  const invoiceDateIso = invoice.invoice_date ?? todayIso;
+  const invoiceDate = parseIsoDateToIstDate(invoiceDateIso);
+  const seriesFy = getIndianFinancialYearForDate(invoiceDate);
+  const [latestRow] = await tx
+    .select({ latest: sql<string | null>`to_char(max(${invoices.invoice_date}), 'YYYY-MM-DD')` })
+    .from(invoices)
+    .where(and(
+      eq(invoices.business_id, params.businessId),
+      eq(invoices.lifecycle_status, 'finalized'),
+      gte(invoices.invoice_date, formatIstDateAsIso(seriesFy.startDate)),
+      lte(invoices.invoice_date, formatIstDateAsIso(seriesFy.endDate)),
+    ));
+  const dateDecision = evaluateInvoiceDate({
+    invoiceDateIso,
+    todayIso,
+    latestFinalizedDateIso: latestRow?.latest ?? null,
+    confirmCrossFinancialYear: params.confirmCrossFinancialYear === true,
+  });
+  if (!dateDecision.ok) throw new ActionError(dateDecision.message, { code: dateDecision.code });
+
   const fy = await getOrCreateCurrentFinancialYear(tx, params.businessId, invoiceDate);
 
   const { invoiceNumber, absoluteSequence } = await getNextInvoiceNumber(tx, {
@@ -160,11 +184,12 @@ export async function finalizeDraftInvoiceInTransaction(
       invoice_number: invoiceNumber,
       financial_year_id: fy.id,
       lifecycle_status: 'finalized',
-      invoice_date: formatIstDateAsIso(invoiceDate),
+      invoice_date: invoiceDateIso,
       due_date: dueDateString,
-      finalized_at: invoiceDate,
+      finalized_at: new Date(),
       place_of_supply_state_code: placeOfSupplyStateCode || business.state_code,
       seller_gstin_snapshot: business.gstin,
+      ...captureSellerSnapshot(business),
       billing_name_snapshot: billingNameSnapshot,
       billing_gstin_snapshot: billingGstinSnapshot,
       billing_address_snapshot: billingAddressSnapshot,

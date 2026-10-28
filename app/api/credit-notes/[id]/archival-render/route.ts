@@ -1,13 +1,15 @@
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db/client';
-import { creditNotes, creditNoteLineItems, invoices, businesses } from '@/lib/db/schema';
+import { creditNotes, creditNoteLineItems, invoices } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyArchivalToken } from '@/lib/security/archival-token';
 import { exportLimiter, checkRateLimit, getClientIp } from '@/lib/rate-limit/upstash';
+import { logError } from '@/lib/actions/_shared/logger';
+import { resolveSellerDetails, toCreditNotePrintBusiness, type SellerDetails } from '@/lib/invoices/seller-snapshot';
+import { loadLogoDataUri } from '@/lib/storage/logo';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { renderToStaticMarkup } = require('react-dom/server');
 import { CreditNotePrintView, CreditNotePrintViewProps } from '@/components/app/credit-notes/credit-note-print-view';
-import { getFileBuffer } from '@/lib/storage/idrive';
 import fs from 'fs';
 import path from 'path';
 
@@ -62,10 +64,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new Response('Credit note not finalized', { status: 400 });
   }
 
-  const bizRows = await db.select().from(businesses).where(eq(businesses.id, creditNote.business_id));
-  if (bizRows.length === 0) return new Response('Business Not Found', { status: 404 });
-  const business = bizRows[0];
-
   const invRows = await db.select().from(invoices).where(eq(invoices.id, creditNote.original_invoice_id));
   if (invRows.length === 0) return new Response('Original Invoice Not Found', { status: 404 });
   const originalInvoice = invRows[0];
@@ -76,29 +74,24 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     .where(eq(creditNoteLineItems.credit_note_id, id))
     .orderBy(creditNoteLineItems.sort_order);
 
-  let logoBase64: string | null = null;
-  if (business.logo_storage_key) {
-    try {
-      const buffer = await getFileBuffer(business.logo_storage_key);
-      let mime = 'image/png';
-      const k = business.logo_storage_key.toLowerCase();
-      if (k.endsWith('.jpg') || k.endsWith('.jpeg')) mime = 'image/jpeg';
-      else if (k.endsWith('.webp')) mime = 'image/webp';
-      else if (k.endsWith('.svg')) mime = 'image/svg+xml';
-      logoBase64 = `data:${mime};base64,${buffer.toString('base64')}`;
-    } catch (e) {
-      console.warn('Could not load logo for credit note archival render:', e);
-    }
+  let seller: SellerDetails;
+  try {
+    seller = resolveSellerDetails(creditNote, null);
+  } catch (error: unknown) {
+    logError('archival-render', error, { creditNoteId: id });
+    return new Response('Seller snapshot unavailable', { status: 500 });
   }
+
+  const logoBase64 = seller.logoStorageKey ? await loadLogoDataUri(seller.logoStorageKey) : null;
 
   const printData = {
     ...creditNote,
     business: {
-      ...business,
+      ...toCreditNotePrintBusiness(seller, creditNote.business_id),
       logo_base64: logoBase64,
     },
     originalInvoice,
-    lineItems
+    lineItems,
   };
 
   const css = getCompiledCss();

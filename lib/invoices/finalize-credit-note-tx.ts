@@ -9,6 +9,7 @@ import { getNextCreditNoteNumber } from '@/lib/invoices/credit-note-numbering';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
 import { formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { recomputePaymentStatus } from '@/lib/invoices/payment-status';
+import { captureSellerSnapshot } from '@/lib/invoices/seller-snapshot';
 import {
   CreditNoteRuleError,
   assertCreditNoteMatchesDerivation,
@@ -180,6 +181,8 @@ export async function finalizeDraftCreditNoteInTransaction(
       lifecycle_status: 'finalized',
       issue_date: finalizedIssueDate,
       finalized_at: new Date(),
+      seller_gstin_snapshot: originalInvoice.seller_gstin_snapshot ?? business.gstin,
+      ...captureSellerSnapshot(business),
       updated_at: new Date(),
     })
     .where(
