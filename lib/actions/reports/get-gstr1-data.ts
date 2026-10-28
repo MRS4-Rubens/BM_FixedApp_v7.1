@@ -13,6 +13,7 @@ import {
 import { eq, and, between, inArray, asc } from 'drizzle-orm';
 import { z } from 'zod';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
+import { isB2clLargeInvoice } from '@/lib/gst/thresholds';
 
 const getGstr1DataSchema = z.object({
   startDate: z.string().max(30),
@@ -74,6 +75,21 @@ export interface Gstr1CdnrRow {
   cessAmountPaise: number;
 }
 
+export interface Gstr1CdnurRow {
+  urType: string; // 'B2CL' (credit/debit note against a large inter-State B2C invoice)
+  noteNumber: string;
+  noteDate: string; // DD-MMM-YYYY
+  documentType: string; // 'C' for Credit Note
+  originalInvoiceNumber: string;
+  originalInvoiceDate: string; // DD-MMM-YYYY
+  placeOfSupply: string;
+  noteValuePaise: number;
+  applicableTaxRatePercent: string;
+  ratePercentage: number;
+  taxableValuePaise: number;
+  cessAmountPaise: number;
+}
+
 export interface Gstr1HsnRow {
   hsnSacCode: string;
   description: string;
@@ -111,6 +127,7 @@ export interface Gstr1ExportData {
   b2cl: Gstr1B2clRow[];
   b2cs: Gstr1B2csRow[];
   cdnr: Gstr1CdnrRow[];
+  cdnur: Gstr1CdnurRow[];
   hsn: Gstr1HsnRow[];
   docs: Gstr1DocRow[];
   summary: {
@@ -126,6 +143,9 @@ export interface Gstr1ExportData {
     cdnrCount: number;
     cdnrTaxablePaise: number;
     cdnrTaxPaise: number;
+    cdnurCount: number;
+    cdnurTaxablePaise: number;
+    cdnurTaxPaise: number;
     totalTaxablePaise: number;
     totalCgstPaise: number;
     totalSgstPaise: number;
@@ -277,7 +297,8 @@ export const getGstr1ExportData = createAuthenticatedAction(getGstr1DataSchema, 
   for (const inv of rawInvoices) {
     const isRegistered = Boolean(inv.customer_gstin && inv.customer_gstin.trim().length === 15);
     const isInterState = inv.place_of_supply_state_code !== business.state_code;
-    const isLargeInvoice = inv.grand_total_paise > 25000000; // > ₹2,50,000
+    // B2CL threshold is effective-dated (COMP-002): > ₹2,50,000 up to 31-Jul-2024, > ₹1,00,000 from 01-Aug-2024.
+    const isLargeInvoice = isB2clLargeInvoice(inv.grand_total_paise, inv.invoice_date);
 
     const posFormatted = formatPlaceOfSupply(inv.place_of_supply_state_code);
     const dateFormatted = formatToGstDateFormat(inv.invoice_date);
@@ -319,7 +340,7 @@ export const getGstr1ExportData = createAuthenticatedAction(getGstr1DataSchema, 
       }
     } else if (isInterState && isLargeInvoice) {
       // ----------------------------------------------------
-      // Table 5: B2CL (B2C Large) Invoices (> ₹2.5L Interstate)
+      // Table 5: B2CL (B2C Large) Invoices (inter-State, unregistered, above the effective-dated threshold)
       // ----------------------------------------------------
       b2clInvoiceNumbers.add(inv.invoice_number);
       for (const rg of rateGroups) {
@@ -413,6 +434,9 @@ export const getGstr1ExportData = createAuthenticatedAction(getGstr1DataSchema, 
       recipient_gstin: invoices.billing_gstin_snapshot,
       receiver_name: invoices.billing_name_snapshot,
       place_of_supply_state_code: invoices.place_of_supply_state_code,
+      original_invoice_number: invoices.invoice_number,
+      original_invoice_date: invoices.invoice_date,
+      original_invoice_grand_total_paise: invoices.grand_total_paise,
       status: creditNotes.status,
     })
     .from(creditNotes)
@@ -457,6 +481,10 @@ export const getGstr1ExportData = createAuthenticatedAction(getGstr1DataSchema, 
   }
 
   const cdnrRows: Gstr1CdnrRow[] = [];
+  const cdnurRows: Gstr1CdnurRow[] = [];
+  let cdnurCount = 0;
+  let cdnurTaxablePaise = 0;
+  let cdnurTaxPaise = 0;
   let cdnrCount = 0;
   let cdnrTaxablePaise = 0;
   let cdnrTaxPaise = 0;
@@ -549,29 +577,59 @@ export const getGstr1ExportData = createAuthenticatedAction(getGstr1DataSchema, 
       cdnrTaxablePaise += cn.subtotal_paise;
       cdnrTaxPaise += cn.total_tax_paise;
     } else {
-      // Unregistered (B2C) Credit Note: Net out from B2CS (Table 7) for matching PoS & Tax Rate
+      // Unregistered (B2C) credit note. Its GSTR-1 table follows the ORIGINAL invoice (COMP-002):
+      //  - original was a large inter-State B2C invoice (B2CL, using the threshold in force on the ORIGINAL invoice date)
+      //    -> Table 9B CDNUR (invoice-wise);
+      //  - otherwise -> netted out of B2CS (Table 7) for the matching Place of Supply and tax rate.
+      const originalWasB2cl =
+        cn.place_of_supply_state_code !== business.state_code &&
+        isB2clLargeInvoice(cn.original_invoice_grand_total_paise, cn.original_invoice_date);
+
       for (const [rate, group] of rateGroups.entries()) {
-        const b2csKey = `${posFormatted}_${rate}`;
-        if (!b2csAggregateMap.has(b2csKey)) {
-          b2csAggregateMap.set(b2csKey, {
-            type: 'OE',
+        const groupTaxPaise = group.igstPaise + group.cgstPaise + group.sgstPaise;
+
+        if (originalWasB2cl) {
+          cdnurRows.push({
+            urType: 'B2CL',
+            noteNumber: cn.credit_note_number,
+            noteDate: noteDateFormatted,
+            documentType: 'C',
+            originalInvoiceNumber: cn.original_invoice_number,
+            originalInvoiceDate: formatToGstDateFormat(cn.original_invoice_date),
             placeOfSupply: posFormatted,
+            noteValuePaise: cn.grand_total_paise,
             applicableTaxRatePercent: '',
             ratePercentage: rate,
-            taxableValuePaise: 0,
+            taxableValuePaise: group.taxablePaise,
             cessAmountPaise: 0,
-            eCommerceGstin: '',
           });
+          cdnurTaxablePaise += group.taxablePaise;
+          cdnurTaxPaise += groupTaxPaise;
+        } else {
+          const b2csKey = `${posFormatted}_${rate}`;
+          if (!b2csAggregateMap.has(b2csKey)) {
+            b2csAggregateMap.set(b2csKey, {
+              type: 'OE',
+              placeOfSupply: posFormatted,
+              applicableTaxRatePercent: '',
+              ratePercentage: rate,
+              taxableValuePaise: 0,
+              cessAmountPaise: 0,
+              eCommerceGstin: '',
+            });
+          }
+          const b2csEntry = b2csAggregateMap.get(b2csKey)!;
+          b2csEntry.taxableValuePaise -= group.taxablePaise;
+          b2csTaxablePaise -= group.taxablePaise;
+          b2csTaxPaise -= groupTaxPaise;
         }
-        const b2csEntry = b2csAggregateMap.get(b2csKey)!;
-        b2csEntry.taxableValuePaise -= group.taxablePaise;
 
-        const groupTaxPaise = group.igstPaise + group.cgstPaise + group.sgstPaise;
-        b2csTaxablePaise -= group.taxablePaise;
-        b2csTaxPaise -= groupTaxPaise;
-
+        // Every unregistered credit note (CDNUR or netted) reduces the period's outward totals.
         b2cCnTaxablePaise += group.taxablePaise;
         b2cCnTaxPaise += groupTaxPaise;
+      }
+      if (originalWasB2cl) {
+        cdnurCount += 1;
       }
       b2cCnValuePaise += cn.grand_total_paise;
     }
@@ -652,6 +710,7 @@ export const getGstr1ExportData = createAuthenticatedAction(getGstr1DataSchema, 
     b2cl: b2clRows,
     b2cs: b2csRows,
     cdnr: cdnrRows,
+    cdnur: cdnurRows,
     hsn: hsnRows,
     docs: docRows,
     summary: {
@@ -667,6 +726,9 @@ export const getGstr1ExportData = createAuthenticatedAction(getGstr1DataSchema, 
       cdnrCount,
       cdnrTaxablePaise,
       cdnrTaxPaise,
+      cdnurCount,
+      cdnurTaxablePaise,
+      cdnurTaxPaise,
       totalTaxablePaise,
       totalCgstPaise,
       totalSgstPaise,
