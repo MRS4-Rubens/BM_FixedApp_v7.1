@@ -1,12 +1,13 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import type { DbTransaction } from '@/lib/db/client';
-import { businesses, creditNoteLineItems, creditNotes, invoices, payments } from '@/lib/db/schema';
+import { businesses, creditNoteLineItems, creditNotes } from '@/lib/db/schema';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
 import { lockDraftCreditNote, lockFinalizedInvoice } from '@/lib/invoices/document-locks';
 import { getNextCreditNoteNumber } from '@/lib/invoices/credit-note-numbering';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
 import { formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
+import { recomputePaymentStatus } from '@/lib/invoices/payment-status';
 
 export interface FinalizeCreditNoteTxParams {
   readonly creditNoteId: string;
@@ -113,48 +114,7 @@ export async function finalizeDraftCreditNoteInTransaction(
   }
 
   // 10. Recalculate original invoice payment status
-  // A. Sum active payments (excluding voided payments)
-  const paymentsSumRes = await tx
-    .select({ total: sql<number>`coalesce(sum(${payments.amount_paise}), 0)` })
-    .from(payments)
-    .where(
-      and(
-        eq(payments.invoice_id, originalInvoice.id),
-        eq(payments.status, 'active'),
-      ),
-    );
-  const totalPaidPaise = Number(paymentsSumRes[0]?.total || 0);
-
-  // B. Sum all finalized credit notes (including this one)
-  const cnSumRes = await tx
-    .select({ total: sql<number>`coalesce(sum(${creditNotes.grand_total_paise}), 0)` })
-    .from(creditNotes)
-    .where(
-      and(
-        eq(creditNotes.original_invoice_id, originalInvoice.id),
-        eq(creditNotes.lifecycle_status, 'finalized'),
-        eq(creditNotes.status, 'active'),
-      ),
-    );
-  const totalCreditedPaise = Number(cnSumRes[0]?.total || 0);
-
-  const netBillPaise = originalInvoice.grand_total_paise - totalCreditedPaise;
-
-  let newPaymentStatus: 'unpaid' | 'partially_paid' | 'paid' = 'unpaid';
-  if (totalPaidPaise >= netBillPaise && netBillPaise >= 0) {
-    newPaymentStatus = 'paid';
-  } else if (totalPaidPaise > 0) {
-    newPaymentStatus = 'partially_paid';
-  } else {
-    newPaymentStatus = 'unpaid';
-  }
-
-  await tx
-    .update(invoices)
-    .set({
-      payment_status: newPaymentStatus,
-    })
-    .where(eq(invoices.id, originalInvoice.id));
+  await recomputePaymentStatus(tx, originalInvoice);
 
   return {
     id: creditNote.id,

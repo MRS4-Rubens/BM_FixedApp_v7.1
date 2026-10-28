@@ -140,24 +140,36 @@ To maximize data visibility and prevent table horizontal blowout on financial re
 - **Invoice Line-Item Actions:** Delete button locked to `size-7` (28×28px) with `size-3.5` icon; drag handle locked to `20×24px` with universal touch-drag gesture (`components/app/invoices/invoice-form.tsx`).
 
 
-## Concurrency and lock order (established Phase 1 / API-002)
+## Concurrency and lock order (established Phase 1 / API-002, extended API-003)
 
-To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53) under concurrent finalizations and draft edits:
+To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), race conditions leading to overpayment or double voiding, and stale payment status updates under concurrent operations:
 
 1. **Global Lock-Order Contract:**
    All transactional modifications must acquire locks in the strict hierarchical sequence:
-   `invoice row -> credit-note row -> financial_years row -> invoice_number_counters row`
+   `invoice row -> credit-note row -> payment row -> financial_years row -> invoice_number_counters row`
    Never acquire an earlier lock after a later one in the same transaction. Draft-save actions lock only the specific document they edit (`FOR UPDATE`).
 
-2. **Pure Transactional Modules (`lib/invoices/finalize-*-tx.ts`):**
-   Finalize transactions are extracted into pure, side-effect-free library modules (`finalizeDraftInvoiceInTransaction` and `finalizeDraftCreditNoteInTransaction`).
-   - Server Actions (`finalize-invoice.ts`, `finalize-credit-note.ts`) act as thin wrappers handling authorization, rate limiting, retry execution, post-commit revalidations, and non-blocking background tasks.
-   - The document row is locked `FOR UPDATE` as the very first data statement in the transaction, ensuring waiters block until the first finalizer commits and immediately re-evaluate the updated committed state before any counters are touched.
-   - Final updates are self-guarding (`WHERE ... AND lifecycle_status = 'draft'` + `.returning()` with an exactly-one-row check). If the status already changed, the transaction aborts and rolls back sequence counter increments.
+2. **Pure Transactional Modules (`lib/invoices/*-tx.ts`):**
+   Transaction bodies are extracted into pure, side-effect-free library modules (`finalizeDraftInvoiceInTransaction`, `finalizeDraftCreditNoteInTransaction`, `recordPaymentInTransaction`, `voidPaymentInTransaction`, and `voidCreditNoteInTransaction`).
+   - Server Actions (`finalize-invoice.ts`, `finalize-credit-note.ts`, `record-payment.ts`, `void-payment.ts`, `void-credit-note.ts`) act as thin wrappers handling authorization, rate limiting, retry execution, post-commit revalidations, and non-blocking background tasks.
+   - The invoice row is locked `FOR UPDATE` as the first data statement of every document-altering transaction. Waiters block until earlier transactions commit, then re-evaluate committed state before mutating counters or balances.
+   - For void transactions (`void-payment-tx.ts`, `void-credit-note-tx.ts`), the document is peeked without locking to find the associated `invoice_id`, the invoice row is locked first, and then the child record (`payments` or `credit_notes`) is locked `FOR UPDATE`. This strictly maintains the `invoice -> credit-note -> payment` lock hierarchy and avoids deadlocks.
+   - All state updates are self-guarding (e.g., `WHERE ... AND lifecycle_status = 'draft'` or `status = 'active'` with `.returning()` and an exactly-one-row check). Concurrent duplicate attempts fail fast without corrupting state or polluting statutory audit logs.
 
-3. **Transaction Resilience & Fail-Fast Timing:**
+3. **Unified Payment Status Calculation (`lib/invoices/payment-status.ts`):**
+   All four status writers (`recordPaymentInTransaction`, `voidPaymentInTransaction`, `voidCreditNoteInTransaction`, `finalizeDraftCreditNoteInTransaction`) invoke `recomputePaymentStatus(tx, lockedInvoice)`.
+   - Ad-hoc inline SQL sums and scattered status updates are forbidden.
+   - `netBill = max(0, grand_total - active_credit_notes)`
+   - Status rules: `netBill === 0` -> `'paid'` (fully credited); `active_paid === 0` -> `'unpaid'`; `active_paid >= netBill` -> `'paid'`; otherwise `'partially_paid'`.
+   - Under row lock, payments exceeding remaining balance (`netBill - active_paid`) are rejected with clear INR formatting.
+
+4. **Strict Monetary and Calendar Validation:**
+   - Rupee amounts are validated via exact decimal regex (`RUPEE_AMOUNT_PATTERN`) and converted to integer paise (`parseRupeesToPaise`) without float multiplication, rejecting values with >2 decimals (e.g. `0.004`), values < ₹0.01, or values exceeding schema bounds.
+   - Calendar dates are verified with strict Gregorian day-count checking (`isValidIsoDate`), preventing JavaScript Date roll-over bugs (e.g. `2026-02-31`). Payment dates are bounded to `invoice_date <= payment_date <= today_IST`.
+
+5. **Transaction Resilience & Fail-Fast Timing:**
    - Transactions begin with `await setLocalLockTimeout(tx)` (`SET LOCAL lock_timeout = '8000ms'`) so waiters fail fast rather than hanging serverless invocations.
    - Transactions are wrapped in `withTransactionRetry` to automatically retry transient deadlocks (`40P01`) and serialization failures (`40001`) with exponential backoff and jitter. Lock timeouts (`55P03`) and exhausted retries map to safe, user-friendly `BUSY` ActionErrors.
 
-4. **Post-Commit Side Effects:**
+6. **Post-Commit Side Effects:**
    `revalidatePath`, PDF archival, email dispatch, and user notifications occur strictly **after** transaction commit, ensuring external side-effects only run for the winner and never cache stale uncommitted state.

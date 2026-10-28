@@ -34,3 +34,19 @@ export function formatPaiseAsInr(paise: number): string {
     maximumFractionDigits: 2,
   }).format(paise / 100);
 }
+
+const RUPEE_AMOUNT_PATTERN = /^(\d{1,9})(?:\.(\d{1,2}))?$/;
+
+/**
+ * Exact, decimal-safe conversion of a rupee amount to integer paise.
+ * Parses the decimal STRING (no floating-point multiplication). Returns null for anything that is not a plain
+ * non-negative decimal with at most two fractional digits (negatives, exponents like 1e-7, NaN/Infinity,
+ * 3+ decimals such as 0.004 or 0.30000000000000004). Foundation for API-006's broader money helpers.
+ */
+export function parseRupeesToPaise(input: string | number): number | null {
+  const text = typeof input === 'number' ? (Number.isFinite(input) ? String(input) : '') : input.trim();
+  const match = RUPEE_AMOUNT_PATTERN.exec(text);
+  if (!match) return null;
+  return Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'));
+}
+
