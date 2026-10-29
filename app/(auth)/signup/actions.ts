@@ -6,7 +6,7 @@ import { ensureAppUser } from '@/lib/auth/ensure-app-user'
 import { headers } from 'next/headers'
 import { authLimiter, checkRateLimit, getClientIp } from '@/lib/rate-limit/upstash'
 
-export async function signupAction(prevState: any, formData: FormData) {
+export async function signupAction(prevState: any, formData: FormData): Promise<{ error?: string; notice?: string }> {
   const name = formData.get('ownerName') as string;
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
@@ -41,6 +41,11 @@ export async function signupAction(prevState: any, formData: FormData) {
         displayName: name,
         email: email
       });
+
+      if ('token' in signUpResponse.data && signUpResponse.data.token === null) {
+        // Neon Auth "Verify at Sign-up" is enabled: no session exists yet.
+        return { notice: 'Account created. Please check your e-mail to verify your address, then log in.' };
+      }
     }
   } catch (err: any) {
     return { error: err.body?.message || err.message || 'An unexpected error occurred during signup' };

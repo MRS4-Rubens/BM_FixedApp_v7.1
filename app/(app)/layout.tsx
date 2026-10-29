@@ -2,7 +2,7 @@ import { cookies } from 'next/headers'
 import { AppSidebar } from '@/components/app/app-sidebar'
 import { AppTopbar } from '@/components/app/app-topbar'
 import { getCurrentAppUser } from '@/lib/auth/session'
-import { auth } from '@/lib/auth/server'
+import { isPlatformAdmin } from '@/lib/auth/admin'
 
 import { db } from '@/lib/db/client'
 import { businesses } from '@/lib/db/schema'
@@ -16,11 +16,7 @@ export default async function AppLayout({
   children: React.ReactNode
 }) {
   const user = await getCurrentAppUser()
-  const session = await auth.getSession()
-  const userEmail = session?.data?.user?.email?.toLowerCase()
-  const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || ''
-  const adminEmails = adminEmailsEnv.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)
-  const isAdminUser = userEmail ? adminEmails.includes(userEmail) : false
+  const isAdminUser = await isPlatformAdmin()
 
   const cookieStore = await cookies()
   const defaultCollapsed = cookieStore.get('sidebar:collapsed')?.value === 'true'

@@ -46,7 +46,13 @@ vi.mock('@/lib/auth/server', () => ({
   auth: {
     getSession: async () => ({
       data: {
-        user: state.sessionUserEmail ? { email: state.sessionUserEmail } : null,
+        user: state.sessionUserEmail
+          ? {
+              id: ADMIN_USER_ID,
+              email: state.sessionUserEmail,
+              emailVerified: true,
+            }
+          : null,
       },
     }),
   },
@@ -74,6 +80,10 @@ vi.mock('@/lib/email/resend', () => ({
 vi.mock('@/lib/env', () => ({
   getAppEnv: () => ({ NEXT_PUBLIC_APP_URL: 'https://test.app' }),
   getEmailEnv: () => ({ RESEND_FROM_EMAIL: 'noreply@test.app' }),
+  getAdminEnv: () => ({
+    PLATFORM_ADMIN_EMAILS: [ADMIN_EMAIL],
+    PLATFORM_ADMIN_USER_IDS: [ADMIN_USER_ID],
+  }),
 }));
 
 import { processSubscriptionClaim } from '@/lib/actions/subscriptions/process-request';

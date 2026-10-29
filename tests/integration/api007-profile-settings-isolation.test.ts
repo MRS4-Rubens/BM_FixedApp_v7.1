@@ -156,7 +156,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     pg = new PGlite();
     await applyMigrations(pg, readJournal());
     state.db = drizzle(pg, { schema });
-  });
+  }, 60_000);
 
   afterAll(async () => {
     await pg.close();

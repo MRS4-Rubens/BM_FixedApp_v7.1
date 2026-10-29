@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { unstable_rethrow } from 'next/navigation';
 import { ActionResult } from './types';
 import { ActionError } from './errors';
 import { logError } from './logger';
@@ -37,6 +38,8 @@ async function runValidatedHandler<TSchema extends z.ZodTypeAny, TOutput, TConte
     const result = await handler(parseResult.data, context);
     return { success: true, data: result };
   } catch (error) {
+    unstable_rethrow(error);
+
     if (error instanceof ActionError) {
       logError(scopeName, error, { code: error.code, expected: true });
       return {
@@ -81,13 +84,21 @@ export function createAuthenticatedAction<TSchema extends z.ZodTypeAny, TOutput>
   schema: TSchema,
   handler: (parsedData: z.infer<TSchema>, context: { appUser: AppUser }) => Promise<TOutput>,
   scopeName: string,
-  options?: { rateLimit?: { limiter: RateLimiter; keyPrefix: string } }
+  options?: {
+    rateLimit?: { limiter: RateLimiter; keyPrefix: string };
+    requirePlatformAdmin?: boolean;
+  }
 ) {
   return async (rawInput: unknown): Promise<ActionResult<TOutput>> => {
     return runValidatedHandler(schema, rawInput, scopeName, async () => {
       const appUser = await getCurrentAppUser();
       if (!appUser) {
         throw new ActionError('We could not find your account details. Please try logging out and back in.', { code: 'NO_APP_USER' });
+      }
+
+      if (options?.requirePlatformAdmin) {
+        const { requirePlatformAdmin } = await import('@/lib/auth/admin');
+        await requirePlatformAdmin();
       }
 
       if (options?.rateLimit) {

@@ -127,7 +127,7 @@ interface AdminConsoleProps {
     ifsc: string;
   } | null;
   payeeConfigIssue?: string | null;
-  adminEmailAllowlist?: string;
+
 }
 
 function PayeeNotConfiguredNotice({ issue }: { issue: string | null }) {
@@ -152,7 +152,7 @@ export function AdminConsole({
   users,
   upiConfig,
   payeeConfigIssue = null,
-  adminEmailAllowlist = '',
+
 }: AdminConsoleProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -1668,14 +1668,10 @@ export function AdminConsole({
                 </h4>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Super Admin operations and route protection are governed by the server-side environment allowlist{' '}
-                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground font-bold">
-                  PLATFORM_ADMIN_EMAILS
-                </code>
-                . Only sessions with these emails can access this portal or execute status overrides.
+                Allowlist source
               </p>
               <div className="rounded-lg bg-muted/40 p-3 border border-border/50 text-sm font-mono text-foreground font-bold break-all">
-                {adminEmailAllowlist || 'Configured via server environment'}
+                Managed in server configuration. Only verified identities are accepted.
               </div>
             </div>
 

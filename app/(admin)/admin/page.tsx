@@ -30,7 +30,7 @@ export default async function AdminPage() {
         <div className="rounded-2xl border border-rose-500/30 bg-rose-500/5 p-6 text-rose-700 dark:text-rose-400">
           <h2 className="text-lg font-bold">Failed to load administrative console</h2>
           <p className="mt-2 text-sm leading-relaxed">
-            Please make sure you have appropriate admin privileges configured in process.env.PLATFORM_ADMIN_EMAILS.
+            You do not have access to this page.
           </p>
         </div>
       </div>
@@ -82,8 +82,6 @@ export default async function AdminPage() {
     console.error(`[admin] Payee configuration problems: ${payeeConfigIssue}`);
   }
 
-  const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
-
   return (
     <div className="w-full pb-12">
       <AdminConsole
@@ -93,7 +91,6 @@ export default async function AdminPage() {
         users={usersProp}
         upiConfig={upiConfig}
         payeeConfigIssue={payeeConfigIssue}
-        adminEmailAllowlist={adminEmailsEnv}
       />
     </div>
   );

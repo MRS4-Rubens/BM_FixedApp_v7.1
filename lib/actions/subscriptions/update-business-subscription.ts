@@ -6,7 +6,7 @@ import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
 import { db } from '@/lib/db/client';
 import { businesses, subscriptionRequests, auditLog, users } from '@/lib/db/schema';
-import { auth } from '@/lib/auth/server';
+import { requirePlatformAdmin } from '@/lib/auth/admin';
 import { eq, and, asc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import {
@@ -18,20 +18,7 @@ import {
 export const updateBusinessSubscription = createAuthenticatedAction(
   updateBusinessSubscriptionSchema,
   async (input, context) => {
-    // 1. Authorize user
-    const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
-    const adminEmails = adminEmailsEnv.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-
-    const session = await auth.getSession();
-    const userEmail = session?.data?.user?.email?.toLowerCase();
-
-    if (!userEmail || !adminEmails.includes(userEmail)) {
-      throw new ActionError('Unauthorized: Access denied.', {
-        code: 'UNAUTHORIZED_ACCESS',
-      });
-    }
-
-    const adminEmail = userEmail; // AUTH-001 will replace the check above and keep this seam
+    const adminEmail = (await requirePlatformAdmin()).email || context.appUser.email;
 
     const now = new Date();
     const endsAt = input.subscription_ends_at === null ? null : new Date(input.subscription_ends_at);
@@ -138,4 +125,5 @@ export const updateBusinessSubscription = createAuthenticatedAction(
     };
   },
   'update-business-subscription',
+  { requirePlatformAdmin: true }
 );

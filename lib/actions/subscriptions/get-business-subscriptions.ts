@@ -4,7 +4,7 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests, users } from '@/lib/db/schema';
-import { auth } from '@/lib/auth/server';
+import { isPlatformAdmin } from '@/lib/auth/admin';
 import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -15,17 +15,11 @@ const getBusinessSubscriptionsSchema = z.object({
 export const getBusinessSubscriptions = createAuthenticatedAction(
   getBusinessSubscriptionsSchema,
   async (input, context) => {
-    // 1. Authorize user by checking session email against PLATFORM_ADMIN_EMAILS or verifying user belongs to the business
-    const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
-    const adminEmails = adminEmailsEnv.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-
-    const session = await auth.getSession();
-    const userEmail = session?.data?.user?.email?.toLowerCase();
-
-    const isPlatformAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
+    // 1. Authorize user by checking if platform admin or verifying user belongs to the business
+    const isAdmin = await isPlatformAdmin();
     const isBusinessMember = context.appUser.business_id === input.business_id;
 
-    if (!isPlatformAdmin && !isBusinessMember) {
+    if (!isAdmin && !isBusinessMember) {
       throw new ActionError('Unauthorized: Access denied.', {
         code: 'UNAUTHORIZED_ACCESS',
       });

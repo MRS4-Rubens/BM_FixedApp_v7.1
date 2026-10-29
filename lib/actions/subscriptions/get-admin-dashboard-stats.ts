@@ -4,28 +4,14 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests, businesses, invoices } from '@/lib/db/schema';
-import { auth } from '@/lib/auth/server';
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 export const getAdminDashboardStats = createAuthenticatedAction(
   z.object({}),
-  async (_, context) => {
-    // 1. Authorize user against PLATFORM_ADMIN_EMAILS
-    const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
-    const adminEmails = adminEmailsEnv.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-
-    const session = await auth.getSession();
-    const userEmail = session?.data?.user?.email?.toLowerCase();
-
-    if (!userEmail || !adminEmails.includes(userEmail)) {
-      throw new ActionError('Unauthorized: Access denied.', {
-        code: 'UNAUTHORIZED_ACCESS',
-      });
-    }
-
+  async () => {
     try {
-      // 2. Query aggregate stats
+      // 1. Query aggregate stats
       const totalBusinessesResult = await db.select({ count: sql<number>`count(*)` }).from(businesses);
       const activeSubsResult = await db
         .select({ count: sql<number>`count(*)` })
@@ -46,7 +32,7 @@ export const getAdminDashboardStats = createAuthenticatedAction(
         .select({ count: sql<number>`count(*)` })
         .from(invoices);
 
-      // 3. Query plan distribution
+      // 2. Query plan distribution
       const planDistributionResult = await db
         .select({
           plan: businesses.subscription_plan,
@@ -68,7 +54,7 @@ export const getAdminDashboardStats = createAuthenticatedAction(
         }
       }
 
-      // 4. Monthly revenue trend for the last 6 calendar months
+      // 3. Monthly revenue trend for the last 6 calendar months
       const monthlyRevenueRows = await db
         .select({
           monthSort: sql<string>`to_char(${subscriptionRequests.created_at}, 'YYYY-MM')`,
@@ -118,5 +104,6 @@ export const getAdminDashboardStats = createAuthenticatedAction(
       });
     }
   },
-  'get-admin-dashboard-stats'
+  'get-admin-dashboard-stats',
+  { requirePlatformAdmin: true }
 );

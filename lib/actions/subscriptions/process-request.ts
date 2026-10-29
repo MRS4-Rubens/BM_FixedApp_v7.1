@@ -5,7 +5,6 @@ import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
 import { db, type DbTransaction } from '@/lib/db/client';
 import { subscriptionRequests, businesses } from '@/lib/db/schema';
-import { auth } from '@/lib/auth/server';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { processSubscriptionRequestSchema } from '@/lib/validations/admin-subscription';
@@ -31,19 +30,6 @@ async function alreadyProcessed(tx: DbTransaction, requestId: string): Promise<A
 export const processSubscriptionClaim = createAuthenticatedAction(
   processSubscriptionRequestSchema,
   async (input) => {
-    // 1. Authorize user by checking session email against PLATFORM_ADMIN_EMAILS env variable
-    const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
-    const adminEmails = adminEmailsEnv.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-
-    const session = await auth.getSession();
-    const userEmail = session?.data?.user?.email?.toLowerCase();
-
-    if (!userEmail || !adminEmails.includes(userEmail)) {
-      throw new ActionError('Unauthorized: Only Platform Admins can perform this action.', {
-        code: 'UNAUTHORIZED_ACCESS',
-      });
-    }
-
     const now = new Date();
     let outcome: { requestId: string; status: 'approved' | 'rejected' };
     try {
@@ -129,4 +115,5 @@ export const processSubscriptionClaim = createAuthenticatedAction(
     return outcome;
   },
   'process-subscription-claim',
+  { requirePlatformAdmin: true }
 );

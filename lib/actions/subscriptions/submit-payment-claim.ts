@@ -12,7 +12,7 @@ import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { uploadFileToStorage, getSignedDownloadUrl } from '@/lib/storage/idrive';
 import { getResend } from '@/lib/email/resend';
-import { getAppEnv, getEmailEnv } from '@/lib/env';
+import { getAdminEnv, getAppEnv, getEmailEnv } from '@/lib/env';
 import { SubscriptionRequestEmail } from '@/lib/email/templates/subscription-request-email';
 import { formatPaiseAsInr } from '@/lib/money';
 import { auth } from '@/lib/auth/server';
@@ -168,11 +168,9 @@ export const submitPaymentClaim = createAuthenticatedAction(
     }
 
     // 6. Send Email notification to Super Admins (via Resend)
-    const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
-    const adminEmails = adminEmailsEnv.split(',').map((e) => e.trim()).filter(Boolean);
-
-    if (adminEmails.length > 0) {
-      try {
+    try {
+      const adminEmails = getAdminEnv().PLATFORM_ADMIN_EMAILS;
+      if (adminEmails.length > 0) {
         const session = await auth.getSession();
         const ownerEmail = session?.data?.user?.email || 'No email';
         const amountFormatted = formatPaiseAsInr(authoritativeAmountPaise);
@@ -197,14 +195,14 @@ export const submitPaymentClaim = createAuthenticatedAction(
 
         await getResend().emails.send({
           from: getEmailEnv().RESEND_FROM_EMAIL,
-          to: adminEmails,
+          to: [...adminEmails],
           subject: `🔔 Payment Claim: ${business.legal_name} - ${input.plan_name.toUpperCase()}`,
           react: emailContent,
         });
-      } catch (err: unknown) {
-        // Log error but don't fail the action, as the DB request was successfully saved
-        console.error('[submitPaymentClaim] Email notification failed to send:', err);
       }
+    } catch (err: unknown) {
+      // Log error but don't fail the action, as the DB request was successfully saved
+      console.error('[submitPaymentClaim] Email notification failed to send:', err);
     }
 
     revalidatePath('/settings');

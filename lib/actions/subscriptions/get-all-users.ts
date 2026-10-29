@@ -4,28 +4,14 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { users, businesses } from '@/lib/db/schema';
-import { auth } from '@/lib/auth/server';
 import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
 
 export const getAllUsers = createAuthenticatedAction(
   z.object({}),
-  async (_, context) => {
-    // 1. Authorize user
-    const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
-    const adminEmails = adminEmailsEnv.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-
-    const session = await auth.getSession();
-    const userEmail = session?.data?.user?.email?.toLowerCase();
-
-    if (!userEmail || !adminEmails.includes(userEmail)) {
-      throw new ActionError('Unauthorized: Access denied.', {
-        code: 'UNAUTHORIZED_ACCESS',
-      });
-    }
-
+  async () => {
     try {
-      // 2. Query users with their business names (left join)
+      // Query users with their business names (left join)
       const results = await db
         .select({
           id: users.id,
@@ -47,5 +33,6 @@ export const getAllUsers = createAuthenticatedAction(
       });
     }
   },
-  'get-all-users'
+  'get-all-users',
+  { requirePlatformAdmin: true }
 );
