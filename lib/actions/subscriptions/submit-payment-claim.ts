@@ -4,6 +4,7 @@ import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { logError } from '@/lib/actions/_shared/logger';
 import { subscriptionClaimSchema } from '@/lib/validations/subscription';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests, businesses } from '@/lib/db/schema';
@@ -15,6 +16,12 @@ import { getAppEnv, getEmailEnv } from '@/lib/env';
 import { SubscriptionRequestEmail } from '@/lib/email/templates/subscription-request-email';
 import { formatPaiseAsInr } from '@/lib/money';
 import { auth } from '@/lib/auth/server';
+import { classifyClaimInsertError } from '@/lib/subscriptions/claim-errors';
+
+const NEUTRAL_DUPLICATE_MESSAGE =
+  'This payment reference could not be accepted. Please double-check the UTR/transaction ID; if it is correct, contact support and quote it.';
+const PENDING_CLAIM_MESSAGE =
+  'You already have a payment verification request pending. Please wait for our team to review it.';
 
 export const submitPaymentClaim = createAuthenticatedAction(
   subscriptionClaimSchema,
@@ -66,7 +73,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
 
     if (existingPending.length > 0) {
       throw new ActionError(
-        'You already have a payment verification request pending. Please wait for our team to review it.',
+        PENDING_CLAIM_MESSAGE,
         { code: 'PENDING_CLAIM_EXISTS' }
       );
     }
@@ -79,7 +86,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
 
     if (duplicateUtr.length > 0) {
       throw new ActionError(
-        'This payment transaction reference/UTR has already been submitted.',
+        NEUTRAL_DUPLICATE_MESSAGE,
         { code: 'DUPLICATE_REFERENCE' }
       );
     }
@@ -107,32 +114,54 @@ export const submitPaymentClaim = createAuthenticatedAction(
       }
     }
 
-    // 5. Insert record into database using authoritative server-side price
-    let requestRecord;
+    // 5. Insert record into database using authoritative server-side price inside a transaction
+    let requestRecord: typeof subscriptionRequests.$inferSelect;
     try {
-      const [record] = await db
-        .insert(subscriptionRequests)
-        .values({
-          business_id: businessId,
-          user_id: context.appUser.id,
-          plan_name: input.plan_name,
-          billing_cycle: input.billing_cycle,
-          amount_paise: authoritativeAmountPaise,
-          payment_method: input.payment_method,
-          payment_reference: input.payment_reference,
-          screenshot_storage_key: screenshotKey,
-          status: 'pending',
-        })
-        .returning();
-      requestRecord = record;
+      requestRecord = await db.transaction(async (tx) => {
+        // Serialise concurrent submissions of THIS business (lock order: business -> request).
+        const [lockedBusiness] = await tx
+          .select({ id: businesses.id })
+          .from(businesses)
+          .where(eq(businesses.id, businessId))
+          .for('update');
+        if (!lockedBusiness) throw new ActionError('Business profile not found.', { code: 'BUSINESS_NOT_FOUND' });
+        const [pending] = await tx
+          .select({ id: subscriptionRequests.id })
+          .from(subscriptionRequests)
+          .where(and(eq(subscriptionRequests.business_id, businessId), eq(subscriptionRequests.status, 'pending')))
+          .limit(1);
+        if (pending) throw new ActionError(PENDING_CLAIM_MESSAGE, { code: 'PENDING_CLAIM_EXISTS' });
+        const [record] = await tx
+          .insert(subscriptionRequests)
+          .values({
+            business_id: businessId,
+            user_id: context.appUser.id,
+            plan_name: input.plan_name,
+            billing_cycle: input.billing_cycle,
+            amount_paise: authoritativeAmountPaise,
+            payment_method: input.payment_method,
+            payment_reference: input.payment_reference,
+            screenshot_storage_key: screenshotKey,
+            status: 'pending',
+          })
+          .returning();
+        if (!record) {
+          throw new ActionError('Failed to record payment claim. Please check your reference and try again.', {
+            code: 'DB_INSERT_FAILED',
+          });
+        }
+        return record;
+      });
     } catch (err: unknown) {
-      const dbErr = err as { code?: string; message?: string };
-      if (dbErr.code === '23505' || dbErr.message?.includes('unique')) {
-        throw new ActionError('This payment transaction reference/UTR has already been submitted.', {
-          code: 'DUPLICATE_REFERENCE',
-        });
+      if (err instanceof ActionError) throw err;
+      const failure = classifyClaimInsertError(err);
+      if (failure === 'PENDING_CLAIM_EXISTS') {
+        throw new ActionError(PENDING_CLAIM_MESSAGE, { code: 'PENDING_CLAIM_EXISTS' });
       }
-      console.error('[submitPaymentClaim] DB insert failed:', err);
+      if (failure === 'DUPLICATE_REFERENCE') {
+        throw new ActionError(NEUTRAL_DUPLICATE_MESSAGE, { code: 'DUPLICATE_REFERENCE' });
+      }
+      logError('submit-payment-claim', err);
       throw new ActionError('Failed to record payment claim. Please check your reference and try again.', {
         code: 'DB_INSERT_FAILED',
       });
