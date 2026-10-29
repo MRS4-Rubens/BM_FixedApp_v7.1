@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { GSTIN_REGEX, PAN_REGEX, IFSC_REGEX, PINCODE_REGEX } from './patterns';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { validateInvoiceNumberFormat } from '@/lib/invoices/number-format';
+import { INVOICE_TEMPLATE_IDS } from '@/lib/invoices/template-ids';
 
 export const businessProfileSchema = z.object({
   legal_name: z.string().min(1, 'Legal business name is required').max(200),
@@ -37,9 +38,11 @@ export const businessProfileSchema = z.object({
   credit_note_number_prefix: z.string().max(10).regex(/^[A-Za-z0-9/-]+$/, 'Only letters, numbers, / and - are allowed').optional().or(z.literal('')),
   invoice_terms: z.string().max(2000).optional(),
   payment_due_days: z.coerce.number().int().min(0).max(365).optional(),
-  default_invoice_template: z.string().optional().default('template_1'),
-  // Default GST rate calculation preference (inclusive vs exclusive)
-  default_gst_rate_type: z.enum(['inclusive', 'exclusive']).optional().default('exclusive'),
+  // API-007: NO `.default(...)`. "Not supplied" must stay `undefined`; a zod default would make every profile
+  // edit overwrite the stored setting (and be re-sent by the form's resolver output).
+  // These settings are only honoured on first-time setup (the edit path ignores them).
+  default_invoice_template: z.enum(INVOICE_TEMPLATE_IDS).optional(),
+  default_gst_rate_type: z.enum(['inclusive', 'exclusive']).optional(),
   nature_of_business: z.string().max(200).optional().or(z.literal('')),
   alternate_phone: z.string().max(15).optional().or(z.literal('')),
 }).refine(

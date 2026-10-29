@@ -7,7 +7,7 @@ import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { canUseTemplate, getPlanEntitlements } from '@/lib/subscriptions/entitlements';
+import { checkInvoiceSettingsEntitlement } from '@/lib/subscriptions/invoice-settings-gate';
 
 export const saveInvoiceSettings = createAuthenticatedAction(
   invoiceSettingsSchema,
@@ -30,30 +30,11 @@ export const saveInvoiceSettings = createAuthenticatedAction(
       throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
     }
 
-    // Server-side entitlement check for custom invoice number formats
-    const { canCustomizeInvoiceFormat } = getPlanEntitlements(business);
-    if (!canCustomizeInvoiceFormat) {
-      if (
-        input.invoice_number_format !== business.invoice_number_format &&
-        input.invoice_number_format !== 'BMA/{FY}/{SEQ:4}' &&
-        input.invoice_number_format !== 'INV-{DD}/{MM}/{YY}/{SEQ:3}'
-      ) {
-        throw new ActionError(
-          'Custom invoice numbering formats and brand prefixes are exclusive to paid plans. Upgrade to Essentials Pro to customize your invoice format.',
-          { code: 'INVOICE_FORMAT_LOCKED' }
-        );
-      }
-    }
-
-    // Server-side entitlement check for default invoice template
-    const templateCheck = canUseTemplate(business, input.default_invoice_template);
-    if (!templateCheck.allowed) {
-      throw new ActionError(
-        templateCheck.reason ||
-          'Your current plan only supports the Classic (Template 1) layout. Please upgrade to unlock premium invoice templates.',
-        { code: templateCheck.code || 'PLAN_LIMIT_REACHED' }
-      );
-    }
+    const gate = checkInvoiceSettingsEntitlement(business, business.invoice_number_format, {
+      invoice_number_format: input.invoice_number_format,
+      default_invoice_template: input.default_invoice_template,
+    });
+    if (!gate.allowed) throw new ActionError(gate.message, { code: gate.code });
 
     try {
       await db

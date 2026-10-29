@@ -1,13 +1,22 @@
-'use server'
+'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { logError } from '@/lib/actions/_shared/logger';
 import { businessProfileSchema } from '@/lib/validations/business';
 import { db } from '@/lib/db/client';
 import { businesses, financialYears, users } from '@/lib/db/schema';
 import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
+import { DEFAULT_INVOICE_TEMPLATE_ID } from '@/lib/invoices/template-ids';
+import { checkInvoiceSettingsEntitlement } from '@/lib/subscriptions/invoice-settings-gate';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+
+const DEFAULT_INVOICE_NUMBER_FORMAT = 'BMA/{FY}/{SEQ:4}';
+const DEFAULT_CREDIT_NOTE_PREFIX = 'CN';
+const DEFAULT_PAYMENT_DUE_DAYS = 30;
+const TRIAL_DURATION_DAYS = 14;
+const DEFAULT_INVOICE_TERMS = '1. Goods once sold will not be taken back.\n2. Payment to be made within 30 days from the date of invoice.\n3. Interest @ 24% per annum will be charged on overdue invoices until payment is received.';
 
 export const saveBusinessProfile = createAuthenticatedAction(businessProfileSchema, async (input, context) => {
   const profileData = {
@@ -31,71 +40,78 @@ export const saveBusinessProfile = createAuthenticatedAction(businessProfileSche
     alternate_phone: input.alternate_phone || null,
   };
 
-  let businessId = context.appUser.business_id;
+  const existingBusinessId = context.appUser.business_id;
 
+  let savedBusinessId: string;
   try {
-    await db.transaction(async (tx) => {
-      if (!businessId) {
-        // First-time setup: initialize with legal details + statutory default invoice settings
-        const newBusinessData = {
-          ...profileData,
-          invoice_number_format: input.invoice_number_format || 'BMA/{FY}/{SEQ:4}',
-          credit_note_number_prefix: input.credit_note_number_prefix || 'CN',
-          invoice_terms: input.invoice_terms || '1. Goods once sold will not be taken back.\n2. Payment to be made within 30 days from the date of invoice.\n3. Interest @ 24% per annum will be charged on overdue invoices until payment is received.',
-          payment_due_days: input.payment_due_days ?? 30,
-          default_invoice_template: input.default_invoice_template || 'template_1',
-          default_gst_rate_type: input.default_gst_rate_type || 'exclusive',
-          subscription_plan: 'trial',
-          subscription_status: 'trial',
-          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-        };
-
-        const [newBusiness] = await tx.insert(businesses).values(newBusinessData).returning({ id: businesses.id });
-        businessId = newBusiness.id;
-
-        const currentFY = getIndianFinancialYearForDate(new Date());
-
-        await tx.insert(financialYears).values({
-          business_id: businessId,
-          label: currentFY.label,
-          start_date: currentFY.startDate.toISOString(),
-          end_date: currentFY.endDate.toISOString(),
-          is_current: true,
-          invoice_sequence_counter: 0,
-          credit_note_sequence_counter: 0,
-        });
-
-        await tx.update(users)
-          .set({ business_id: businessId })
-          .where(eq(users.id, context.appUser.id));
-      } else {
-        // Editing existing profile: update profile details and only touch invoice settings if explicitly supplied
-        const updatePayload: Record<string, unknown> = {
-          ...profileData,
-          updated_at: new Date(),
-        };
-
-        if (input.invoice_number_format !== undefined) updatePayload.invoice_number_format = input.invoice_number_format;
-        if (input.credit_note_number_prefix !== undefined) updatePayload.credit_note_number_prefix = input.credit_note_number_prefix;
-        if (input.invoice_terms !== undefined) updatePayload.invoice_terms = input.invoice_terms;
-        if (input.payment_due_days !== undefined) updatePayload.payment_due_days = input.payment_due_days;
-        if (input.default_invoice_template !== undefined) updatePayload.default_invoice_template = input.default_invoice_template;
-        if (input.default_gst_rate_type !== undefined) updatePayload.default_gst_rate_type = input.default_gst_rate_type;
-
+    savedBusinessId = await db.transaction(async (tx): Promise<string> => {
+      if (existingBusinessId) {
+        // EDIT: profile fields ONLY. Invoice settings (number format, credit-note prefix, terms, due days,
+        // default template, default GST mode) are owned by saveInvoiceSettings, which enforces plan gating.
+        // Any such keys in the payload are deliberately ignored (stale clients may still send old defaults).
         await tx.update(businesses)
-          .set(updatePayload)
-          .where(eq(businesses.id, businessId));
+          .set({ ...profileData, updated_at: new Date() })
+          .where(eq(businesses.id, existingBusinessId));
+        return existingBusinessId;
       }
+
+      // FIRST-TIME SETUP: evaluate the entitlement gate against the exact subscription state we are inserting.
+      const trialEndsAt = new Date(Date.now() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
+      const subscription = {
+        subscription_plan: 'trial',
+        subscription_status: 'trial',
+        trial_ends_at: trialEndsAt,
+      };
+      const invoiceNumberFormat = input.invoice_number_format || DEFAULT_INVOICE_NUMBER_FORMAT;
+      const defaultInvoiceTemplate = input.default_invoice_template ?? DEFAULT_INVOICE_TEMPLATE_ID;
+
+      const gate = checkInvoiceSettingsEntitlement(subscription, null, {
+        invoice_number_format: invoiceNumberFormat,
+        default_invoice_template: defaultInvoiceTemplate,
+      });
+      if (!gate.allowed) throw new ActionError(gate.message, { code: gate.code }); // rolls the transaction back
+
+      const [newBusiness] = await tx.insert(businesses).values({
+        ...profileData,
+        invoice_number_format: invoiceNumberFormat,
+        credit_note_number_prefix: input.credit_note_number_prefix || DEFAULT_CREDIT_NOTE_PREFIX,
+        invoice_terms: input.invoice_terms || DEFAULT_INVOICE_TERMS,
+        payment_due_days: input.payment_due_days ?? DEFAULT_PAYMENT_DUE_DAYS,
+        default_invoice_template: defaultInvoiceTemplate,
+        default_gst_rate_type: input.default_gst_rate_type ?? 'exclusive',
+        subscription_plan: subscription.subscription_plan,
+        subscription_status: subscription.subscription_status,
+        trial_ends_at: trialEndsAt,
+      }).returning({ id: businesses.id });
+      if (!newBusiness) throw new ActionError('We could not create your business profile. Please try again.', { code: 'TRANSACTION_FAILED' });
+
+      const currentFY = getIndianFinancialYearForDate(new Date());
+
+      await tx.insert(financialYears).values({
+        business_id: newBusiness.id,
+        label: currentFY.label,
+        start_date: currentFY.startDate.toISOString(),
+        end_date: currentFY.endDate.toISOString(),
+        is_current: true,
+        invoice_sequence_counter: 0,
+        credit_note_sequence_counter: 0,
+      });
+
+      await tx.update(users)
+        .set({ business_id: newBusiness.id })
+        .where(eq(users.id, context.appUser.id));
+
+      return newBusiness.id;
     });
-  } catch (error) {
-    console.error('Error saving business profile:', error);
+  } catch (error: unknown) {
+    if (error instanceof ActionError) throw error; // entitlement / expected errors keep their message + code
+    logError('save-business-profile', error);
     throw new ActionError('We could not save your business profile. Please try again.', { code: 'TRANSACTION_FAILED' });
   }
 
-  // Flush NextJS client router cache for settings and invoice pages
   revalidatePath('/settings');
   revalidatePath('/invoices/new');
   revalidatePath('/invoices');
 
-  return { businessId: businessId as string };
+  return { businessId: savedBusinessId };
 }, 'save-business-profile');
