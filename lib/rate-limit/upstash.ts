@@ -27,14 +27,38 @@ function lazyLimiter(create: () => Ratelimit): RateLimiter {
 }
 
 /**
- * All three limiters share one Redis instance but use independent prefixes/windows — 
- * tune the numeric limits here centrally if they prove too strict or too loose in real use; 
- * nothing else needs to change.
+ * Centrally tunable auth rate-limiting parameters.
  */
+export const LOGIN_IP_LIMIT = 30;
+export const LOGIN_IP_WINDOW = '15 m';
+export const LOGIN_EMAIL_LIMIT = 10;
+export const LOGIN_EMAIL_WINDOW = '15 m';
+export const SIGNUP_IP_LIMIT = 3;
+export const SIGNUP_IP_WINDOW = '1 h';
+export const RECOVERY_IP_LIMIT = 10;
+export const RECOVERY_IP_WINDOW = '15 m';
+export const RECOVERY_EMAIL_LIMIT = 3;
+export const RECOVERY_EMAIL_WINDOW = '15 m';
 
-// authLimiter: 5 requests per 60 seconds (for login/signup attempts)
-export const authLimiter: RateLimiter = lazyLimiter(
-  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(5, '60 s'), prefix: '@upstash/ratelimit:auth' }),
+// AUTH-002: Dedicated limiters for auth boundaries and server actions
+export const loginIpLimiter: RateLimiter = lazyLimiter(
+  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(LOGIN_IP_LIMIT, LOGIN_IP_WINDOW), prefix: '@upstash/ratelimit:auth-login-ip' }),
+);
+
+export const loginEmailLimiter: RateLimiter = lazyLimiter(
+  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(LOGIN_EMAIL_LIMIT, LOGIN_EMAIL_WINDOW), prefix: '@upstash/ratelimit:auth-login-email' }),
+);
+
+export const signupIpLimiter: RateLimiter = lazyLimiter(
+  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(SIGNUP_IP_LIMIT, SIGNUP_IP_WINDOW), prefix: '@upstash/ratelimit:auth-signup-ip' }),
+);
+
+export const recoveryIpLimiter: RateLimiter = lazyLimiter(
+  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(RECOVERY_IP_LIMIT, RECOVERY_IP_WINDOW), prefix: '@upstash/ratelimit:auth-recovery-ip' }),
+);
+
+export const recoveryEmailLimiter: RateLimiter = lazyLimiter(
+  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(RECOVERY_EMAIL_LIMIT, RECOVERY_EMAIL_WINDOW), prefix: '@upstash/ratelimit:auth-recovery-email' }),
 );
 
 // sensitiveActionLimiter: 20 requests per 60 seconds (for finalizing invoices, sending emails, recording payments)

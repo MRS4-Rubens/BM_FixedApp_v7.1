@@ -1,55 +1,89 @@
-'use server'
+'use server';
 
-import { auth } from '@/lib/auth/server'
-import { redirect } from 'next/navigation'
-import { ensureAppUser } from '@/lib/auth/ensure-app-user'
-import { headers } from 'next/headers'
-import { authLimiter, checkRateLimit, getClientIp } from '@/lib/rate-limit/upstash'
+import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth/server';
+import { ensureAppUser } from '@/lib/auth/ensure-app-user';
+import { enforceSignupRateLimit, rateLimitUserMessage } from '@/lib/auth/auth-rate-limit';
+import { getClientIp } from '@/lib/rate-limit/upstash';
+import {
+  extractAuthErrorMessage,
+  readFormString,
+  signupFormSchema,
+  type AuthActionState,
+} from '@/lib/validations/auth';
+import { logError } from '@/lib/actions/_shared/logger';
 
-export async function signupAction(prevState: any, formData: FormData): Promise<{ error?: string; notice?: string }> {
-  const name = formData.get('ownerName') as string;
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  const confirmPassword = formData.get('confirmPassword') as string;
-  
-  if (!name || !email || !password || !confirmPassword) {
-    return { error: 'Please fill in all required fields.' };
+export async function signupAction(
+  _prevState: AuthActionState | null,
+  formData: FormData
+): Promise<AuthActionState> {
+  // 1. Validate form fields and password policy
+  const ownerName = readFormString(formData, 'ownerName');
+  const email = readFormString(formData, 'email');
+  const password = readFormString(formData, 'password');
+  const confirmPassword = readFormString(formData, 'confirmPassword');
+
+  const parsed = signupFormSchema.safeParse({
+    ownerName,
+    email,
+    password,
+    confirmPassword,
+  });
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0]?.message ?? 'Please fill in all required fields.';
+    return { error: firstIssue };
   }
-  
-  if (password !== confirmPassword) {
-    return { error: 'Passwords do not match.' };
-  }
 
+  // 2. Enforce shared rate limiting (fail-closed)
   const ip = getClientIp(await headers());
-  const { allowed } = await checkRateLimit(authLimiter, `auth:${ip}`);
-  if (!allowed) {
-    return { error: 'Too many attempts. Please wait a moment and try again.' };
+  const limit = await enforceSignupRateLimit({ ip });
+  if (!limit.allowed) {
+    return { error: rateLimitUserMessage(limit) };
   }
-  
+
+  // 3. Create identity in Neon Auth
+  let requiresVerification = false;
   try {
-    const signUpResponse = await auth.signUp.email({ email, password, name });
-    
-    // Better Auth (which Neon Auth wraps) usually returns data/error or throws.
-    // We check for error property just in case.
-    if (signUpResponse && signUpResponse.error) {
-       return { error: signUpResponse.error.message || 'Signup failed' };
+    const signUpResponse = await auth.signUp.email({
+      email: parsed.data.email,
+      password: parsed.data.password,
+      name: parsed.data.ownerName,
+    });
+
+    const apiError = signUpResponse?.error;
+    if (apiError) {
+      return { error: apiError.message || 'Signup failed' };
     }
 
-    if (signUpResponse && signUpResponse.data && signUpResponse.data.user) {
-      await ensureAppUser({
-        authUserId: signUpResponse.data.user.id,
-        displayName: name,
-        email: email
-      });
+    // 4. Provision local app user row (self-healing, does not fail signup)
+    if (signUpResponse?.data?.user) {
+      try {
+        await ensureAppUser({
+          authUserId: signUpResponse.data.user.id,
+          displayName: parsed.data.ownerName,
+          email: parsed.data.email,
+        });
+      } catch {
+        // Logged inside ensureAppUser; do not block signup
+      }
 
       if ('token' in signUpResponse.data && signUpResponse.data.token === null) {
-        // Neon Auth "Verify at Sign-up" is enabled: no session exists yet.
-        return { notice: 'Account created. Please check your e-mail to verify your address, then log in.' };
+        // Neon Auth "Verify at Sign-up" is enabled: no session exists yet (AUTH-001 seam).
+        requiresVerification = true;
       }
     }
-  } catch (err: any) {
-    return { error: err.body?.message || err.message || 'An unexpected error occurred during signup' };
+  } catch (error: unknown) {
+    logError('signup-action', error);
+    return {
+      error: extractAuthErrorMessage(error) ?? 'We could not create your account right now. Please try again.',
+    };
   }
-  
+
+  // 5. Complete signup: notice if verification required, else redirect to dashboard
+  if (requiresVerification) {
+    return { notice: 'Account created. Please check your e-mail to verify your address, then log in.' };
+  }
+
   redirect('/dashboard');
 }

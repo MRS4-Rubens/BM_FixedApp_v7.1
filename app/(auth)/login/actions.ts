@@ -1,43 +1,70 @@
-'use server'
+'use server';
 
-import { auth } from '@/lib/auth/server'
-import { redirect } from 'next/navigation'
+import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
+import { auth } from '@/lib/auth/server';
+import { ensureAppUser } from '@/lib/auth/ensure-app-user';
+import { enforceLoginRateLimit, rateLimitUserMessage } from '@/lib/auth/auth-rate-limit';
+import { getClientIp } from '@/lib/rate-limit/upstash';
+import {
+  extractAuthErrorMessage,
+  loginFormSchema,
+  readFormString,
+  type AuthActionState,
+} from '@/lib/validations/auth';
+import { logError } from '@/lib/actions/_shared/logger';
 
-import { ensureAppUser } from '@/lib/auth/ensure-app-user'
-import { headers } from 'next/headers'
-import { authLimiter, checkRateLimit, getClientIp } from '@/lib/rate-limit/upstash'
+export async function loginAction(
+  _prevState: AuthActionState | null,
+  formData: FormData
+): Promise<AuthActionState> {
+  // 1. Validate form fields
+  const email = readFormString(formData, 'email');
+  const password = readFormString(formData, 'password');
 
-export async function loginAction(prevState: any, formData: FormData) {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
-  
-  if (!email || !password) {
-    return { error: 'Please enter both email and password.' };
+  const parsed = loginFormSchema.safeParse({ email, password });
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0]?.message ?? 'Please enter both email and password.';
+    return { error: firstIssue };
   }
 
+  // 2. Enforce shared rate limiting (fail-open)
   const ip = getClientIp(await headers());
-  const { allowed } = await checkRateLimit(authLimiter, `auth:${ip}`);
-  if (!allowed) {
-    return { error: 'Too many attempts. Please wait a moment and try again.' };
+  const limit = await enforceLoginRateLimit({ ip, email: parsed.data.email });
+  if (!limit.allowed) {
+    return { error: rateLimitUserMessage(limit) };
   }
-  
+
+  // 3. Authenticate against Neon Auth
   try {
-    const signInResponse = await auth.signIn.email({ email, password });
-    
-    if (signInResponse && signInResponse.error) {
-       return { error: signInResponse.error.message || 'Invalid credentials' };
+    const signInResponse = await auth.signIn.email({
+      email: parsed.data.email,
+      password: parsed.data.password,
+    });
+
+    const apiError = signInResponse?.error;
+    if (apiError) {
+      return { error: apiError.message || 'Invalid credentials' };
     }
 
-    if (signInResponse && signInResponse.data && signInResponse.data.user) {
-      await ensureAppUser({
-        authUserId: signInResponse.data.user.id,
-        displayName: signInResponse.data.user.name || null,
-        email: signInResponse.data.user.email || email,
-      });
+    if (signInResponse?.data?.user) {
+      try {
+        await ensureAppUser({
+          authUserId: signInResponse.data.user.id,
+          displayName: signInResponse.data.user.name || null,
+          email: signInResponse.data.user.email || parsed.data.email,
+        });
+      } catch {
+        // Logged inside ensureAppUser; do not block login as session self-heals
+      }
     }
-  } catch (err: any) {
-    return { error: err.body?.message || err.message || 'An unexpected error occurred during login' };
+  } catch (error: unknown) {
+    logError('login-action', error);
+    return {
+      error: extractAuthErrorMessage(error) ?? 'We could not sign you in right now. Please try again.',
+    };
   }
-  
+
+  // 4. Redirect on success outside the try/catch
   redirect('/dashboard');
 }
