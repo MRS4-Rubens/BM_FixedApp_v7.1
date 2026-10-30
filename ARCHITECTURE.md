@@ -190,3 +190,50 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 - **Action Guard (`requirePlatformAdmin: true`)**: `createAuthenticatedAction` accepts `{ requirePlatformAdmin?: boolean }`. When enabled, authorization runs immediately after session identity lookup, before rate limiting and before handler invocation.
 - **Client Leakage Prevention**: Platform admin allow-lists are never exposed to the client or embedded in page payloads. The admin console settings panel displays static configuration guidance rather than environment strings.
 - **Neon Auth E-mail Verification Configuration**: In Neon Console (Settings -> Auth -> "Sign-up with Email" and "Verify at Sign-up"), enable email verification. The verification link method requires a custom SMTP/email provider configured in Neon Auth. When verification is active, signup returns `{ notice: 'Account created. Please check your e-mail to verify your address, then log in.' }` rather than an immediate active session.
+
+## Security headers & CSP rollout (SEC-001)
+
+### 1. HTTP Security Headers Table
+
+| Header | Value | Scope | Purpose |
+|---|---|---|---|
+| `Strict-Transport-Security` | `max-age=63072000; includeSubDomains; preload` | Production only (all routes) | Forces HTTPS for 2 years across domain and subdomains. |
+| `X-Content-Type-Options` | `nosniff` | Global (all routes) | Prevents MIME-type sniffing of uploaded images/documents. |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Global (all routes) | Protects user privacy while retaining origin on cross-site requests. |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Global (all routes) | Disables unused browser sensor/device APIs. |
+| `X-Frame-Options` | `DENY` | Non-archival routes | Prevents clickjacking across the app. |
+| `Content-Security-Policy` | `frame-ancestors 'none'; base-uri 'self'; object-src 'none'` | Non-archival routes | Enforced baseline for framing, base URI, and plugin restrictions. |
+| `Content-Security-Policy-Report-Only` | Full application policy | Non-archival routes | Collects CSP violation reports in Sentry without breaking user flows. |
+| `Content-Security-Policy-Report-Only` | Archival-specific policy (`default-src 'none'; script-src 'none'`) | Archival-render routes | Enforces script-free static document rendering for external PDF vendor. |
+
+### 2. Two CSP Layers
+
+1. **Enforced Baseline**: `frame-ancestors 'none'; base-uri 'self'; object-src 'none'`. Safe to enforce immediately across all application pages as no legitimate page is framed or uses `<base>`/plugins. Combined with `X-Frame-Options: DENY`, this reliably prevents clickjacking even in legacy browsers that ignore `frame-ancestors` in report-only mode.
+2. **Full Policy as Report-Only (`Content-Security-Policy-Report-Only`)**: Covers scripts, styles, fonts, images, and network connections. Violations are dispatched to Sentry's security reporting endpoint derived dynamically from `NEXT_PUBLIC_SENTRY_DSN`. Controlled by a single constant `CSP_MODE = 'report-only' | 'enforce'` in `config/security-headers.mjs`.
+
+### 3. Dedicated Archival-Render Header Rules
+
+Archival-render routes (`/api/invoices/[id]/archival-render` and `/api/credit-notes/[id]/archival-render`) are fetched server-to-server and rendered headless by the external PDF generation vendor (CustomJS).
+- They MUST NOT include `X-Frame-Options: DENY` or `frame-ancestors 'none'` to avoid interfering with headless browser capture pipelines.
+- They enforce strict script-free execution (`script-src 'none'`, `default-src 'none'`) while permitting inline CSS and Google Fonts (`fonts.googleapis.com` / `fonts.gstatic.com`) for invoice template rendering.
+- The global rule uses a negative-lookahead pattern (`/((?!api/(?:invoices|credit-notes)/[^/]+/archival-render).*)`) ensuring the global rules and archival rules never conflict or overwrite each other in Next.js.
+
+### 4. Allow-List Debt
+
+The current policy contains documented debt that should be retired before full enforcement:
+1. `https://api.qrserver.com`: Used in `app/(app)/checkout/checkout-form.tsx` for UPI QR code generation. Tracked under **FE-005** to be replaced with a client-side SVG QR generator.
+2. `https://fonts.googleapis.com` and `https://fonts.gstatic.com`: Loaded via `@import` in invoice templates 1–4. To be replaced with self-hosted Lora webfonts matching `app/layout.tsx`.
+3. `'unsafe-inline'`: Required for inline styles and Next.js bootstrap scripts. Retained until the nonce phase.
+
+### 5. Rollout Plan
+
+1. **Step 1 (Current)**: Ship Report-Only (`CSP_MODE = 'report-only'`) with Sentry CSP report endpoint.
+2. **Step 2**: Monitor Sentry CSP/Security Headers issue stream for at least 7 days across production traffic.
+3. **Step 3**: Resolve allow-list debts (retire `api.qrserver.com` in FE-005, self-host print template fonts).
+4. **Step 4**: Flip `CSP_MODE` to `'enforce'` in a single dedicated pull request once the report log is clean.
+5. **Step 5**: Introduce per-request cryptographically secure nonces in `proxy.ts` to retire `'unsafe-inline'` for scripts.
+
+### 6. HSTS Notes
+
+- `includeSubDomains`: Enforces HTTPS across all subdomains. Ensure no subdomains of the apex domain rely exclusively on plain HTTP before deploying to production.
+- `preload`: Indicates consent for inclusion in the Chrome/browser HSTS preload list. The token remains inert until the domain is manually submitted to [hstspreload.org](https://hstspreload.org). Do not submit without an explicit platform governance decision, as preload inclusion cannot be quickly reversed.
