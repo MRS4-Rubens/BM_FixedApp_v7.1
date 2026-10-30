@@ -237,3 +237,15 @@ The current policy contains documented debt that should be retired before full e
 
 - `includeSubDomains`: Enforces HTTPS across all subdomains. Ensure no subdomains of the apex domain rely exclusively on plain HTTP before deploying to production.
 - `preload`: Indicates consent for inclusion in the Chrome/browser HSTS preload list. The token remains inert until the domain is manually submitted to [hstspreload.org](https://hstspreload.org). Do not submit without an explicit platform governance decision, as preload inclusion cannot be quickly reversed.
+
+
+## Upload Validation & Storage Security (SEC-002)
+
+All file uploads (payment screenshots, business logos, user feedback attachments) are strictly validated through the centralized pure security helper `lib/security/upload.ts`:
+
+- **Decoupled Client Trust**: Client-declared MIME types, extensions, and file sizes are treated as unverified hints and are never used for storage keys, Content-Type headers, or validation decisions.
+- **Magic Byte Inspection**: The true MIME type and canonical extension (`png`, `jpg`, `webp`, `pdf`) are derived solely by inspecting file magic bytes (`readUInt8`).
+- **Pre-Decode Size Guards**: Base64 strings are bounded by character length prior to memory allocation (`maxBase64Chars`), and decoded buffer sizes are strictly enforced.
+- **Server-Generated UUID Keys**: Storage object keys are constructed as `<prefix>/<uuid>.<ext>` using cryptographically random UUIDs (`buildUploadKey`), completely removing user input (such as payment reference numbers or transaction IDs) from storage paths.
+- **Content-Disposition & Forced Download**: User-supplied uploads are stored with `Content-Disposition: attachment`. Signed URLs generated for evidence inspection (e.g. platform admin reviewing payment receipts) explicitly enable `forceDownload: true` (`ResponseContentDisposition: attachment`), preventing user-uploaded files from rendering directly as active HTML/SVG documents in administrator browsers.
+- **Invoice & Credit Note PDFs**: System-generated invoice and credit note PDF downloads intentionally omit `forceDownload` to preserve inline browser PDF viewing.

@@ -10,13 +10,16 @@ import { db } from '@/lib/db/client';
 import { subscriptionRequests, businesses } from '@/lib/db/schema';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
-import { uploadFileToStorage, getSignedDownloadUrl } from '@/lib/storage/idrive';
+import { uploadFileToStorage, getSignedDownloadUrl, deleteFileFromStorage } from '@/lib/storage/idrive';
 import { getResend } from '@/lib/email/resend';
 import { getAdminEnv, getAppEnv, getEmailEnv } from '@/lib/env';
 import { SubscriptionRequestEmail } from '@/lib/email/templates/subscription-request-email';
 import { formatPaiseAsInr } from '@/lib/money';
 import { auth } from '@/lib/auth/server';
 import { classifyClaimInsertError } from '@/lib/subscriptions/claim-errors';
+import { requireValidUpload, buildUploadKey, IMAGE_MIMES } from '@/lib/security/upload';
+
+const SCREENSHOT_MAX_BYTES = 4 * 1024 * 1024; // module-level const (matches the checkout UI limit)
 
 const NEUTRAL_DUPLICATE_MESSAGE =
   'This payment reference could not be accepted. Please double-check the UTR/transaction ID; if it is correct, contact support and quote it.';
@@ -95,23 +98,24 @@ export const submitPaymentClaim = createAuthenticatedAction(
 
     // 4. Handle base64 image upload if provided
     if (input.screenshot_base64) {
+      // Validate the real bytes first; validation errors are specific, user-safe ActionErrors.
+      const screenshot = requireValidUpload(input.screenshot_base64, {
+        maxBytes: SCREENSHOT_MAX_BYTES,
+        allowed: IMAGE_MIMES,
+      });
+      const key = buildUploadKey(`payment-screenshots/${businessId}`, screenshot.ext);
       try {
-        const mimeType = input.screenshot_mime || 'image/jpeg';
-        const extension = mimeType.split('/')[1] || 'jpg';
-
-        // Remove base64 data header if present (e.g. data:image/png;base64,)
-        const base64Data = input.screenshot_base64.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-
-        screenshotKey = `payment-screenshots/${businessId}/${input.payment_reference}.${extension}`;
-
-        await uploadFileToStorage(screenshotKey, buffer, mimeType);
+        await uploadFileToStorage(key, screenshot.buffer, screenshot.mime, {
+          contentDisposition: 'attachment',
+          cacheControl: 'private, no-store',
+        });
       } catch (err: unknown) {
-        console.error('[submitPaymentClaim] Screenshot S3 upload failed:', err);
-        throw new ActionError('Failed to upload the payment screenshot to S3. Please try again.', {
+        console.error('[submitPaymentClaim] Screenshot upload failed:', err);
+        throw new ActionError('Failed to upload the payment screenshot. Please try again.', {
           code: 'UPLOAD_FAILED',
         });
       }
+      screenshotKey = key;
     }
 
     // 5. Insert record into database using authoritative server-side price inside a transaction
@@ -153,6 +157,11 @@ export const submitPaymentClaim = createAuthenticatedAction(
         return record;
       });
     } catch (err: unknown) {
+      if (screenshotKey) {
+        deleteFileFromStorage(screenshotKey).catch((cleanupErr: unknown) => {
+          console.warn('[submitPaymentClaim] Best-effort cleanup of orphan screenshot failed:', cleanupErr);
+        });
+      }
       if (err instanceof ActionError) throw err;
       const failure = classifyClaimInsertError(err);
       if (failure === 'PENDING_CLAIM_EXISTS') {
@@ -176,7 +185,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
         const amountFormatted = formatPaiseAsInr(authoritativeAmountPaise);
 
         // Generate a temporary signed S3 URL for the admin to view the screenshot (expires in 7 days)
-        const screenshotUrl = screenshotKey ? await getSignedDownloadUrl(screenshotKey, 604800) : null;
+        const screenshotUrl = screenshotKey ? await getSignedDownloadUrl(screenshotKey, 604800, { forceDownload: true }) : null;
 
         const approveLink = `${getAppEnv().NEXT_PUBLIC_APP_URL}/admin?request=${requestRecord.id}`;
 

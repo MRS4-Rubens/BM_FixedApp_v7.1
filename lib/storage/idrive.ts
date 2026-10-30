@@ -31,29 +31,51 @@ export function getS3(): S3Client {
   return getStorage().client;
 }
 
+export interface UploadObjectOptions {
+  readonly contentDisposition?: string;
+  readonly cacheControl?: string;
+}
+
 /**
  * Uploads a file buffer to the configured iDrive e2 bucket.
  */
-export async function uploadFileToStorage(key: string, body: Buffer, contentType: string): Promise<void> {
+export async function uploadFileToStorage(
+  key: string,
+  body: Buffer,
+  contentType: string,
+  options: UploadObjectOptions = {}
+): Promise<void> {
   const { client, bucket } = getStorage();
   const command = new PutObjectCommand({
     Bucket: bucket,
     Key: key,
     Body: body,
     ContentType: contentType,
+    ContentDisposition: options.contentDisposition,
+    CacheControl: options.cacheControl,
   });
 
   await client.send(command);
 }
 
+export interface SignedUrlOptions {
+  /** Opt-in: forces `Content-Disposition: attachment` so the object can never render as a page in a browser. */
+  readonly forceDownload?: boolean;
+}
+
 /**
  * Generates a signed URL for downloading an object, expiring in the specified seconds.
  */
-export async function getSignedDownloadUrl(key: string, expirySeconds: number = 300): Promise<string> {
+export async function getSignedDownloadUrl(
+  key: string,
+  expirySeconds: number = 300,
+  options: SignedUrlOptions = {}
+): Promise<string> {
   const { client, bucket } = getStorage();
   const command = new GetObjectCommand({
     Bucket: bucket,
     Key: key,
+    ResponseContentDisposition: options.forceDownload ? 'attachment' : undefined,
   });
 
   return await getSignedUrl(client, command, { expiresIn: expirySeconds });
@@ -91,4 +113,3 @@ export async function deleteFileFromStorage(key: string): Promise<void> {
 
   await client.send(command);
 }
-

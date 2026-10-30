@@ -3,10 +3,23 @@ import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getFileBuffer } from '@/lib/storage/idrive';
-import { logoMimeFromKey } from '@/lib/storage/logo-url';
 import { isLogoKeyReferenced } from '@/lib/storage/logo';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function resolveLogoContentType(key: string): string | null {
+  const lowerKey = key.toLowerCase();
+  if (lowerKey.endsWith('.png')) {
+    return 'image/png';
+  }
+  if (lowerKey.endsWith('.jpg') || lowerKey.endsWith('.jpeg')) {
+    return 'image/jpeg';
+  }
+  if (lowerKey.endsWith('.webp')) {
+    return 'image/webp';
+  }
+  return null;
+}
 
 export async function GET(
   request: NextRequest,
@@ -52,8 +65,12 @@ export async function GET(
       return new NextResponse('Logo not found', { status: 404 });
     }
 
+    const contentType = resolveLogoContentType(storageKey);
+    if (!contentType) {
+      return new NextResponse('Logo not found', { status: 404 });
+    }
+
     const buffer = await getFileBuffer(storageKey);
-    const contentType = logoMimeFromKey(storageKey);
     const cacheControl = isImmutable
       ? 'public, max-age=31536000, immutable'
       : 'public, max-age=3600, stale-while-revalidate=86400';
@@ -63,6 +80,8 @@ export async function GET(
       headers: {
         'Content-Type': contentType,
         'Cache-Control': cacheControl,
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Security-Policy': "default-src 'none'; sandbox",
       },
     });
   } catch (error: unknown) {

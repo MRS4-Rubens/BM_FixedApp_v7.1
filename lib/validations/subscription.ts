@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { maxBase64Chars } from '@/lib/security/upload';
 
 export const subscriptionClaimSchema = z.object({
   plan_name: z.enum(['essentials', 'professional'], {
@@ -14,8 +15,9 @@ export const subscriptionClaimSchema = z.object({
     .max(50, 'Transaction reference/UTR is too long')
     .regex(/^[A-Za-z0-9/-]+$/, 'Reference can only contain letters, numbers, / and -')
     .transform((val) => val.trim().toUpperCase()),
-  screenshot_base64: z.string().optional().or(z.literal('')),
-  screenshot_mime: z.string().optional().or(z.literal('')),
+  screenshot_base64: z.string().max(maxBase64Chars(4 * 1024 * 1024)).optional().or(z.literal('')),
+  // client hint, ignored by the server
+  screenshot_mime: z.string().max(100).optional().or(z.literal('')),
 });
 
 export type SubscriptionClaimInput = z.infer<typeof subscriptionClaimSchema>;

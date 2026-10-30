@@ -48,7 +48,7 @@ export default async function AdminPage() {
       let screenshotUrl = null;
       if (req.screenshotStorageKey) {
         try {
-          screenshotUrl = await getSignedDownloadUrl(req.screenshotStorageKey, 604800);
+          screenshotUrl = await getSignedDownloadUrl(req.screenshotStorageKey, 604800, { forceDownload: true });
         } catch (e) {
           console.error('[AdminPage] Failed to generate signed URL:', e);
         }
