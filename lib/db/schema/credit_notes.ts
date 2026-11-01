@@ -7,6 +7,8 @@ import { users } from './users';
 import { lifecycleStatusEnum } from './enums';
 import { creditNoteLineItems } from './credit_note_line_items';
 import { sellerSnapshotColumns } from './_seller_snapshot';
+import { inList } from './_check-helpers';
+import { RECORD_STATUSES, type RecordStatus } from '../domain-values';
 
 export const creditNotes = pgTable('credit_notes', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -30,7 +32,7 @@ export const creditNotes = pgTable('credit_notes', {
   ...sellerSnapshotColumns(),
 
   // Anti-fraud & Statutory Audit Trail Lifecycle Fields (CGST Rule 53 / GSTR-1 Table 13 Compliant)
-  status: text('status').notNull().default('active'), // 'active' | 'voided'
+  status: text('status').$type<RecordStatus>().notNull().default('active'), // DB-004: CHECK credit_notes_status_valid
   voided_at: timestamp('voided_at', { withTimezone: true }),
   voided_by: uuid('voided_by').references(() => users.id),
   void_reason: text('void_reason'),
@@ -69,7 +71,9 @@ export const creditNotes = pgTable('credit_notes', {
   check('credit_notes_final_requires_number', sql`${table.lifecycle_status} = 'draft' OR (${table.credit_note_sequence} IS NOT NULL AND ${table.finalized_at} IS NOT NULL AND ${table.issue_date} IS NOT NULL)`),
   // COMP-001: a finalized credit note must freeze the seller snapshot (including GSTIN) and declare its source.
   check('credit_notes_final_requires_seller_snapshot', sql`${table.lifecycle_status} = 'draft' OR (${table.seller_name_snapshot} IS NOT NULL AND ${table.seller_address_snapshot} IS NOT NULL AND ${table.seller_state_code_snapshot} IS NOT NULL AND ${table.seller_snapshot_source} IS NOT NULL AND ${table.seller_gstin_snapshot} IS NOT NULL)`),
-  check('credit_notes_seller_snapshot_source_valid', sql`${table.seller_snapshot_source} IS NULL OR ${table.seller_snapshot_source} IN ('captured_at_finalization', 'backfilled_from_profile')`)
+  check('credit_notes_seller_snapshot_source_valid', sql`${table.seller_snapshot_source} IS NULL OR ${table.seller_snapshot_source} IN ('captured_at_finalization', 'backfilled_from_profile')`),
+  // DB-004: CHECK credit_notes_status_valid
+  check('credit_notes_status_valid', inList(table.status, RECORD_STATUSES))
 ]);
 
 export const creditNotesRelations = relations(creditNotes, ({ one, many }) => ({

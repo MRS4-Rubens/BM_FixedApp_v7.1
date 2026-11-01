@@ -58,8 +58,8 @@ export const saveBusinessProfile = createAuthenticatedAction(businessProfileSche
       // FIRST-TIME SETUP: evaluate the entitlement gate against the exact subscription state we are inserting.
       const trialEndsAt = new Date(Date.now() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
       const subscription = {
-        subscription_plan: 'trial',
-        subscription_status: 'trial',
+        subscription_plan: 'trial' as const,
+        subscription_status: 'trial' as const,
         trial_ends_at: trialEndsAt,
       };
       const invoiceNumberFormat = input.invoice_number_format || DEFAULT_INVOICE_NUMBER_FORMAT;

@@ -1,19 +1,30 @@
-import { pgTable, text, timestamp, uuid, integer, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, integer, index, check } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { users } from './users';
+import { inList } from './_check-helpers';
+import {
+  SUBSCRIPTION_PLANS,
+  REQUEST_BILLING_CYCLES,
+  REQUEST_PAYMENT_METHODS,
+  REQUEST_STATUSES,
+  type SubscriptionPlanValue,
+  type RequestBillingCycle,
+  type RequestPaymentMethod,
+  type RequestStatus,
+} from '../domain-values';
 
 export const subscriptionRequests = pgTable('subscription_requests', {
   id: uuid('id').primaryKey().defaultRandom(),
   business_id: uuid('business_id').notNull().references(() => businesses.id),
   user_id: uuid('user_id').notNull().references(() => users.id),
-  plan_name: text('plan_name').notNull(), // 'free', 'essentials', 'professional'
-  billing_cycle: text('billing_cycle').notNull(), // 'monthly', 'yearly'
+  plan_name: text('plan_name').$type<SubscriptionPlanValue>().notNull(),
+  billing_cycle: text('billing_cycle').$type<RequestBillingCycle>().notNull(),
   amount_paise: integer('amount_paise').notNull(),
-  payment_method: text('payment_method').notNull(), // 'upi_qr', 'upi_id', 'bank_transfer'
+  payment_method: text('payment_method').$type<RequestPaymentMethod>().notNull(),
   payment_reference: text('payment_reference').notNull().unique(), // UTR / Transaction ID
   screenshot_storage_key: text('screenshot_storage_key'), // S3 Storage key
-  status: text('status').notNull().default('pending'), // 'pending', 'approved', 'rejected'
+  status: text('status').$type<RequestStatus>().notNull().default('pending'),
   reject_reason: text('reject_reason'),
   approved_at: timestamp('approved_at', { withTimezone: true }),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -21,6 +32,11 @@ export const subscriptionRequests = pgTable('subscription_requests', {
 }, (table) => [
   index('subscription_requests_business_id_idx').on(table.business_id),
   index('subscription_requests_status_idx').on(table.status),
+  // DB-004: CHECK constraints for state columns
+  check('subscription_requests_plan_name_valid', inList(table.plan_name, SUBSCRIPTION_PLANS)),
+  check('subscription_requests_billing_cycle_valid', inList(table.billing_cycle, REQUEST_BILLING_CYCLES)),
+  check('subscription_requests_payment_method_valid', inList(table.payment_method, REQUEST_PAYMENT_METHODS)),
+  check('subscription_requests_status_valid', inList(table.status, REQUEST_STATUSES)),
 ]);
 
 export const subscriptionRequestsRelations = relations(subscriptionRequests, ({ one }) => ({

@@ -4,6 +4,8 @@ import { businesses } from './businesses';
 import { invoices } from './invoices';
 import { users } from './users';
 import { paymentMethodEnum } from './enums';
+import { inList } from './_check-helpers';
+import { RECORD_STATUSES, type RecordStatus } from '../domain-values';
 
 export const payments = pgTable('payments', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -16,7 +18,7 @@ export const payments = pgTable('payments', {
   notes: text('notes'),
   
   // Anti-fraud & Audit Trail Lifecycle Fields
-  status: text('status').notNull().default('active'), // 'active' | 'voided'
+  status: text('status').$type<RecordStatus>().notNull().default('active'), // DB-004: CHECK payments_status_valid
   voided_at: timestamp('voided_at', { withTimezone: true }),
   voided_by: uuid('voided_by').references(() => users.id),
   void_reason: text('void_reason'),
@@ -38,7 +40,9 @@ export const payments = pgTable('payments', {
   // DB-001: a payment must be a positive amount.
   check('payments_amount_positive', sql`${table.amount_paise} > 0`),
   // DB-003: JavaScript Number.MAX_SAFE_INTEGER safety check.
-  check('payments_amount_js_safe', sql`${table.amount_paise} <= 9007199254740991`)
+  check('payments_amount_js_safe', sql`${table.amount_paise} <= 9007199254740991`),
+  // DB-004: CHECK payments_status_valid
+  check('payments_status_valid', inList(table.status, RECORD_STATUSES))
 ]);
 
 export const paymentsRelations = relations(payments, ({ one }) => ({

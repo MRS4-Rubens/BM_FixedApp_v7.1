@@ -8,6 +8,8 @@ import { invoiceLineItems } from './invoice_line_items';
 import { payments } from './payments';
 import { creditNotes } from './credit_notes';
 import { sellerSnapshotColumns } from './_seller_snapshot';
+import { inList } from './_check-helpers';
+import { INVOICE_TEMPLATE_IDS, type InvoiceTemplateValue } from '../domain-values';
 
 // COMP-001: The *_snapshot fields freeze both seller and buyer details at finalization, ensuring subsequent edits to business profile or customer record never alter the legal content of a finalized invoice.
 export const invoices = pgTable('invoices', {
@@ -36,7 +38,7 @@ export const invoices = pgTable('invoices', {
   total_tax_paise: bigint('total_tax_paise', { mode: 'number' }).notNull().default(0),
   grand_total_paise: bigint('grand_total_paise', { mode: 'number' }).notNull().default(0),
   notes: text('notes'),
-  invoice_template: text('invoice_template').notNull().default('template_1'),
+  invoice_template: text('invoice_template').$type<InvoiceTemplateValue>().notNull().default('template_1'),
   // pdf_storage_key (existing, Phase 2) holds the iDrive e2 object key once archival_status is 'archived'. credit_notes will get equivalent fields when Phase 12 is built, following this same pattern.
   pdf_storage_key: text('pdf_storage_key'),
   archival_status: archivalStatusEnum('archival_status').notNull().default('pending'),
@@ -82,7 +84,9 @@ export const invoices = pgTable('invoices', {
   check('invoices_final_requires_number', sql`${table.lifecycle_status} = 'draft' OR (${table.invoice_sequence} IS NOT NULL AND ${table.finalized_at} IS NOT NULL AND ${table.invoice_date} IS NOT NULL)`),
   // COMP-001: a finalized invoice must freeze the seller snapshot and declare its source.
   check('invoices_final_requires_seller_snapshot', sql`${table.lifecycle_status} = 'draft' OR (${table.seller_name_snapshot} IS NOT NULL AND ${table.seller_address_snapshot} IS NOT NULL AND ${table.seller_state_code_snapshot} IS NOT NULL AND ${table.seller_snapshot_source} IS NOT NULL)`),
-  check('invoices_seller_snapshot_source_valid', sql`${table.seller_snapshot_source} IS NULL OR ${table.seller_snapshot_source} IN ('captured_at_finalization', 'backfilled_from_profile')`)
+  check('invoices_seller_snapshot_source_valid', sql`${table.seller_snapshot_source} IS NULL OR ${table.seller_snapshot_source} IN ('captured_at_finalization', 'backfilled_from_profile')`),
+  // DB-004: CHECK invoices_invoice_template_valid
+  check('invoices_invoice_template_valid', inList(table.invoice_template, INVOICE_TEMPLATE_IDS))
 ]);
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({

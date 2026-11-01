@@ -52,3 +52,60 @@ Migrations are NOT applied automatically. Use GitHub -> Actions -> "Production D
 - If a migration is ever blocked by `*_same_biz` during VALIDATE, a cross-business row exists: treat it as a data-leak incident (stop, quarantine, inform the affected businesses); never drop the constraint to make the migration pass.
 
 
+
+## State-column check constraints (DB-004)
+Migration `0020_db004_state_check_constraints.sql` adds 10 CHECK constraints enforcing valid values across closed text columns in `payments`, `credit_notes`, `businesses`, `invoices`, and `subscription_requests`.
+
+Because the migration runs `VALIDATE CONSTRAINT` within the migration transaction, **any existing row violating these constraints will cause the entire migration to fail and roll back**.
+
+### Pre-flight audit queries
+Run these 10 queries on production before applying migration `0020`. Each query MUST return `0`:
+
+```sql
+-- 1. payments.status
+SELECT COUNT(*) FROM payments WHERE status NOT IN ('active', 'void');
+
+-- 2. credit_notes.status
+SELECT COUNT(*) FROM credit_notes WHERE status NOT IN ('draft', 'finalized', 'void');
+
+-- 3. businesses.subscription_plan
+SELECT COUNT(*) FROM businesses WHERE subscription_plan NOT IN ('trial', 'free', 'essentials', 'professional');
+
+-- 4. businesses.subscription_status
+SELECT COUNT(*) FROM businesses WHERE subscription_status NOT IN ('trial', 'active', 'past_due', 'grace_period', 'expired');
+
+-- 5. businesses.default_invoice_template
+SELECT COUNT(*) FROM businesses WHERE default_invoice_template NOT IN ('classic', 'modern', 'minimal', 'thermal');
+
+-- 6. invoices.invoice_template
+SELECT COUNT(*) FROM invoices WHERE invoice_template NOT IN ('classic', 'modern', 'minimal', 'thermal');
+
+-- 7. subscription_requests.plan_name
+SELECT COUNT(*) FROM subscription_requests WHERE plan_name NOT IN ('trial', 'free', 'essentials', 'professional');
+
+-- 8. subscription_requests.billing_cycle
+SELECT COUNT(*) FROM subscription_requests WHERE billing_cycle NOT IN ('monthly', 'yearly', 'manual_override');
+
+-- 9. subscription_requests.payment_method
+SELECT COUNT(*) FROM subscription_requests WHERE payment_method NOT IN ('upi_qr', 'bank_transfer', 'manual_override');
+
+-- 10. subscription_requests.status
+SELECT COUNT(*) FROM subscription_requests WHERE status NOT IN ('pending', 'approved', 'rejected');
+```
+
+### Remediation SQL (if violations are found)
+If any query returns a non-zero count, remediate legacy rows before migrating:
+- **Businesses with invalid subscription status** (e.g. legacy `'cancelled'`):
+  ```sql
+  UPDATE businesses SET subscription_status = 'expired' WHERE subscription_status NOT IN ('trial', 'active', 'past_due', 'grace_period', 'expired');
+  ```
+- **Businesses or invoices with invalid templates** (e.g. unknown or empty strings):
+  ```sql
+  UPDATE businesses SET default_invoice_template = 'classic' WHERE default_invoice_template NOT IN ('classic', 'modern', 'minimal', 'thermal');
+  UPDATE invoices SET invoice_template = 'classic' WHERE invoice_template NOT IN ('classic', 'modern', 'minimal', 'thermal');
+  ```
+- **Subscription requests with invalid status or overrides**:
+  ```sql
+  -- Inspect and map to closest valid domain value before re-running migration:
+  SELECT id, plan_name, billing_cycle, payment_method, status FROM subscription_requests WHERE status NOT IN ('pending', 'approved', 'rejected');
+  ```

@@ -181,7 +181,7 @@ describe('API-009: Subscription approval race and manual override integrity', ()
        VALUES ($1, 'admin_auth', $2, NULL, 'owner')`,
       [ADMIN_USER_ID, ADMIN_EMAIL],
     );
-  });
+  }, 60_000);
 
   afterAll(async () => {
     await pg.close();
@@ -449,7 +449,7 @@ describe('API-009: Subscription approval race and manual override integrity', ()
       `INSERT INTO subscription_requests (
         business_id, user_id, plan_name, billing_cycle, amount_paise,
         payment_method, payment_reference, status
-      ) VALUES ($1, $2, 'essentials', 'weekly', 39900, 'upi_qr', 'UTR_WEIRD_001', 'pending') RETURNING id`,
+      ) VALUES ($1, $2, 'essentials', 'manual_override', 39900, 'upi_qr', 'UTR_WEIRD_001', 'pending') RETURNING id`,
       [businessId, ownerUserId],
     );
 

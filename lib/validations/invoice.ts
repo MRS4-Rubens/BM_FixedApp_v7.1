@@ -3,6 +3,7 @@ import { UNIT_OF_MEASUREMENT_OPTIONS } from '@/lib/gst/units';
 import { GSTIN_REGEX } from '@/lib/validations/patterns';
 import { isValidIsoCalendarDate } from '@/lib/invoices/invoice-date-policy';
 import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
+import { INVOICE_TEMPLATE_IDS } from '@/lib/invoices/template-ids';
 import {
   MAX_QUANTITY,
   MAX_QUANTITY_LABEL,
@@ -43,7 +44,7 @@ export const invoiceDraftSchema = z.object({
     .refine((value) => value <= formatIstDateAsIso(new Date()), 'Invoice date cannot be in the future')
     .optional(),
   notes: z.string().max(1000).optional().or(z.literal('')),
-  invoice_template: z.string().optional(),
+  invoice_template: z.enum(INVOICE_TEMPLATE_IDS).optional(),
   // Validation for active GST rate calculation type of this invoice (inclusive vs exclusive)
   gst_rate_type: z.enum(['inclusive', 'exclusive']).default('exclusive'),
   line_items: z

@@ -264,3 +264,30 @@ All file uploads (payment screenshots, business logos, user feedback attachments
 - **JavaScript safety**: bounded by `Number.MAX_SAFE_INTEGER` (9,007,199,254,740,991 paise ≈ ₹90,071 crore). Enforced by database CHECK constraints (`*_paise_js_safe`).
 - **Business limits**: defined centrally in `lib/money-limits.ts`. Invoices are capped at ₹99,99,99,999.99 (9,999,999,999 paise, ~₹100 crore) grand total, ₹99,99,999.99 unit price, 9,999,999.999 quantity, and 200 line items.
 - **Defense-in-depth**: enforced at (1) Zod schema on input, (2) `lib/gst/calculate.ts` pure math engine (throws `MoneyLimitError`), (3) `calculateInvoiceTaxOrActionError` mapping to user-visible `ActionError` (`AMOUNT_LIMIT_EXCEEDED`), (4) database CHECK constraints.
+
+## State-column domains (DB-004)
+
+- **Single Source of Truth**: All closed-set domain strings (subscription plans, subscription statuses, invoice templates, record lifecycle statuses, subscription request statuses, billing cycles, and payment methods) are defined as `as const` tuples and type guards in `lib/db/domain-values.ts`.
+- **Derivation Hierarchy**: 
+  1. `lib/db/domain-values.ts`: Pure constants and TypeScript string unions.
+  2. `lib/db/schema/*`: Schema columns narrowed with `text(...).$type<DomainType>()` and bound to database `CHECK (col IN (...))` constraints using `inList()` from `lib/db/schema/_check-helpers.ts`.
+  3. `lib/validations/*`: Zod enums constructed directly via `z.enum(TUPLE)`.
+  4. Domain logic: Pure type guards (e.g. `isOneOf`) and derived application types.
+- **Enforced Constraints (10 total across 5 tables)**:
+  - `payments`: `payments_status_valid` (`status IN ('active', 'void')`).
+  - `credit_notes`: `credit_notes_status_valid` (`status IN ('draft', 'finalized', 'void')`).
+  - `businesses`:
+    - `businesses_subscription_plan_valid` (`subscription_plan IN ('trial', 'free', 'essentials', 'professional')`).
+    - `businesses_subscription_status_valid` (`subscription_status IN ('trial', 'active', 'past_due', 'grace_period', 'expired')`).
+    - `businesses_default_invoice_template_valid` (`default_invoice_template IN ('classic', 'modern', 'minimal', 'thermal')`).
+  - `invoices`: `invoices_invoice_template_valid` (`invoice_template IN ('classic', 'modern', 'minimal', 'thermal')`).
+  - `subscription_requests`:
+    - `subscription_requests_plan_name_valid` (`plan_name IN ('trial', 'free', 'essentials', 'professional')`).
+    - `subscription_requests_billing_cycle_valid` (`billing_cycle IN ('monthly', 'yearly', 'manual_override')`).
+    - `subscription_requests_payment_method_valid` (`payment_method IN ('upi_qr', 'bank_transfer', 'manual_override')`).
+    - `subscription_requests_status_valid` (`status IN ('pending', 'approved', 'rejected')`).
+- **Purpose**:
+  1. **Prevent Entitlement Mis-Resolution**: Prevents arbitrary or corrupt plan values from being stored, which could otherwise silently fall back or grant unearned tiers in `resolveBusinessPlan`.
+  2. **Audit Integrity & Invariant Preservation**: Prevents invalid status transitions or unsupported lifecycle values in statutory accounting records (`invoices`, `credit_notes`, `payments`).
+  3. **UI Consistency**: Guarantees templates and subscription claims stay within supported design systems and workflows.
+- **Migration & Rollback**: Added via migration `0020_db004_state_check_constraints.sql` using idempotent `DROP CONSTRAINT IF EXISTS` followed by `ADD CONSTRAINT ... NOT VALID` and `VALIDATE CONSTRAINT` in a single transaction. Legacy bad rows abort the entire migration cleanly without leaving partial or invalid state.

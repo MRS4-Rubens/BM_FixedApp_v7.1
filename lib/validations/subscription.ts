@@ -1,15 +1,16 @@
 import { z } from 'zod';
 import { maxBase64Chars } from '@/lib/security/upload';
+import { PAID_PLAN_NAMES, CLAIM_BILLING_CYCLES, CLAIM_PAYMENT_METHODS } from '@/lib/db/domain-values';
 
 export const subscriptionClaimSchema = z.object({
-  plan_name: z.enum(['essentials', 'professional'], {
+  plan_name: z.enum(PAID_PLAN_NAMES, {
     message: 'Invalid subscription plan selected.',
   }),
-  billing_cycle: z.enum(['monthly', 'yearly'], {
+  billing_cycle: z.enum(CLAIM_BILLING_CYCLES, {
     message: 'Invalid billing cycle.',
   }),
   amount_paise: z.number().int().positive('Amount must be positive').optional(),
-  payment_method: z.enum(['upi_qr', 'upi_id', 'bank_transfer']),
+  payment_method: z.enum(CLAIM_PAYMENT_METHODS),
   payment_reference: z.string()
     .min(6, 'Transaction reference/UTR must be at least 6 characters')
     .max(50, 'Transaction reference/UTR is too long')

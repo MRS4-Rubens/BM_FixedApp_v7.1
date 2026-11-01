@@ -141,6 +141,13 @@
       "when": 1793541393708,
       "tag": "0019_db003_paise_bigint_and_js_safe_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793552659387,
+      "tag": "0020_db004_state_check_constraints",
+      "breakpoints": true
     }
   ]
 }

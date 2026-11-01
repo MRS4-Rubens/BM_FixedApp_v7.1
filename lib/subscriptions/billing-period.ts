@@ -1,12 +1,14 @@
-export type BillingCycle = 'monthly' | 'yearly';
-export type PaidPlanName = 'essentials' | 'professional';
+import { CLAIM_BILLING_CYCLES, PAID_PLAN_NAMES, isOneOf } from '@/lib/db/domain-values';
+
+export type BillingCycle = (typeof CLAIM_BILLING_CYCLES)[number];
+export type PaidPlanName = (typeof PAID_PLAN_NAMES)[number];
 
 export function isBillingCycle(value: string): value is BillingCycle {
-  return value === 'monthly' || value === 'yearly';
+  return isOneOf(CLAIM_BILLING_CYCLES, value);
 }
 
 export function isPaidPlanName(value: string): value is PaidPlanName {
-  return value === 'essentials' || value === 'professional';
+  return isOneOf(PAID_PLAN_NAMES, value);
 }
 
 /** Adds exactly one billing cycle in UTC, clamping to the last day of the target month (Jan 31 + 1 month = Feb 28/29). Time of day is preserved. */
@@ -36,4 +38,3 @@ export function resolveApprovalBase(currentExpiry: Date | string | null, now: Da
   if (Number.isNaN(expiry.getTime()) || expiry.getTime() <= now.getTime()) return new Date(now.getTime());
   return new Date(expiry.getTime());
 }
-

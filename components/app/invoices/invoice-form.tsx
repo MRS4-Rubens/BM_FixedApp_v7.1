@@ -27,6 +27,7 @@ import { resolveInvoiceNumber } from '@/lib/invoices/number-format'
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states'
 import { InvoicePrintView } from './invoice-print-view'
 import { canUseTemplate } from '@/lib/subscriptions/entitlements'
+import { isInvoiceTemplateId } from '@/lib/invoices/template-ids'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
 import { TemplateSelector } from './template-selector'
 
@@ -1506,7 +1507,9 @@ export function InvoiceForm({
                     business={business}
                     compact
                     onChange={(chosen) => {
-                      setValue('invoice_template', chosen);
+                      if (isInvoiceTemplateId(chosen)) {
+                        setValue('invoice_template', chosen);
+                      }
                     }}
                     onUpgradeClick={() => {
                       setValue('invoice_template', 'template_1');
