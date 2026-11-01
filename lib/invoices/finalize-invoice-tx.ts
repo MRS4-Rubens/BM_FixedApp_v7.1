@@ -1,6 +1,7 @@
 import { and, between, eq, gte, lte, sql } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
+import { writeAudit, type AuditRequestContext } from '@/lib/audit/log';
 import type { DbTransaction } from '@/lib/db/client';
 import { businesses, invoiceLineItems, invoices } from '@/lib/db/schema';
 import { calculateInvoiceTaxOrActionError } from '@/lib/invoices/tax-calculation';
@@ -19,6 +20,8 @@ import { canCreateInvoice, canUseTemplate, getPlanEntitlements } from '@/lib/sub
 export interface FinalizeInvoiceTxParams {
   readonly invoiceId: string;
   readonly businessId: string;
+  readonly actorUserId: string | null;
+  readonly requestContext: AuditRequestContext;
   readonly confirmCrossFinancialYear?: boolean;
 }
 
@@ -209,13 +212,47 @@ export async function finalizeDraftInvoiceInTransaction(
         eq(invoices.lifecycle_status, 'draft'),
       ),
     )
-    .returning({ id: invoices.id });
+    .returning({
+      id: invoices.id,
+      invoice_number: invoices.invoice_number,
+      invoice_sequence: invoices.invoice_sequence,
+      invoice_date: invoices.invoice_date,
+      financial_year_id: invoices.financial_year_id,
+      place_of_supply_state_code: invoices.place_of_supply_state_code,
+      subtotal_paise: invoices.subtotal_paise,
+      total_tax_paise: invoices.total_tax_paise,
+      grand_total_paise: invoices.grand_total_paise,
+    });
 
   if (updated.length !== 1) {
     // Unreachable while the row lock is held; defence in depth. Throwing rolls back the counter increments (no gap).
     throw new ActionError('This invoice has already been finalized.', { code: 'ALREADY_FINALIZED' });
   }
 
+  const [finalized] = updated;
+  if (!finalized) {
+    throw new ActionError('This invoice has already been finalized.', { code: 'ALREADY_FINALIZED' });
+  }
+
+  await writeAudit(tx, {
+    businessId: params.businessId,
+    actorUserId: params.actorUserId,
+    entityType: 'invoice',
+    entityId: finalized.id,
+    action: 'finalize',
+    requestContext: params.requestContext,
+    metadata: {
+      invoice_number: finalized.invoice_number,
+      invoice_sequence: finalized.invoice_sequence,
+      invoice_date: finalized.invoice_date,
+      financial_year_id: finalized.financial_year_id,
+      place_of_supply_state_code: finalized.place_of_supply_state_code,
+      subtotal_paise: finalized.subtotal_paise,
+      total_tax_paise: finalized.total_tax_paise,
+      grand_total_paise: finalized.grand_total_paise,
+      cross_financial_year_confirmed: params.confirmCrossFinancialYear === true,
+    },
+  });
+
   return { invoiceId: params.invoiceId, invoiceNumber };
 }
-

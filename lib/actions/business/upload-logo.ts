@@ -2,6 +2,8 @@
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { writeAudit } from '@/lib/audit/log';
+import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
@@ -35,6 +37,8 @@ export const uploadBusinessLogo = createAuthenticatedAction(
         code: 'NO_BUSINESS',
       });
     }
+
+    const requestContext = await getAuditRequestContext();
 
     // 1. Check existing business and entitlement
     const existing = await db
@@ -89,10 +93,25 @@ export const uploadBusinessLogo = createAuthenticatedAction(
           .where(eq(businesses.id, businessId))
           .for('update');
         if (!row) throw new ActionError('Business profile not found.', { code: 'NOT_FOUND' });
+
         await tx
           .update(businesses)
           .set({ logo_storage_key: storageKey, updated_at: new Date() })
           .where(eq(businesses.id, businessId));
+
+        await writeAudit(tx, {
+          businessId,
+          actorUserId: context.appUser.id,
+          entityType: 'business',
+          entityId: businessId,
+          action: 'logo_upload',
+          requestContext,
+          metadata: {
+            logo_storage_key: storageKey,
+            previous_logo_storage_key: row.key,
+          },
+        });
+
         return row.key;
       });
     } catch (dbError: unknown) {

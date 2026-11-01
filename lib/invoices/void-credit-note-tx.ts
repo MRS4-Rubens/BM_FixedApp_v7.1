@@ -1,7 +1,8 @@
 import { and, eq } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { writeAudit, type AuditRequestContext } from '@/lib/audit/log';
 import type { DbTransaction } from '@/lib/db/client';
-import { auditLog, creditNotes } from '@/lib/db/schema';
+import { creditNotes } from '@/lib/db/schema';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
 import { lockFinalizedCreditNote, lockFinalizedInvoice } from '@/lib/invoices/document-locks';
 import { recomputePaymentStatus, type PaymentStatus } from '@/lib/invoices/payment-status';
@@ -11,6 +12,7 @@ export interface VoidCreditNoteTxParams {
   readonly businessId: string;
   readonly userId: string;
   readonly operatorDisplayName: string | null | undefined;
+  readonly requestContext: AuditRequestContext;
   readonly input: VoidCreditNoteInput;
   readonly now?: Date;
 }
@@ -29,7 +31,7 @@ export async function voidCreditNoteInTransaction(
   tx: DbTransaction,
   params: VoidCreditNoteTxParams,
 ): Promise<VoidCreditNoteTxResult> {
-  const { businessId, userId, operatorDisplayName, input } = params;
+  const { businessId, userId, operatorDisplayName, requestContext, input } = params;
 
   // 1. Fail fast lock timeout
   await setLocalLockTimeout(tx);
@@ -91,12 +93,13 @@ export async function voidCreditNoteInTransaction(
   }
 
   // 6. Log in statutory audit log
-  await tx.insert(auditLog).values({
-    business_id: businessId,
-    user_id: userId,
-    entity_type: 'credit_note',
-    entity_id: creditNote.id,
+  await writeAudit(tx, {
+    businessId,
+    actorUserId: userId,
+    entityType: 'credit_note',
+    entityId: creditNote.id,
     action: 'void',
+    requestContext,
     metadata: {
       credit_note_number: creditNote.credit_note_number,
       credit_note_sequence: creditNote.credit_note_sequence,
@@ -104,10 +107,10 @@ export async function voidCreditNoteInTransaction(
       subtotal_paise: creditNote.subtotal_paise,
       total_tax_paise: creditNote.total_tax_paise,
       reason: input.reason,
-      notes: input.notes,
+      notes: input.notes ?? null,
       original_invoice_id: invoice.id,
       original_invoice_number: invoice.invoice_number,
-      operator_display_name: operatorDisplayName,
+      operator_display_name: operatorDisplayName ?? null,
       voided_at: voidedAt.toISOString(),
     },
   });
@@ -125,4 +128,3 @@ export async function voidCreditNoteInTransaction(
     creditNoteId: creditNote.id,
   };
 }
-

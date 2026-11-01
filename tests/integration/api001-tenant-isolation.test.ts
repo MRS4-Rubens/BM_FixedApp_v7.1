@@ -258,6 +258,12 @@ describe('API-001: tenant isolation of customers, products and invoices', () => 
       journal.slice(db002Position).filter((entry) => !entry.tag.endsWith(DB002_PART_B_SUFFIX)),
     );
     state.businessId = a.businessId;
+
+    await pg.query(
+      `INSERT INTO users (id, auth_user_id, business_id, email, display_name, role)
+       VALUES ('00000000-0000-0000-0000-000000000001', 'auth_001', $1, 'user@test.dev', 'Test User', 'owner')`,
+      [a.businessId],
+    );
   }, 180_000);
 
   afterAll(async () => {

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { eq, sql } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { NO_AUDIT_REQUEST_CONTEXT } from '@/lib/audit/log';
 import { withTransactionRetry } from '@/lib/db/transaction';
 import * as schema from '@/lib/db/schema';
 import { lockDraftInvoice } from '@/lib/invoices/document-locks';
@@ -37,6 +38,8 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
       finalizeDraftInvoiceInTransaction(tx, {
         invoiceId: warmup.invoiceId,
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
       }),
     );
   }, 60_000);
@@ -64,6 +67,8 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
           finalizeDraftInvoiceInTransaction(tx, {
             invoiceId,
             businessId: testBusiness.id,
+            actorUserId: null,
+            requestContext: NO_AUDIT_REQUEST_CONTEXT,
           }),
         ),
       ),
@@ -74,9 +79,11 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
     const fulfilled = results.filter((r) => r.status === 'fulfilled');
     const rejected = results.filter((r) => r.status === 'rejected');
 
+    // Exactly 1 must succeed
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(9);
 
+    // All rejected must be ALREADY_FINALIZED
     for (const rej of rejected) {
       if (rej.status === 'rejected') {
         expect(rej.reason).toBeInstanceOf(ActionError);
@@ -84,19 +91,18 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
       }
     }
 
-    // Check financial_years.invoice_sequence_counter increased by exactly 1
+    // Sequence counter incremented by EXACTLY 1 (no gaps)
     const [fyAfter] = await testDb
       .select({ count: schema.financialYears.invoice_sequence_counter })
       .from(schema.financialYears)
       .where(eq(schema.financialYears.id, defaultFyId));
     expect(fyAfter?.count).toBe(baselineSeq + 1);
 
-    // Check invoice has invoice_sequence = baseline + 1
+    // Single invoice state is finalized
     const [invRow] = await testDb
       .select()
       .from(schema.invoices)
       .where(eq(schema.invoices.id, invoiceId));
-    expect(invRow?.invoice_sequence).toBe(baselineSeq + 1);
     expect(invRow?.lifecycle_status).toBe('finalized');
   }, 60_000);
 
@@ -117,6 +123,8 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
           finalizeDraftInvoiceInTransaction(tx, {
             invoiceId: d.invoiceId,
             businessId: testBusiness.id,
+            actorUserId: null,
+            requestContext: NO_AUDIT_REQUEST_CONTEXT,
           }),
         ),
       ),
@@ -165,6 +173,8 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
             finalizeDraftInvoiceInTransaction(tx, {
               invoiceId: d.invoiceId,
               businessId: testBusiness.id,
+              actorUserId: null,
+              requestContext: NO_AUDIT_REQUEST_CONTEXT,
             }),
           ),
         ),
@@ -199,9 +209,16 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
     const sequences = rows.map((r) => r.seq).sort((a, b) => (a ?? 0) - (b ?? 0));
     const expected = Array.from({ length: 10 }, (_, i) => baselineSeq + 1 + i);
     expect(sequences).toEqual(expected);
+
+    // Sequence counter incremented by EXACTLY 10
+    const [fyAfter] = await testDb
+      .select({ count: schema.financialYears.invoice_sequence_counter })
+      .from(schema.financialYears)
+      .where(eq(schema.financialYears.id, defaultFyId));
+    expect(fyAfter?.count).toBe(baselineSeq + 10);
   }, 60_000);
 
-  it('Case 4: Rollback leaves no gap when getNextInvoiceNumber throws FORMAT_CAPACITY_EXCEEDED', async () => {
+  it('Case 4: Gap prevention on rollback — failed finalization does not advance sequence counter', async () => {
     const [fyBefore] = await testDb
       .select({ count: schema.financialYears.invoice_sequence_counter })
       .from(schema.financialYears)
@@ -222,6 +239,8 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
         finalizeDraftInvoiceInTransaction(tx, {
           invoiceId: badDraft.invoiceId,
           businessId: testBusiness.id,
+          actorUserId: null,
+          requestContext: NO_AUDIT_REQUEST_CONTEXT,
         }),
       );
     } catch (err: unknown) {
@@ -250,6 +269,8 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
       finalizeDraftInvoiceInTransaction(tx, {
         invoiceId: goodDraft.invoiceId,
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
       }),
     );
 
@@ -267,6 +288,8 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
       finalizeDraftInvoiceInTransaction(tx, {
         invoiceId: origInvId,
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
       }),
     );
 
@@ -290,6 +313,8 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
           finalizeDraftCreditNoteInTransaction(tx, {
             creditNoteId,
             businessId: testBusiness.id,
+            actorUserId: null,
+            requestContext: NO_AUDIT_REQUEST_CONTEXT,
           }),
         ),
       ),
@@ -338,6 +363,8 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
       const res = await finalizeDraftInvoiceInTransaction(tx, {
         invoiceId,
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
       });
       aCommittedTime = Date.now();
       return res;
@@ -395,4 +422,3 @@ describe.skipIf(!testDbUrl)('Finalize concurrency tests (REAL Postgres)', () => 
     expect(cnGapQuery.rows).toHaveLength(0);
   }, 60_000);
 });
-

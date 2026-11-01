@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { and, eq, sql } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { NO_AUDIT_REQUEST_CONTEXT } from '@/lib/audit/log';
 import * as schema from '@/lib/db/schema';
 import { withTransactionRetry } from '@/lib/db/transaction';
 import { finalizeDraftCreditNoteInTransaction } from '@/lib/invoices/finalize-credit-note-tx';
@@ -41,6 +42,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
       finalizeDraftInvoiceInTransaction(tx, {
         invoiceId: warmup.invoiceId,
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
       }),
     );
   }, 60_000);
@@ -97,6 +100,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
       finalizeDraftInvoiceInTransaction(tx, {
         invoiceId: invoice.id,
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
       }),
     );
 
@@ -104,45 +109,64 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
   }
 
   async function createCustomDraftCreditNote(
-    originalInvoiceId: string,
-    grandTotalPaise: number,
+    invoiceId: string,
+    amountPaise: number,
   ): Promise<string> {
+    const [origInvoice] = await testDb
+      .select()
+      .from(schema.invoices)
+      .where(eq(schema.invoices.id, invoiceId));
+
+    if (!origInvoice) throw new Error('Invoice not found');
+
+    const [origLineItem] = await testDb
+      .select()
+      .from(schema.invoiceLineItems)
+      .where(eq(schema.invoiceLineItems.invoice_id, invoiceId))
+      .limit(1);
+
+    if (!origLineItem) throw new Error('Original line item not found');
+
     const [cn] = await testDb
       .insert(schema.creditNotes)
       .values({
         business_id: testBusiness.id,
-        original_invoice_id: originalInvoiceId,
+        original_invoice_id: invoiceId,
         financial_year_id: defaultFyId,
-        credit_note_number: `DRAFT-CN-${randomBytes(6).toString('hex')}`,
-        reason: '05-other',
+        credit_note_number: `CN-DRAFT-${randomBytes(6).toString('hex')}`,
+        reason: 'Correction of figures',
         lifecycle_status: 'draft',
         status: 'active',
         issue_date: '2026-10-28',
-        subtotal_paise: grandTotalPaise,
+        subtotal_paise: amountPaise,
         total_cgst_paise: 0,
         total_sgst_paise: 0,
         total_igst_paise: 0,
         total_tax_paise: 0,
-        grand_total_paise: grandTotalPaise,
+        grand_total_paise: amountPaise,
       })
       .returning();
 
-    if (!cn) throw new Error('Failed to insert test draft credit note');
+    if (!cn) throw new Error('Failed to create test draft credit note');
+
+    // Fractional quantity so that quantity * origLineItem.unit_price_paise = amountPaise
+    const fracQty = (amountPaise / origLineItem.unit_price_paise).toFixed(3);
 
     await testDb.insert(schema.creditNoteLineItems).values({
       credit_note_id: cn.id,
+      original_line_item_id: origLineItem.id,
       description: 'Test CN Item',
       hsn_sac_code: '998311',
-      quantity: '1.000',
+      quantity: fracQty,
       unit_of_measurement: 'NOS',
-      unit_price_paise: grandTotalPaise,
+      unit_price_paise: origLineItem.unit_price_paise,
       discount_paise: 0,
-      taxable_value_paise: grandTotalPaise,
+      taxable_value_paise: amountPaise,
       tax_rate_percentage: '0.00',
       cgst_paise: 0,
       sgst_paise: 0,
       igst_paise: 0,
-      line_total_paise: grandTotalPaise,
+      line_total_paise: amountPaise,
       sort_order: 0,
     });
 
@@ -150,53 +174,50 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
   }
 
   async function assertStatusConsistent(invoiceId: string): Promise<void> {
-    const [invoice] = await testDb
+    const [inv] = await testDb
       .select()
       .from(schema.invoices)
-      .where(and(eq(schema.invoices.id, invoiceId), eq(schema.invoices.business_id, testBusiness.id)));
+      .where(eq(schema.invoices.id, invoiceId));
 
-    if (!invoice) throw new Error('Invoice not found for assertion');
+    if (!inv) throw new Error('Invoice not found for assertion');
 
-    const [paidRow] = await testDb
-      .select({ total: sql<string | number>`coalesce(sum(${schema.payments.amount_paise}), 0)` })
+    const [paySum] = await testDb
+      .select({ total: sql<string>`coalesce(sum(${schema.payments.amount_paise}), 0)` })
       .from(schema.payments)
-      .where(
-        and(
-          eq(schema.payments.invoice_id, invoiceId),
-          eq(schema.payments.business_id, testBusiness.id),
-          eq(schema.payments.status, 'active'),
-        ),
-      );
+      .where(and(eq(schema.payments.invoice_id, invoiceId), eq(schema.payments.status, 'active')));
 
-    const [creditedRow] = await testDb
-      .select({ total: sql<string | number>`coalesce(sum(${schema.creditNotes.grand_total_paise}), 0)` })
+    const [cnSum] = await testDb
+      .select({ total: sql<string>`coalesce(sum(${schema.creditNotes.grand_total_paise}), 0)` })
       .from(schema.creditNotes)
       .where(
         and(
           eq(schema.creditNotes.original_invoice_id, invoiceId),
-          eq(schema.creditNotes.business_id, testBusiness.id),
           eq(schema.creditNotes.lifecycle_status, 'finalized'),
           eq(schema.creditNotes.status, 'active'),
         ),
       );
 
-    const activePaid = Number(paidRow?.total ?? 0);
-    const activeCredited = Number(creditedRow?.total ?? 0);
-    const netBill = Math.max(0, invoice.grand_total_paise - activeCredited);
+    const paidPaise = Number(paySum?.total || 0);
+    const creditedPaise = Number(cnSum?.total || 0);
+    const balancePaise = inv.grand_total_paise - paidPaise - creditedPaise;
 
-    const expected =
-      netBill === 0
-        ? 'paid'
-        : activePaid === 0
-          ? 'unpaid'
-          : activePaid >= netBill
-            ? 'paid'
-            : 'partially_paid';
+    // Remaining balance must never be negative
+    expect(balancePaise).toBeGreaterThanOrEqual(0);
 
-    expect(invoice.payment_status).toBe(expected);
+    // Paid + credited must never exceed grand total
+    expect(paidPaise + creditedPaise).toBeLessThanOrEqual(inv.grand_total_paise);
+
+    // Status matches balance
+    if (balancePaise === 0) {
+      expect(inv.payment_status).toBe('paid');
+    } else if (paidPaise > 0 || creditedPaise > 0) {
+      expect(inv.payment_status).toBe('partially_paid');
+    } else {
+      expect(inv.payment_status).toBe('unpaid');
+    }
   }
 
-  it('Test 1 (the core race): 10 concurrent payments of ₹600 on a ₹1000 invoice -> exactly 1 succeeds, 9 fail with OVERPAYMENT', async () => {
+  it('Test 1: 10 concurrent payments of ₹600 on a ₹1000 invoice -> exactly 1 succeeds, 9 fail with OVERPAYMENT', async () => {
     const invoiceId = await createCustomFinalizedInvoice(100000); // ₹1000
 
     const tasks = Array.from({ length: 10 }, () =>
@@ -204,6 +225,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
         testDb.transaction((tx) =>
           recordPaymentInTransaction(tx, {
             businessId: testBusiness.id,
+            actorUserId: null,
+            requestContext: NO_AUDIT_REQUEST_CONTEXT,
             input: {
               invoice_id: invoiceId,
               amount: 600,
@@ -250,6 +273,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
         testDb.transaction((tx) =>
           recordPaymentInTransaction(tx, {
             businessId: testBusiness.id,
+            actorUserId: null,
+            requestContext: NO_AUDIT_REQUEST_CONTEXT,
             input: {
               invoice_id: invoiceId,
               amount: 100,
@@ -283,6 +308,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
     await testDb.transaction((tx) =>
       recordPaymentInTransaction(tx, {
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
         input: {
           invoice_id: invoiceId,
           amount: 400,
@@ -309,6 +336,7 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
             businessId: testBusiness.id,
             userId: 'test-user-id',
             operatorDisplayName: 'Tester',
+            requestContext: NO_AUDIT_REQUEST_CONTEXT,
             input: {
               id: paymentId,
               reason: 'other',
@@ -352,6 +380,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
       finalizeDraftCreditNoteInTransaction(tx, {
         creditNoteId: cnId,
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
       }),
     );
 
@@ -363,6 +393,7 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
             businessId: testBusiness.id,
             userId: 'test-user-id',
             operatorDisplayName: 'Tester',
+            requestContext: NO_AUDIT_REQUEST_CONTEXT,
             input: {
               id: cnId,
               reason: 'Correction',
@@ -401,6 +432,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
       finalizeDraftCreditNoteInTransaction(tx, {
         creditNoteId: earlierCnId,
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
       }),
     );
 
@@ -415,6 +448,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
       testDb.transaction((tx) =>
         recordPaymentInTransaction(tx, {
           businessId: testBusiness.id,
+          actorUserId: null,
+          requestContext: NO_AUDIT_REQUEST_CONTEXT,
           input: {
             invoice_id: invoiceId,
             amount: 400,
@@ -431,6 +466,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
         finalizeDraftCreditNoteInTransaction(tx, {
           creditNoteId: newCnDraftId,
           businessId: testBusiness.id,
+          actorUserId: null,
+          requestContext: NO_AUDIT_REQUEST_CONTEXT,
         }),
       ),
     );
@@ -441,6 +478,7 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
           businessId: testBusiness.id,
           userId: 'test-user-id',
           operatorDisplayName: 'Tester',
+          requestContext: NO_AUDIT_REQUEST_CONTEXT,
           input: {
             id: earlierCnId,
             reason: 'Correction',
@@ -472,6 +510,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
       testDb.transaction((tx) =>
         recordPaymentInTransaction(tx, {
           businessId: testBusiness.id,
+          actorUserId: null,
+          requestContext: NO_AUDIT_REQUEST_CONTEXT,
           input: {
             invoice_id: invoiceId,
             amount: 10,
@@ -487,6 +527,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
     const res1 = await testDb.transaction((tx) =>
       recordPaymentInTransaction(tx, {
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
         input: {
           invoice_id: invoiceId,
           amount: 10,
@@ -502,6 +544,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
     const res2 = await testDb.transaction((tx) =>
       recordPaymentInTransaction(tx, {
         businessId: testBusiness.id,
+        actorUserId: null,
+        requestContext: NO_AUDIT_REQUEST_CONTEXT,
         input: {
           invoice_id: invoiceId,
           amount: 10,
@@ -518,6 +562,8 @@ describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', 
       testDb.transaction((tx) =>
         recordPaymentInTransaction(tx, {
           businessId: testBusiness.id,
+          actorUserId: null,
+          requestContext: NO_AUDIT_REQUEST_CONTEXT,
           input: {
             invoice_id: invoiceId,
             amount: 10,

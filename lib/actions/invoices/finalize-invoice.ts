@@ -3,6 +3,7 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
+import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
 import { toBusyActionError, withTransactionRetry } from '@/lib/db/transaction';
 import { finalizeDraftInvoiceInTransaction } from '@/lib/invoices/finalize-invoice-tx';
@@ -23,11 +24,14 @@ export const finalizeInvoice = createAuthenticatedAction(
     }
 
     try {
+      const requestContext = await getAuditRequestContext();
       const result = await withTransactionRetry(() =>
         db.transaction((tx) =>
           finalizeDraftInvoiceInTransaction(tx, {
             invoiceId: id,
             businessId,
+            actorUserId: context.appUser.id,
+            requestContext,
             confirmCrossFinancialYear: confirm_cross_financial_year,
           }),
         ),

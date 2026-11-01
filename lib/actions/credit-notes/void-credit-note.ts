@@ -3,6 +3,7 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
+import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
 import { toBusyActionError, withTransactionRetry } from '@/lib/db/transaction';
 import { voidCreditNoteInTransaction } from '@/lib/invoices/void-credit-note-tx';
@@ -24,12 +25,14 @@ export const voidCreditNote = createAuthenticatedAction(
     }
 
     try {
+      const requestContext = await getAuditRequestContext();
       const result = await withTransactionRetry(() =>
         db.transaction((tx) =>
           voidCreditNoteInTransaction(tx, {
             businessId,
             userId: context.appUser.id,
             operatorDisplayName: context.appUser.display_name,
+            requestContext,
             input,
           }),
         ),

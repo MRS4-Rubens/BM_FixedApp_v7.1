@@ -67,15 +67,15 @@ function readAllSchemaText(): string {
 
 describe('DB-005 migration and schema static guards', () => {
   const journal = parseJournal(readJson(join(META_DIR, '_journal.json')));
-  const lastEntry = journal[journal.length - 1];
+  const entry21 = journal.find((e) => e.idx === 21);
   const migrationTag = '0021_db005_index_hardening';
   const migrationSqlPath = join(DRIZZLE_DIR, `${migrationTag}.sql`);
   const snapshotPath = join(META_DIR, '0021_snapshot.json');
 
-  it('1. migration 0021 is the last journal entry and its snapshot exists', () => {
-    expect(lastEntry).toBeDefined();
-    expect(lastEntry?.idx).toBe(21);
-    expect(lastEntry?.tag).toBe(migrationTag);
+  it('1. migration 0021 exists in journal and its snapshot exists', () => {
+    expect(entry21).toBeDefined();
+    expect(entry21?.idx).toBe(21);
+    expect(entry21?.tag).toBe(migrationTag);
     expect(existsSync(migrationSqlPath)).toBe(true);
     expect(existsSync(snapshotPath)).toBe(true);
   });

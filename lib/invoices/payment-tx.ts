@@ -1,7 +1,8 @@
 import { and, eq } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { writeAudit, type AuditRequestContext } from '@/lib/audit/log';
 import type { DbTransaction } from '@/lib/db/client';
-import { auditLog, payments } from '@/lib/db/schema';
+import { payments } from '@/lib/db/schema';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
 import { formatIstDateAsIso, isValidIsoDate } from '@/lib/invoices/ist-date';
 import { lockFinalizedInvoice, lockPayment } from '@/lib/invoices/document-locks';
@@ -15,6 +16,8 @@ import type { RecordPaymentInput, VoidPaymentInput } from '@/lib/validations/pay
 
 export interface RecordPaymentTxParams {
   readonly businessId: string;
+  readonly actorUserId: string | null;
+  readonly requestContext: AuditRequestContext;
   readonly input: RecordPaymentInput;
   readonly todayIst?: string;
 }
@@ -28,7 +31,7 @@ export async function recordPaymentInTransaction(
   tx: DbTransaction,
   params: RecordPaymentTxParams,
 ): Promise<RecordPaymentTxResult> {
-  const { businessId, input } = params;
+  const { businessId, actorUserId, requestContext, input } = params;
 
   // 1. Fail fast lock timeout
   await setLocalLockTimeout(tx);
@@ -86,18 +89,44 @@ export async function recordPaymentInTransaction(
   }
 
   // 6. Insert payment
-  await tx.insert(payments).values({
-    business_id: businessId,
-    invoice_id: invoice.id,
-    amount_paise: amountPaise,
-    payment_date: input.payment_date,
-    payment_method: input.payment_method,
-    reference_number: input.reference_number || null,
-    notes: input.notes || null,
-  });
+  const [inserted] = await tx
+    .insert(payments)
+    .values({
+      business_id: businessId,
+      invoice_id: invoice.id,
+      amount_paise: amountPaise,
+      payment_date: input.payment_date,
+      payment_method: input.payment_method,
+      reference_number: input.reference_number || null,
+      notes: input.notes || null,
+    })
+    .returning({ id: payments.id });
+
+  if (!inserted) {
+    throw new ActionError('Failed to record payment.', { code: 'INTERNAL_ERROR' });
+  }
 
   // 7. Recompute and persist payment_status
   const after = await recomputePaymentStatus(tx, invoice);
+
+  // 8. Log in statutory audit log
+  await writeAudit(tx, {
+    businessId,
+    actorUserId,
+    entityType: 'payment',
+    entityId: inserted.id,
+    action: 'record',
+    requestContext,
+    metadata: {
+      amount_paise: amountPaise,
+      payment_date: input.payment_date,
+      payment_method: input.payment_method,
+      reference_number: input.reference_number || null,
+      invoice_id: invoice.id,
+      invoice_number: invoice.invoice_number,
+      resulting_payment_status: after.status,
+    },
+  });
 
   return {
     payment_status: after.status,
@@ -109,6 +138,7 @@ export interface VoidPaymentTxParams {
   readonly businessId: string;
   readonly userId: string;
   readonly operatorDisplayName: string | null | undefined;
+  readonly requestContext: AuditRequestContext;
   readonly input: VoidPaymentInput;
   readonly now?: Date;
 }
@@ -125,7 +155,7 @@ export async function voidPaymentInTransaction(
   tx: DbTransaction,
   params: VoidPaymentTxParams,
 ): Promise<VoidPaymentTxResult> {
-  const { businessId, userId, operatorDisplayName, input } = params;
+  const { businessId, userId, operatorDisplayName, requestContext, input } = params;
 
   // 1. Fail fast lock timeout
   await setLocalLockTimeout(tx);
@@ -186,22 +216,23 @@ export async function voidPaymentInTransaction(
   }
 
   // 6. Log in statutory audit log
-  await tx.insert(auditLog).values({
-    business_id: businessId,
-    user_id: userId,
-    entity_type: 'payment',
-    entity_id: payment.id,
+  await writeAudit(tx, {
+    businessId,
+    actorUserId: userId,
+    entityType: 'payment',
+    entityId: payment.id,
     action: 'void',
+    requestContext,
     metadata: {
       amount_paise: payment.amount_paise,
       payment_date: payment.payment_date,
       payment_method: payment.payment_method,
-      reference_number: payment.reference_number,
+      reference_number: payment.reference_number ?? null,
       reason: input.reason,
-      notes: input.notes,
+      notes: input.notes ?? null,
       invoice_id: invoice.id,
       invoice_number: invoice.invoice_number,
-      operator_display_name: operatorDisplayName,
+      operator_display_name: operatorDisplayName ?? null,
       voided_at: voidedAt.toISOString(),
     },
   });
@@ -217,4 +248,3 @@ export async function voidPaymentInTransaction(
     invoiceId: invoice.id,
   };
 }
-

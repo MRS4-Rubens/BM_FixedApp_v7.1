@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { loadCreditContext } from '@/lib/actions/_shared/credit-note-context';
+import { writeAudit, type AuditRequestContext } from '@/lib/audit/log';
 import type { DbTransaction } from '@/lib/db/client';
 import { businesses, creditNoteLineItems, creditNotes } from '@/lib/db/schema';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
@@ -22,6 +23,8 @@ import {
 export interface FinalizeCreditNoteTxParams {
   readonly creditNoteId: string;
   readonly businessId: string;
+  readonly actorUserId: string | null;
+  readonly requestContext: AuditRequestContext;
 }
 
 export interface FinalizeCreditNoteTxResult {
@@ -193,11 +196,45 @@ export async function finalizeDraftCreditNoteInTransaction(
         eq(creditNotes.status, 'active'),
       ),
     )
-    .returning({ id: creditNotes.id });
+    .returning({
+      id: creditNotes.id,
+      credit_note_number: creditNotes.credit_note_number,
+      credit_note_sequence: creditNotes.credit_note_sequence,
+      reason: creditNotes.reason,
+      issue_date: creditNotes.issue_date,
+      subtotal_paise: creditNotes.subtotal_paise,
+      total_tax_paise: creditNotes.total_tax_paise,
+      grand_total_paise: creditNotes.grand_total_paise,
+    });
 
   if (updated.length !== 1) {
     throw new ActionError('This credit note has already been finalized and locked.', { code: 'ALREADY_FINALIZED' });
   }
+
+  const [finalized] = updated;
+  if (!finalized) {
+    throw new ActionError('This credit note has already been finalized and locked.', { code: 'ALREADY_FINALIZED' });
+  }
+
+  await writeAudit(tx, {
+    businessId: params.businessId,
+    actorUserId: params.actorUserId,
+    entityType: 'credit_note',
+    entityId: finalized.id,
+    action: 'finalize',
+    requestContext: params.requestContext,
+    metadata: {
+      credit_note_number: finalized.credit_note_number,
+      credit_note_sequence: finalized.credit_note_sequence,
+      reason: finalized.reason,
+      issue_date: finalized.issue_date,
+      subtotal_paise: finalized.subtotal_paise,
+      total_tax_paise: finalized.total_tax_paise,
+      grand_total_paise: finalized.grand_total_paise,
+      original_invoice_id: originalInvoice.id,
+      original_invoice_number: originalInvoice.invoice_number,
+    },
+  });
 
   // 10. Recalculate original invoice payment status
   await recomputePaymentStatus(tx, originalInvoice);

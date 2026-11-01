@@ -4,8 +4,10 @@ import { randomUUID } from 'node:crypto';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
+import { writeAudit } from '@/lib/audit/log';
+import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
-import { businesses, subscriptionRequests, auditLog, users } from '@/lib/db/schema';
+import { businesses, subscriptionRequests, users } from '@/lib/db/schema';
 import { requirePlatformAdmin } from '@/lib/auth/admin';
 import { eq, and, asc } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -35,6 +37,7 @@ export const updateBusinessSubscription = createAuthenticatedAction(
     }
 
     try {
+      const requestContext = await getAuditRequestContext();
       await db.transaction(async (tx) => {
         const [business] = await tx
           .select({
@@ -71,12 +74,13 @@ export const updateBusinessSubscription = createAuthenticatedAction(
           })
           .where(eq(businesses.id, business.id));
 
-        await tx.insert(auditLog).values({
-          business_id: business.id,
-          user_id: context.appUser.id, // actor = the admin
-          entity_type: 'business',
-          entity_id: business.id,
+        await writeAudit(tx, {
+          businessId: business.id,
+          actorUserId: context.appUser.id, // actor = the admin
+          entityType: 'business',
+          entityId: business.id,
           action: 'subscription_manual_override',
+          requestContext,
           metadata: {
             updated_by: adminEmail,
             previous: {

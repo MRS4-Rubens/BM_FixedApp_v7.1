@@ -3,6 +3,7 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
+import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
 import { toBusyActionError, withTransactionRetry } from '@/lib/db/transaction';
 import { recordPaymentInTransaction } from '@/lib/invoices/payment-tx';
@@ -19,8 +20,16 @@ export const recordPayment = createAuthenticatedAction(
     }
 
     try {
+      const requestContext = await getAuditRequestContext();
       const result = await withTransactionRetry(() =>
-        db.transaction((tx) => recordPaymentInTransaction(tx, { businessId, input })),
+        db.transaction((tx) =>
+          recordPaymentInTransaction(tx, {
+            businessId,
+            actorUserId: context.appUser.id,
+            requestContext,
+            input,
+          }),
+        ),
       );
 
       revalidatePath('/invoices');

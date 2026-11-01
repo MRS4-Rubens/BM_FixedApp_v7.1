@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, jsonb, index, varchar } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { users } from './users';
@@ -11,6 +11,9 @@ export const auditLog = pgTable('audit_log', {
   entity_id: uuid('entity_id').notNull(),
   action: text('action').notNull(),
   metadata: jsonb('metadata'),
+  // DB-007: request network context. Nullable (system actions, tests). Sanitised in lib/audit/log.ts before insert.
+  ip: varchar('ip', { length: 45 }),
+  user_agent: varchar('user_agent', { length: 512 }),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [
   index('audit_log_entity_type_entity_id_idx').on(table.entity_type, table.entity_id),

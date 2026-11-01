@@ -3,6 +3,8 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
+import { writeAudit } from '@/lib/audit/log';
+import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db, type DbTransaction } from '@/lib/db/client';
 import { subscriptionRequests, businesses } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -29,8 +31,9 @@ async function alreadyProcessed(tx: DbTransaction, requestId: string): Promise<A
 
 export const processSubscriptionClaim = createAuthenticatedAction(
   processSubscriptionRequestSchema,
-  async (input) => {
+  async (input, context) => {
     const now = new Date();
+    const requestContext = await getAuditRequestContext();
     let outcome: { requestId: string; status: 'approved' | 'rejected' };
     try {
       outcome = await db.transaction(async (tx): Promise<{ requestId: string; status: 'approved' | 'rejected' }> => {
@@ -43,16 +46,34 @@ export const processSubscriptionClaim = createAuthenticatedAction(
         if (!claim) throw new ActionError('Subscription claim request not found.', { code: 'REQUEST_NOT_FOUND' });
 
         if (input.action === 'reject') {
+          const rejectReason = input.reject_reason ? input.reject_reason : DEFAULT_REJECT_REASON;
           const [rejected] = await tx
             .update(subscriptionRequests)
             .set({
               status: 'rejected',
-              reject_reason: input.reject_reason ? input.reject_reason : DEFAULT_REJECT_REASON,
+              reject_reason: rejectReason,
               updated_at: now,
             })
             .where(and(eq(subscriptionRequests.id, claim.id), eq(subscriptionRequests.status, 'pending')))
             .returning({ id: subscriptionRequests.id });
           if (!rejected) throw await alreadyProcessed(tx, claim.id);
+
+          await writeAudit(tx, {
+            businessId: claim.business_id,
+            actorUserId: context.appUser.id,
+            entityType: 'subscription_request',
+            entityId: claim.id,
+            action: 'reject',
+            requestContext,
+            metadata: {
+              plan_name: claim.plan_name,
+              billing_cycle: claim.billing_cycle,
+              amount_paise: claim.amount_paise,
+              payment_reference: claim.payment_reference,
+              reject_reason: rejectReason,
+            },
+          });
+
           return { requestId: claim.id, status: 'rejected' as const };
         }
 
@@ -70,7 +91,12 @@ export const processSubscriptionClaim = createAuthenticatedAction(
 
         // 3. Lock the business FIRST (global lock order: business -> request), then flip the request atomically.
         const [business] = await tx
-          .select({ id: businesses.id, subscription_ends_at: businesses.subscription_ends_at })
+          .select({
+            id: businesses.id,
+            subscription_plan: businesses.subscription_plan,
+            subscription_status: businesses.subscription_status,
+            subscription_ends_at: businesses.subscription_ends_at,
+          })
           .from(businesses)
           .where(eq(businesses.id, claim.business_id))
           .for('update');
@@ -99,6 +125,30 @@ export const processSubscriptionClaim = createAuthenticatedAction(
             updated_at: now,
           })
           .where(eq(businesses.id, claim.business_id));
+
+        await writeAudit(tx, {
+          businessId: claim.business_id,
+          actorUserId: context.appUser.id,
+          entityType: 'subscription_request',
+          entityId: claim.id,
+          action: 'approve',
+          requestContext,
+          metadata: {
+            plan_name: claim.plan_name,
+            billing_cycle: claim.billing_cycle,
+            amount_paise: claim.amount_paise,
+            payment_reference: claim.payment_reference,
+            previous: {
+              subscription_plan: business.subscription_plan,
+              subscription_status: business.subscription_status,
+              subscription_ends_at: business.subscription_ends_at
+                ? new Date(business.subscription_ends_at).toISOString()
+                : null,
+            },
+            subscription_ends_at: endDate.toISOString(),
+          },
+        });
+
         return { requestId: claim.id, status: 'approved' as const };
       });
     } catch (err: unknown) {

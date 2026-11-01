@@ -253,6 +253,12 @@ describe('COMP-001: Document Immutability and Seller Snapshots', () => {
       );
       state.businessId = businessId;
 
+      await pg.query(
+        `INSERT INTO users (id, auth_user_id, business_id, email, display_name, role)
+         VALUES ('00000000-0000-0000-0000-000000000001', 'auth_001', $1, 'user@test.dev', 'Test User', 'owner')`,
+        [businessId],
+      );
+
       financialYearId = await insertOne(
         pg,
         `INSERT INTO financial_years (business_id, label, start_date, end_date, is_current)

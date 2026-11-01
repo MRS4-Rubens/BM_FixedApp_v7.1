@@ -3,6 +3,9 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
+import { writeAudit } from '@/lib/audit/log';
+import { buildProfileAuditChanges } from '@/lib/audit/profile-diff';
+import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { businessProfileSchema } from '@/lib/validations/business';
 import { db } from '@/lib/db/client';
 import { businesses, financialYears, users } from '@/lib/db/schema';
@@ -19,6 +22,7 @@ const TRIAL_DURATION_DAYS = 14;
 const DEFAULT_INVOICE_TERMS = '1. Goods once sold will not be taken back.\n2. Payment to be made within 30 days from the date of invoice.\n3. Interest @ 24% per annum will be charged on overdue invoices until payment is received.';
 
 export const saveBusinessProfile = createAuthenticatedAction(businessProfileSchema, async (input, context) => {
+  const requestContext = await getAuditRequestContext();
   const profileData = {
     legal_name: input.legal_name,
     trade_name: input.trade_name || null,
@@ -49,9 +53,50 @@ export const saveBusinessProfile = createAuthenticatedAction(businessProfileSche
         // EDIT: profile fields ONLY. Invoice settings (number format, credit-note prefix, terms, due days,
         // default template, default GST mode) are owned by saveInvoiceSettings, which enforces plan gating.
         // Any such keys in the payload are deliberately ignored (stale clients may still send old defaults).
+        const [previous] = await tx
+          .select({
+            legal_name: businesses.legal_name,
+            trade_name: businesses.trade_name,
+            gstin: businesses.gstin,
+            registration_type: businesses.registration_type,
+            state_code: businesses.state_code,
+            bank_account_name: businesses.bank_account_name,
+            bank_ifsc: businesses.bank_ifsc,
+            bank_name: businesses.bank_name,
+            pan: businesses.pan,
+            address_line1: businesses.address_line1,
+            address_line2: businesses.address_line2,
+            city: businesses.city,
+            pincode: businesses.pincode,
+            phone: businesses.phone,
+            email: businesses.email,
+            alternate_phone: businesses.alternate_phone,
+            nature_of_business: businesses.nature_of_business,
+            bank_account_number: businesses.bank_account_number,
+          })
+          .from(businesses)
+          .where(eq(businesses.id, existingBusinessId))
+          .for('update');
+
+        if (!previous) throw new ActionError('Business profile not found.', { code: 'NOT_FOUND' });
+
         await tx.update(businesses)
           .set({ ...profileData, updated_at: new Date() })
           .where(eq(businesses.id, existingBusinessId));
+
+        const audited = buildProfileAuditChanges(previous, profileData);
+        if (audited) {
+          await writeAudit(tx, {
+            businessId: existingBusinessId,
+            actorUserId: context.appUser.id,
+            entityType: 'business',
+            entityId: existingBusinessId,
+            action: 'profile_update',
+            requestContext,
+            metadata: { changed_fields: audited.changed_fields, changes: audited.changes },
+          });
+        }
+
         return existingBusinessId;
       }
 
@@ -100,6 +145,21 @@ export const saveBusinessProfile = createAuthenticatedAction(businessProfileSche
       await tx.update(users)
         .set({ business_id: newBusiness.id })
         .where(eq(users.id, context.appUser.id));
+
+      await writeAudit(tx, {
+        businessId: newBusiness.id,
+        actorUserId: context.appUser.id,
+        entityType: 'business',
+        entityId: newBusiness.id,
+        action: 'profile_create',
+        requestContext,
+        metadata: {
+          gstin: input.gstin,
+          legal_name: input.legal_name,
+          state_code: input.state_code,
+          registration_type: input.registration_type,
+        },
+      });
 
       return newBusiness.id;
     });
