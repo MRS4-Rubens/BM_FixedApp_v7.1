@@ -109,3 +109,12 @@ If any query returns a non-zero count, remediate legacy rows before migrating:
   -- Inspect and map to closest valid domain value before re-running migration:
   SELECT id, plan_name, billing_cycle, payment_method, status FROM subscription_requests WHERE status NOT IN ('pending', 'approved', 'rejected');
   ```
+
+## Database connection pool (DB-006)
+- **Running App vs. Migrations**: The running application uses the pooled connection string (`DATABASE_URL`), which routes through Neon's connection pooler. `DATABASE_URL_UNPOOLED` is direct to compute and is used strictly for migrations (`drizzle.config.ts` / manual migration workflow).
+- **Settings in `lib/db/pool-config.ts`**:
+  - `DB_POOL_MAX_CONNECTIONS = 5`: Limits concurrent connections per serverless instance to prevent overwhelming Neon's pooler under burst load.
+  - `DB_POOL_IDLE_TIMEOUT_MS = 10_000`: Closes idle sockets quickly (10s) because serverless isolates freeze and idle sockets rot.
+  - `DB_POOL_CONNECTION_TIMEOUT_MS = 5_000`: Fails fast (5s) instead of hanging indefinitely when the pool is fully subscribed or the network is disrupted.
+- **Error Observability**: Idle client terminations (e.g. compute suspends or restarts) emit an `'error'` event on the pool. This is caught safely by `attachPoolErrorHandler` and logged under scope `db-pool` (with Sentry tag `scope=db-pool`).
+- **Tuning Guidance**: To tune pool limits, edit `lib/db/pool-config.ts` directly (re-checking Neon compute/pooler limits). There is intentionally no environment variable override.
