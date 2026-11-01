@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, timestamp, uuid, integer, date, unique, index, check, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, timestamp, uuid, integer, bigint, date, unique, index, check, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { customers } from './customers';
@@ -29,12 +29,12 @@ export const invoices = pgTable('invoices', {
   billing_name_snapshot: text('billing_name_snapshot'),
   billing_gstin_snapshot: varchar('billing_gstin_snapshot', { length: 15 }),
   billing_address_snapshot: text('billing_address_snapshot'),
-  subtotal_paise: integer('subtotal_paise').notNull().default(0),
-  total_cgst_paise: integer('total_cgst_paise').notNull().default(0),
-  total_sgst_paise: integer('total_sgst_paise').notNull().default(0),
-  total_igst_paise: integer('total_igst_paise').notNull().default(0),
-  total_tax_paise: integer('total_tax_paise').notNull().default(0),
-  grand_total_paise: integer('grand_total_paise').notNull().default(0),
+  subtotal_paise: bigint('subtotal_paise', { mode: 'number' }).notNull().default(0),
+  total_cgst_paise: bigint('total_cgst_paise', { mode: 'number' }).notNull().default(0),
+  total_sgst_paise: bigint('total_sgst_paise', { mode: 'number' }).notNull().default(0),
+  total_igst_paise: bigint('total_igst_paise', { mode: 'number' }).notNull().default(0),
+  total_tax_paise: bigint('total_tax_paise', { mode: 'number' }).notNull().default(0),
+  grand_total_paise: bigint('grand_total_paise', { mode: 'number' }).notNull().default(0),
   notes: text('notes'),
   invoice_template: text('invoice_template').notNull().default('template_1'),
   // pdf_storage_key (existing, Phase 2) holds the iDrive e2 object key once archival_status is 'archived'. credit_notes will get equivalent fields when Phase 12 is built, following this same pattern.
@@ -73,6 +73,11 @@ export const invoices = pgTable('invoices', {
   }),
   // DB-001: money can never be negative.
   check('invoices_money_nonneg', sql`${table.subtotal_paise} >= 0 AND ${table.total_tax_paise} >= 0 AND ${table.grand_total_paise} >= 0`),
+  // DB-003: JavaScript Number.MAX_SAFE_INTEGER safety check.
+  check(
+    'invoices_paise_js_safe',
+    sql`${table.subtotal_paise} <= 9007199254740991 AND ${table.total_cgst_paise} <= 9007199254740991 AND ${table.total_sgst_paise} <= 9007199254740991 AND ${table.total_igst_paise} <= 9007199254740991 AND ${table.total_tax_paise} <= 9007199254740991 AND ${table.grand_total_paise} <= 9007199254740991`
+  ),
   // DB-001: a finalized invoice must carry its number, finalization time and date.
   check('invoices_final_requires_number', sql`${table.lifecycle_status} = 'draft' OR (${table.invoice_sequence} IS NOT NULL AND ${table.finalized_at} IS NOT NULL AND ${table.invoice_date} IS NOT NULL)`),
   // COMP-001: a finalized invoice must freeze the seller snapshot and declare its source.

@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, timestamp, uuid, integer, date, unique, index, check, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, timestamp, uuid, integer, bigint, date, unique, index, check, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { invoices } from './invoices';
@@ -18,12 +18,12 @@ export const creditNotes = pgTable('credit_notes', {
   reason: text('reason').notNull(),
   lifecycle_status: lifecycleStatusEnum('lifecycle_status').notNull().default('draft'),
   issue_date: date('issue_date'),
-  subtotal_paise: integer('subtotal_paise').notNull().default(0),
-  total_cgst_paise: integer('total_cgst_paise').notNull().default(0),
-  total_sgst_paise: integer('total_sgst_paise').notNull().default(0),
-  total_igst_paise: integer('total_igst_paise').notNull().default(0),
-  total_tax_paise: integer('total_tax_paise').notNull().default(0),
-  grand_total_paise: integer('grand_total_paise').notNull().default(0),
+  subtotal_paise: bigint('subtotal_paise', { mode: 'number' }).notNull().default(0),
+  total_cgst_paise: bigint('total_cgst_paise', { mode: 'number' }).notNull().default(0),
+  total_sgst_paise: bigint('total_sgst_paise', { mode: 'number' }).notNull().default(0),
+  total_igst_paise: bigint('total_igst_paise', { mode: 'number' }).notNull().default(0),
+  total_tax_paise: bigint('total_tax_paise', { mode: 'number' }).notNull().default(0),
+  grand_total_paise: bigint('grand_total_paise', { mode: 'number' }).notNull().default(0),
   pdf_storage_key: text('pdf_storage_key'),
   finalized_at: timestamp('finalized_at', { withTimezone: true }),
   seller_gstin_snapshot: varchar('seller_gstin_snapshot', { length: 15 }),
@@ -60,6 +60,11 @@ export const creditNotes = pgTable('credit_notes', {
   }),
   // DB-001: money can never be negative.
   check('credit_notes_money_nonneg', sql`${table.subtotal_paise} >= 0 AND ${table.total_tax_paise} >= 0 AND ${table.grand_total_paise} >= 0`),
+  // DB-003: JavaScript Number.MAX_SAFE_INTEGER safety check.
+  check(
+    'credit_notes_paise_js_safe',
+    sql`${table.subtotal_paise} <= 9007199254740991 AND ${table.total_cgst_paise} <= 9007199254740991 AND ${table.total_sgst_paise} <= 9007199254740991 AND ${table.total_igst_paise} <= 9007199254740991 AND ${table.total_tax_paise} <= 9007199254740991 AND ${table.grand_total_paise} <= 9007199254740991`
+  ),
   // DB-001: a finalized credit note must carry its number, finalization time and issue date.
   check('credit_notes_final_requires_number', sql`${table.lifecycle_status} = 'draft' OR (${table.credit_note_sequence} IS NOT NULL AND ${table.finalized_at} IS NOT NULL AND ${table.issue_date} IS NOT NULL)`),
   // COMP-001: a finalized credit note must freeze the seller snapshot (including GSTIN) and declare its source.

@@ -9,3 +9,15 @@ export class GstCalculationError extends Error {
     this.name = 'GstCalculationError';
   }
 }
+
+/**
+ * Thrown when an input or computed amount exceeds a business ceiling from lib/money-limits.ts.
+ * Its message is user-safe. Server actions map it to ActionError via lib/invoices/tax-calculation.ts.
+ */
+export class MoneyLimitError extends GstCalculationError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'MoneyLimitError';
+  }
+}
+

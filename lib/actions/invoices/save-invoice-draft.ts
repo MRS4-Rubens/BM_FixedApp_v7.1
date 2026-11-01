@@ -6,7 +6,7 @@ import { assertOwnedCustomer, assertOwnedProducts } from '@/lib/actions/_shared/
 import { invoiceDraftSchema } from '@/lib/validations/invoice';
 import { db } from '@/lib/db/client';
 import { invoices, invoiceLineItems, businesses, taxRates } from '@/lib/db/schema';
-import { calculateInvoiceTax } from '@/lib/gst/calculate';
+import { calculateInvoiceTaxOrActionError } from '@/lib/invoices/tax-calculation';
 import { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
 import { eq, inArray, and, gte, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -116,7 +116,7 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
       };
 
       // 4. Calculate Taxes
-      const taxResult = calculateInvoiceTax(taxCalcInput);
+      const taxResult = calculateInvoiceTaxOrActionError(taxCalcInput);
 
       // 5. Create or Update Invoice
       let invoiceId = input.id;

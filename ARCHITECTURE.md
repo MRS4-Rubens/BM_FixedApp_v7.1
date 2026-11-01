@@ -254,3 +254,13 @@ All file uploads (payment screenshots, business logos, user feedback attachments
 - **Server-Generated UUID Keys**: Storage object keys are constructed as `<prefix>/<uuid>.<ext>` using cryptographically random UUIDs (`buildUploadKey`), completely removing user input (such as payment reference numbers or transaction IDs) from storage paths.
 - **Content-Disposition & Forced Download**: User-supplied uploads are stored with `Content-Disposition: attachment`. Signed URLs generated for evidence inspection (e.g. platform admin reviewing payment receipts) explicitly enable `forceDownload: true` (`ResponseContentDisposition: attachment`), preventing user-uploaded files from rendering directly as active HTML/SVG documents in administrator browsers.
 - **Invoice & Credit Note PDFs**: System-generated invoice and credit note PDF downloads intentionally omit `forceDownload` to preserve inline browser PDF viewing.
+
+
+## Money storage & limits (DB-003)
+
+- **Canonical unit**: integer paise (₹1 = 100 paise).
+- **Database representation**: Postgres `bigint` (int8) with Drizzle `{ mode: 'number' }` on all document money columns (27 total across `invoices`, `credit_notes`, `payments`, `invoice_line_items`, `credit_note_line_items`).
+- **Catalog prices**: `products.default_sale_price_paise` remains `integer` (int4) because it is bounded by Zod at ₹99,99,999.99 (999,999,999 paise < 2^31). Subscription request amounts remain `integer` for the same reason.
+- **JavaScript safety**: bounded by `Number.MAX_SAFE_INTEGER` (9,007,199,254,740,991 paise ≈ ₹90,071 crore). Enforced by database CHECK constraints (`*_paise_js_safe`).
+- **Business limits**: defined centrally in `lib/money-limits.ts`. Invoices are capped at ₹99,99,99,999.99 (9,999,999,999 paise, ~₹100 crore) grand total, ₹99,99,999.99 unit price, 9,999,999.999 quantity, and 200 line items.
+- **Defense-in-depth**: enforced at (1) Zod schema on input, (2) `lib/gst/calculate.ts` pure math engine (throws `MoneyLimitError`), (3) `calculateInvoiceTaxOrActionError` mapping to user-visible `ActionError` (`AMOUNT_LIMIT_EXCEEDED`), (4) database CHECK constraints.

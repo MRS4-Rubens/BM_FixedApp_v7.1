@@ -47,7 +47,7 @@ export const getCreditNote = createAuthenticatedAction(
 
     // 2b. Fetch cumulative total credited across all active finalized credit notes for this invoice
     const cnSumRes = await db
-      .select({ total: sql<number>`coalesce(sum(${creditNotes.grand_total_paise}), 0)` })
+      .select({ total: sql<number>`coalesce(sum(${creditNotes.grand_total_paise}), 0)::bigint` })
       .from(creditNotes)
       .where(
         and(

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_QUANTITY, MAX_INVOICE_LINE_ITEMS } from '@/lib/money-limits';
 
 export const CREDIT_NOTE_REASONS = [
   { code: '01-sales-return', label: '01 - Sales Return' },
@@ -29,7 +30,7 @@ export const creditNoteLineItemSchema = z
     quantity: z
       .number()
       .positive('Quantity must be greater than 0')
-      .max(9_999_999.999, 'Quantity is too large'),
+      .max(MAX_QUANTITY, 'Quantity is too large'),
   })
   .strict(); // unit_price / discount / tax_rate_id / hsn / description are REJECTED, not ignored
 
@@ -43,7 +44,7 @@ export const creditNoteDraftSchema = z
     line_items: z
       .array(creditNoteLineItemSchema)
       .min(1, 'Credit note must have at least one line item')
-      .max(200, 'A credit note cannot have more than 200 lines')
+      .max(MAX_INVOICE_LINE_ITEMS, 'A credit note cannot have more than 200 lines')
       .superRefine((items, ctx) => {
         const seen = new Set<string>();
         items.forEach((item, index) => {

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, integer, date, index, check, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, bigint, date, index, check, foreignKey } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { invoices } from './invoices';
@@ -9,7 +9,7 @@ export const payments = pgTable('payments', {
   id: uuid('id').primaryKey().defaultRandom(),
   business_id: uuid('business_id').notNull().references(() => businesses.id),
   invoice_id: uuid('invoice_id').notNull(),
-  amount_paise: integer('amount_paise').notNull(),
+  amount_paise: bigint('amount_paise', { mode: 'number' }).notNull(),
   payment_date: date('payment_date').notNull(),
   payment_method: paymentMethodEnum('payment_method').notNull(),
   reference_number: text('reference_number'),
@@ -36,7 +36,9 @@ export const payments = pgTable('payments', {
     foreignColumns: [invoices.business_id, invoices.id]
   }),
   // DB-001: a payment must be a positive amount.
-  check('payments_amount_positive', sql`${table.amount_paise} > 0`)
+  check('payments_amount_positive', sql`${table.amount_paise} > 0`),
+  // DB-003: JavaScript Number.MAX_SAFE_INTEGER safety check.
+  check('payments_amount_js_safe', sql`${table.amount_paise} <= 9007199254740991`)
 ]);
 
 export const paymentsRelations = relations(payments, ({ one }) => ({

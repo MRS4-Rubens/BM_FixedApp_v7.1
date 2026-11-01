@@ -46,13 +46,13 @@ export const sendPaymentReminder = createAuthenticatedAction(
     const [[{ totalPaid }], [{ totalCredited }]] = await Promise.all([
       db
         .select({
-          totalPaid: sql<number>`coalesce(sum(${payments.amount_paise}), 0)::int`,
+          totalPaid: sql<number>`coalesce(sum(${payments.amount_paise}), 0)::bigint`.mapWith(Number),
         })
         .from(payments)
         .where(and(eq(payments.invoice_id, invoice.id), eq(payments.status, 'active'))),
       db
         .select({
-          totalCredited: sql<number>`coalesce(sum(${creditNotes.grand_total_paise}), 0)::int`,
+          totalCredited: sql<number>`coalesce(sum(${creditNotes.grand_total_paise}), 0)::bigint`.mapWith(Number),
         })
         .from(creditNotes)
         .where(

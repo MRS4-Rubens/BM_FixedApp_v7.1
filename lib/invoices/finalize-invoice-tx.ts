@@ -3,7 +3,7 @@ import { ActionError } from '@/lib/actions/_shared/errors';
 import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import type { DbTransaction } from '@/lib/db/client';
 import { businesses, invoiceLineItems, invoices } from '@/lib/db/schema';
-import { calculateInvoiceTax } from '@/lib/gst/calculate';
+import { calculateInvoiceTaxOrActionError } from '@/lib/invoices/tax-calculation';
 import type { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
 import { lockDraftInvoice } from '@/lib/invoices/document-locks';
@@ -108,7 +108,7 @@ export async function finalizeDraftInvoiceInTransaction(
     gstRateType: invoice.gst_rate_type
   };
 
-  const taxResult = calculateInvoiceTax(taxCalcInput);
+  const taxResult = calculateInvoiceTaxOrActionError(taxCalcInput);
 
   // 5. Update Line Items if any rounding differences occurred (defense in depth)
   // Since it's finalized, we want to make absolutely sure line items match the calculation.
