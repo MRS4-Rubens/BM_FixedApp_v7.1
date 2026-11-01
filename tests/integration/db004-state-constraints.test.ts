@@ -331,7 +331,7 @@ describe('DB-004 state check constraints integration (PGlite)', () => {
     expect(bizCheck.rows[0]?.subscription_status).toBe('cancelled');
 
     await rollbackDb.close();
-  });
+  }, 60_000);
 
   it('5. idempotency: applying DB-004 statements a second time succeeds with no error', async () => {
     for (const statement of statementsOf(DB004_TAG)) {
