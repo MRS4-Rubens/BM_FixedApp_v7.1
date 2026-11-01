@@ -124,13 +124,18 @@ Rate limiting uses Upstash Redis and provides three core limiters:
   ```
 - **Route Handlers**: New Route Handlers added in the future need their own direct rate-limit checks (since the `createAction` wrapper does not govern Route Handlers). Check it using `checkRateLimit` alongside token verification or session extraction.
 
-## Monitoring & Logging (established Phase 18)
+## Monitoring & Logging (established Phase 18, hardened ARCH-005)
 
-Sentry is the live implementation behind `lib/actions/_shared/logger.ts`'s `logError()` function.
-- Client Initialization: Due to a Turbopack auto-import issue in Next.js 16, a `SentryInit` client component (`components/sentry-init.tsx`) is injected near the root of `app/layout.tsx` to dynamically import `instrumentation-client.ts` and force initialization on mount.
-- Server Initialization: Uses the standard Next.js 15+ `instrumentation.ts` pattern to conditionally call `Sentry.init` based on the runtime (`nodejs` or `edge`).
-- Global Error Boundary: `app/global-error.tsx` captures top-level React rendering errors and reports them via `Sentry.captureException`.
-- Alerting: Basic alerting (e.g., email on any new issue) is configured directly in the Sentry dashboard, not in code.
+Sentry is the live observability implementation behind `lib/actions/_shared/logger.ts`'s `logError()` function and application request monitoring.
+- **Request Error Capture (`onRequestError`)**: `instrumentation.ts` exports `onRequestError = Sentry.captureRequestError`, automatically capturing unhandled errors from React Server Components (RSC) rendering, Route Handlers, and proxy routing into Sentry.
+- **Per-Runtime Initialization**: Sentry configuration is resolved via `lib/observability/sentry-config.ts` separately for each runtime (`nodejs`, `edge`, and `client`). Server runtimes prefer `SENTRY_DSN` with a fallback to `NEXT_PUBLIC_SENTRY_DSN`; the client uses `NEXT_PUBLIC_SENTRY_DSN` exclusively. Each runtime attaches a runtime tag (`initialScope: { tags: { runtime } }`). `environment` and `release` are resolved from Vercel metadata (`VERCEL_ENV`, `VERCEL_GIT_COMMIT_SHA`) or fallback to `NODE_ENV`.
+- **Sensitive Data Scrubber (Edge-Safe)**: All events pass through `beforeSend` and `beforeSendTransaction` using `scrubSentryEvent` from `lib/observability/sentry-redaction.ts`. It performs case-insensitive key-based redaction for PII/secrets (GSTIN, email, phone, account numbers, IFSC, UTR, PAN, UPI, passwords, tokens, auth headers) and ordered value-based pattern replacement on free text (emails, GSTIN, IFSC, PAN, Bearer tokens, query param secrets). It features ancestor-based cycle detection, depth capping (12), and fails closed (drops the event on scrubber failure rather than throwing into the request path). Structural Sentry fields and numeric business fields (e.g. `*_paise`) survive unscrubbed.
+- **Expected Error Breadcrumbs**: Expected business errors (`ActionError`s where `meta.expected === true`) represent normal, user-recoverable domain conditions. `lib/actions/_shared/logger.ts` records them as info breadcrumbs (`category: 'expected-error'`) rather than capturing Sentry exception issues, preventing issues and alerts from being flooded.
+- **Client Initialization & Idempotency**: Due to a Next.js 16 + Turbopack auto-import issue, `<SentryInit />` (`components/sentry-init.tsx`) is mounted in `app/layout.tsx` to dynamically import `instrumentation-client.ts`. To prevent double initialization when loaded both by Next's loader and `<SentryInit />`, client initialization is guarded with `Sentry.getClient() === undefined`.
+- **Direct `process.env` Exception (ARCH-002 / ARCH-005)**: Direct reads of `process.env` are restricted across the codebase to `lib/env.ts` (validated at boot). As an explicit exception, configuration entry points that execute during framework bootstrap before standard modules load are permitted to read `process.env` directly: `next.config.mjs`, `instrumentation.ts`, and `instrumentation-client.ts`. The helper modules under `lib/observability/*` remain pure functions and never access `process.env`.
+- **Build-Time Source Map Uploads**: `next.config.mjs` configures `withSentryConfig` using environment variables (`SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`, `VERCEL_GIT_COMMIT_SHA`). If required variables are absent in production, a build-time warning is logged while preserving the build.
+- **Global Error Boundary**: `app/global-error.tsx` captures top-level React rendering errors and reports them via `Sentry.captureException`.
+- **Alerting**: Alerting rules are configured directly in the Sentry dashboard, not in code.
 
 ## High-Density ERP UI Specifications (Strict Freeze)
 

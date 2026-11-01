@@ -34,4 +34,5 @@ pnpm-workspace.yaml
 .nvmrc
 
 # Repomix Output (Prevents the tool from reading its own output)
-repomix-output.txt
+repomix-output*
+.repomixignore

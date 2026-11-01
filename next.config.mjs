@@ -23,9 +23,19 @@ const nextConfig = {
   },
 };
 
+const sentryOrg = process.env.SENTRY_ORG;
+const sentryProject = process.env.SENTRY_PROJECT;
+const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
+
+if (process.env.VERCEL_ENV === 'production' && (!sentryOrg || !sentryProject || !sentryAuthToken)) {
+  console.warn('[sentry] SENTRY_ORG / SENTRY_PROJECT / SENTRY_AUTH_TOKEN missing: source maps will NOT be uploaded');
+}
+
 export default withSentryConfig(nextConfig, {
-  org: "bill-matrix",
-  project: "bill-matrix",
+  org: sentryOrg,
+  project: sentryProject,
+  authToken: sentryAuthToken,
+  ...(process.env.VERCEL_GIT_COMMIT_SHA ? { release: { name: process.env.VERCEL_GIT_COMMIT_SHA } } : {}),
   silent: !process.env.CI,
   widenClientFileUpload: true,
 });
