@@ -45,8 +45,6 @@ export const creditNotes = pgTable('credit_notes', {
   unique('credit_notes_business_id_credit_note_number_unique').on(table.business_id, table.credit_note_number),
   index('credit_notes_original_invoice_id_idx').on(table.original_invoice_id),
   index('credit_notes_business_id_idx').on(table.business_id),
-  index('credit_notes_lifecycle_status_idx').on(table.lifecycle_status),
-  index('credit_notes_status_idx').on(table.status),
   index('credit_notes_biz_lifecycle_status_date_idx').on(
     table.business_id,
     table.lifecycle_status,

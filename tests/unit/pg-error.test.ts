@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getPgError } from '@/lib/db/pg-error';
-import { classifyClaimInsertError } from '@/lib/subscriptions/claim-errors';
+import { classifyClaimInsertError, PENDING_CLAIM_INDEX_NAME } from '@/lib/subscriptions/claim-errors';
 
 describe('pg-error and claim-errors (API-009)', () => {
   it('getPgError finds code and constraint on direct error object', () => {
@@ -53,14 +53,14 @@ describe('pg-error and claim-errors (API-009)', () => {
 
     const pendingError = {
       code: '23505',
-      constraint: 'subscription_requests_one_pending_per_business',
+      constraint: PENDING_CLAIM_INDEX_NAME,
     };
     expect(classifyClaimInsertError(pendingError)).toBe('PENDING_CLAIM_EXISTS');
 
-    const uppercasePending = {
-      cause: { code: '23505', constraint: 'PENDING_BUSINESS_CLAIM_IDX' },
+    const nestedPending = {
+      cause: { code: '23505', constraint: PENDING_CLAIM_INDEX_NAME },
     };
-    expect(classifyClaimInsertError(uppercasePending)).toBe('PENDING_CLAIM_EXISTS');
+    expect(classifyClaimInsertError(nestedPending)).toBe('PENDING_CLAIM_EXISTS');
 
     const other23505 = { code: '23505', constraint: null };
     expect(classifyClaimInsertError(other23505)).toBe('DUPLICATE_REFERENCE');

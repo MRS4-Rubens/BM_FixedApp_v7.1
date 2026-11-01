@@ -20,6 +20,7 @@ export const products = pgTable('products', {
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [
   index('products_business_id_idx').on(table.business_id),
+  index('products_biz_active_idx').on(table.business_id, table.is_active),
   // DB-002: prepares tenant-safe references to products (see the line-item tenant triggers).
   unique('products_biz_id_uq').on(table.business_id, table.id)
 ]);

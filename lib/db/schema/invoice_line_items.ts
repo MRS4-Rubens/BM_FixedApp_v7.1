@@ -23,6 +23,7 @@ export const invoiceLineItems = pgTable('invoice_line_items', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [
   index('invoice_line_items_invoice_id_idx').on(table.invoice_id),
+  index('invoice_line_items_product_idx').on(table.product_id),
   // DB-001: quantities must be positive; money columns may not be negative.
   check('ili_nonneg', sql`${table.quantity} > 0 AND ${table.unit_price_paise} >= 0 AND ${table.discount_paise} >= 0 AND ${table.taxable_value_paise} >= 0`),
   // DB-003: JavaScript Number.MAX_SAFE_INTEGER safety check.

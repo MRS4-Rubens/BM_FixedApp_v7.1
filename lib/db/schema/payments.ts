@@ -29,7 +29,6 @@ export const payments = pgTable('payments', {
   index('payments_invoice_id_idx').on(table.invoice_id),
   index('payments_business_id_idx').on(table.business_id),
   index('payments_payment_date_idx').on(table.payment_date),
-  index('payments_status_idx').on(table.status),
   index('payments_invoice_status_idx').on(table.invoice_id, table.status),
   // DB-002: a payment can only point at an invoice of the SAME business.
   foreignKey({

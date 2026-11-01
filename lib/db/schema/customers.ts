@@ -21,6 +21,7 @@ export const customers = pgTable('customers', {
 }, (table) => [
   check('customers_gstin_length', sql`length(${table.gstin}) = 15`),
   index('customers_business_id_idx').on(table.business_id),
+  index('customers_biz_name_idx').on(table.business_id, table.name),
   // DB-002: lets other tables reference (business_id, id) so a link can never cross tenants.
   unique('customers_biz_id_uq').on(table.business_id, table.id)
 ]);

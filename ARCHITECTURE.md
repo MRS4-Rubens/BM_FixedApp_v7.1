@@ -291,3 +291,14 @@ All file uploads (payment screenshots, business logos, user feedback attachments
   2. **Audit Integrity & Invariant Preservation**: Prevents invalid status transitions or unsupported lifecycle values in statutory accounting records (`invoices`, `credit_notes`, `payments`).
   3. **UI Consistency**: Guarantees templates and subscription claims stay within supported design systems and workflows.
 - **Migration & Rollback**: Added via migration `0020_db004_state_check_constraints.sql` using idempotent `DROP CONSTRAINT IF EXISTS` followed by `ADD CONSTRAINT ... NOT VALID` and `VALIDATE CONSTRAINT` in a single transaction. Legacy bad rows abort the entire migration cleanly without leaving partial or invalid state.
+
+## Index conventions (DB-005)
+
+1. **No Standalone Low-Cardinality Indexes**:
+   Do not create standalone single-column indexes on low-cardinality columns (e.g. status, lifecycle_status, flags). Postgres planner ignores them in favor of sequential scans, but maintenance overhead slows write paths. Always lead composite indexes with `business_id` (e.g. `(business_id, lifecycle_status, invoice_date)` or `(business_id, is_active)`).
+2. **Partial Index Predicate Alignment**:
+   Partial indexes must replicate the query predicate literally so the query planner matches them. Specifically, `invoices_archival_retry_idx` (`WHERE archival_status IN ('pending', 'failed') AND archival_attempts < 5`) is coupled directly to the archival retry cron query predicate in `app/api/cron/retry-invoice-archival/route.ts`. API-008 must update the index definition and the cron query together if the predicate changes.
+3. **Migration Locking & Index Creation Policy**:
+   Indexes are created using plain `CREATE INDEX` in migrations (not `CONCURRENTLY`) because Drizzle migrator runs within transaction blocks where `CONCURRENTLY` is illegal. Current tables are compact and index builds complete in milliseconds. If a production table ever grows large, operators should create the index manually using `CREATE INDEX CONCURRENTLY` in advance, then ship an idempotent `CREATE INDEX IF NOT EXISTS` migration.
+4. **Name Coupling with Application Error Handling**:
+   The partial unique index `subscription_requests_one_pending_per_biz` (`UNIQUE (business_id) WHERE status = 'pending'`) enforces at most one pending claim per business at the database level. It is name-coupled to `lib/subscriptions/claim-errors.ts` via the exported constant `PENDING_CLAIM_INDEX_NAME` so constraint violation `23505` is deterministically classified as `PENDING_CLAIM_EXISTS` and mapped to user-friendly messaging.

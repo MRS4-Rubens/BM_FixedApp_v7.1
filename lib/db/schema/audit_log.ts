@@ -15,7 +15,8 @@ export const auditLog = pgTable('audit_log', {
 }, (table) => [
   index('audit_log_entity_type_entity_id_idx').on(table.entity_type, table.entity_id),
   index('audit_log_business_id_idx').on(table.business_id),
-  index('audit_log_created_at_idx').on(table.created_at)
+  index('audit_log_created_at_idx').on(table.created_at),
+  index('audit_log_biz_created_idx').on(table.business_id, table.created_at.desc()),
 ]);
 
 export const auditLogRelations = relations(auditLog, ({ one }) => ({

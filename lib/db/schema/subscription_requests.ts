@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp, uuid, integer, index, check } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { pgTable, text, timestamp, uuid, integer, index, uniqueIndex, check } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { users } from './users';
 import { inList } from './_check-helpers';
@@ -32,6 +32,12 @@ export const subscriptionRequests = pgTable('subscription_requests', {
 }, (table) => [
   index('subscription_requests_business_id_idx').on(table.business_id),
   index('subscription_requests_status_idx').on(table.status),
+  index('subscription_requests_user_id_idx').on(table.user_id),
+  // DB-005: at most ONE pending claim per business, enforced by the database itself.
+  // The name must contain "pending": lib/subscriptions/claim-errors.ts maps it to PENDING_CLAIM_EXISTS.
+  uniqueIndex('subscription_requests_one_pending_per_biz')
+    .on(table.business_id)
+    .where(sql`${table.status} = 'pending'`),
   // DB-004: CHECK constraints for state columns
   check('subscription_requests_plan_name_valid', inList(table.plan_name, SUBSCRIPTION_PLANS)),
   check('subscription_requests_billing_cycle_valid', inList(table.billing_cycle, REQUEST_BILLING_CYCLES)),

@@ -56,10 +56,13 @@ export const invoices = pgTable('invoices', {
   unique('invoices_business_id_invoice_number_unique').on(table.business_id, table.invoice_number),
   index('invoices_customer_id_idx').on(table.customer_id),
   index('invoices_invoice_date_idx').on(table.invoice_date),
-  index('invoices_lifecycle_status_idx').on(table.lifecycle_status),
-  index('invoices_payment_status_idx').on(table.payment_status),
   index('invoices_archival_status_idx').on(table.archival_status),
-  index('invoices_business_id_idx').on(table.business_id),
+  // DB-005: tenant-safe customer joins + referencing side of the composite FK invoices_customer_same_biz.
+  index('invoices_biz_customer_idx').on(table.business_id, table.customer_id),
+  // DB-005: partial index matching the archival-retry cron predicate (keep predicate identical to the cron query).
+  index('invoices_archival_retry_idx')
+    .on(table.finalized_at)
+    .where(sql`${table.archival_status} IN ('pending', 'failed') AND ${table.archival_attempts} < 5`),
   index('invoices_biz_lifecycle_date_idx').on(
     table.business_id,
     table.lifecycle_status,
