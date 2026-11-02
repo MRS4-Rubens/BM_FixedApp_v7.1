@@ -267,8 +267,8 @@ describe('DB-007: Audit log integrity, append-only triggers, and coverage', () =
     invId = await insertOne(
       pg,
       `INSERT INTO invoices (business_id, financial_year_id, invoice_number, customer_id, lifecycle_status,
-         place_of_supply_state_code, subtotal_paise, total_tax_paise, grand_total_paise, invoice_date, due_date)
-       VALUES ($1, $2, 'DRAFT-AUDIT-1', $3, 'draft', '29', 10000, 1800, 11800, '2026-04-15', '2026-05-15') RETURNING id`,
+         place_of_supply_state_code, subtotal_paise, total_cgst_paise, total_sgst_paise, total_igst_paise, total_tax_paise, grand_total_paise, invoice_date, due_date)
+       VALUES ($1, $2, 'DRAFT-AUDIT-1', $3, 'draft', '29', 10000, 900, 900, 0, 1800, 11800, '2026-04-15', '2026-05-15') RETURNING id`,
       [businessId, financialYearId, customerId],
     );
     await pg.query(
@@ -463,8 +463,8 @@ describe('DB-007: Audit log integrity, append-only triggers, and coverage', () =
     const draftId = await insertOne(
       pg,
       `INSERT INTO invoices (business_id, financial_year_id, invoice_number, customer_id, lifecycle_status,
-         place_of_supply_state_code, subtotal_paise, total_tax_paise, grand_total_paise, invoice_date, due_date)
-       VALUES ($1, $2, 'DRAFT-ROLLBACK-1', $3, 'draft', '29', 10000, 1800, 11800, '2026-04-15', '2026-05-15') RETURNING id`,
+         place_of_supply_state_code, subtotal_paise, total_cgst_paise, total_sgst_paise, total_igst_paise, total_tax_paise, grand_total_paise, invoice_date, due_date)
+       VALUES ($1, $2, 'DRAFT-ROLLBACK-1', $3, 'draft', '29', 10000, 900, 900, 0, 1800, 11800, '2026-04-15', '2026-05-15') RETURNING id`,
       [businessId, financialYearId, customerId],
     );
     await pg.query(

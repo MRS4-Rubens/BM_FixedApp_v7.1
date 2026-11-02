@@ -209,6 +209,19 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
    - Platform admin actions (an admin's business status never locks administrative capabilities)
 6. **Trial Expiration (Fail-Closed)**: A subscription in `trial` status with a `NULL` `trial_ends_at` timestamp resolves to `tier: 'free'` and `effectiveStatus: 'expired'` with 0 days remaining. Migration `0024_api010_trial_end_backfill` backfills legacy NULL trial timestamps to `created_at + 14 days`.
 
+## Place of supply & totals integrity (COMP-003)
+
+- **Place of Supply Authority**:
+  - The Place of Supply (`place_of_supply_state_code`) explicitly selected and saved on the draft is the sole authoritative value used for GST calculation (inter-state IGST vs intra-state CGST+SGST) at finalization (`resolveDraftPlaceOfSupply`).
+  - The customer's registered state is a UI-only convenience default; it is never read to determine the statutory tax head during finalization.
+  - A missing, null, or invalid Place of Supply aborts finalization with `INVALID_PLACE_OF_SUPPLY`. Silent fallbacks to the seller's state or the customer's state are forbidden.
+  - Place of Supply state codes are validated against the statutory `INDIAN_GST_STATES` registry via `isValidStateCode`.
+- **Totals Integrity Guard (`assertDraftTotalsMatch`)**:
+  - During `finalizeDraftInvoiceInTransaction`, the authoritative tax recalculation is compared against all six totals saved on the draft (`subtotal_paise`, `total_cgst_paise`, `total_sgst_paise`, `total_igst_paise`, `total_tax_paise`, and `grand_total_paise` rounded to whole rupees via `roundToRupeePaise`).
+  - If any discrepancy exists between the draft totals approved by the user and the authoritative recalculation, the transaction aborts with `DRAFT_TOTALS_MISMATCH` before any modifications occur. No sequence number is consumed, no invoice number is allocated, and no line items are modified.
+- **Quantity Precision Parity**:
+  - `invoice_line_items.quantity` is stored as `numeric(10,3)`. Draft tax calculations normalise line-item quantities via `toStoredQuantity` (`Number(quantity.toFixed(3))`) to guarantee exact mathematical parity between the draft's saved totals and the finalized recalculation.
+
 ## Platform admin authorization (AUTH-001)
 
 - **Policy Model (`lib/auth/admin-policy.ts`)**: Pure evaluation function `evaluatePlatformAdmin(user, allowlist)`. A session matches platform admin rights if either:

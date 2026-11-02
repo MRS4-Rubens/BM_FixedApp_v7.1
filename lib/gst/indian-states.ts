@@ -84,5 +84,12 @@ export function getStateAbbrByCode(code?: string | null): string {
   return STATE_CODE_TO_ABBR[code] || code;
 }
 
+const VALID_STATE_CODES: ReadonlySet<string> = new Set(INDIAN_GST_STATES.map((state) => state.code));
+
+/** True only for a real GST state/UT code present in INDIAN_GST_STATES. */
+export function isValidStateCode(code: string | null | undefined): code is string {
+  return typeof code === 'string' && VALID_STATE_CODES.has(code);
+}
+
 // Codes 25 and 28 are permanently discontinued (old Daman & Diu and old undivided Andhra Pradesh respectively) and are deliberately excluded from this list — a new GSTIN will never use them. This list is reference data, not user input; it should only ever change via an explicit future government notification, never guessed.
 

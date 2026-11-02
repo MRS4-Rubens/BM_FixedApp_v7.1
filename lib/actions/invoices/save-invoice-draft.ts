@@ -4,6 +4,7 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { assertOwnedCustomer, assertOwnedProducts } from '@/lib/actions/_shared/ownership';
+import { roundToRupeePaise } from '@/lib/credit-notes/derivation';
 import { invoiceDraftSchema } from '@/lib/validations/invoice';
 import { db } from '@/lib/db/client';
 import { invoices, invoiceLineItems, businesses, taxRates } from '@/lib/db/schema';
@@ -30,6 +31,11 @@ function toCalculationActionError(error: unknown): ActionError | null {
     });
   }
   return null;
+}
+
+/** invoice_line_items.quantity is numeric(10,3): calculate with exactly what is stored (COMP-003). */
+function toStoredQuantity(quantity: number): number {
+  return Number(quantity.toFixed(3));
 }
 
 export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, async (input, context) => {
@@ -81,7 +87,7 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
         });
       }
 
-      const customerStateCode = input.place_of_supply_state_code;
+      const placeOfSupplyStateCode = input.place_of_supply_state_code;
 
       const taxRateIds = input.line_items.map((li) => li.tax_rate_id);
       const referenceIso = input.invoice_date ?? formatIstDateAsIso(new Date());
@@ -114,7 +120,7 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
             );
           }
           return buildTaxLineInput({
-            quantity: li.quantity,
+            quantity: toStoredQuantity(li.quantity),
             unitPriceRupees: li.unit_price,
             discountPercent: li.discount,
             taxRatePercentage: ratePct,
@@ -123,7 +129,7 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
 
         const taxCalcInput: TaxCalculationInput = {
           sellerStateCode: businessStateCode,
-          placeOfSupplyStateCode: customerStateCode,
+          placeOfSupplyStateCode: placeOfSupplyStateCode,
           lineItems: taxLineItemInputs,
           gstRateType: input.gst_rate_type || 'exclusive',
         };
@@ -150,7 +156,7 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
         total_sgst_paise: taxResult.totalSgstPaise,
         total_igst_paise: taxResult.totalIgstPaise,
         total_tax_paise: taxResult.totalTaxPaise,
-        grand_total_paise: Math.round(taxResult.grandTotalPaise / 100) * 100,
+        grand_total_paise: roundToRupeePaise(taxResult.grandTotalPaise),
         billing_name_snapshot: input.billing_name,
         billing_gstin_snapshot: input.billing_gstin || null,
         place_of_supply_state_code: input.place_of_supply_state_code,
@@ -205,7 +211,7 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
           product_id: li.product_id || null,
           description: li.description,
           hsn_sac_code: li.hsn_sac_code,
-          quantity: li.quantity.toString(),
+          quantity: toStoredQuantity(li.quantity).toFixed(3),
           unit_of_measurement: li.unit_of_measurement,
           unit_price_paise: taxLineItemInputs[idx].unitPricePaise,
           discount_paise: calcLi.discountPaise,

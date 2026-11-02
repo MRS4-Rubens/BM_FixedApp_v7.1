@@ -494,13 +494,13 @@ describe('COMP-001: Document Immutability and Seller Snapshots', () => {
       // Plant a draft invoice with a future date directly in DB to test Server Action guard
       const futureInvId = await insertOne(
         pg,
-        `INSERT INTO invoices (business_id, financial_year_id, invoice_number, lifecycle_status, invoice_date, subtotal_paise, total_tax_paise, grand_total_paise)
-         VALUES ($1, $2, 'DRAFT-FUT', 'draft', $3, 10000, 1800, 11800) RETURNING id`,
+        `INSERT INTO invoices (business_id, financial_year_id, invoice_number, lifecycle_status, invoice_date, place_of_supply_state_code, subtotal_paise, total_cgst_paise, total_sgst_paise, total_igst_paise, total_tax_paise, grand_total_paise)
+         VALUES ($1, $2, 'DRAFT-FUT', 'draft', $3, '29', 10000, 900, 900, 0, 1800, 11800) RETURNING id`,
         [businessId, financialYearId, tomorrow],
       );
       await pg.query(
-        `INSERT INTO invoice_line_items (invoice_id, description, hsn_sac_code, quantity, unit_of_measurement, unit_price_paise, taxable_value_paise, tax_rate_percentage, line_total_paise)
-         VALUES ($1, 'Item', '998315', 1.000, 'NOS', 10000, 10000, 18.00, 11800)`,
+        `INSERT INTO invoice_line_items (invoice_id, description, hsn_sac_code, quantity, unit_of_measurement, unit_price_paise, taxable_value_paise, tax_rate_percentage, cgst_paise, sgst_paise, igst_paise, line_total_paise)
+         VALUES ($1, 'Item', '998315', 1.000, 'NOS', 10000, 10000, 18.00, 900, 900, 0, 11800)`,
         [futureInvId],
       );
       const futFinalRes = await finalizeInvoice({ id: futureInvId });
@@ -510,13 +510,13 @@ describe('COMP-001: Document Immutability and Seller Snapshots', () => {
       // With a later finalized invoice on 2026-05-12, a date 31 days earlier (2026-04-10) is rejected
       const oldInvId = await insertOne(
         pg,
-        `INSERT INTO invoices (business_id, financial_year_id, invoice_number, lifecycle_status, invoice_date, subtotal_paise, total_tax_paise, grand_total_paise)
-         VALUES ($1, $2, 'DRAFT-OLD', 'draft', '2026-04-10', 10000, 1800, 11800) RETURNING id`,
+        `INSERT INTO invoices (business_id, financial_year_id, invoice_number, lifecycle_status, invoice_date, place_of_supply_state_code, subtotal_paise, total_cgst_paise, total_sgst_paise, total_igst_paise, total_tax_paise, grand_total_paise)
+         VALUES ($1, $2, 'DRAFT-OLD', 'draft', '2026-04-10', '29', 10000, 900, 900, 0, 1800, 11800) RETURNING id`,
         [businessId, financialYearId],
       );
       await pg.query(
-        `INSERT INTO invoice_line_items (invoice_id, description, hsn_sac_code, quantity, unit_of_measurement, unit_price_paise, taxable_value_paise, tax_rate_percentage, line_total_paise)
-         VALUES ($1, 'Item', '998315', 1.000, 'NOS', 10000, 10000, 18.00, 11800)`,
+        `INSERT INTO invoice_line_items (invoice_id, description, hsn_sac_code, quantity, unit_of_measurement, unit_price_paise, taxable_value_paise, tax_rate_percentage, cgst_paise, sgst_paise, igst_paise, line_total_paise)
+         VALUES ($1, 'Item', '998315', 1.000, 'NOS', 10000, 10000, 18.00, 900, 900, 0, 11800)`,
         [oldInvId],
       );
       const oldFinalRes = await finalizeInvoice({ id: oldInvId });
@@ -526,13 +526,13 @@ describe('COMP-001: Document Immutability and Seller Snapshots', () => {
       // Cross-FY draft without confirmation -> INVOICE_DATE_CROSS_FY
       const crossFyInvId = await insertOne(
         pg,
-        `INSERT INTO invoices (business_id, financial_year_id, invoice_number, lifecycle_status, invoice_date, subtotal_paise, total_tax_paise, grand_total_paise)
-         VALUES ($1, $2, 'DRAFT-CROSS', 'draft', '2026-03-20', 10000, 1800, 11800) RETURNING id`,
+        `INSERT INTO invoices (business_id, financial_year_id, invoice_number, lifecycle_status, invoice_date, place_of_supply_state_code, subtotal_paise, total_cgst_paise, total_sgst_paise, total_igst_paise, total_tax_paise, grand_total_paise)
+         VALUES ($1, $2, 'DRAFT-CROSS', 'draft', '2026-03-20', '29', 10000, 900, 900, 0, 1800, 11800) RETURNING id`,
         [businessId, financialYearId],
       );
       await pg.query(
-        `INSERT INTO invoice_line_items (invoice_id, description, hsn_sac_code, quantity, unit_of_measurement, unit_price_paise, taxable_value_paise, tax_rate_percentage, line_total_paise)
-         VALUES ($1, 'Item', '998315', 1.000, 'NOS', 10000, 10000, 18.00, 11800)`,
+        `INSERT INTO invoice_line_items (invoice_id, description, hsn_sac_code, quantity, unit_of_measurement, unit_price_paise, taxable_value_paise, tax_rate_percentage, cgst_paise, sgst_paise, igst_paise, line_total_paise)
+         VALUES ($1, 'Item', '998315', 1.000, 'NOS', 10000, 10000, 18.00, 900, 900, 0, 11800)`,
         [crossFyInvId],
       );
       const crossRes1 = await finalizeInvoice({ id: crossFyInvId });

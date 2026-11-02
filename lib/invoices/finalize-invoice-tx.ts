@@ -3,8 +3,10 @@ import { ActionError } from '@/lib/actions/_shared/errors';
 import { lockBusinessRow } from '@/lib/actions/_shared/business-lock';
 import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import { writeAudit, type AuditRequestContext } from '@/lib/audit/log';
+import { roundToRupeePaise } from '@/lib/credit-notes/derivation';
 import type { DbTransaction } from '@/lib/db/client';
 import { invoiceLineItems, invoices } from '@/lib/db/schema';
+import { assertDraftTotalsMatch, resolveDraftPlaceOfSupply } from '@/lib/invoices/place-of-supply';
 import { calculateInvoiceTaxOrActionError } from '@/lib/invoices/tax-calculation';
 import type { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
@@ -65,7 +67,10 @@ export async function finalizeDraftInvoiceInTransaction(
   const customer = invoice.customer_id ? await findOwnedCustomer(tx, params.businessId, invoice.customer_id) : null;
 
   if (hasCustomer && !customer) throw new ActionError('Customer not found.', { code: 'NOT_FOUND' });
-  const placeOfSupplyStateCode = customer ? customer.state_code : invoice.place_of_supply_state_code;
+
+  // COMP-003: the user's explicit Place of Supply on the draft is authoritative. The customer's registered state is a
+  // UI default only; it must never silently change the tax head here.
+  const placeOfSupplyStateCode = resolveDraftPlaceOfSupply(invoice.place_of_supply_state_code);
 
   // 4. Fetch Line Items and Tax Rates for authoritative recalc
   const lineItems = await tx.select().from(invoiceLineItems).where(eq(invoiceLineItems.invoice_id, params.invoiceId)).orderBy(invoiceLineItems.sort_order);
@@ -84,13 +89,17 @@ export async function finalizeDraftInvoiceInTransaction(
 
   const taxCalcInput: TaxCalculationInput = {
     sellerStateCode: business.state_code,
-    placeOfSupplyStateCode: placeOfSupplyStateCode || business.state_code,
+    placeOfSupplyStateCode: placeOfSupplyStateCode,
     lineItems: taxLineItemInputs,
     // Authoritatively recalculate using the locked calculation mode of the invoice
     gstRateType: invoice.gst_rate_type
   };
 
   const taxResult = calculateInvoiceTaxOrActionError(taxCalcInput);
+
+  // COMP-003: the totals the user approved on the draft must equal the authoritative recalculation, otherwise abort
+  // with nothing written (no line-item rewrite, no number consumed) instead of silently changing the invoice.
+  assertDraftTotalsMatch(invoice, taxResult);
 
   // 5. Update Line Items if any rounding differences occurred (defense in depth)
   // Since it's finalized, we want to make absolutely sure line items match the calculation.
@@ -173,7 +182,7 @@ export async function finalizeDraftInvoiceInTransaction(
       invoice_date: invoiceDateIso,
       due_date: dueDateString,
       finalized_at: new Date(),
-      place_of_supply_state_code: placeOfSupplyStateCode || business.state_code,
+      place_of_supply_state_code: placeOfSupplyStateCode,
       seller_gstin_snapshot: business.gstin,
       ...captureSellerSnapshot(business),
       billing_name_snapshot: billingNameSnapshot,
@@ -184,7 +193,7 @@ export async function finalizeDraftInvoiceInTransaction(
       total_sgst_paise: taxResult.totalSgstPaise,
       total_igst_paise: taxResult.totalIgstPaise,
       total_tax_paise: taxResult.totalTaxPaise,
-      grand_total_paise: Math.round(taxResult.grandTotalPaise / 100) * 100,
+      grand_total_paise: roundToRupeePaise(taxResult.grandTotalPaise),
       // Confirm calculation mode is locked at finalization
       gst_rate_type: invoice.gst_rate_type,
     })

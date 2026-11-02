@@ -988,6 +988,11 @@ export function InvoiceForm({
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
                     </div>
                     {errors.place_of_supply_state_code && <p className="mt-1 text-xs text-destructive font-medium">{errors.place_of_supply_state_code.message}</p>}
+                    {customer && customer.state_code && placeOfSupplyStateCodeVal && customer.state_code !== placeOfSupplyStateCodeVal ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Customer is registered in {INDIAN_GST_STATES.find((s) => s.code === customer.state_code)?.name ?? customer.state_code}. Tax is calculated for the delivery state selected here.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </div>
