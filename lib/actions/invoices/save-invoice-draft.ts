@@ -12,13 +12,12 @@ import { GstCalculationError } from '@/lib/gst/errors';
 import { TaxCalculationInput, TaxCalculationResult, TaxLineItemInput } from '@/lib/gst/types';
 import { isTaxRateEffectiveOn } from '@/lib/gst/tax-rate-validity';
 import { buildTaxLineInput, assertTaxResultWithinCeiling, LineMathError } from '@/lib/invoices/line-math';
-import { eq, inArray, and, gte, sql } from 'drizzle-orm';
+import { eq, inArray, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { lockDraftInvoice } from '@/lib/invoices/document-locks';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
 import { formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
-import { canCreateInvoice, canUseTemplate } from '@/lib/subscriptions/entitlements';
-import { getCurrentMonthRange } from '@/lib/reports/period';
+import { canUseTemplate } from '@/lib/subscriptions/entitlements';
 
 function toCalculationActionError(error: unknown): ActionError | null {
   if (error instanceof ActionError) return error;
@@ -50,7 +49,7 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
         );
       }
 
-      // Quota check: Verify monthly invoice limit for Free tier
+      // Fetch business
       const [business] = await tx.select().from(businesses).where(eq(businesses.id, businessId)).limit(1);
       if (!business) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
 
@@ -62,30 +61,6 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
         .map((li) => li.product_id)
         .filter((id): id is string => typeof id === 'string' && id.length > 0);
       await assertOwnedProducts(tx, businessId, referencedProductIds);
-
-      // Only count quota for newly created drafts, not edits of existing ones
-      if (!input.id) {
-        const monthRange = getCurrentMonthRange();
-        const monthStart = new Date(`${monthRange.startDate}T00:00:00+05:30`);
-        const monthEnd = new Date(`${monthRange.endDate}T23:59:59.999+05:30`);
-        const countResult = await tx.select({ count: sql<number>`count(*)` })
-          .from(invoices)
-          .where(
-            and(
-              eq(invoices.business_id, businessId),
-              gte(invoices.created_at, monthStart),
-              sql`${invoices.created_at} <= ${monthEnd}`,
-            ),
-          );
-        const currentCount = Number(countResult[0]?.count || 0);
-
-        const quotaCheck = canCreateInvoice(business, currentCount);
-        if (!quotaCheck.allowed) {
-          throw new ActionError(quotaCheck.reason || 'Invoice quota exceeded.', {
-            code: quotaCheck.code || 'INVOICE_QUOTA_EXCEEDED',
-          });
-        }
-      }
 
       // 2. Fetch business defaults if needed
       const businessStateCode = business.state_code;
@@ -254,4 +229,4 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
   } catch (error: unknown) {
     throw toThrowable(error);
   }
-}, 'save-invoice-draft');
+}, 'save-invoice-draft', { requireActiveSubscription: true });

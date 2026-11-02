@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { getDisplayInvoiceStatus, getDisplayStatusLabel } from '@/lib/invoices/status'
 import { getArchivedPdfUrl } from '@/lib/actions/invoices/get-archived-pdf-url'
 import { getArchivedCreditNotePdfUrl } from '@/lib/actions/credit-notes/get-archived-credit-note-pdf-url'
+import { DeleteDraftButton } from '@/components/app/invoices/delete-draft-button'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const CURRENT_YEAR = new Date().getFullYear()
@@ -347,13 +348,16 @@ export function InvoicesClient({
                             <td className="px-3.5 py-1">
                               <div className="flex items-center justify-center gap-1">
                                 {inv.lifecycle_status === 'draft' ? (
-                                  <Link
-                                    href={`/invoices/${inv.id}`}
-                                    title="Edit Draft"
-                                    className="flex size-7.5 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-sm"
-                                  >
-                                    <Pencil className="size-3.5" />
-                                  </Link>
+                                  <>
+                                    <Link
+                                      href={`/invoices/${inv.id}`}
+                                      title="Edit Draft"
+                                      className="flex size-7.5 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-sm"
+                                    >
+                                      <Pencil className="size-3.5" />
+                                    </Link>
+                                    <DeleteDraftButton invoiceId={inv.id} variant="icon" />
+                                  </>
                                 ) : (
                                   <>
                                     <Link
@@ -474,13 +478,16 @@ export function InvoicesClient({
                       {/* Bottom Action Row */}
                       <div className="pt-2 border-t border-border/50 flex items-center justify-end gap-1.5">
                         {inv.lifecycle_status === 'draft' ? (
-                          <Link
-                            href={`/invoices/${inv.id}`}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-border bg-background text-foreground text-xs font-bold shadow-2xs hover:bg-accent transition-colors"
-                          >
-                            <Pencil className="size-3.5 text-muted-foreground" />
-                            <span>Edit Draft</span>
-                          </Link>
+                          <>
+                            <Link
+                              href={`/invoices/${inv.id}`}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-border bg-background text-foreground text-xs font-bold shadow-2xs hover:bg-accent transition-colors"
+                            >
+                              <Pencil className="size-3.5 text-muted-foreground" />
+                              <span>Edit Draft</span>
+                            </Link>
+                            <DeleteDraftButton invoiceId={inv.id} variant="icon" />
+                          </>
                         ) : (
                           <>
                             <Link

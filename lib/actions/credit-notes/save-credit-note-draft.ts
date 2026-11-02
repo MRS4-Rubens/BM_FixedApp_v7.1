@@ -167,4 +167,5 @@ export const saveCreditNoteDraft = createAuthenticatedAction(
     }
   },
   'save-credit-note-draft',
+  { requireActiveSubscription: true },
 );

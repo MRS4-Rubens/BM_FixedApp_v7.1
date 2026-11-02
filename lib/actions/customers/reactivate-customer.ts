@@ -32,4 +32,4 @@ export const reactivateCustomer = createAuthenticatedAction(reactivateSchema, as
   revalidatePath(`/customers/${input.id}/edit`);
 
   return { success: true };
-}, 'reactivate-customer');
+}, 'reactivate-customer', { requireActiveSubscription: true });

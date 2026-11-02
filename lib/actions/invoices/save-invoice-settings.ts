@@ -56,5 +56,6 @@ export const saveInvoiceSettings = createAuthenticatedAction(
 
     return { success: true };
   },
-  'save-invoice-settings'
+  'save-invoice-settings',
+  { requireActiveSubscription: true }
 );

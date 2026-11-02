@@ -54,4 +54,4 @@ export const updateCustomer = createAuthenticatedAction(updateCustomerSchema, as
   revalidatePath(`/customers/${id}/edit`);
 
   return { success: true };
-}, 'update-customer');
+}, 'update-customer', { requireActiveSubscription: true });

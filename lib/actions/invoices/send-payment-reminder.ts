@@ -179,5 +179,8 @@ export const sendPaymentReminder = createAuthenticatedAction(
     return { success: true };
   },
   'send-payment-reminder',
-  { rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'email-invoice' } }
+  {
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'email-invoice' },
+    requireActiveSubscription: true,
+  }
 );

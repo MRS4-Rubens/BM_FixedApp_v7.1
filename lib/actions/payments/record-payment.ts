@@ -41,5 +41,8 @@ export const recordPayment = createAuthenticatedAction(
     }
   },
   'record-payment',
-  { rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'record-payment' } },
+  {
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'record-payment' },
+    requireActiveSubscription: true,
+  },
 );

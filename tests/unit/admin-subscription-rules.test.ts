@@ -199,4 +199,19 @@ describe('admin-subscription-rules (API-009)', () => {
       assertOverrideCoherent({ plan: 'essentials', status: 'active', endsAt: beyond, now }),
     ).toThrowError(`The end date is more than ${MAX_OVERRIDE_HORIZON_DAYS} days in the future.`);
   });
+
+  it('API-010: trial plan with trial status requires a future end date', () => {
+    expect(() =>
+      assertOverrideCoherent({ plan: 'trial', status: 'trial', endsAt: null, now }),
+    ).toThrowError('A Trial needs an end date in the future.');
+
+    const past = new Date(now.getTime() - 1000);
+    expect(() =>
+      assertOverrideCoherent({ plan: 'trial', status: 'trial', endsAt: past, now }),
+    ).toThrowError('A Trial needs an end date in the future.');
+
+    expect(() =>
+      assertOverrideCoherent({ plan: 'trial', status: 'trial', endsAt: futureDate, now }),
+    ).not.toThrow();
+  });
 });

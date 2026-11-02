@@ -1,59 +1,77 @@
-'use server'
+'use server';
 
-import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { eq, sql } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
+import { lockBusinessRow } from '@/lib/actions/_shared/business-lock';
+import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { CUSTOMER_MAPPINGS } from '@/lib/actions/_shared/pg-constraint-mappings';
-import { customerSchema } from '@/lib/validations/customer';
 import { db } from '@/lib/db/client';
-import { customers, businesses } from '@/lib/db/schema';
-import { revalidatePath } from 'next/cache';
-import { eq, sql } from 'drizzle-orm';
-import { canAddCustomer } from '@/lib/subscriptions/entitlements';
+import { customers } from '@/lib/db/schema';
+import { setLocalLockTimeout, withTransactionRetry } from '@/lib/db/transaction';
+import { canAddCustomer, getPlanEntitlements } from '@/lib/subscriptions/entitlements';
+import { customerSchema } from '@/lib/validations/customer';
 
-export const createCustomer = createAuthenticatedAction(customerSchema, async (input, context) => {
-  const businessId = context.appUser.business_id;
-  
-  if (!businessId) {
-    throw new ActionError('Please complete your business profile in Settings before adding customers.', { code: 'NOT_FOUND' });
+function toCount(value: unknown): number {
+  const parsed = Number(value ?? 0);
+  if (!Number.isSafeInteger(parsed) || parsed < 0) {
+    throw new Error('Unexpected aggregate value while counting customers.');
   }
+  return parsed;
+}
 
-  // Quota check: Verify customer limit for Free tier
-  const bizResult = await db.select().from(businesses).where(eq(businesses.id, businessId)).limit(1);
-  if (bizResult.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
+export const createCustomer = createAuthenticatedAction(
+  customerSchema,
+  async (input, context) => {
+    const businessId = context.appUser.business_id;
 
-  const countResult = await db.select({ count: sql<number>`count(*)` })
-    .from(customers)
-    .where(eq(customers.business_id, businessId));
-  const currentCount = Number(countResult[0]?.count || 0);
+    if (!businessId) {
+      throw new ActionError('Please complete your business profile in Settings before adding customers.', { code: 'NOT_FOUND' });
+    }
 
-  const quotaCheck = canAddCustomer(bizResult[0], currentCount);
-  if (!quotaCheck.allowed) {
-    throw new ActionError(quotaCheck.reason || 'Customer quota exceeded.', {
-      code: quotaCheck.code || 'CUSTOMER_QUOTA_EXCEEDED',
-    });
-  }
+    const data = {
+      business_id: businessId,
+      name: input.name,
+      gstin: input.gstin || null,
+      email: input.email || null,
+      phone: input.phone || null,
+      address_line1: input.address_line1 || null,
+      address_line2: input.address_line2 || null,
+      city: input.city || null,
+      state_code: input.state_code,
+      pincode: input.pincode || null,
+    };
 
-  const data = {
-    business_id: businessId,
-    name: input.name,
-    gstin: input.gstin || null,
-    email: input.email || null,
-    phone: input.phone || null,
-    address_line1: input.address_line1 || null,
-    address_line2: input.address_line2 || null,
-    city: input.city || null,
-    state_code: input.state_code,
-    pincode: input.pincode || null,
-  };
+    try {
+      await withTransactionRetry(() =>
+        db.transaction(async (tx) => {
+          await setLocalLockTimeout(tx);
+          const business = await lockBusinessRow(tx, businessId);
+          if (getPlanEntitlements(business).customerLimit !== null) {
+            const [row] = await tx
+              .select({ total: sql<string | number>`count(*)` })
+              .from(customers)
+              .where(eq(customers.business_id, businessId));
+            const currentCount = toCount(row?.total);
+            const quotaCheck = canAddCustomer(business, currentCount);
+            if (!quotaCheck.allowed) {
+              throw new ActionError(quotaCheck.reason ?? 'Customer quota exceeded.', {
+                code: quotaCheck.code ?? 'CUSTOMER_QUOTA_EXCEEDED',
+              });
+            }
+          }
+          await tx.insert(customers).values(data);
+        }),
+      );
+    } catch (error: unknown) {
+      throw toThrowable(error, CUSTOMER_MAPPINGS);
+    }
 
-  try {
-    await db.insert(customers).values(data);
-  } catch (error: unknown) {
-    throw toThrowable(error, CUSTOMER_MAPPINGS);
-  }
+    revalidatePath('/customers');
 
-  revalidatePath('/customers');
-
-  return { success: true };
-}, 'create-customer');
+    return { success: true };
+  },
+  'create-customer',
+  { requireActiveSubscription: true },
+);

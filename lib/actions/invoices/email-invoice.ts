@@ -147,5 +147,8 @@ export const emailInvoice = createAuthenticatedAction(
     return { success: true };
   },
   'email-invoice',
-  { rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'email-invoice' } }
+  {
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'email-invoice' },
+    requireActiveSubscription: true,
+  }
 );

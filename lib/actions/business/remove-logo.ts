@@ -78,5 +78,6 @@ export const removeBusinessLogo = createAuthenticatedAction(
 
     return { success: true };
   },
-  'remove-business-logo'
+  'remove-business-logo',
+  { requireActiveSubscription: true }
 );

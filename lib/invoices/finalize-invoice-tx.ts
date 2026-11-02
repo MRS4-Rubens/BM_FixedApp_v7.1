@@ -1,9 +1,10 @@
-import { and, between, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { lockBusinessRow } from '@/lib/actions/_shared/business-lock';
 import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import { writeAudit, type AuditRequestContext } from '@/lib/audit/log';
 import type { DbTransaction } from '@/lib/db/client';
-import { businesses, invoiceLineItems, invoices } from '@/lib/db/schema';
+import { invoiceLineItems, invoices } from '@/lib/db/schema';
 import { calculateInvoiceTaxOrActionError } from '@/lib/invoices/tax-calculation';
 import type { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
@@ -11,11 +12,11 @@ import { lockDraftInvoice } from '@/lib/invoices/document-locks';
 import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
 import { evaluateInvoiceDate } from '@/lib/invoices/invoice-date-policy';
+import { assertInvoiceQuotaAvailable } from '@/lib/invoices/invoice-quota';
 import { formatIstDateAsIso, getIstDateParts, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
 import { captureSellerSnapshot } from '@/lib/invoices/seller-snapshot';
-import { getCurrentMonthRange } from '@/lib/reports/period';
-import { canCreateInvoice, canUseTemplate, getPlanEntitlements } from '@/lib/subscriptions/entitlements';
+import { canUseTemplate, getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 
 export interface FinalizeInvoiceTxParams {
   readonly invoiceId: string;
@@ -40,10 +41,9 @@ export async function finalizeDraftInvoiceInTransaction(
   // 2. Lock draft invoice row FOR UPDATE and validate state
   const invoice = await lockDraftInvoice(tx, { id: params.invoiceId, businessId: params.businessId });
 
-  // 3. Fetch Business and Customer
-  const businessResult = await tx.select().from(businesses).where(eq(businesses.id, params.businessId));
-  if (businessResult.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
-  const business = businessResult[0];
+  // 3. Lock the business row (lock order: invoice -> business -> financial_years -> counters). Serializes the quota check and
+  //    freezes the profile that is about to be snapshotted.
+  const business = await lockBusinessRow(tx, params.businessId);
 
   // Entitlement Checks
   const entitlements = getPlanEntitlements(business);
@@ -54,27 +54,6 @@ export async function finalizeDraftInvoiceInTransaction(
   const templateCheck = canUseTemplate(business, invoice.invoice_template || 'template_1');
   if (!templateCheck.allowed) {
     throw new ActionError(templateCheck.reason || 'Template requires Essentials Pro.', { code: 'TEMPLATE_LOCKED' });
-  }
-
-  const monthRange = getCurrentMonthRange();
-  const finalizedCountRes = await tx
-    .select({ count: sql<number>`count(*)` })
-    .from(invoices)
-    .where(
-      and(
-        eq(invoices.business_id, params.businessId),
-        eq(invoices.lifecycle_status, 'finalized'),
-        between(invoices.invoice_date, monthRange.startDate, monthRange.endDate)
-      )
-    );
-  const finalizedThisMonth = Number(finalizedCountRes[0]?.count || 0);
-
-  const quotaCheck = canCreateInvoice(business, finalizedThisMonth);
-  if (!quotaCheck.allowed) {
-    throw new ActionError(
-      quotaCheck.reason || 'Monthly limit of 30 finalized invoices reached on the Free Plan. Please upgrade your subscription.',
-      { code: quotaCheck.code || 'QUOTA_EXCEEDED' }
-    );
   }
 
   if (business.registration_type === 'composition') {
@@ -148,6 +127,10 @@ export async function finalizeDraftInvoiceInTransaction(
     confirmCrossFinancialYear: params.confirmCrossFinancialYear === true,
   });
   if (!dateDecision.ok) throw new ActionError(dateDecision.message, { code: dateDecision.code });
+
+  // Quota (API-010): finalized invoices in the IST month of THIS invoice's date, under the business lock.
+  // Throwing here rolls back everything (no sequence is consumed, no gap).
+  await assertInvoiceQuotaAvailable(tx, { businessId: params.businessId, business, invoiceDateIso });
 
   const fy = await getOrCreateCurrentFinancialYear(tx, params.businessId, invoiceDate);
 

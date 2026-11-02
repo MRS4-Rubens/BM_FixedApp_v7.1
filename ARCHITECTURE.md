@@ -158,8 +158,9 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 
 1. **Global Lock-Order Contract:**
    All transactional modifications must acquire locks in the strict hierarchical sequence:
-   `invoice row -> credit-note row -> payment row -> financial_years row -> invoice_number_counters row`
+   `invoice row -> credit-note row -> payment row -> business row -> financial_years row -> invoice_number_counters row`
    Never acquire an earlier lock after a later one in the same transaction.
+   *Business Row Lock (API-010):* `lockBusinessRow(tx, businessId)` acquires `FOR NO KEY UPDATE` so quota checks and entity mutations (invoices, customers, products) are serialized per tenant without blocking foreign-key key-share validation of concurrent child inserts.
    *Note on Archival Claims (API-008):* Archival claims are single-row UPDATEs outside any document transaction; they hold no other lock; batch claims use SKIP LOCKED; targeted claims wait. Draft-save actions lock only the specific document they edit (`FOR UPDATE`).
 
 2. **Pure Transactional Modules (`lib/invoices/*-tx.ts`):**
@@ -193,6 +194,20 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
    - **Seller Snapshot Source & Backfill**: The `seller_snapshot_source` column tracks provenance (`'captured_at_finalization'` vs `'backfilled_from_profile'`). Legacy finalized rows backfilled in migration `0018` are flagged `'backfilled_from_profile'`, documenting the known imperfection that they reflect profile state at migration time rather than original finalization time.
    - **Invoice Date Policy (`INVOICE_BACKDATE_WINDOW_DAYS = 30`)**: Invoices cannot be dated in the future in IST. Backdating is restricted to a 30-day window from the latest finalized invoice within the same financial year series. Backdating across financial years requires explicit user confirmation (`confirm_cross_financial_year: true`); without confirmation, `INVOICE_DATE_CROSS_FY` is returned and no changes are committed.
    - **Logo Retention Rule**: S3/storage objects referenced by `logo_storage_key_snapshot` in any finalized invoice or credit note are retained permanently. `deleteLogoObjectIfUnreferenced` verifies whether an old logo key is referenced in document snapshots before deleting from storage. The logo route `/api/business/[id]/logo?k=` serves historical snapshot logo keys only if referenced by a document of that business, returning immutable cache headers.
+
+## Entitlements & quota policy (API-010)
+
+1. **Invoice Quota Rule**: Quota counts only FINALIZED invoices whose `invoice_date` lies within the IST calendar month containing the `invoice_date` of the invoice being finalized (`countFinalizedInvoicesInMonthOf`). Drafts never count toward quota; draft creation is free and uncounted.
+2. **Authoritative Lock**: Quota is enforced strictly at finalization time inside `finalizeDraftInvoiceInTransaction` under the tenant's business row lock (`lockBusinessRow` via `FOR NO KEY UPDATE`), preventing race conditions where concurrent finalizations at 29/30 could bypass limits. Unlimited tiers bypass the count query entirely.
+3. **Customer & Product Quotas (Policy P1)**: Customer and product limits count ALL tenant rows (active + deactivated) because deactivated records remain referenced by historical and current document selectors. Quota evaluation and insertion execute atomically within a single transaction under `lockBusinessRow`. Reactivation actions perform no quota check.
+4. **Subscription Suspension Guard**: A suspended business is strictly read-only. `createAuthenticatedAction` supports `{ requireActiveSubscription: true }`, performing a fast pre-check before rate limiting and handler invocation.
+5. **Suspension Exemptions (Policy P2)**: The following are strictly exempt from suspension enforcement:
+   - All read operations (`list-*`, `get-*`)
+   - Statutory PDF fetches (`getArchivedPdfUrl`, `getArchivedCreditNoteUrl`)
+   - Subscription resolution and payment submission (`submit-payment-claim`) to restore good standing
+   - User feedback (`send-feedback`)
+   - Platform admin actions (an admin's business status never locks administrative capabilities)
+6. **Trial Expiration (Fail-Closed)**: A subscription in `trial` status with a `NULL` `trial_ends_at` timestamp resolves to `tier: 'free'` and `effectiveStatus: 'expired'` with 0 days remaining. Migration `0024_api010_trial_end_backfill` backfills legacy NULL trial timestamps to `created_at + 14 days`.
 
 ## Platform admin authorization (AUTH-001)
 

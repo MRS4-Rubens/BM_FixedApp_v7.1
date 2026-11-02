@@ -45,5 +45,6 @@ export const updateProduct = createAuthenticatedAction(
 
     return updatedProduct[0];
   },
-  'update-product'
+  'update-product',
+  { requireActiveSubscription: true }
 );

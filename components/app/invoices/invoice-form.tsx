@@ -28,6 +28,7 @@ import { INDIAN_GST_STATES } from '@/lib/gst/indian-states'
 import { InvoicePrintView } from './invoice-print-view'
 import { canUseTemplate } from '@/lib/subscriptions/entitlements'
 import { isInvoiceTemplateId } from '@/lib/invoices/template-ids'
+import { DeleteDraftButton } from '@/components/app/invoices/delete-draft-button'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
 import { TemplateSelector } from './template-selector'
 import { buildPreviewTaxLineInput } from '@/lib/invoices/line-math'
@@ -840,6 +841,11 @@ export function InvoiceForm({
             <ArrowLeft className="size-4" />
           </Link>
           <h1 className="text-2xl font-bold tracking-tight font-heading text-foreground whitespace-nowrap">{isDraft ? 'Edit Draft Invoice' : 'New Invoice'}</h1>
+          {isDraft && initialData?.id ? (
+            <div className="ml-auto">
+              <DeleteDraftButton invoiceId={initialData.id} variant="button" redirectTo="/invoices" onError={setGlobalError} />
+            </div>
+          ) : null}
         </div>
 
         {globalError && (

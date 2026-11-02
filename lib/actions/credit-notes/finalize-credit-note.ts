@@ -59,5 +59,6 @@ export const finalizeCreditNote = createAuthenticatedAction(
       limiter: sensitiveActionLimiter,
       keyPrefix: 'finalize-credit-note',
     },
+    requireActiveSubscription: true,
   },
 );

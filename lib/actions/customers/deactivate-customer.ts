@@ -32,4 +32,4 @@ export const deactivateCustomer = createAuthenticatedAction(deactivateSchema, as
   revalidatePath(`/customers/${input.id}/edit`);
 
   return { success: true };
-}, 'deactivate-customer');
+}, 'deactivate-customer', { requireActiveSubscription: true });

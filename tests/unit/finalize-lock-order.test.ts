@@ -12,11 +12,29 @@ describe('architectural lock order and transaction invariants', () => {
     const src = readProjectFile('lib/invoices/finalize-invoice-tx.ts');
 
     const lockIdx = src.indexOf('lockDraftInvoice(');
+    const lockBizIdx = src.indexOf('lockBusinessRow(');
+    const evalDateIdx = src.indexOf('evaluateInvoiceDate(');
+    const quotaIdx = src.indexOf('assertInvoiceQuotaAvailable(');
+    const getFyIdx = src.indexOf('getOrCreateCurrentFinancialYear(');
     const getNextNumIdx = src.indexOf('getNextInvoiceNumber(');
 
     expect(lockIdx).toBeGreaterThan(-1);
+    expect(lockBizIdx).toBeGreaterThan(-1);
+    expect(evalDateIdx).toBeGreaterThan(-1);
+    expect(quotaIdx).toBeGreaterThan(-1);
+    expect(getFyIdx).toBeGreaterThan(-1);
     expect(getNextNumIdx).toBeGreaterThan(-1);
-    expect(lockIdx).toBeLessThan(getNextNumIdx);
+
+    // Global lock order: invoice -> business -> counters
+    expect(lockIdx).toBeLessThan(lockBizIdx);
+    expect(lockBizIdx).toBeLessThan(getNextNumIdx);
+
+    // Quota evaluation order: evaluateInvoiceDate < assertInvoiceQuotaAvailable < getOrCreateCurrentFinancialYear
+    expect(evalDateIdx).toBeLessThan(quotaIdx);
+    expect(quotaIdx).toBeLessThan(getFyIdx);
+
+    expect(src).not.toContain('getCurrentMonthRange');
+    expect(src).not.toContain('canCreateInvoice(');
 
     expect(src).toContain('returning(');
     expect(src).toContain("'draft'");
@@ -67,4 +85,3 @@ describe('architectural lock order and transaction invariants', () => {
     expect(cnRevalIdx).toBeGreaterThan(cnTxIdx);
   });
 });
-

@@ -56,6 +56,12 @@ export function assertOverrideCoherent(args: {
     );
   }
 
+  if (args.plan === 'trial' && args.status === 'trial') {
+    if (args.endsAt === null || args.endsAt.getTime() <= args.now.getTime()) {
+      throw new OverrideRuleError('A Trial needs an end date in the future.');
+    }
+  }
+
   if (args.endsAt !== null) {
     if (Number.isNaN(args.endsAt.getTime())) {
       throw new OverrideRuleError('Invalid subscription end date.');

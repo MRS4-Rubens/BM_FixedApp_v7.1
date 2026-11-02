@@ -173,4 +173,4 @@ export const saveBusinessProfile = createAuthenticatedAction(businessProfileSche
   revalidatePath('/invoices');
 
   return { businessId: savedBusinessId };
-}, 'save-business-profile');
+}, 'save-business-profile', { requireActiveSubscription: true });

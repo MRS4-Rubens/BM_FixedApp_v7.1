@@ -12,7 +12,7 @@ import { buildItrReportWorkbook } from '@/lib/excel/build-itr-report';
 import { getGstr1ExportData } from '@/lib/actions/reports/get-gstr1-data';
 import { buildGstr1Workbook } from '@/lib/excel/build-gstr1-report';
 import { buildHsnWorkbook } from '@/lib/excel/build-hsn-report';
-import { canExportStatutoryReport } from '@/lib/subscriptions/entitlements';
+import { canExportStatutoryReport, checkAccountNotSuspended } from '@/lib/subscriptions/entitlements';
 import { exportQuerySchema } from '@/lib/validations/export';
 
 export async function GET(request: NextRequest) {
@@ -47,6 +47,14 @@ export async function GET(request: NextRequest) {
 
   if (bizResult.length === 0) {
     return new Response('Business profile not found.', { status: 404 });
+  }
+
+  const suspended = checkAccountNotSuspended(bizResult[0]);
+  if (!suspended.allowed) {
+    return new Response(JSON.stringify({ error: suspended.reason, code: suspended.code }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   const exportCheck = canExportStatutoryReport(bizResult[0]);

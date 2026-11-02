@@ -51,5 +51,8 @@ export const voidPayment = createAuthenticatedAction(
     }
   },
   'void-payment',
-  { rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'void-payment' } },
+  {
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'void-payment' },
+    requireActiveSubscription: true,
+  },
 );

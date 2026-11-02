@@ -87,6 +87,7 @@ export function createAuthenticatedAction<TSchema extends z.ZodTypeAny, TOutput>
   options?: {
     rateLimit?: { limiter: RateLimiter; keyPrefix: string };
     requirePlatformAdmin?: boolean;
+    requireActiveSubscription?: boolean;
   }
 ) {
   return async (rawInput: unknown): Promise<ActionResult<TOutput>> => {
@@ -99,6 +100,11 @@ export function createAuthenticatedAction<TSchema extends z.ZodTypeAny, TOutput>
       if (options?.requirePlatformAdmin) {
         const { requirePlatformAdmin } = await import('@/lib/auth/admin');
         await requirePlatformAdmin();
+      }
+
+      if (options?.requireActiveSubscription === true && appUser.business_id) {
+        const { assertBusinessNotSuspended } = await import('@/lib/actions/_shared/subscription-guard');
+        await assertBusinessNotSuspended(appUser.business_id);
       }
 
       if (options?.rateLimit) {

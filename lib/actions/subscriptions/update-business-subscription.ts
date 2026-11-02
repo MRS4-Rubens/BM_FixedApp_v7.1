@@ -70,6 +70,7 @@ export const updateBusinessSubscription = createAuthenticatedAction(
             subscription_plan: input.subscription_plan,
             subscription_status: input.subscription_status,
             subscription_ends_at: endsAt,
+            trial_ends_at: input.subscription_plan === 'trial' ? endsAt : undefined,
             updated_at: now,
           })
           .where(eq(businesses.id, business.id));

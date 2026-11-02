@@ -140,5 +140,8 @@ export const uploadBusinessLogo = createAuthenticatedAction(
     };
   },
   'upload-business-logo',
-  { rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'upload-logo' } }
+  {
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'upload-logo' },
+    requireActiveSubscription: true,
+  }
 );

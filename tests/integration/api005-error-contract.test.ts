@@ -223,6 +223,20 @@ describe('API-005: Error handling contract and information leakage prevention', 
 
     // Simulate unexpected DB driver / connection failure
     const brokenDb = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: () => [
+              {
+                subscription_plan: 'free',
+                subscription_status: 'active',
+                trial_ends_at: null,
+                subscription_ends_at: null,
+              },
+            ],
+          }),
+        }),
+      }),
       transaction: async () => {
         throw new Error('Connection terminated unexpectedly');
       },
