@@ -5,13 +5,7 @@ import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { businesses, invoices, invoiceLineItems, payments, creditNotes, creditNoteLineItems } from '@/lib/db/schema';
 import { eq, and, between, inArray, asc } from 'drizzle-orm';
-import { z } from 'zod';
-
-const getItrDataSchema = z.object({
-  startDate: z.string().max(30),
-  endDate: z.string().max(30),
-  label: z.string().max(100)
-});
+import { exportRangeSchema } from '@/lib/validations/export';
 
 export interface ItrInvoiceItem {
   id: string;
@@ -66,7 +60,7 @@ export interface ItrExportData {
   };
 }
 
-export const getItrExportData = createAuthenticatedAction(getItrDataSchema, async (input, context) => {
+export const getItrExportData = createAuthenticatedAction(exportRangeSchema, async (input, context) => {
   const businessId = context.appUser.business_id;
   if (!businessId) {
     throw new ActionError('Your account is not linked to a business profile.', {

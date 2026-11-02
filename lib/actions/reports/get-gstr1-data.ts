@@ -11,15 +11,9 @@ import {
   creditNoteLineItems,
 } from '@/lib/db/schema';
 import { eq, and, between, inArray, asc } from 'drizzle-orm';
-import { z } from 'zod';
+import { exportRangeSchema } from '@/lib/validations/export';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { isB2clLargeInvoice } from '@/lib/gst/thresholds';
-
-const getGstr1DataSchema = z.object({
-  startDate: z.string().max(30),
-  endDate: z.string().max(30),
-  label: z.string().max(100)
-});
 
 export interface Gstr1B2bRow {
   recipientGstin: string;
@@ -174,7 +168,7 @@ function formatPlaceOfSupply(stateCode: string | null): string {
   return state ? `${state.code}-${state.name}` : stateCode;
 }
 
-export const getGstr1ExportData = createAuthenticatedAction(getGstr1DataSchema, async (input, context) => {
+export const getGstr1ExportData = createAuthenticatedAction(exportRangeSchema, async (input, context) => {
   const businessId = context.appUser.business_id;
   if (!businessId) {
     throw new ActionError('Your account is not linked to a business profile.', {

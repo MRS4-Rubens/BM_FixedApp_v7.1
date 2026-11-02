@@ -364,4 +364,29 @@ When a new database constraint requires user-friendly UI mapping:
 2. Define a `PgConstraintMapping` in `lib/actions/_shared/pg-constraint-mappings.ts` (matching the constraint name, error code `23505`, target form field, user-facing error message, and `ActionError` code).
 3. Pass the mapping array as the second argument to `toThrowable(error, MAPPINGS)` in the action's catch block.
 
+## Input validation and money maths (API-006)
+
+- **Exact Integer Arithmetic**:
+  - Decimal strings are parsed to exact integer quantities (milli-units: `q * 1000`) and integer paise (`rupees * 100`).
+  - No floating-point arithmetic is permitted on the pricing or calculation path. `Math.round(x * 100)` and float multiplications are strictly eliminated.
+  - Half-up rounding is implemented via exact BigInt integer division (`multiplyMilliByPaiseRoundHalfUp`, `percentOfPaiseRoundHalfUp`).
+- **Single Source of Truth for Limits (`lib/validations/limits.ts`)**:
+  - Active preset reflects the database column capacity (`BIGINT` preset post-DB-003):
+    - `MAX_UNIT_PRICE_PAISE`: 999,999,999 (₹99,99,999.99)
+    - `MAX_DOCUMENT_TOTAL_PAISE`: 999,999,999,999 (~₹100 crore)
+    - `MAX_QUANTITY`: 9,999,999.999 (at 3 decimal places)
+    - `MAX_LINE_ITEMS`: 200 items per invoice or credit note
+  - Document-level ceiling is asserted both at Zod schema refinement and during draft saving via `assertTaxResultWithinCeiling`.
+- **Browser and Server Calculation Parity (`lib/invoices/line-math.ts`)**:
+  - `buildTaxLineInput` and `buildPreviewTaxLineInput` provide identical calculation input construction on both the server and client.
+  - Interactive preview calculations in `invoice-form.tsx` share identical exact integer arithmetic with the server-side GST tax engine.
+- **Statutory GST Rate Validity (`lib/gst/tax-rate-validity.ts`)**:
+  - Rate percentages are validated against statutory active GST rate schedules as of the document/invoice date (`isTaxRateEffectiveOn`).
+- **Mod-36 GSTIN Checksum Verification (`lib/gst/gstin.ts`)**:
+  - Customer and business GSTINs enforce the 15-character Mod-36 checksum algorithm per Section 22 of the CGST Act.
+- **Bounded Reporting and Export Ranges (`lib/validations/export.ts`)**:
+  - Date ranges are bounded to at most 366 days (`EXPORT_MAX_RANGE_DAYS`) with `startDate <= endDate`.
+  - Export file generation (`app/api/reports/export/route.ts` and report actions) receives validated range inputs only.
+
+
 

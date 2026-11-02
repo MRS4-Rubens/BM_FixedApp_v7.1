@@ -184,33 +184,33 @@ describe('COMP-002: GSTR-1 B2CL threshold (effective-dated) and CDNUR', () => {
     );
     financialYearId = await insertOne(
       pg,
-      `INSERT INTO financial_years (business_id, label, start_date, end_date, is_current) VALUES ($1, '2026-27', '2026-04-01', '2027-03-31', true) RETURNING id`,
+      `INSERT INTO financial_years (business_id, label, start_date, end_date, is_current) VALUES ($1, '2024-25', '2024-04-01', '2025-03-31', true) RETURNING id`,
       [businessId],
     );
     state.businessId = businessId;
 
     // ---- invoices (all unregistered, inter-State, unless stated) ----
-    await plantInvoice('INV-150K-NEW', '2026-10-10', 15_000_000, '27', null); // > 1 lakh, after 1-Aug-2024  -> B2CL (the audit scenario)
-    await plantInvoice('INV-1L-EXACT', '2026-10-11', 10_000_000, '27', null); // exactly 1 lakh               -> B2CS
-    await plantInvoice('INV-1L-PLUS1', '2026-10-12', 10_000_001, '27', null); // Rs 1,00,000.01               -> B2CL
-    await plantInvoice('INV-99999', '2026-10-13', 9_999_999, '27', null); // Rs 99,999.99                      -> B2CS
+    await plantInvoice('INV-150K-NEW', '2024-10-10', 15_000_000, '27', null); // > 1 lakh, after 1-Aug-2024  -> B2CL (the audit scenario)
+    await plantInvoice('INV-1L-EXACT', '2024-10-11', 10_000_000, '27', null); // exactly 1 lakh               -> B2CS
+    await plantInvoice('INV-1L-PLUS1', '2024-10-12', 10_000_001, '27', null); // Rs 1,00,000.01               -> B2CL
+    await plantInvoice('INV-99999', '2024-10-13', 9_999_999, '27', null); // Rs 99,999.99                      -> B2CS
     await plantInvoice('INV-150K-OLD', '2024-07-31', 15_000_000, '27', null); // 31-Jul-2024: old 2.5 lakh rule -> B2CS
     await plantInvoice('INV-150K-1AUG', '2024-08-01', 15_000_000, '27', null); // 1-Aug-2024: new rule           -> B2CL
     await plantInvoice('INV-250K-OLD', '2024-07-31', 25_000_000, '27', null); // exactly 2.5 lakh, old rule     -> B2CS
     await plantInvoice('INV-250K1-OLD', '2024-07-31', 25_000_001, '27', null); // Rs 2,50,000.01, old rule      -> B2CL
-    await plantInvoice('INV-150K-INTRA', '2026-10-14', 15_000_000, '29', null); // same State: never B2CL        -> B2CS
-    await plantInvoice('INV-B2B-5L', '2026-10-15', 50_000_000, '27', REGISTERED_GSTIN); // registered recipient    -> B2B
+    await plantInvoice('INV-150K-INTRA', '2024-10-14', 15_000_000, '29', null); // same State: never B2CL        -> B2CS
+    await plantInvoice('INV-B2B-5L', '2024-10-15', 50_000_000, '27', REGISTERED_GSTIN); // registered recipient    -> B2B
 
     // ---- credit notes ----
-    await plantCreditNote('CN-A', '2026-10-20', 3_000_000, 'INV-150K-NEW'); // against B2CL        -> CDNUR
-    await plantCreditNote('CN-B', '2026-10-21', 1_000_000, 'INV-1L-EXACT'); // against B2CS        -> netted in B2CS
-    await plantCreditNote('CN-C', '2026-10-22', 2_000_000, 'INV-150K-OLD'); // original B2CS then  -> netted in B2CS
-    await plantCreditNote('CN-D', '2026-10-23', 4_000_000, 'INV-150K-1AUG'); // against B2CL       -> CDNUR
-    await plantCreditNote('CN-E', '2026-10-24', 5_000_000, 'INV-B2B-5L'); // registered recipient  -> CDNR
-    await plantCreditNote('CN-F-VOID', '2026-10-25', 6_000_000, 'INV-150K-NEW', true); // voided   -> ignored
-    await plantCreditNote('CN-G', '2026-10-26', 7_000_000, 'INV-150K-INTRA'); // intra-State        -> netted in B2CS (same State)
+    await plantCreditNote('CN-A', '2024-10-20', 3_000_000, 'INV-150K-NEW'); // against B2CL        -> CDNUR
+    await plantCreditNote('CN-B', '2024-10-21', 1_000_000, 'INV-1L-EXACT'); // against B2CS        -> netted in B2CS
+    await plantCreditNote('CN-C', '2024-10-22', 2_000_000, 'INV-150K-OLD'); // original B2CS then  -> netted in B2CS
+    await plantCreditNote('CN-D', '2024-10-23', 4_000_000, 'INV-150K-1AUG'); // against B2CL       -> CDNUR
+    await plantCreditNote('CN-E', '2024-10-24', 5_000_000, 'INV-B2B-5L'); // registered recipient  -> CDNR
+    await plantCreditNote('CN-F-VOID', '2024-10-25', 6_000_000, 'INV-150K-NEW', true); // voided   -> ignored
+    await plantCreditNote('CN-G', '2024-10-26', 7_000_000, 'INV-150K-INTRA'); // intra-State        -> netted in B2CS (same State)
 
-    const result: ActionResult<Gstr1ExportData> = await getGstr1ExportData({ startDate: '2024-07-01', endDate: '2026-12-31', label: 'Test period' });
+    const result: ActionResult<Gstr1ExportData> = await getGstr1ExportData({ startDate: '2024-07-01', endDate: '2024-12-31', label: 'Test period' });
     if (!result.success) {
       throw new Error(`GSTR-1 export failed: ${result.error.code}: ${result.error.message}`);
     }
@@ -248,7 +248,7 @@ describe('COMP-002: GSTR-1 B2CL threshold (effective-dated) and CDNUR', () => {
       const row = data.b2cl.find((candidate) => candidate.invoiceNumber === 'INV-150K-NEW');
       expect(row?.invoiceValuePaise).toBe(15_000_000);
       expect(row?.taxableValuePaise).toBe(taxableOf(15_000_000));
-      expect(row?.invoiceDate).toBe('10-Oct-2026');
+      expect(row?.invoiceDate).toBe('10-Oct-2024');
     });
 
     it('B2CS holds the small inter-State invoices and the intra-State invoice, net of the credit notes that follow them', () => {
@@ -274,8 +274,8 @@ describe('COMP-002: GSTR-1 B2CL threshold (effective-dated) and CDNUR', () => {
         urType: 'B2CL',
         documentType: 'C',
         originalInvoiceNumber: 'INV-150K-NEW',
-        originalInvoiceDate: '10-Oct-2026',
-        noteDate: '20-Oct-2026',
+        originalInvoiceDate: '10-Oct-2024',
+        noteDate: '20-Oct-2024',
         noteValuePaise: 3_000_000,
         taxableValuePaise: taxableOf(3_000_000),
         ratePercentage: 18,

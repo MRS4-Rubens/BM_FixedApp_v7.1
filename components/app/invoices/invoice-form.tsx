@@ -30,6 +30,7 @@ import { canUseTemplate } from '@/lib/subscriptions/entitlements'
 import { isInvoiceTemplateId } from '@/lib/invoices/template-ids'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
 import { TemplateSelector } from './template-selector'
+import { buildPreviewTaxLineInput } from '@/lib/invoices/line-math'
 
 function formatINR(n: number) {
   return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -461,20 +462,14 @@ export function InvoiceForm({
       const taxLineItemInputs: TaxLineItemInput[] = lineItems
         .map((li) => {
           const ratePct = taxRates.find((tr) => tr.id === li.tax_rate_id)?.rate_percentage || 0
-          const rawQty = Number(li.quantity) || 0
-          const safeQty = rawQty > 0 ? rawQty : 0
-          const unitPaise = Math.max(0, Math.round((Number(li.unit_price) || 0) * 100))
-          const grossPaise = Math.round(safeQty * unitPaise)
-          const discPercent = Math.min(100, Math.max(0, Number(li.discount) || 0))
-          const discPaise = Math.round((grossPaise * discPercent) / 100)
-          return {
-            quantity: safeQty,
-            unitPricePaise: unitPaise,
-            discountPaise: discPaise,
+          return buildPreviewTaxLineInput({
+            quantity: li.quantity,
+            unitPriceRupees: li.unit_price,
+            discountPercent: li.discount,
             taxRatePercentage: Number(ratePct),
-          }
+          })
         })
-        .filter((li) => li.quantity > 0)
+        .filter((li): li is TaxLineItemInput => li !== null)
 
       if (taxLineItemInputs.length > 0) {
         const taxCalcInput: TaxCalculationInput = {
@@ -620,25 +615,22 @@ export function InvoiceForm({
     const indexedInputs = (watchLineItems ?? []).map((li, idx) => {
       const tr = taxRates.find((r) => r.id === li.tax_rate_id)
       const ratePct = tr ? Number(tr.rate_percentage) : 0
-      const rawQty = Number(li.quantity) || 0
-      const safeQty = rawQty > 0 ? rawQty : 0
-      const unitPaise = Math.max(0, Math.round((Number(li.unit_price) || 0) * 100))
-      const grossPaise = Math.round(safeQty * unitPaise)
-      const discPercent = Math.min(100, Math.max(0, Number(li.discount) || 0))
-      const discPaise = Math.round((grossPaise * discPercent) / 100)
+      const input = buildPreviewTaxLineInput({
+        quantity: li.quantity,
+        unitPriceRupees: li.unit_price,
+        discountPercent: li.discount,
+        taxRatePercentage: ratePct,
+      })
 
       return {
         idx,
-        input: {
-          quantity: safeQty,
-          unitPricePaise: unitPaise,
-          discountPaise: discPaise,
-          taxRatePercentage: ratePct,
-        } satisfies TaxLineItemInput,
+        input,
       }
     })
 
-    const validIndexedInputs = indexedInputs.filter((entry) => entry.input.quantity > 0)
+    const validIndexedInputs = indexedInputs.filter(
+      (entry): entry is { idx: number; input: TaxLineItemInput } => entry.input !== null
+    )
 
     let previewTaxResult: TaxCalculationResult = {
       supplyType:

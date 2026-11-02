@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { auth } from '@/lib/auth/server';
 import { db } from '@/lib/db/client';
 import { users, businesses } from '@/lib/db/schema';
@@ -12,6 +13,7 @@ import { getGstr1ExportData } from '@/lib/actions/reports/get-gstr1-data';
 import { buildGstr1Workbook } from '@/lib/excel/build-gstr1-report';
 import { buildHsnWorkbook } from '@/lib/excel/build-hsn-report';
 import { canExportStatutoryReport } from '@/lib/subscriptions/entitlements';
+import { exportQuerySchema } from '@/lib/validations/export';
 
 export async function GET(request: NextRequest) {
   // 1. Session Check (return 401 if unauthorized, no redirect)
@@ -68,15 +70,25 @@ export async function GET(request: NextRequest) {
 
   // 2. Parse search params
   const { searchParams } = new URL(request.url);
-  const startDate = searchParams.get('startDate');
-  const endDate = searchParams.get('endDate');
-  const label = searchParams.get('label');
-  const type = searchParams.get('type') || 'sales_register';
+  const parsed = exportQuerySchema.safeParse({
+    startDate: searchParams.get('startDate'),
+    endDate: searchParams.get('endDate'),
+    label: searchParams.get('label'),
+    type: searchParams.get('type') ?? undefined,
+  });
 
-  if (!startDate || !endDate || !label) {
-    return new Response('Missing required parameters: startDate, endDate, label', { status: 400 });
+  if (!parsed.success) {
+    const flattened = z.flattenError(parsed.error);
+    return new Response(
+      JSON.stringify({ error: 'Invalid export parameters', fieldErrors: flattened.fieldErrors }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 
+  const { startDate, endDate, label, type } = parsed.data;
   const sanitizedLabel = label.replace(/[\/\s]/g, '-');
 
   // 3. Dispatch based on report type
@@ -89,7 +101,7 @@ export async function GET(request: NextRequest) {
     const workbook = await buildGstr1Workbook(gstr1DataRes.data);
     const buffer = await workbook.xlsx.writeBuffer();
 
-    return new Response(buffer as any, {
+    return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -107,7 +119,7 @@ export async function GET(request: NextRequest) {
     const workbook = await buildItrReportWorkbook(itrDataRes.data);
     const buffer = await workbook.xlsx.writeBuffer();
 
-    return new Response(buffer as any, {
+    return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -125,7 +137,7 @@ export async function GET(request: NextRequest) {
     const workbook = await buildHsnWorkbook(gstr1DataRes.data);
     const buffer = await workbook.xlsx.writeBuffer();
 
-    return new Response(buffer as any, {
+    return new Response(new Uint8Array(buffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -143,7 +155,7 @@ export async function GET(request: NextRequest) {
   const workbook = await buildSalesRegisterWorkbook(exportDataRes.data);
   const buffer = await workbook.xlsx.writeBuffer();
 
-  return new Response(buffer as any, {
+  return new Response(new Uint8Array(buffer), {
     status: 200,
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -151,4 +163,3 @@ export async function GET(request: NextRequest) {
     }
   });
 }
-

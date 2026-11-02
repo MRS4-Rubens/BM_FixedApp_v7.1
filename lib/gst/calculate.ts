@@ -1,6 +1,7 @@
 import { INDIAN_GST_STATES } from './indian-states';
 import { GstCalculationError, MoneyLimitError } from './errors';
 import { SupplyType, TaxLineItemInput, TaxLineItemResult, TaxCalculationInput, TaxCalculationResult } from './types';
+import { multiplyMilliByPaiseRoundHalfUp, parseQuantityToMilli } from '@/lib/money';
 import {
   MAX_DOCUMENT_TOTAL_PAISE,
   MAX_INVOICE_LINE_ITEMS,
@@ -60,8 +61,19 @@ function calculateLineItem(
     throw new MoneyLimitError(`Rate cannot exceed ${MAX_UNIT_PRICE_LABEL}.`);
   }
 
-  // Calculate gross value (entered rate * quantity) in integer paise
-  const grossPaise = Math.round(item.quantity * item.unitPricePaise);
+  const quantityMilli = parseQuantityToMilli(item.quantity);
+  let grossPaise: number;
+  if (quantityMilli !== null) {
+    try {
+      grossPaise = multiplyMilliByPaiseRoundHalfUp(quantityMilli, item.unitPricePaise);
+    } catch {
+      throw new MoneyLimitError(`A line amount cannot exceed ${MAX_AMOUNT_LABEL}. Reduce the quantity or rate.`);
+    }
+  } else if (typeof item.quantity === 'number' && Number.isFinite(item.quantity) && item.quantity >= 0) {
+    grossPaise = Math.round(item.quantity * item.unitPricePaise);
+  } else {
+    throw new GstCalculationError('Quantity can have at most 3 decimal places');
+  }
 
   // Plain comparison on purpose: at the extreme input bounds the raw product exceeds 2^53 and loses precision,
   // but such a value is rejected here, so the imprecision never reaches any stored amount.

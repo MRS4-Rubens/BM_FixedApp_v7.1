@@ -1,14 +1,8 @@
 import { z } from 'zod';
-import { isValidIsoDate } from '@/lib/invoices/ist-date';
 import { parseRupeesToPaise } from '@/lib/money';
+import { isoDate } from '@/lib/validations/common';
 
 export const MAX_PAYMENT_RUPEES = 99_999_999.99; // sanity bound only; the overpayment rule is the real bound
-
-const isoDate = z
-  .string()
-  .trim()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date (YYYY-MM-DD)')
-  .refine(isValidIsoDate, 'Enter a valid calendar date');
 
 export const recordPaymentSchema = z.object({
   invoice_id: z.string().uuid(),
