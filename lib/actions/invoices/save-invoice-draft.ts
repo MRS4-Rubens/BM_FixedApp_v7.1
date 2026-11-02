@@ -1,6 +1,7 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { assertOwnedCustomer, assertOwnedProducts } from '@/lib/actions/_shared/ownership';
 import { invoiceDraftSchema } from '@/lib/validations/invoice';
@@ -209,9 +210,7 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
 
       return { invoiceId };
     });
-  } catch (error) {
-    if (error instanceof ActionError) throw error;
-    console.error('Error saving invoice draft:', error);
-    throw new ActionError('We could not save the invoice draft. Please try again.', { code: 'TRANSACTION_FAILED' });
+  } catch (error: unknown) {
+    throw toThrowable(error);
   }
 }, 'save-invoice-draft');

@@ -15,7 +15,6 @@ export const listPayments = createAuthenticatedAction(
       throw new ActionError('Your account is not linked to a business profile.', { code: 'NO_BUSINESS_LINKED' });
     }
 
-    try {
       const data = await db
         .select({
           id: payments.id,
@@ -45,10 +44,7 @@ export const listPayments = createAuthenticatedAction(
         .orderBy(desc(payments.payment_date), desc(payments.created_at));
 
       return data;
-    } catch (error) {
-      console.error('Error listing payments:', error);
-      throw new ActionError('We could not load the payments. Please try again.', { code: 'QUERY_FAILED' });
-    }
+
   },
   'list-payments'
 );

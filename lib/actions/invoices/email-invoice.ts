@@ -5,6 +5,7 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
+import { toLoggableError } from '@/lib/actions/_shared/action-error-mapping';
 import { logError } from '@/lib/actions/_shared/logger';
 import { db } from '@/lib/db/client';
 import { invoices, businesses } from '@/lib/db/schema';
@@ -91,7 +92,7 @@ export const emailInvoice = createAuthenticatedAction(
     try {
       pdfBuffer = await getFileBuffer(invoice.pdf_storage_key);
     } catch (error) {
-      logError('email-invoice', error);
+      logError('email-invoice', error, { invoiceId: invoice.id });
       throw new ActionError('Could not fetch the invoice PDF from storage. Please try again later.');
     }
 
@@ -99,6 +100,9 @@ export const emailInvoice = createAuthenticatedAction(
     const invoiceDateStr = invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-IN') : 'N/A';
     const dueDateStr = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-IN') : null;
     
+    const EMAIL_SEND_FAILED_MESSAGE = 'We could not send the email. Please try again.';
+
+    let providerError: unknown = null;
     try {
       const result = await getResend().emails.send({
         from: getEmailEnv().RESEND_FROM_EMAIL,
@@ -119,15 +123,14 @@ export const emailInvoice = createAuthenticatedAction(
           },
         ],
       });
-
-      // 7. Handle Resend SDK errors
-      if (result.error) {
-        logError('email-invoice', result.error);
-        throw new ActionError(`Failed to send email: ${result.error.message}`);
-      }
-    } catch (error) {
-      logError('email-invoice', error);
-      throw new ActionError('We could not send the email. Please try again.');
+      providerError = result.error;
+    } catch (error: unknown) {
+      logError('email-invoice', toLoggableError(error), { invoiceId: invoice.id });
+      throw new ActionError(EMAIL_SEND_FAILED_MESSAGE, { code: 'EMAIL_SEND_FAILED' });
+    }
+    if (providerError !== null && providerError !== undefined) {
+      logError('email-invoice', toLoggableError(providerError), { invoiceId: invoice.id, stage: 'provider-rejected' });
+      throw new ActionError(EMAIL_SEND_FAILED_MESSAGE, { code: 'EMAIL_SEND_FAILED' });
     }
 
     // 8. Update emailed_at and email_send_count

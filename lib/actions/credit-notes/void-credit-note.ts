@@ -1,11 +1,11 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
-import { logError } from '@/lib/actions/_shared/logger';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
-import { toBusyActionError, withTransactionRetry } from '@/lib/db/transaction';
+import { withTransactionRetry } from '@/lib/db/transaction';
 import { voidCreditNoteInTransaction } from '@/lib/invoices/void-credit-note-tx';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { voidCreditNoteSchema } from '@/lib/validations/credit-note';
@@ -51,11 +51,7 @@ export const voidCreditNote = createAuthenticatedAction(
         invoice_payment_status: result.invoice_payment_status,
       };
     } catch (error: unknown) {
-      if (error instanceof ActionError) throw error;
-      const busy = toBusyActionError(error);
-      if (busy) throw busy;
-      logError('void-credit-note', error, { creditNoteId: input.id });
-      throw new ActionError('Failed to void credit note. Please try again.', { code: 'INTERNAL_ERROR' });
+      throw toThrowable(error);
     }
   },
   'void-credit-note',

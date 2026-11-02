@@ -328,3 +328,40 @@ All file uploads (payment screenshots, business logos, user feedback attachments
   2. *Authentication / Login Events*: The `audit_log` table requires `business_id NOT NULL`, meaning pre-tenant authentication events (logins, failed passwords) are logged via application logging/Sentry rather than `audit_log`.
   3. *Client IP Forensics*: `x-forwarded-for` and `x-real-ip` headers provide best-effort client IP attribution behind reverse proxies/CDNs, subject to edge network trust boundaries (SEC-005).
 
+## Server Action Error-Handling Contract (API-005)
+
+All Server Actions must adhere to the standardized error handling contract to guarantee zero information leakage, deterministic user feedback, and single-point structured logging:
+
+1. **Business rule violations**:
+   - Thrown explicitly as `throw new ActionError(<static safe message>, { code: '...' })`.
+   - Message is displayed verbatim to the end user. Must never interpolate raw exception details.
+
+2. **Known database constraint violations**:
+   - Mapped deterministically using `toThrowable(error, mappings)` and `PgConstraintMapping` definitions in `lib/actions/_shared/pg-constraint-mappings.ts`.
+   - If a known constraint is matched (e.g., unique GSTIN violation `businesses_gstin_unique`), it maps to a user-safe `ActionError` with structured `fieldErrors` (e.g. `{ gstin: ['...'] }`) and a specific business error code.
+
+3. **Concurrency and lock conflicts**:
+   - Lock timeouts (`55P03`), statement timeouts (`57014`), deadlocks (`40P01`), and serialization failures (`40001`) are automatically caught and converted by `toThrowable` (via `toBusyActionError`) to an `ActionError('The server is busy processing another request for this business. Please retry.', { code: 'BUSY' })`.
+
+4. **Unexpected system errors**:
+   - Any unknown error (unmapped Postgres error, disk/driver failure, type error) MUST NOT be swallowed or masked with an ad-hoc `ActionError`.
+   - Rethrown untouched via `throw toThrowable(error, mappings)`.
+   - Caught exclusively at the top level by `createAuthenticatedAction` in `lib/actions/_shared/create-action.ts`, which logs it once via `logError(scope, error, { expected: false })` (with Sentry capture in production) and returns a generic fallback response with code `'INTERNAL_ERROR'` to the client.
+
+5. **Third-party / external service failures**:
+   - Failures communicating with external services (e.g., Resend email provider) must be logged once at the callsite via `logError(scope, toLoggableError(err), context)`.
+   - Throw a static, user-safe `ActionError('We could not send the email. Please try again.', { code: 'EMAIL_SEND_FAILED' })`. Never interpolate `err.message` or vendor payloads into the user-facing message.
+
+6. **Forbidden practices**:
+   - No `console.error`, `console.warn`, or `console.log` anywhere in action code.
+   - No bare `catch {}` or `catch (err) {}` that silently swallows or re-wraps errors without rethrowing or logging.
+   - Never interpolate dynamic/raw database messages into `ActionError` (e.g. `new ActionError(error.message)`).
+
+### How to add a new database constraint mapping
+
+When a new database constraint requires user-friendly UI mapping:
+1. Add the database constraint name as a constant in `lib/db/constraint-names.ts` under `DB_CONSTRAINTS`.
+2. Define a `PgConstraintMapping` in `lib/actions/_shared/pg-constraint-mappings.ts` (matching the constraint name, error code `23505`, target form field, user-facing error message, and `ActionError` code).
+3. Pass the mapping array as the second argument to `toThrowable(error, MAPPINGS)` in the action's catch block.
+
+

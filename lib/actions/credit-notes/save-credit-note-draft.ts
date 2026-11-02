@@ -4,8 +4,8 @@ import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { loadCreditContext } from '@/lib/actions/_shared/credit-note-context';
+import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
-import { logError } from '@/lib/actions/_shared/logger';
 import {
   CreditNoteRuleError,
   deriveCreditLines,
@@ -16,7 +16,7 @@ import {
 } from '@/lib/credit-notes/derivation';
 import { db } from '@/lib/db/client';
 import { creditNoteLineItems, creditNotes, invoices } from '@/lib/db/schema';
-import { setLocalLockTimeout, toBusyActionError } from '@/lib/db/transaction';
+import { setLocalLockTimeout } from '@/lib/db/transaction';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
 import { parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { creditNoteDraftSchema } from '@/lib/validations/credit-note';
@@ -162,12 +162,8 @@ export const saveCreditNoteDraft = createAuthenticatedAction(
         return { id: creditNoteId };
       });
     } catch (error: unknown) {
-      if (error instanceof ActionError) throw error;
       if (error instanceof CreditNoteRuleError) throw new ActionError(error.message, { code: error.code });
-      const busy = toBusyActionError(error);
-      if (busy) throw busy;
-      logError('save-credit-note-draft', error, { creditNoteId: input.id });
-      throw new ActionError('We could not save the credit note draft. Please try again.', { code: 'SAVE_FAILED' });
+      throw toThrowable(error);
     }
   },
   'save-credit-note-draft',

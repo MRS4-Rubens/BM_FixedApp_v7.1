@@ -38,15 +38,10 @@ export const listCustomers = createAuthenticatedAction(listCustomersSchema, asyn
     }
   }
 
-  try {
-    const results = await db.select()
-      .from(customers)
-      .where(and(...conditions))
-      .orderBy(asc(customers.name));
+  const results = await db.select()
+    .from(customers)
+    .where(and(...conditions))
+    .orderBy(asc(customers.name));
 
-    return { customers: results };
-  } catch (error) {
-    console.error('Error listing customers:', error);
-    throw new ActionError('We could not retrieve your customers. Please try again.', { code: 'INTERNAL_ERROR' });
-  }
+  return { customers: results };
 }, 'list-customers');

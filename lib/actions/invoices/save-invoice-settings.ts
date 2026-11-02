@@ -36,25 +36,18 @@ export const saveInvoiceSettings = createAuthenticatedAction(
     });
     if (!gate.allowed) throw new ActionError(gate.message, { code: gate.code });
 
-    try {
-      await db
-        .update(businesses)
-        .set({
-          invoice_number_format: input.invoice_number_format,
-          credit_note_number_prefix: input.credit_note_number_prefix,
-          payment_due_days: input.payment_due_days,
-          default_invoice_template: input.default_invoice_template,
-          default_gst_rate_type: input.default_gst_rate_type,
-          invoice_terms: input.invoice_terms,
-          updated_at: new Date(),
-        })
-        .where(eq(businesses.id, businessId));
-    } catch (error) {
-      console.error('Error saving invoice settings:', error);
-      throw new ActionError('Failed to save invoice settings. Please try again.', {
-        code: 'UPDATE_FAILED',
-      });
-    }
+    await db
+      .update(businesses)
+      .set({
+        invoice_number_format: input.invoice_number_format,
+        credit_note_number_prefix: input.credit_note_number_prefix,
+        payment_due_days: input.payment_due_days,
+        default_invoice_template: input.default_invoice_template,
+        default_gst_rate_type: input.default_gst_rate_type,
+        invoice_terms: input.invoice_terms,
+        updated_at: new Date(),
+      })
+      .where(eq(businesses.id, businessId));
 
     revalidatePath('/settings');
     revalidatePath('/invoices');

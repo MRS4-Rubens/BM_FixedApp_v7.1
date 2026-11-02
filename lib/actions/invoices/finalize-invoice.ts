@@ -1,11 +1,12 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
-import { toBusyActionError, withTransactionRetry } from '@/lib/db/transaction';
+import { withTransactionRetry } from '@/lib/db/transaction';
 import { finalizeDraftInvoiceInTransaction } from '@/lib/invoices/finalize-invoice-tx';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { archiveInvoicePdf } from '@/lib/storage/archive-invoice';
@@ -50,11 +51,7 @@ export const finalizeInvoice = createAuthenticatedAction(
 
       return result;
     } catch (error: unknown) {
-      if (error instanceof ActionError) throw error;
-      const busy = toBusyActionError(error);
-      if (busy) throw busy;
-      logError('finalize-invoice', error, { invoiceId: id });
-      throw new ActionError('We could not finalize the invoice. Please try again.', { code: 'TRANSACTION_FAILED' });
+      throw toThrowable(error);
     }
   },
   'finalize-invoice',

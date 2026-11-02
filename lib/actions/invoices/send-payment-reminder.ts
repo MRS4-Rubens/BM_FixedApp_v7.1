@@ -5,6 +5,7 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
+import { toLoggableError } from '@/lib/actions/_shared/action-error-mapping';
 import { logError } from '@/lib/actions/_shared/logger';
 import { db } from '@/lib/db/client';
 import { invoices, businesses, payments, creditNotes } from '@/lib/db/schema';
@@ -137,6 +138,9 @@ export const sendPaymentReminder = createAuthenticatedAction(
     // 5. Call resend.emails.send()
     const dueDateStr = new Date(invoice.due_date).toLocaleDateString('en-IN');
     
+    const EMAIL_SEND_FAILED_MESSAGE = 'We could not send the email. Please try again.';
+
+    let providerError: unknown = null;
     try {
       const result = await getResend().emails.send({
         from: getEmailEnv().RESEND_FROM_EMAIL,
@@ -151,16 +155,14 @@ export const sendPaymentReminder = createAuthenticatedAction(
           amountDueFormatted: formatPaiseAsInr(balancePaise),
         }) as React.ReactElement,
       });
-
-      // Handle Resend SDK errors
-      if (result.error) {
-        logError('send-payment-reminder', result.error);
-        throw new ActionError(`Failed to send email: ${result.error.message}`);
-      }
-    } catch (error) {
-      if (error instanceof ActionError) throw error;
-      logError('send-payment-reminder', error);
-      throw new ActionError('We could not send the email. Please try again.');
+      providerError = result.error;
+    } catch (error: unknown) {
+      logError('send-payment-reminder', toLoggableError(error), { invoiceId: invoice.id });
+      throw new ActionError(EMAIL_SEND_FAILED_MESSAGE, { code: 'EMAIL_SEND_FAILED' });
+    }
+    if (providerError !== null && providerError !== undefined) {
+      logError('send-payment-reminder', toLoggableError(providerError), { invoiceId: invoice.id, stage: 'provider-rejected' });
+      throw new ActionError(EMAIL_SEND_FAILED_MESSAGE, { code: 'EMAIL_SEND_FAILED' });
     }
 
     // 6. Update emailed_at and email_send_count

@@ -1,8 +1,9 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
-import { logError } from '@/lib/actions/_shared/logger';
+import { BUSINESS_PROFILE_MAPPINGS } from '@/lib/actions/_shared/pg-constraint-mappings';
 import { writeAudit } from '@/lib/audit/log';
 import { buildProfileAuditChanges } from '@/lib/audit/profile-diff';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
@@ -164,9 +165,7 @@ export const saveBusinessProfile = createAuthenticatedAction(businessProfileSche
       return newBusiness.id;
     });
   } catch (error: unknown) {
-    if (error instanceof ActionError) throw error; // entitlement / expected errors keep their message + code
-    logError('save-business-profile', error);
-    throw new ActionError('We could not save your business profile. Please try again.', { code: 'TRANSACTION_FAILED' });
+    throw toThrowable(error, BUSINESS_PROFILE_MAPPINGS);
   }
 
   revalidatePath('/settings');
