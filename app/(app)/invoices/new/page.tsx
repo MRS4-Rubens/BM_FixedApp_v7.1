@@ -7,6 +7,9 @@ import { getCurrentAppUser } from '@/lib/auth/session';
 import { resolveInvoiceNumber } from '@/lib/invoices/number-format';
 import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
 
+// bounds after()-scheduled PDF archival started by finalize server actions
+export const maxDuration = 60;
+
 export default async function NewInvoicePage() {
   const appUser = await getCurrentAppUser();
   if (!appUser?.business_id) {

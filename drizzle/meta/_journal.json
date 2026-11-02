@@ -162,6 +162,13 @@
       "when": 1793561239566,
       "tag": "0022_db007_audit_log_append_only",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793633672469,
+      "tag": "0023_api008_archival_state",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,9 @@ import { listCreditNotes } from '@/lib/actions/credit-notes/list-credit-notes';
 import { resolveSellerDetails, toInvoicePrintFields, type SellerDetails } from '@/lib/invoices/seller-snapshot';
 import { buildLogoUrl } from '@/lib/storage/logo-url';
 
+// bounds after()-scheduled PDF archival started by finalize server actions
+export const maxDuration = 60;
+
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   

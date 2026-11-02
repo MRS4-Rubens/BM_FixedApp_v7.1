@@ -1,10 +1,13 @@
 import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db/client';
-import { invoices } from '@/lib/db/schema';
-import { inArray, lt, and, asc } from 'drizzle-orm';
-import { archiveInvoicePdf } from '@/lib/storage/archive-invoice';
 import { getCronEnv, isEnvConfigError } from '@/lib/env';
+import { logError } from '@/lib/actions/_shared/logger';
+import { runArchivalSweep } from '@/lib/storage/archival-sweep';
+
+// Vercel plan limits apply — verify
+export const maxDuration = 300;
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   // 1. Verify Vercel Cron Secret (fail-closed if unset/weak + constant-time check)
@@ -13,7 +16,7 @@ export async function GET(request: NextRequest) {
     cronSecret = getCronEnv().CRON_SECRET;
   } catch (error: unknown) {
     if (isEnvConfigError(error)) {
-      console.error('[Cron] CRON_SECRET is not configured properly.', error.message);
+      logError('archival-cron', error, { reason: 'CRON_SECRET is not configured properly' });
       return new NextResponse('Server Configuration Error', { status: 500 });
     }
     throw error;
@@ -32,39 +35,11 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  // 2. Query for up to 20 invoices pending/failed, max 5 attempts, oldest first
-  const recordsToRetry = await db
-    .select({ id: invoices.id })
-    .from(invoices)
-    .where(
-      and(
-        inArray(invoices.archival_status, ['pending', 'failed']),
-        lt(invoices.archival_attempts, 5)
-      )
-    )
-    .orderBy(asc(invoices.finalized_at))
-    .limit(20);
-
-  let succeeded = 0;
-  let failed = 0;
-
-  // 3. Process sequentially
-  for (const record of recordsToRetry) {
-    const result = await archiveInvoicePdf(record.id);
-    if (result.success) {
-      succeeded++;
-    } else {
-      failed++;
-    }
+  try {
+    const summary = await runArchivalSweep();
+    return NextResponse.json(summary, { status: 200 });
+  } catch (error: unknown) {
+    logError('archival-cron', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
-
-  // 4. Return summary
-  return new Response(JSON.stringify({ 
-    processed: recordsToRetry.length, 
-    succeeded, 
-    failed 
-  }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
 }

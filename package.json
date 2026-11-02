@@ -23,6 +23,7 @@
     "test:watch": "vitest",
     "db:check": "drizzle-kit check",
     "lint:ratchet": "tsx scripts/ci/lint-ratchet.ts",
+    "print-css:build": "tsx scripts/build-print-css.ts",
     "verify": "pnpm typecheck && pnpm lint:ratchet && pnpm db:check && pnpm test"
   },
   "dependencies": {

@@ -3,13 +3,12 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
-import { logError } from '@/lib/actions/_shared/logger';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
 import { withTransactionRetry } from '@/lib/db/transaction';
 import { finalizeDraftInvoiceInTransaction } from '@/lib/invoices/finalize-invoice-tx';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
-import { archiveInvoicePdf } from '@/lib/storage/archive-invoice';
+import { scheduleArchival } from '@/lib/storage/schedule-archival';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -42,12 +41,8 @@ export const finalizeInvoice = createAuthenticatedAction(
       revalidatePath('/invoices');
       revalidatePath(`/invoices/${id}`);
 
-      // Archival stays decoupled and fire-and-forget (API-008 will harden it). Keep the existing .then(...) block unchanged.
-      archiveInvoicePdf(id).then((archivalResult) => {
-        if (!archivalResult.success) {
-          logError('finalize-invoice', new Error(archivalResult.error || 'Archival failed'), { invoiceId: id });
-        }
-      });
+      // Archival scheduled via Next.js after() to run reliably on serverless after response.
+      scheduleArchival('invoice', id);
 
       return result;
     } catch (error: unknown) {

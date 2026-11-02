@@ -9,7 +9,7 @@ import { db } from '@/lib/db/client';
 import { withTransactionRetry } from '@/lib/db/transaction';
 import { finalizeDraftCreditNoteInTransaction } from '@/lib/invoices/finalize-credit-note-tx';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
-import { archiveCreditNotePdf } from '@/lib/storage/archive-credit-note';
+import { scheduleArchival } from '@/lib/storage/schedule-archival';
 import { finalizeCreditNoteSchema } from '@/lib/validations/credit-note';
 import { revalidatePath } from 'next/cache';
 
@@ -34,10 +34,8 @@ export const finalizeCreditNote = createAuthenticatedAction(
         ),
       );
 
-      // Asynchronously archive PDF (non-blocking best effort)
-      archiveCreditNotePdf(result.id).catch((err) => {
-        console.error(`Background archival failed for credit note ${result.id}:`, err);
-      });
+      // Archival scheduled via Next.js after() to run reliably on serverless after response.
+      scheduleArchival('credit_note', result.id);
 
       // Revalidate paths only AFTER commit
       revalidatePath(`/invoices/${result.originalInvoiceId}`);

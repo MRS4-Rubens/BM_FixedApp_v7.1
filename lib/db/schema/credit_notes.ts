@@ -4,7 +4,7 @@ import { businesses } from './businesses';
 import { invoices } from './invoices';
 import { financialYears } from './financial_years';
 import { users } from './users';
-import { lifecycleStatusEnum } from './enums';
+import { lifecycleStatusEnum, archivalStatusEnum } from './enums';
 import { creditNoteLineItems } from './credit_note_line_items';
 import { sellerSnapshotColumns } from './_seller_snapshot';
 import { inList } from './_check-helpers';
@@ -27,6 +27,10 @@ export const creditNotes = pgTable('credit_notes', {
   total_tax_paise: bigint('total_tax_paise', { mode: 'number' }).notNull().default(0),
   grand_total_paise: bigint('grand_total_paise', { mode: 'number' }).notNull().default(0),
   pdf_storage_key: text('pdf_storage_key'),
+  archival_status: archivalStatusEnum('archival_status').notNull().default('pending'),
+  archival_attempts: integer('archival_attempts').notNull().default(0),
+  archived_at: timestamp('archived_at', { withTimezone: true }),
+  archival_claimed_at: timestamp('archival_claimed_at', { withTimezone: true }),
   finalized_at: timestamp('finalized_at', { withTimezone: true }),
   seller_gstin_snapshot: varchar('seller_gstin_snapshot', { length: 15 }),
   ...sellerSnapshotColumns(),
@@ -51,6 +55,11 @@ export const creditNotes = pgTable('credit_notes', {
     table.status,
     table.issue_date
   ),
+  index('credit_notes_archival_retry_idx')
+    .on(table.finalized_at)
+    .where(
+      sql`${table.lifecycle_status} = 'finalized' AND ${table.archival_status} IN ('pending', 'failed') AND ${table.archival_attempts} < 5`
+    ),
   // DB-002: composite key target + tenant-safe link to the original invoice.
   unique('credit_notes_biz_id_uq').on(table.business_id, table.id),
   foreignKey({

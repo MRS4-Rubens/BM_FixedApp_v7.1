@@ -97,11 +97,18 @@ Data-entry forms in this app use React Hook Form combined with the same Zod sche
 - Is it talking to an external service (storage, email, rate limiting)? → its own `lib/{service}/` folder
 - Is it a type used in more than one place? → `types/`
 
-## Archival Strategy (Phase 11)
+## Archival Strategy (Phase 11 / API-008)
 
-Archival of finalized invoices happens automatically upon finalization using a best-effort approach (non-blocking). 
-- If the external PDF provider or storage provider is slow/down, the invoice is still finalized to ensure business continuity.
-- A daily cron job serves as a safety net to retry pending or failed archival jobs.
+Archival of finalized invoices and credit notes executes reliably on serverless environments using Next.js 16 `after()` scheduling:
+- **Serverless-Safe Execution:** Post-finalize archival is decoupled from HTTP responses using `after()` (`scheduleArchival`), allowing background worker tasks to complete after server action response dispatch without blocking user interactions.
+- **Atomic Claim with Lease:** `claimDocumentById` (for real-time single document archival) and `claimBatch` (for cron retry sweeps) use guarded atomic `UPDATE ... RETURNING` queries that stamp `archival_claimed_at = now()` and increment `archival_attempts` at claim time. Active leases expire after 300 seconds (`ARCHIVAL_LEASE_SECONDS`), preventing duplicate concurrent renders while allowing graceful recovery if a serverless container freezes or crashes.
+- **Config Error Attempt Refund:** Transient infrastructure misconfigurations (e.g., missing or invalid `HTML_TO_PDF_API_KEY`, detected via `EnvConfigError`) automatically refund the attempt count (`refundAttempt`) and clear the lease, preventing environment misconfigurations from exhausting retry quotas.
+- **Late Failure Guard:** Final successes are permanent: late failures from expired leases cannot downgrade an already `archived` record (`archival_status <> 'archived'`).
+- **Comprehensive Lifecycle Tracking:** Both `invoices` and `credit_notes` tables maintain full archival columns (`archival_status`, `archival_attempts`, `archived_at`, `archival_claimed_at`) with partial retry indexes (`*_archival_retry_idx`).
+- **Batch Sweep Cron:** `/api/cron/retry-invoice-archival` operates with `maxDuration = 300`, concurrency 2, and a soft deadline (200s). It processes pending/failed invoices and credit notes sequentially in chronological order using `FOR UPDATE SKIP LOCKED`.
+- **Sentry Observability:** Emits structured alerts when any document reaches 5 failed attempts (`scope: 'archival-exhausted'`) and when a sweep identifies an exhausted backlog (`scope: 'archival-exhausted-summary'`), transmitting only IDs and attempt counts with zero PII or vendor tokens.
+- **Committed Print Stylesheet:** Standalone render routes (`/api/invoices/[id]/archival-render` and `/api/credit-notes/[id]/archival-render`) rely on a statically generated print stylesheet (`lib/pdf/print-stylesheet.generated.ts`, built via `pnpm print-css:build`), eliminating dynamic `require()` and runtime `.next` filesystem reads.
+- **Per-Document Fail-Open Limiter:** Standalone render routes rate-limit by document ID (`archival-render:invoice:<id>` / `archival-render:credit_note:<id>`), preventing vendor IP collisions while maintaining fail-open resilience during Upstash Redis outages.
 - **Out of scope for MVP:** Formal "cold tier" data migration and reviewed deletion are deliberately scoped OUT of this MVP phase. For the complete legal protocol, statutory cutoff dates (Year 8+), and implementation guide for when financial years are ready to be closed and purged, see `docs/STATUTORY_ARCHIVAL_BLUEPRINT.md`.
 
 ## Why this structure
@@ -152,7 +159,8 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 1. **Global Lock-Order Contract:**
    All transactional modifications must acquire locks in the strict hierarchical sequence:
    `invoice row -> credit-note row -> payment row -> financial_years row -> invoice_number_counters row`
-   Never acquire an earlier lock after a later one in the same transaction. Draft-save actions lock only the specific document they edit (`FOR UPDATE`).
+   Never acquire an earlier lock after a later one in the same transaction.
+   *Note on Archival Claims (API-008):* Archival claims are single-row UPDATEs outside any document transaction; they hold no other lock; batch claims use SKIP LOCKED; targeted claims wait. Draft-save actions lock only the specific document they edit (`FOR UPDATE`).
 
 2. **Pure Transactional Modules (`lib/invoices/*-tx.ts`):**
    Transaction bodies are extracted into pure, side-effect-free library modules (`finalizeDraftInvoiceInTransaction`, `finalizeDraftCreditNoteInTransaction`, `recordPaymentInTransaction`, `voidPaymentInTransaction`, and `voidCreditNoteInTransaction`).

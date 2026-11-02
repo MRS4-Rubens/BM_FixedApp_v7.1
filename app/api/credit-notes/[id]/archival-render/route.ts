@@ -1,37 +1,20 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server.edge';
 import { NextRequest } from 'next/server';
 import { db } from '@/lib/db/client';
 import { creditNotes, creditNoteLineItems, invoices } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { verifyArchivalToken } from '@/lib/security/archival-token';
-import { exportLimiter, checkRateLimit, getClientIp } from '@/lib/rate-limit/upstash';
+import { exportLimiter } from '@/lib/rate-limit/upstash';
+import { enforceRateLimit } from '@/lib/rate-limit/enforce';
 import { logError } from '@/lib/actions/_shared/logger';
 import { resolveSellerDetails, toCreditNotePrintBusiness, type SellerDetails } from '@/lib/invoices/seller-snapshot';
 import { loadLogoDataUri } from '@/lib/storage/logo';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { renderToStaticMarkup } = require('react-dom/server');
 import { CreditNotePrintView, CreditNotePrintViewProps } from '@/components/app/credit-notes/credit-note-print-view';
-import fs from 'fs';
-import path from 'path';
+import { buildArchivalHtmlDocument } from '@/lib/pdf/archival-html';
 
-function getCompiledCss(): string {
-  const dirs = [
-    path.join(process.cwd(), '.next', 'static', 'css'),
-    path.join(process.cwd(), '.next', 'static', 'chunks'),
-  ];
-  const chunks: string[] = [];
-  for (const dir of dirs) {
-    try {
-      if (!fs.existsSync(dir)) continue;
-      const files = fs.readdirSync(dir).filter((f) => f.endsWith('.css'));
-      for (const f of files) {
-        chunks.push(fs.readFileSync(path.join(dir, f), 'utf8'));
-      }
-    } catch {
-      // Ignore missing build subdirectories in dev
-    }
-  }
-  return chunks.join('\n');
-}
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -46,12 +29,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new Response('Unauthorized', { status: 401 });
   }
 
-  const ip = getClientIp(request.headers);
-  const { allowed, retryAfterSeconds } = await checkRateLimit(exportLimiter, `archival-render:${ip}`);
-  if (!allowed) {
-    return new Response(`Too Many Requests. Retry after ${retryAfterSeconds} seconds.`, {
+  const rate = await enforceRateLimit({
+    limiter: exportLimiter,
+    identifier: `archival-render:credit_note:${id}`,
+    policy: 'fail-open',
+    scope: 'archival-render',
+  });
+  if (!rate.allowed) {
+    return new Response('Too Many Requests.', {
       status: 429,
-      headers: { 'Retry-After': retryAfterSeconds.toString() }
+      headers: { 'Retry-After': String(rate.retryAfterSeconds) },
     });
   }
 
@@ -64,7 +51,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return new Response('Credit note not finalized', { status: 400 });
   }
 
-  const invRows = await db.select().from(invoices).where(eq(invoices.id, creditNote.original_invoice_id));
+  const invRows = await db
+    .select()
+    .from(invoices)
+    .where(and(eq(invoices.id, creditNote.original_invoice_id), eq(invoices.business_id, creditNote.business_id)));
   if (invRows.length === 0) return new Response('Original Invoice Not Found', { status: 404 });
   const originalInvoice = invRows[0];
 
@@ -94,30 +84,26 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     lineItems,
   };
 
-  const css = getCompiledCss();
-  const printViewElement = CreditNotePrintView({
-    creditNote: printData as unknown as CreditNotePrintViewProps['creditNote'],
-    printSize: 'A4'
-  });
-  const componentHtml = renderToStaticMarkup(printViewElement);
+  const extraCss = `@page { size: A4 portrait; margin: 0; }
+    body { margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }`;
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>Credit Note ${creditNote.credit_note_number}</title>
-  <style>
-    ${css}
-    @page { size: A4 portrait; margin: 0; }
-    body { margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  </style>
-</head>
-<body>
-  ${componentHtml}
-</body>
-</html>`;
+  const bodyHtml = renderToStaticMarkup(
+    createElement(CreditNotePrintView, {
+      creditNote: printData as unknown as CreditNotePrintViewProps['creditNote'],
+      printSize: 'A4',
+    }),
+  );
+
+  const html = buildArchivalHtmlDocument({
+    title: `Credit Note ${creditNote.credit_note_number}`,
+    bodyHtml,
+    extraCss,
+  });
 
   return new Response(html, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8' }
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+    },
   });
 }
