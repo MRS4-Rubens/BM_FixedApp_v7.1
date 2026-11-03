@@ -1,6 +1,7 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { invoiceSettingsSchema } from '@/lib/validations/invoice-settings';
 import { db } from '@/lib/db/client';
@@ -57,5 +58,5 @@ export const saveInvoiceSettings = createAuthenticatedAction(
     return { success: true };
   },
   'save-invoice-settings',
-  { requireActiveSubscription: true }
+  { roles: OWNER_ONLY, requireActiveSubscription: true }
 );

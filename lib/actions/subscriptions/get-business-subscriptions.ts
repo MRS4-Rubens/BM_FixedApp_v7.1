@@ -5,6 +5,7 @@ import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests, users } from '@/lib/db/schema';
 import { isPlatformAdmin } from '@/lib/auth/admin';
+import { evaluateRoleAccess, OWNER_ONLY } from '@/lib/auth/rbac';
 import { eq, desc } from 'drizzle-orm';
 import { z } from 'zod';
 
@@ -15,11 +16,13 @@ const getBusinessSubscriptionsSchema = z.object({
 export const getBusinessSubscriptions = createAuthenticatedAction(
   getBusinessSubscriptionsSchema,
   async (input, context) => {
-    // 1. Authorize user by checking if platform admin or verifying user belongs to the business
+    // 1. Authorize user by checking if platform admin or verifying user is business owner
     const isAdmin = await isPlatformAdmin();
-    const isBusinessMember = context.appUser.business_id === input.business_id;
+    const isBusinessOwner =
+      context.appUser.business_id === input.business_id &&
+      evaluateRoleAccess(context.appUser.role, OWNER_ONLY).allowed;
 
-    if (!isAdmin && !isBusinessMember) {
+    if (!isAdmin && !isBusinessOwner) {
       throw new ActionError('Unauthorized: Access denied.', {
         code: 'UNAUTHORIZED_ACCESS',
       });

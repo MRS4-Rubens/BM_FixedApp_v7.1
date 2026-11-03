@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { CheckoutForm } from './checkout-form';
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { isOwnerRole } from '@/lib/auth/rbac';
 import { db } from '@/lib/db/client';
 import { businesses, subscriptionRequests } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -24,6 +25,9 @@ export default async function CheckoutPage({
   const user = await getCurrentAppUser();
   if (!user) {
     redirect('/login');
+  }
+  if (!isOwnerRole(user.role)) {
+    redirect('/dashboard');
   }
 
   const resolvedParams = searchParams ? await searchParams : undefined;

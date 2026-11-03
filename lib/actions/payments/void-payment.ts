@@ -1,6 +1,7 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
@@ -52,6 +53,7 @@ export const voidPayment = createAuthenticatedAction(
   },
   'void-payment',
   {
+    roles: OWNER_ONLY,
     rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'void-payment' },
     requireActiveSubscription: true,
   },

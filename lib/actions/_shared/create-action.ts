@@ -7,6 +7,12 @@ import { getCurrentAppUser } from '@/lib/auth/session';
 import { users } from '@/lib/db/schema';
 import { headers } from 'next/headers';
 import { checkRateLimit, getClientIp, type RateLimiter } from '@/lib/rate-limit/upstash';
+import {
+  type AppRole,
+  evaluateRoleAccess,
+  FORBIDDEN_ROLE_CODE,
+  FORBIDDEN_ROLE_MESSAGE,
+} from '@/lib/auth/rbac';
 
 type AppUser = typeof users.$inferSelect;
 
@@ -88,13 +94,26 @@ export function createAuthenticatedAction<TSchema extends z.ZodTypeAny, TOutput>
     rateLimit?: { limiter: RateLimiter; keyPrefix: string };
     requirePlatformAdmin?: boolean;
     requireActiveSubscription?: boolean;
+    /** AUTH-003: only these roles may run the action. Omitted = every role of the business. Checked BEFORE platform-admin, rate limit and handler. */
+    roles?: readonly AppRole[];
   }
 ) {
+  if (options?.roles !== undefined && options.roles.length === 0) {
+    throw new Error(`createAuthenticatedAction("${scopeName}"): "roles" must not be an empty list.`);
+  }
+
   return async (rawInput: unknown): Promise<ActionResult<TOutput>> => {
     return runValidatedHandler(schema, rawInput, scopeName, async () => {
       const appUser = await getCurrentAppUser();
       if (!appUser) {
         throw new ActionError('We could not find your account details. Please try logging out and back in.', { code: 'NO_APP_USER' });
+      }
+
+      if (options?.roles !== undefined) {
+        const decision = evaluateRoleAccess(appUser.role, options.roles);
+        if (!decision.allowed) {
+          throw new ActionError(FORBIDDEN_ROLE_MESSAGE, { code: FORBIDDEN_ROLE_CODE });
+        }
       }
 
       if (options?.requirePlatformAdmin) {

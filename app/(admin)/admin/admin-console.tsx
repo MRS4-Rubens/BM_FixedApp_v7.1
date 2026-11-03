@@ -171,6 +171,11 @@ export function AdminConsole({
   // User list filters
   const [userSearch, setUserSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'owner' | 'staff'>('all');
+  const roleFilterOptions = useMemo(
+    () => (users.some((u) => u.role === 'staff') ? (['all', 'owner', 'staff'] as const) : (['all', 'owner'] as const)),
+    [users],
+  );
+  const effectiveRoleFilter = roleFilterOptions.some((option) => option === userRoleFilter) ? userRoleFilter : 'all';
 
   // Pagination state (7 rows per page)
   const [bizPage, setBizPage] = useState(1);
@@ -246,10 +251,10 @@ export function AdminConsole({
       const matchSearch =
         (u.displayName && u.displayName.toLowerCase().includes(userSearch.toLowerCase())) ||
         (u.businessName && u.businessName.toLowerCase().includes(userSearch.toLowerCase()));
-      const matchRole = userRoleFilter === 'all' ? true : u.role === userRoleFilter;
+      const matchRole = effectiveRoleFilter === 'all' ? true : u.role === effectiveRoleFilter;
       return matchSearch && matchRole;
     });
-  }, [users, userSearch, userRoleFilter]);
+  }, [users, userSearch, effectiveRoleFilter]);
 
   // Reset pagination to first page whenever search, filters, or sorting change
   useEffect(() => {
@@ -258,7 +263,7 @@ export function AdminConsole({
 
   useEffect(() => {
     setUserPage(1);
-  }, [userSearch, userRoleFilter]);
+  }, [userSearch, effectiveRoleFilter]);
 
   // Businesses pagination calculations
   const totalBizPages = Math.max(1, Math.ceil(filteredBusinesses.length / ROWS_PER_PAGE));
@@ -1389,14 +1394,14 @@ export function AdminConsole({
             </div>
 
             <div className="flex items-center gap-1">
-              {(['all', 'owner', 'staff'] as const).map((r) => (
+              {roleFilterOptions.map((r) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => setUserRoleFilter(r)}
                   className={cn(
                     'rounded-lg px-2.5 py-1 text-sm font-bold capitalize transition cursor-pointer',
-                    userRoleFilter === r
+                    effectiveRoleFilter === r
                       ? 'bg-indigo-600 text-white'
                       : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}

@@ -1,6 +1,7 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { BUSINESS_PROFILE_MAPPINGS } from '@/lib/actions/_shared/pg-constraint-mappings';
@@ -173,4 +174,4 @@ export const saveBusinessProfile = createAuthenticatedAction(businessProfileSche
   revalidatePath('/invoices');
 
   return { businessId: savedBusinessId };
-}, 'save-business-profile', { requireActiveSubscription: true });
+}, 'save-business-profile', { roles: OWNER_ONLY, requireActiveSubscription: true });

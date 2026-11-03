@@ -3,6 +3,7 @@
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
 import { subscriptionClaimSchema } from '@/lib/validations/subscription';
@@ -224,5 +225,8 @@ export const submitPaymentClaim = createAuthenticatedAction(
     };
   },
   'submit-payment-claim',
-  { rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'submit-payment-claim' } }
+  {
+    roles: OWNER_ONLY,
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'submit-payment-claim' },
+  }
 );

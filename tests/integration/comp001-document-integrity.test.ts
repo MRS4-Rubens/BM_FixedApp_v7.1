@@ -21,6 +21,7 @@ vi.mock('@/lib/auth/session', () => ({
   getCurrentAppUser: async () => ({
     id: '00000000-0000-0000-0000-000000000001',
     business_id: state.businessId,
+    role: 'owner' as const,
   }),
 }));
 

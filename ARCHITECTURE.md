@@ -245,6 +245,89 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 - **Client Leakage Prevention**: Platform admin allow-lists are never exposed to the client or embedded in page payloads. The admin console settings panel displays static configuration guidance rather than environment strings.
 - **Neon Auth E-mail Verification Configuration**: In Neon Console (Settings -> Auth -> "Sign-up with Email" and "Verify at Sign-up"), enable email verification. The verification link method requires a custom SMTP/email provider configured in Neon Auth. When verification is active, signup returns `{ notice: 'Account created. Please check your e-mail to verify your address, then log in.' }` rather than an immediate active session.
 
+## Role-based access control (AUTH-003)
+
+- **Application Roles**: Backed by PostgreSQL enum `roleEnum` (`'owner' | 'staff'`, default `'owner'`) in `lib/db/schema/enums.ts` and mirrored in `lib/auth/rbac.ts` (`APP_ROLES`).
+- **Enforcement Point (`createAuthenticatedAction`)**: Accepts `options.roles` (an array of `AppRole`, convention: `roles: OWNER_ONLY`). When specified, authorization executes inside the wrapper and fails closed.
+- **Evaluation Order**: In `createAuthenticatedAction`, authorization and guards run in strict sequence:
+  1. `getCurrentAppUser()`: server-authoritative DB row resolution (`appUser.role`).
+  2. **Role Authorization (`options.roles`)**: runs immediately after `appUser` check. Denied calls fail fast with `ActionError('You do not have permission to do this. Please ask the account owner to perform this action.', { code: 'FORBIDDEN_ROLE' })`.
+  3. Platform admin check (`options.requirePlatformAdmin`).
+  4. Subscription suspension guard (`options.requireActiveSubscription`).
+  5. Rate limiting (`options.rateLimit`).
+  6. Handler execution.
+  *Note:* Denied role requests do NOT consume rate-limit tokens, touch business entities in the DB, or call external services.
+- **`OWNER_ONLY` Convention**: Owner-only actions specify `{ roles: OWNER_ONLY }` where `OWNER_ONLY = ['owner'] as const satisfies readonly AppRole[]`.
+- **Classification Source of Truth & AST Drift Guard**: `lib/auth/action-permissions.ts` exports `ACTION_ACCESS`, mapping every action scope to its access classification. The AST drift guard (`tests/unit/action-permissions.test.ts`) walks the TypeScript AST in CI: **every new action MUST be added to `lib/auth/action-permissions.ts`; CI fails otherwise**.
+- **Action Access Classification Matrix**:
+
+| Scope Name | Access Category | Enforcement Mechanism |
+|---|---|---|
+| `save-business-profile` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
+| `upload-business-logo` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
+| `remove-business-logo` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
+| `save-invoice-settings` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
+| `void-payment` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
+| `void-credit-note` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
+| `finalize-credit-note` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
+| `submit-payment-claim` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
+| `get-business-subscriptions` | `owner-or-platform-admin` | In-handler check: `isPlatformAdmin()` or (`context.appUser.business_id === input.business_id && evaluateRoleAccess(context.appUser.role, OWNER_ONLY).allowed`) |
+| `get-admin-dashboard-stats` | `platform-admin` | `createAuthenticatedAction(..., { requirePlatformAdmin: true })` |
+| `get-all-businesses` | `platform-admin` | `createAuthenticatedAction(..., { requirePlatformAdmin: true })` |
+| `get-all-users` | `platform-admin` | `createAuthenticatedAction(..., { requirePlatformAdmin: true })` |
+| `get-pending-requests` | `platform-admin` | `createAuthenticatedAction(..., { requirePlatformAdmin: true })` |
+| `process-subscription-claim` | `platform-admin` | `createAuthenticatedAction(..., { requirePlatformAdmin: true })` |
+| `update-business-subscription` | `platform-admin` | `createAuthenticatedAction(..., { requirePlatformAdmin: true })` |
+| `list-tax-rates` | `public` | `createAction` (unauthenticated) |
+| `save-invoice-draft` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `delete-invoice-draft` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `finalize-invoice` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-invoice` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `list-invoices` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-next-sequence` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-archived-pdf-url` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `email-invoice` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `send-payment-reminder` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `record-payment` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `list-payments` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `save-credit-note-draft` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `delete-credit-note-draft` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-credit-note` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `list-credit-notes` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-credit-note-form-data` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-archived-credit-note-pdf-url` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `create-customer` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `update-customer` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `deactivate-customer` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `reactivate-customer` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `list-customers` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `create-product` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `update-product` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `deactivate-product` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `reactivate-product` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `list-products` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `send-feedback` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-dashboard-stats` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-export-data` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-gstr1-data` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-itr-data` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-recent-invoices` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-sales-by-financial-year` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-sales-by-period` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-top-customers` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+| `get-top-products` | `any-member` | `createAuthenticatedAction` (no `roles` option) |
+
+- **Route Handlers Authorization Note**:
+  - `/api/reports/export`: any authenticated member of the business.
+  - `/api/business/[id]/logo`: public by design (referenced on customer PDF invoices and payment gateways).
+  - `/api/cron/*` and standalone archival renders (`/api/invoices/[id]/archival-render`, `/api/credit-notes/[id]/archival-render`): token/secret authenticated (HMAC / Bearer).
+- **Requirements for Future Team-Invite Feature**:
+  1. Invites may only create `staff` users (owners cannot be provisioned via invite).
+  2. Seat limits must be enforced using `getPlanEntitlements().teamUserLimit`.
+  3. Only an `owner` may send team invites or alter member roles.
+  4. At least one `owner` must always remain associated with a business (an owner cannot downgrade themselves to staff if they are the sole owner).
+  5. All role assignment, invite, and membership changes must be audit-logged in `audit_log` (DB-007).
+
 ## Security headers & CSP rollout (SEC-001)
 
 ### 1. HTTP Security Headers Table

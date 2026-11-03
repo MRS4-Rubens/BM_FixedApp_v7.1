@@ -24,6 +24,7 @@ vi.mock('@/lib/auth/session', () => ({
   getCurrentAppUser: async () => ({
     id: state.userId,
     business_id: state.businessId,
+    role: 'owner' as const,
     email: 'user@test.dev',
     display_name: 'Test Actor',
   }),

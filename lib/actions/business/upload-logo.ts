@@ -1,6 +1,7 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { writeAudit } from '@/lib/audit/log';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
@@ -141,6 +142,7 @@ export const uploadBusinessLogo = createAuthenticatedAction(
   },
   'upload-business-logo',
   {
+    roles: OWNER_ONLY,
     rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'upload-logo' },
     requireActiveSubscription: true,
   }
