@@ -10,7 +10,15 @@ export const AUDIT_EVENTS = {
   invoice: ['finalize'],
   credit_note: ['finalize', 'void'],
   payment: ['record', 'void'],
-  business: ['profile_create', 'profile_update', 'logo_upload', 'logo_remove', 'subscription_manual_override'],
+  business: [
+    'profile_create',
+    'profile_update',
+    'logo_upload',
+    'logo_remove',
+    'subscription_manual_override',
+    'business_identity_changed',
+    'business_identity_changed_by_admin',
+  ],
   subscription_request: ['approve', 'reject'],
 } as const;
 

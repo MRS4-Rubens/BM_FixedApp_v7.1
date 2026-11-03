@@ -5,6 +5,7 @@ import { eq, and, desc, sql, between } from 'drizzle-orm';
 import { SettingsClient } from '@/components/app/settings/settings-client';
 import { redirect } from 'next/navigation';
 import { getCurrentMonthRange } from '@/lib/reports/period';
+import { hasFinalizedInvoices } from '@/lib/business/identity-lock';
 
 export default async function SettingsPage({
   searchParams,
@@ -125,6 +126,8 @@ export default async function SettingsPage({
     }
   }
 
+  const identityLocked = business ? await hasFinalizedInvoices(db, business.id) : false;
+
   return (
     <SettingsClient
       business={business}
@@ -132,6 +135,7 @@ export default async function SettingsPage({
       initialTab={initialTab}
       initialSubscriptions={subscriptionHistory}
       usageStats={usageStats}
+      identityLocked={identityLocked}
     />
   );
 }

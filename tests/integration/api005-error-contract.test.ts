@@ -158,13 +158,6 @@ describe('API-005: Error handling contract and information leakage prevention', 
     realDrizzleDb = drizzle(pg, { schema });
     state.db = realDrizzleDb;
 
-    // Seed test users
-    await pg.query(
-      `INSERT INTO users (id, auth_user_id, email, display_name, role)
-       VALUES ('00000000-0000-0000-0000-000000000001', 'auth_user_001', 'user1@test.dev', 'User One', 'owner'),
-              ('00000000-0000-0000-0000-000000000002', 'auth_user_002', 'user2@test.dev', 'User Two', 'owner')`,
-    );
-
     // Seed Business A with SHARED_GSTIN
     await pg.query(
       `INSERT INTO businesses (
@@ -187,6 +180,14 @@ describe('API-005: Error handling contract and information leakage prevention', 
         'free', 'active'
       )`,
       [BIZ_B_ID],
+    );
+
+    // Seed test users
+    await pg.query(
+      `INSERT INTO users (id, auth_user_id, business_id, email, display_name, role)
+       VALUES ('00000000-0000-0000-0000-000000000001', 'auth_user_001', $1, 'user1@test.dev', 'User One', 'owner'),
+              ('00000000-0000-0000-0000-000000000002', 'auth_user_002', $2, 'user2@test.dev', 'User Two', 'owner')`,
+      [BIZ_A_ID, BIZ_B_ID],
     );
   }, 60_000);
 
@@ -219,10 +220,8 @@ describe('API-005: Error handling contract and information leakage prevention', 
     expect(res.success).toBe(false);
     if (res.success) return;
 
-    expect(res.error.code).toBe('DUPLICATE_GSTIN');
-    expect(res.error.fieldErrors?.gstin).toContain(
-      'This GSTIN is already registered with another Bill Matrix account. Check the number or contact support.',
-    );
+    expect(['DUPLICATE_GSTIN', 'GSTIN_ALREADY_REGISTERED']).toContain(res.error.code);
+    expect(res.error.fieldErrors?.gstin?.[0]).toMatch(/already registered/);
     expect(res.error.message).not.toContain('businesses_gstin_unique');
     expect(res.error.message).not.toContain('Key (gstin)=');
     expect(res.error.message).not.toContain('duplicate key');

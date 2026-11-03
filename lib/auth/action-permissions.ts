@@ -22,6 +22,7 @@ export const ACTION_ACCESS = {
   'get-business-subscriptions': 'owner-or-platform-admin',
 
   // Platform administration (AUTH-001)
+  'admin-update-business-identity': 'platform-admin',
   'get-admin-dashboard-stats': 'platform-admin',
   'get-all-businesses': 'platform-admin',
   'get-all-users': 'platform-admin',

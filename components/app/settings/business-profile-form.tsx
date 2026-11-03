@@ -32,6 +32,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { businesses, financialYears } from '@/lib/db/schema';
+import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { ProfileSpotlightTour } from './profile-spotlight-tour';
 
 const baseInputClass =
@@ -48,10 +49,12 @@ export function BusinessProfileForm({
   business,
   currentFy,
   onSwitchTab,
+  identityLocked = false,
 }: {
   business: typeof businesses.$inferSelect | null;
   currentFy: typeof financialYears.$inferSelect | null;
   onSwitchTab?: (tab: string) => void;
+  identityLocked?: boolean;
 }) {
   const isNewBusiness = !business || !business.id;
   const [success, setSuccess] = useState(false);
@@ -250,7 +253,23 @@ export function BusinessProfileForm({
                   <FileSpreadsheet className="size-3.5 text-emerald-800 shrink-0" />
                   <span>GSTIN <span className="text-destructive">*</span></span>
                 </label>
-                <input type="text" maxLength={15} className={cn(inputGreenClass, "font-mono uppercase tracking-wider", errors.gstin && 'border-destructive focus:ring-destructive/20')} {...register('gstin')} />
+                <input
+                  type="text"
+                  maxLength={15}
+                  readOnly={identityLocked}
+                  className={cn(
+                    inputGreenClass,
+                    "font-mono uppercase tracking-wider",
+                    identityLocked && "bg-slate-50 text-slate-500 cursor-not-allowed",
+                    errors.gstin && 'border-destructive focus:ring-destructive/20'
+                  )}
+                  {...register('gstin')}
+                />
+                {identityLocked && (
+                  <p className="mt-1 text-xs font-semibold text-amber-800">
+                    GSTIN and state are locked because invoices have been finalized. Contact {SUPPORT_EMAIL} to change them.
+                  </p>
+                )}
                 {errors.gstin && <p className={errorClass}>{errors.gstin.message}</p>}
               </div>
 
@@ -377,7 +396,16 @@ export function BusinessProfileForm({
                   <Globe className="size-3.5 text-amber-800 shrink-0" />
                   <span>State <span className="text-destructive">*</span></span>
                 </label>
-                <select className={cn(inputAmberClass, errors.state_code && 'border-destructive focus:ring-destructive/20')} {...register('state_code')}>
+                <select
+                  tabIndex={identityLocked ? -1 : undefined}
+                  aria-readonly={identityLocked ? "true" : undefined}
+                  className={cn(
+                    inputAmberClass,
+                    identityLocked && "pointer-events-none bg-slate-50 text-slate-500",
+                    errors.state_code && 'border-destructive focus:ring-destructive/20'
+                  )}
+                  {...register('state_code')}
+                >
                   <option value="">Select State</option>
                   {INDIAN_GST_STATES.map((s) => (
                     <option key={s.code} value={s.code}>{s.name} ({s.code})</option>

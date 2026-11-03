@@ -335,11 +335,11 @@ describe('DB-007: Audit log integrity, append-only triggers, and coverage', () =
     expect(cnAudit.rows).toHaveLength(1);
     expect(cnAudit.rows[0].metadata.original_invoice_id).toBe(invId);
 
-    // 5d. saveBusinessProfile edit with GSTIN and bank account change
+    // 5d. saveBusinessProfile edit with bank account change (GSTIN preserved because invoice finalized in 5b)
     const profRes = await saveBusinessProfile({
       legal_name: 'Audit Test Corp Updated',
       trade_name: 'Audit Corp',
-      gstin: '29ABCDE9999F1Z9',
+      gstin: '29ABCDE1234F1Z5',
       registration_type: 'regular',
       address_line1: '999 New Street',
       city: 'Bengaluru',
@@ -365,7 +365,7 @@ describe('DB-007: Audit log integrity, append-only triggers, and coverage', () =
     const noopRes = await saveBusinessProfile({
       legal_name: 'Audit Test Corp Updated',
       trade_name: 'Audit Corp',
-      gstin: '29ABCDE9999F1Z9',
+      gstin: '29ABCDE1234F1Z5',
       registration_type: 'regular',
       address_line1: '999 New Street',
       city: 'Bengaluru',

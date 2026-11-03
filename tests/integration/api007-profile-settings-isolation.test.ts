@@ -167,8 +167,10 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     await pg.close();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     gateMock.override = undefined;
+    state.businessId = null;
+    await pg.query('UPDATE users SET business_id = NULL WHERE id = $1', [state.userId]);
   });
 
   it('1. Paid regression: saveBusinessProfile on paid business preserves all six invoice settings and updates profile', async () => {
@@ -193,6 +195,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     const initialUpdatedAt = new Date(initialRow.updated_at).getTime();
 
     state.businessId = paidBizId;
+    await pg.query('UPDATE users SET business_id = $1 WHERE id = $2', [paidBizId, state.userId]);
 
     const res = await saveBusinessProfile({
       legal_name: 'Paid Biz Corp',
@@ -238,6 +241,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     );
 
     state.businessId = paidBizId;
+    await pg.query('UPDATE users SET business_id = $1 WHERE id = $2', [paidBizId, state.userId]);
 
     const res = await saveBusinessProfile({
       legal_name: 'Stale Test Corp',
@@ -288,6 +292,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     );
 
     state.businessId = freeBizId;
+    await pg.query('UPDATE users SET business_id = $1 WHERE id = $2', [freeBizId, state.userId]);
 
     const res = await saveBusinessProfile({
       legal_name: 'Free Biz Corp',
@@ -329,6 +334,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     );
 
     state.businessId = freeBizId;
+    await pg.query('UPDATE users SET business_id = $1 WHERE id = $2', [freeBizId, state.userId]);
 
     const templateResult = await saveInvoiceSettings({
       invoice_number_format: 'BMA/{FY}/{SEQ:4}',
@@ -380,6 +386,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     );
 
     state.businessId = paidBizId;
+    await pg.query('UPDATE users SET business_id = $1 WHERE id = $2', [paidBizId, state.userId]);
 
     const paidSaveResult = await saveInvoiceSettings({
       invoice_number_format: 'PAID/{FY}/{SEQ:4}',

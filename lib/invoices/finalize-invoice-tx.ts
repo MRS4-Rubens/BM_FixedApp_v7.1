@@ -1,11 +1,10 @@
 import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
-import { lockBusinessRow } from '@/lib/actions/_shared/business-lock';
 import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import { writeAudit, type AuditRequestContext } from '@/lib/audit/log';
 import { roundToRupeePaise } from '@/lib/credit-notes/derivation';
 import type { DbTransaction } from '@/lib/db/client';
-import { invoiceLineItems, invoices } from '@/lib/db/schema';
+import { businesses, invoiceLineItems, invoices } from '@/lib/db/schema';
 import { assertDraftTotalsMatch, resolveDraftPlaceOfSupply } from '@/lib/invoices/place-of-supply';
 import { calculateInvoiceTaxOrActionError } from '@/lib/invoices/tax-calculation';
 import type { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
@@ -43,9 +42,12 @@ export async function finalizeDraftInvoiceInTransaction(
   // 2. Lock draft invoice row FOR UPDATE and validate state
   const invoice = await lockDraftInvoice(tx, { id: params.invoiceId, businessId: params.businessId });
 
-  // 3. Lock the business row (lock order: invoice -> business -> financial_years -> counters). Serializes the quota check and
-  //    freezes the profile that is about to be snapshotted.
-  const business = await lockBusinessRow(tx, params.businessId);
+  // 3. Fetch Business and Customer (lock order: invoice -> business -> financial_years -> counters)
+  // lockBusinessRow(tx, params.businessId);
+  // AUTH-004: shared lock serializes with profile identity edits (FOR UPDATE) so a finalized invoice can never carry a GSTIN that changed concurrently.
+  const businessResult = await tx.select().from(businesses).where(eq(businesses.id, params.businessId)).for('share');
+  if (businessResult.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
+  const business = businessResult[0];
 
   // Entitlement Checks
   const entitlements = getPlanEntitlements(business);

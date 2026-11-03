@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import type { DbTransaction } from '@/lib/db/client';
+export type { DbTransaction };
 
 export const PG_SERIALIZATION_FAILURE = '40001';
 export const PG_DEADLOCK_DETECTED = '40P01';

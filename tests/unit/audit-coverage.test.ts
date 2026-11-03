@@ -17,7 +17,7 @@ describe('audit coverage and architectural invariants (source scan)', () => {
       'lib/invoices/void-credit-note-tx.ts',
       'lib/actions/subscriptions/process-request.ts',
       'lib/actions/subscriptions/update-business-subscription.ts',
-      'lib/actions/business/save-business-profile.ts',
+      'lib/business/save-profile-tx.ts',
       'lib/actions/business/upload-logo.ts',
       'lib/actions/business/remove-logo.ts',
       'lib/actions/invoices/finalize-invoice.ts',
@@ -44,7 +44,7 @@ describe('audit coverage and architectural invariants (source scan)', () => {
       { path: 'lib/invoices/void-credit-note-tx.ts', minCalls: 1 },
       { path: 'lib/actions/subscriptions/process-request.ts', minCalls: 2 },
       { path: 'lib/actions/subscriptions/update-business-subscription.ts', minCalls: 1 },
-      { path: 'lib/actions/business/save-business-profile.ts', minCalls: 2 },
+      { path: 'lib/business/save-profile-tx.ts', minCalls: 2 },
       { path: 'lib/actions/business/upload-logo.ts', minCalls: 1 },
       { path: 'lib/actions/business/remove-logo.ts', minCalls: 1 },
     ];
@@ -115,7 +115,7 @@ describe('audit coverage and architectural invariants (source scan)', () => {
       'lib/invoices/void-credit-note-tx.ts',
       'lib/actions/subscriptions/process-request.ts',
       'lib/actions/subscriptions/update-business-subscription.ts',
-      'lib/actions/business/save-business-profile.ts',
+      'lib/business/save-profile-tx.ts',
       'lib/actions/business/upload-logo.ts',
       'lib/actions/business/remove-logo.ts',
     ];

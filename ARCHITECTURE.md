@@ -158,9 +158,9 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 
 1. **Global Lock-Order Contract:**
    All transactional modifications must acquire locks in the strict hierarchical sequence:
-   `invoice row -> credit-note row -> payment row -> business row -> financial_years row -> invoice_number_counters row`
-   Never acquire an earlier lock after a later one in the same transaction.
-   *Business Row Lock (API-010):* `lockBusinessRow(tx, businessId)` acquires `FOR NO KEY UPDATE` so quota checks and entity mutations (invoices, customers, products) are serialized per tenant without blocking foreign-key key-share validation of concurrent child inserts.
+   `users (identity, first-time setup only) ; invoice -> credit-note -> payment -> business (FOR SHARE in finalize, FOR UPDATE in profile/identity/subscription flows) -> financial_years -> invoice_number_counters`
+   Never acquire an earlier lock after a later one in the same transaction (rule: "never take a document lock after a business lock").
+   *Business Row Lock (API-010 / AUTH-004):* `lockBusinessRow(tx, businessId)` acquires `FOR NO KEY UPDATE` for quota/entitlement serialization; `finalizeDraftInvoiceInTransaction` acquires `FOR SHARE` on the business row to serialize against concurrent profile identity edits (`FOR UPDATE`), ensuring a finalized invoice never carries a GSTIN that changed concurrently.
    *Note on Archival Claims (API-008):* Archival claims are single-row UPDATEs outside any document transaction; they hold no other lock; batch claims use SKIP LOCKED; targeted claims wait. Draft-save actions lock only the specific document they edit (`FOR UPDATE`).
 
 2. **Pure Transactional Modules (`lib/invoices/*-tx.ts`):**
@@ -327,6 +327,37 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
   3. Only an `owner` may send team invites or alter member roles.
   4. At least one `owner` must always remain associated with a business (an owner cannot downgrade themselves to staff if they are the sole owner).
   5. All role assignment, invite, and membership changes must be audit-logged in `audit_log` (DB-007).
+
+## Business identity and statutory locking (AUTH-004)
+
+- **GSTIN Squatting Prevention & Error Mapping**:
+  - Uniqueness is guaranteed by PostgreSQL constraint `businesses_gstin_unique` on `businesses.gstin`.
+  - When a unique violation (`23505`) occurs on `businesses_gstin_unique` during either onboarding or profile edit, `isGstinUniqueViolation` maps the raw database error to `ActionError` with code `GSTIN_ALREADY_REGISTERED` and a field error on `gstin`: *"This GSTIN is already registered on Bill Matrix. If you own it, contact support with proof of ownership."*
+  - The action rejects duplicate registration without exposing internal tenant IDs or allowing unauthenticated GSTIN enumeration.
+- **Idempotent First-Time Setup**:
+  - `saveBusinessProfileInTransaction` locks the authenticated user's row (`users ... FOR UPDATE`) before resolving `user.business_id`.
+  - Pre-transaction session snapshots (`context.appUser.business_id`) are never used to decide create-vs-update.
+  - Concurrent first-time submissions serialize on the user row: the first commit creates the business, financial year, and links the user; subsequent parallel submissions detect the populated `business_id` and idempotently update the newly provisioned tenant.
+- **Identity Lock Rules**:
+  - A business's statutory identity (`gstin` and `state_code`) is permanently locked once any invoice of that business is finalized (`hasFinalizedInvoices`).
+  - Draft invoices do not lock identity; owners may freely correct GSTIN and state while only drafts exist.
+  - When an identity change is attempted after finalization, the transaction rejects with `IDENTITY_LOCKED` and field errors under `gstin` and `state_code`: *"GSTIN and registered state cannot be changed after invoices have been finalized. Please contact support@billmatrix.in to request a change."*
+  - Non-identity profile fields (legal name, address, phone, email, bank details) remain editable and save normally.
+  - Permitted identity changes write an audit row to `audit_log` with action `business_identity_changed` capturing `previous` and `next` identities.
+- **Finalize / Profile Serialization**:
+  - `finalizeDraftInvoiceInTransaction` acquires `FOR SHARE` on the business row before capturing the seller snapshot (`captureSellerSnapshot`).
+  - Profile identity edits acquire `FOR UPDATE` on the business row.
+  - In PostgreSQL, `FOR SHARE` and `FOR UPDATE` on the same row conflict: a finalizing invoice will never snapshot a GSTIN or state that was concurrently modified in a profile update.
+- **Platform Admin Override**:
+  - Action `adminUpdateBusinessIdentity` (`requirePlatformAdmin: true`) allows platform administrators to legally correct a business's GSTIN and state even after invoices have been finalized.
+  - Requires a mandatory explanation of at least 10 characters (`reason`).
+  - Executes under row lock, verifies state/GSTIN prefix consistency, checks duplicate uniqueness, and writes an immutable audit record with action `business_identity_changed_by_admin` containing the reason, previous/next identity, and `had_finalized_invoices`.
+- **Support Runbook**:
+  - **Never edit `businesses.gstin` or `businesses.state_code` using raw SQL**.
+  - Always invoke `adminUpdateBusinessIdentity` (or the future admin console panel) so a statutory audit log entry is preserved with the support ticket reason.
+- **Known Limitations & Future Roadmap**:
+  - GSTIN ownership is currently unverified at registration time. In a future phase, ownership verification should be enforced via OTP dispatched to the authorized GST-portal-registered email or via a licensed GSP (GST Suvidha Provider) API prior to permitting document finalization.
+  - An administrative UI panel in `app/(admin)/admin` for `adminUpdateBusinessIdentity` is planned as a follow-up.
 
 ## Security headers & CSP rollout (SEC-001)
 
