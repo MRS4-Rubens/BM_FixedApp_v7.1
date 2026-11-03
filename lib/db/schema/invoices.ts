@@ -47,6 +47,9 @@ export const invoices = pgTable('invoices', {
   archival_claimed_at: timestamp('archival_claimed_at', { withTimezone: true }),
   emailed_at: timestamp('emailed_at', { withTimezone: true }),
   email_send_count: integer('email_send_count').notNull().default(0),
+  // API-011: reminders are tracked separately from invoice deliveries (emailed_at / email_send_count).
+  reminder_count: integer('reminder_count').notNull().default(0),
+  last_reminder_at: timestamp('last_reminder_at', { withTimezone: true }),
   finalized_at: timestamp('finalized_at', { withTimezone: true }),
   // Calculation mode locked for this specific invoice to preserve print layout history (inclusive vs exclusive)
   gst_rate_type: gstRateTypeEnum('gst_rate_type').notNull().default('exclusive'),
@@ -90,7 +93,9 @@ export const invoices = pgTable('invoices', {
   check('invoices_final_requires_seller_snapshot', sql`${table.lifecycle_status} = 'draft' OR (${table.seller_name_snapshot} IS NOT NULL AND ${table.seller_address_snapshot} IS NOT NULL AND ${table.seller_state_code_snapshot} IS NOT NULL AND ${table.seller_snapshot_source} IS NOT NULL)`),
   check('invoices_seller_snapshot_source_valid', sql`${table.seller_snapshot_source} IS NULL OR ${table.seller_snapshot_source} IN ('captured_at_finalization', 'backfilled_from_profile')`),
   // DB-004: CHECK invoices_invoice_template_valid
-  check('invoices_invoice_template_valid', inList(table.invoice_template, INVOICE_TEMPLATE_IDS))
+  check('invoices_invoice_template_valid', inList(table.invoice_template, INVOICE_TEMPLATE_IDS)),
+  // API-011: a counter can never be negative.
+  check('invoices_reminder_count_nonneg', sql`${table.reminder_count} >= 0`)
 ]);
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({

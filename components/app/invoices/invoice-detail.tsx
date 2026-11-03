@@ -51,6 +51,8 @@ interface InvoiceDetailProps {
     pdf_storage_key?: string | null
     emailed_at?: string | Date | null
     email_send_count?: number
+    reminder_count?: number
+    last_reminder_at?: string | Date | null
     customer?: { email?: string | null; phone?: string | null; name?: string | null } | null
     customer_name?: string | null
     customer_email?: string | null
@@ -309,6 +311,11 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                 {invoice.emailed_at && (
                   <span className="text-[9px] bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-900 font-semibold whitespace-nowrap shrink-0">
                     Emailed ({invoice.email_send_count}x)
+                  </span>
+                )}
+                {invoice.last_reminder_at && (
+                  <span className="text-[9px] bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900 font-semibold whitespace-nowrap shrink-0">
+                    Reminder sent ({invoice.reminder_count ?? 1}x) · {new Date(invoice.last_reminder_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                   </span>
                 )}
               </div>

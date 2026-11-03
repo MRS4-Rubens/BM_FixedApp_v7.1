@@ -142,8 +142,9 @@ describe('API-010: Quota and entitlement integrity (PGlite)', () => {
   let pg: PGlite;
   const journal = readJournal();
   const allTags = journal.map((j) => j.tag);
-  const backfillTag = allTags[allTags.length - 1]; // 0024_api010_trial_end_backfill
-  const tagsBeforeBackfill = allTags.slice(0, -1);
+  const backfillTag = '0024_api010_trial_end_backfill';
+  const backfillIdx = allTags.indexOf(backfillTag);
+  const tagsBeforeBackfill = backfillIdx >= 0 ? allTags.slice(0, backfillIdx) : allTags.slice(0, -1);
 
   beforeAll(async () => {
     pg = new PGlite();

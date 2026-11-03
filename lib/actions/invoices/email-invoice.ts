@@ -1,154 +1,144 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
-import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
-import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
-import { toLoggableError } from '@/lib/actions/_shared/action-error-mapping';
 import { logError } from '@/lib/actions/_shared/logger';
 import { db } from '@/lib/db/client';
-import { invoices, businesses } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
-import { getFileBuffer } from '@/lib/storage/idrive';
-import { getResend } from '@/lib/email/resend';
-import { getEmailEnv } from '@/lib/env';
+import { toBusyActionError, withTransactionRetry } from '@/lib/db/transaction';
+import {
+  assertMayEmailCustomers,
+  enforceDailyEmailCap,
+  loadSenderBusiness,
+} from '@/lib/email/send-guards';
+import { sendCustomerEmail } from '@/lib/email/send-customer-email';
+import { sanitizeEmailHeaderText } from '@/lib/email/send-policy';
 import InvoiceDeliveryEmail from '@/lib/email/templates/invoice-delivery-email';
-import { revalidatePath } from 'next/cache';
+import {
+  claimInvoiceEmailInTransaction,
+  releaseInvoiceEmailClaim,
+  type InvoiceEmailClaim,
+} from '@/lib/invoices/email-claim-tx';
 import { formatPaiseAsInr } from '@/lib/money';
+import { emailBurstLimiter } from '@/lib/rate-limit/upstash';
+import { sanitizeFilename } from '@/lib/security/upload';
 
-const EmailInvoiceSchema = z.object({
-  invoiceId: z.string().uuid(),
-});
+const EmailInvoiceSchema = z
+  .object({
+    invoiceId: z.string().uuid(),
+  })
+  .strict();
+
+function formatIsoDateForEmail(isoDate: string | null): string {
+  if (!isoDate) return 'N/A';
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate);
+  if (match) {
+    const [, y, m, d] = match;
+    return `${d}/${m}/${y}`;
+  }
+  return isoDate;
+}
 
 export const emailInvoice = createAuthenticatedAction(
   EmailInvoiceSchema,
-  async (input, { appUser }) => {
+  async (input, { appUser }): Promise<{ success: true }> => {
     if (!appUser.business_id) {
-      throw new ActionError('User does not belong to a business.');
+      throw new ActionError('Your account is not linked to a business profile.', {
+        code: 'NO_BUSINESS_LINKED',
+      });
     }
 
     const { invoiceId } = input;
+    const businessId = appUser.business_id;
 
-    // 1. Fetch invoice and verify business ownership
-    const invoiceRecords = await db
-      .select()
-      .from(invoices)
-      .where(and(eq(invoices.id, invoiceId), eq(invoices.business_id, appUser.business_id)));
+    // 1. Load sender business profile
+    const business = await loadSenderBusiness(businessId);
 
-    if (invoiceRecords.length === 0) {
-      throw new ActionError('Invoice not found or unauthorized.');
-    }
+    // 2. Verification and suspension checks
+    await assertMayEmailCustomers(business);
 
-    const invoice = invoiceRecords[0];
-
-    if (invoice.lifecycle_status !== 'finalized') {
-      throw new ActionError('Only finalized invoices can be emailed.');
-    }
-
-    // 2. Verify archival_status
-    if (invoice.archival_status !== 'archived' || !invoice.pdf_storage_key) {
-      throw new ActionError(
-        "This invoice's PDF is still being archived. Please try again in a moment.",
-        { code: 'PDF_NOT_READY' }
-      );
-    }
-
-    // 3. Fetch customer email
-    if (!invoice.customer_id) {
-      throw new ActionError(
-        'This is a retail/ad-hoc customer invoice with no email address on file.',
-        { code: 'NO_CUSTOMER_EMAIL' }
-      );
-    }
-
-    // Tenant isolation (API-001): never email a customer that belongs to another business.
-    const customer = await findOwnedCustomer(db, appUser.business_id, invoice.customer_id);
-    if (!customer) {
-      throw new ActionError('Customer not found.');
-    }
-
-    if (!customer.email || customer.email.trim() === '') {
-      throw new ActionError(
-        'This customer does not have an email address on file. Add one in Customers before emailing an invoice.',
-        { code: 'NO_CUSTOMER_EMAIL' }
-      );
-    }
-
-    // 4. Fetch business profile
-    const businessRecords = await db
-      .select()
-      .from(businesses)
-      .where(eq(businesses.id, appUser.business_id));
-
-    if (businessRecords.length === 0) {
-      throw new ActionError('Business not found.');
-    }
-
-    const business = businessRecords[0];
-
-    // 5. Call getFileBuffer
-    let pdfBuffer: Buffer;
+    // 3. Atomically claim invoice email under invoice row lock
+    let claim: InvoiceEmailClaim;
     try {
-      pdfBuffer = await getFileBuffer(invoice.pdf_storage_key);
-    } catch (error) {
-      logError('email-invoice', error, { invoiceId: invoice.id });
-      throw new ActionError('Could not fetch the invoice PDF from storage. Please try again later.');
+      claim = await withTransactionRetry(() =>
+        db.transaction((tx) =>
+          claimInvoiceEmailInTransaction(tx, {
+            businessId,
+            invoiceId,
+          }),
+        ),
+      );
+    } catch (error: unknown) {
+      const busyError = toBusyActionError(error);
+      if (busyError !== null) throw busyError;
+      throw error;
     }
 
-    // 6. Call resend.emails.send()
-    const invoiceDateStr = invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-IN') : 'N/A';
-    const dueDateStr = invoice.due_date ? new Date(invoice.due_date).toLocaleDateString('en-IN') : null;
-    
-    const EMAIL_SEND_FAILED_MESSAGE = 'We could not send the email. Please try again.';
-
-    let providerError: unknown = null;
+    // 4. Send email (with compensation rollback on failure)
     try {
-      const result = await getResend().emails.send({
-        from: getEmailEnv().RESEND_FROM_EMAIL,
-        to: customer.email,
-        subject: `Invoice ${invoice.invoice_number} from ${business.legal_name}`,
+      await enforceDailyEmailCap(business.id);
+
+      const { getFileBuffer } = await import('@/lib/storage/idrive');
+      let pdfBuffer: Buffer;
+      try {
+        pdfBuffer = await getFileBuffer(claim.pdfStorageKey);
+      } catch (error: unknown) {
+        logError('email-invoice', error, { invoiceId });
+        throw new ActionError(
+          'Could not fetch the invoice PDF from storage. Please try again later.',
+          { code: 'PDF_FETCH_FAILED' },
+        );
+      }
+
+      const safeBusinessName = sanitizeEmailHeaderText(business.legal_name);
+      const safeInvoiceNumber = sanitizeEmailHeaderText(claim.invoiceNumber);
+
+      const invoiceDateFormatted = formatIsoDateForEmail(claim.invoiceDate);
+      const dueDateFormatted = claim.dueDate ? formatIsoDateForEmail(claim.dueDate) : null;
+
+      await sendCustomerEmail({
+        kind: 'invoice',
+        invoiceId: claim.invoiceId,
+        claimedAt: claim.claimedAt,
+        to: claim.customer.email,
+        subject: `Invoice ${safeInvoiceNumber} from ${safeBusinessName}`,
+        senderContactEmail: business.email,
         react: InvoiceDeliveryEmail({
-          businessName: business.legal_name,
-          customerName: customer.name,
-          invoiceNumber: invoice.invoice_number,
-          invoiceDate: invoiceDateStr,
-          dueDate: dueDateStr,
-          grandTotalFormatted: formatPaiseAsInr(invoice.grand_total_paise),
-        }) as React.ReactElement,
+          businessName: safeBusinessName,
+          customerName: claim.customer.name,
+          invoiceNumber: claim.invoiceNumber,
+          invoiceDate: invoiceDateFormatted,
+          dueDate: dueDateFormatted,
+          grandTotalFormatted: formatPaiseAsInr(claim.grandTotalPaise),
+          sender: {
+            legalName: business.legal_name,
+            gstin: business.gstin,
+            city: business.city,
+            contactEmail: business.email,
+            phone: business.phone,
+          },
+        }),
         attachments: [
           {
-            filename: `${invoice.invoice_number.replace(/\//g, '-')}.pdf`,
+            filename: sanitizeFilename(claim.invoiceNumber, 'pdf'),
             content: pdfBuffer,
           },
         ],
       });
-      providerError = result.error;
     } catch (error: unknown) {
-      logError('email-invoice', toLoggableError(error), { invoiceId: invoice.id });
-      throw new ActionError(EMAIL_SEND_FAILED_MESSAGE, { code: 'EMAIL_SEND_FAILED' });
-    }
-    if (providerError !== null && providerError !== undefined) {
-      logError('email-invoice', toLoggableError(providerError), { invoiceId: invoice.id, stage: 'provider-rejected' });
-      throw new ActionError(EMAIL_SEND_FAILED_MESSAGE, { code: 'EMAIL_SEND_FAILED' });
+      await releaseInvoiceEmailClaim(db, claim);
+      throw error;
     }
 
-    // 8. Update emailed_at and email_send_count
-    await db
-      .update(invoices)
-      .set({
-        emailed_at: new Date(),
-        email_send_count: (invoice.email_send_count || 0) + 1,
-      })
-      .where(eq(invoices.id, invoice.id));
+    // 5. Post-commit cache revalidation
+    revalidatePath(`/invoices/${invoiceId}`);
 
-    revalidatePath(`/invoices/${invoice.id}`);
-    
     return { success: true };
   },
   'email-invoice',
   {
-    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'email-invoice' },
+    rateLimit: { limiter: emailBurstLimiter, keyPrefix: 'email-invoice' },
     requireActiveSubscription: true,
-  }
+  },
 );

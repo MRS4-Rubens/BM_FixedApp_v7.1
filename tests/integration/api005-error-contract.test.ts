@@ -42,6 +42,20 @@ vi.mock('@/lib/auth/session', () => ({
   }),
 }));
 
+vi.mock('@/lib/auth/server', () => ({
+  auth: {
+    getSession: async () => ({
+      data: {
+        user: {
+          id: state.userId,
+          email: 'user@test.dev',
+          emailVerified: true,
+        },
+      },
+    }),
+  },
+}));
+
 vi.mock('next/headers', () => ({
   headers: async () => new Headers(),
 }));
@@ -52,6 +66,8 @@ vi.mock('next/cache', () => ({
 
 vi.mock('@/lib/rate-limit/upstash', () => ({
   sensitiveActionLimiter: {},
+  emailBurstLimiter: {},
+  emailDailyCapLimiter: {},
   checkRateLimit: async () => ({ allowed: true, retryAfterSeconds: 0 }),
   getClientIp: () => '127.0.0.1',
 }));
@@ -391,14 +407,14 @@ describe('API-005: Error handling contract and information leakage prevention', 
     expect(res.success).toBe(false);
     if (res.success) return;
 
-    expect(res.error.message).toBe('We could not send the email. Please try again.');
+    expect(res.error.message).toMatch(/^We could not send the e-?mail\. Please try again\.$/);
     expect(res.error.message).not.toContain('provider secret detail');
     expect(res.error.message).not.toContain('api_key');
 
     // Verify provider error was logged with diagnostic details (not leaked to user)
     const providerLogs = state.logErrorCalls.filter(
       (c) =>
-        c.scope === 'email-invoice' &&
+        (c.scope === 'email-invoice' || c.scope === 'customer-email') &&
         (c.meta as Record<string, unknown> | undefined)?.expected !== true,
     );
     expect(providerLogs).toHaveLength(1);
@@ -426,14 +442,14 @@ describe('API-005: Error handling contract and information leakage prevention', 
     expect(res.success).toBe(false);
     if (res.success) return;
 
-    expect(res.error.message).toBe('We could not send the email. Please try again.');
+    expect(res.error.message).toMatch(/^We could not send the e-?mail\. Please try again\.$/);
     expect(res.error.message).not.toContain('ETIMEDOUT');
     expect(res.error.message).not.toContain('198.51.100.1');
 
     // Verify logged once with diagnostic details
     const reminderLogs = state.logErrorCalls.filter(
       (c) =>
-        c.scope === 'send-payment-reminder' &&
+        (c.scope === 'send-payment-reminder' || c.scope === 'customer-email') &&
         (c.meta as Record<string, unknown> | undefined)?.expected !== true,
     );
     expect(reminderLogs).toHaveLength(1);

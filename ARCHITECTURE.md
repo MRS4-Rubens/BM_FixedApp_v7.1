@@ -222,6 +222,19 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 - **Quantity Precision Parity**:
   - `invoice_line_items.quantity` is stored as `numeric(10,3)`. Draft tax calculations normalise line-item quantities via `toStoredQuantity` (`Number(quantity.toFixed(3))`) to guarantee exact mathematical parity between the draft's saved totals and the finalized recalculation.
 
+## Outbound customer e-mail (API-011)
+
+- **Claim-First / Send-Second / Compensate-on-Failure**: E-mail sending is non-idempotent and external. Actions acquire an invoice row lock in PostgreSQL (`claimInvoiceEmailInTransaction` / `claimReminderInTransaction`), validate eligibility and cooldowns, atomically advance counters/timestamps, and commit before initiating outbound HTTP requests. If subsequent daily-cap checks, storage fetches, or Resend dispatches fail, compensating release transactions (`releaseInvoiceEmailClaim` / `releaseReminderClaim`) safely restore timestamps and decrement counters.
+- **Lock-Order Conformance**: Email and reminder transactions acquire locks exclusively on the invoice row (`invoices FOR UPDATE`). They introduce no new lock tiers and never acquire subsequent-tier locks (no `credit_notes`, `payments`, or `businesses FOR UPDATE`).
+- **Separation of Semantics**: Document delivery and payment follow-ups are tracked distinctly. Invoice deliveries mutate only `emailed_at` and `email_send_count`. Payment reminders mutate only `last_reminder_at` and `reminder_count`.
+- **Layered Abuse Controls**:
+  - Per-user burst protection via Upstash Redis (`emailBurstLimiter`: 5 req/min) partitioned under distinct action key prefixes (`email-invoice` vs `payment-reminder`).
+  - Per-invoice cooldowns enforced authoritatively in Postgres: 60 seconds anti-double-click guard for invoice delivery, 24 hours cooldown for payment reminders.
+  - Per-business daily cap (`emailDailyCapLimiter`: 50 emails/day combined across deliveries and reminders) evaluated with a `fail-closed` outage policy.
+  - Sender identity verification: non-paid tiers (trial and free) strictly require `emailVerified === true` on the authenticated session. Suspended accounts cannot send customer emails.
+- **Trigger Allow-List Contract**: Under `bm_guard_invoices()`, finalized invoices freeze all columns except an explicit mutable allow-list. Any column written after finalization (`reminder_count`, `last_reminder_at`) must be added to `mutable_cols` in the active trigger definition.
+- **Observability & Error Sanitization**: External provider error details are logged server-side exactly once per failure via `logError('customer-email', ...)` without leaking raw provider strings, customer emails, or secrets to client-facing `ActionError` instances.
+
 ## Platform admin authorization (AUTH-001)
 
 - **Policy Model (`lib/auth/admin-policy.ts`)**: Pure evaluation function `evaluatePlatformAdmin(user, allowlist)`. A session matches platform admin rights if either:

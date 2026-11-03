@@ -1,6 +1,12 @@
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { getRateLimitEnv } from '@/lib/env';
+import {
+  EMAIL_BURST_LIMIT,
+  EMAIL_BURST_WINDOW,
+  EMAIL_DAILY_CAP_PER_BUSINESS,
+  EMAIL_DAILY_WINDOW,
+} from '@/lib/email/send-policy';
 
 let redisInstance: Redis | undefined;
 
@@ -69,6 +75,15 @@ export const sensitiveActionLimiter: RateLimiter = lazyLimiter(
 // exportLimiter: 10 requests per 300 seconds (for Excel export and the archival-render route — heavier operations)
 export const exportLimiter: RateLimiter = lazyLimiter(
   () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(10, '300 s'), prefix: '@upstash/ratelimit:export' }),
+);
+
+// API-011: Outbound customer email burst and daily cap limiters
+export const emailBurstLimiter: RateLimiter = lazyLimiter(
+  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(EMAIL_BURST_LIMIT, EMAIL_BURST_WINDOW), prefix: '@upstash/ratelimit:email-burst' }),
+);
+
+export const emailDailyCapLimiter: RateLimiter = lazyLimiter(
+  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(EMAIL_DAILY_CAP_PER_BUSINESS, EMAIL_DAILY_WINDOW), prefix: '@upstash/ratelimit:email-daily' }),
 );
 
 /**
