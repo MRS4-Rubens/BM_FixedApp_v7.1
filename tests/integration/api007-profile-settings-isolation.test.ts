@@ -125,6 +125,7 @@ interface BusinessRow {
   trial_ends_at: string | Date | null;
   subscription_ends_at: string | Date | null;
   updated_at: string | Date;
+  invoice_display_prefs?: unknown;
 }
 
 interface UserRow {
@@ -180,12 +181,12 @@ describe('API-007: Profile settings isolation and plan gating', () => {
         legal_name, gstin, address_line1, city, state_code, pincode,
         default_invoice_template, default_gst_rate_type, invoice_terms, payment_due_days,
         invoice_number_format, credit_note_number_prefix, subscription_plan, subscription_status,
-        subscription_ends_at, updated_at
+        subscription_ends_at, updated_at, invoice_display_prefs
       ) VALUES (
         'Paid Biz Corp', '29ABCDE1234F1Z5', '100 Old Road', 'Bengaluru', '29', '560001',
         'template_2', 'inclusive', 'T', 45,
         'CUSTOM/{FY}/{SEQ:4}', 'XX', 'essentials', 'active',
-        now() + interval '30 days', '2026-01-01 00:00:00+00'
+        now() + interval '30 days', '2026-01-01 00:00:00+00', '{"showHsn":false,"fixedRowsCount":20}'::jsonb
       ) RETURNING id`,
     );
 
@@ -222,6 +223,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     expect(updatedRow.payment_due_days).toBe(45);
     expect(updatedRow.invoice_number_format).toBe('CUSTOM/{FY}/{SEQ:4}');
     expect(updatedRow.credit_note_number_prefix).toBe('XX');
+    expect(updatedRow.invoice_display_prefs).toEqual({ showHsn: false, fixedRowsCount: 20 });
   });
 
   it('2. Legacy/stale payload ignored: stale invoice-settings keys in profile edit payload do not overwrite settings', async () => {

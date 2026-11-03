@@ -12,6 +12,7 @@ import { resolveSellerDetails, toInvoicePrintFields, type SellerDetails } from '
 import { loadLogoDataUri } from '@/lib/storage/logo';
 import { InvoicePrintView } from '@/components/app/invoices/invoice-print-view';
 import { buildArchivalHtmlDocument } from '@/lib/pdf/archival-html';
+import { resolveFinalizedDisplayPrefs } from '@/lib/invoices/display-prefs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -79,10 +80,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .print\\:rounded-none { border-radius: 0 !important; }
     }`;
 
+  const displayPrefs = resolveFinalizedDisplayPrefs(invoice.display_prefs_snapshot);
+
   const bodyHtml = renderToStaticMarkup(
     createElement(InvoicePrintView, {
       invoice: invoiceData,
       businessStateCode: seller.stateCode,
+      displayPrefs,
     }),
   );
 

@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, timestamp, uuid, integer, bigint, date, unique, index, check, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, timestamp, uuid, integer, bigint, date, unique, index, check, foreignKey, jsonb } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { customers } from './customers';
@@ -8,6 +8,7 @@ import { invoiceLineItems } from './invoice_line_items';
 import { payments } from './payments';
 import { creditNotes } from './credit_notes';
 import { sellerSnapshotColumns } from './_seller_snapshot';
+import type { InvoiceDisplayPrefs } from './_display_prefs';
 import { inList } from './_check-helpers';
 import { INVOICE_TEMPLATE_IDS, type InvoiceTemplateValue } from '../domain-values';
 
@@ -28,6 +29,7 @@ export const invoices = pgTable('invoices', {
   place_of_supply_state_code: varchar('place_of_supply_state_code', { length: 2 }),
   seller_gstin_snapshot: varchar('seller_gstin_snapshot', { length: 15 }),
   ...sellerSnapshotColumns(),
+  display_prefs_snapshot: jsonb('display_prefs_snapshot').$type<InvoiceDisplayPrefs>(),
   billing_name_snapshot: text('billing_name_snapshot'),
   billing_gstin_snapshot: varchar('billing_gstin_snapshot', { length: 15 }),
   billing_address_snapshot: text('billing_address_snapshot'),
@@ -95,7 +97,9 @@ export const invoices = pgTable('invoices', {
   // DB-004: CHECK invoices_invoice_template_valid
   check('invoices_invoice_template_valid', inList(table.invoice_template, INVOICE_TEMPLATE_IDS)),
   // API-011: a counter can never be negative.
-  check('invoices_reminder_count_nonneg', sql`${table.reminder_count} >= 0`)
+  check('invoices_reminder_count_nonneg', sql`${table.reminder_count} >= 0`),
+  // FE-001: display preferences snapshot must be null or a json object
+  check('invoices_display_prefs_snapshot_object', sql`${table.display_prefs_snapshot} IS NULL OR jsonb_typeof(${table.display_prefs_snapshot}) = 'object'`)
 ]);
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({

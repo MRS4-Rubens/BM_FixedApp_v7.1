@@ -11,6 +11,7 @@ import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
 import { listPayments } from '@/lib/actions/payments/list-payments';
 import { listCreditNotes } from '@/lib/actions/credit-notes/list-credit-notes';
 import { resolveSellerDetails, toInvoicePrintFields, type SellerDetails } from '@/lib/invoices/seller-snapshot';
+import { resolveFinalizedDisplayPrefs } from '@/lib/invoices/display-prefs';
 import { buildLogoUrl } from '@/lib/storage/logo-url';
 
 // bounds after()-scheduled PDF archival started by finalize server actions
@@ -113,8 +114,11 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     if (cnResult.success) creditNotesList = cnResult.data;
   }
 
+  const displayPrefs = resolveFinalizedDisplayPrefs(invoice?.display_prefs_snapshot);
+
   return (
     <InvoiceDetail 
+      displayPrefs={displayPrefs}
       invoice={{
         ...invoice, 
         ...toInvoicePrintFields(seller),

@@ -12,6 +12,7 @@ export const ACTION_ACCESS = {
   'upload-business-logo': 'owner',
   'remove-business-logo': 'owner',
   'save-invoice-settings': 'owner',
+  'import-legacy-display-prefs': 'owner',
   // Destructive / statutory reversals: owner only
   'void-payment': 'owner',
   'void-credit-note': 'owner',

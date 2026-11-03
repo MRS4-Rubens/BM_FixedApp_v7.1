@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { validateInvoiceNumberFormat } from '@/lib/invoices/number-format';
 import { INVOICE_TEMPLATE_IDS } from '@/lib/invoices/template-ids';
+import { invoiceDisplayPrefsSchema } from '@/lib/invoices/display-prefs';
 
 export const invoiceSettingsSchema = z.object({
   invoice_number_format: z
@@ -25,6 +26,7 @@ export const invoiceSettingsSchema = z.object({
   default_invoice_template: z.enum(INVOICE_TEMPLATE_IDS),
   default_gst_rate_type: z.enum(['inclusive', 'exclusive']),
   invoice_terms: z.string().max(2000, 'Terms must be 2000 characters or fewer'),
+  display_prefs: invoiceDisplayPrefsSchema.optional(),
 });
 
 export type InvoiceSettingsInput = z.infer<typeof invoiceSettingsSchema>;

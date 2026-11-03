@@ -137,3 +137,9 @@ If any query returns a non-zero count, remediate legacy rows before migrating:
   pnpm print-css:build
   ```
   and commit the generated `lib/pdf/print-stylesheet.generated.ts`.
+
+
+### Invoice Display Preferences Migration (FE-001 · 0026)
+- **Migration Details**: Migration `0026_fe001_invoice_display_prefs.sql` adds `invoice_display_prefs` to `businesses` (default `'{}'::jsonb`) and `display_prefs_snapshot` to `invoices` (nullable `jsonb`), each with `jsonb_typeof(...) = 'object'` check constraints.
+- **Idempotency & Zero Downtime**: Uses `ADD COLUMN IF NOT EXISTS` and `DROP CONSTRAINT IF EXISTS ... ADD CONSTRAINT ...` within a single transaction. Safe to run against live databases without locking tables.
+- **No Backfill Needed**: Pre-existing finalized invoices have `display_prefs_snapshot IS NULL`. The application layer (`resolveFinalizedDisplayPrefs`) deterministically maps `null` to statutory defaults.

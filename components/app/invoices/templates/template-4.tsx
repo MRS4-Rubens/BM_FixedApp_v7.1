@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES, getStateAbbrByCode } from '@/lib/gst/indian-states';
@@ -32,51 +31,8 @@ const PRINT_STYLES = {
   spacingSection: 'mb-2',
 };
 
-export function InvoiceTemplate4({ invoice, businessStateCode, printSize, hasWatermark }: InvoiceTemplateProps) {
-  const [settings, setSettings] = useState<{
-    discEnabled: boolean;
-    showHsn: boolean;
-    enableFixedRows: boolean;
-    fixedRowsCount: number;
-  }>({
-    discEnabled: true,
-    showHsn: true,
-    enableFixedRows: true,
-    fixedRowsCount: 13,
-  });
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('bm_invoice_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSettings({
-          discEnabled: parsed.discEnabled ?? true,
-          showHsn: parsed.showHsn ?? true,
-          enableFixedRows: parsed.enableFixedRows ?? true,
-          fixedRowsCount: Number(parsed.fixedRowsCount) || 13,
-        });
-      }
-    } catch { }
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'bm_invoice_settings' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          setSettings({
-            discEnabled: parsed.discEnabled ?? true,
-            showHsn: parsed.showHsn ?? true,
-            enableFixedRows: parsed.enableFixedRows ?? true,
-            fixedRowsCount: Number(parsed.fixedRowsCount) || 13,
-          });
-        } catch { }
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
-
-  const { discEnabled, showHsn, enableFixedRows, fixedRowsCount } = settings;
+export function InvoiceTemplate4({ invoice, businessStateCode, printSize, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
+  const { discEnabled, showHsn, enableFixedRows, fixedRowsCount } = displayPrefs;
   const isIntra = invoice.total_igst_paise === 0;
 
   const customerStateInfo = INDIAN_GST_STATES.find(s => s.code === invoice.place_of_supply_state_code);

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { resolveDraftDisplayPrefs } from '@/lib/invoices/display-prefs'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Trash2, Send, ChevronDown, User, Receipt, ListTodo, ClipboardEdit, AlertCircle, Calendar, Percent, Eye, Printer, GripVertical, ArrowUpDown } from 'lucide-react'
@@ -78,43 +79,7 @@ export function InvoiceForm({
   const [showPreviewWarning, setShowPreviewWarning] = useState(false)
   const [previewPrintSize, setPreviewPrintSize] = useState<'A4' | 'A5'>('A5')
 
-  // Load invoice settings (discEnabled, showHsn)
-  const [settings, setSettings] = useState<{
-    discEnabled: boolean
-    showHsn: boolean
-  }>({
-    discEnabled: true,
-    showHsn: true
-  })
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('bm_invoice_settings')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        setSettings({
-          discEnabled: parsed.discEnabled ?? true,
-          showHsn: parsed.showHsn ?? true
-        })
-      }
-    } catch (e) {
-      console.error('Failed to load invoice settings:', e)
-    }
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'bm_invoice_settings' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue)
-          setSettings({
-            discEnabled: parsed.discEnabled ?? true,
-            showHsn: parsed.showHsn ?? true
-          })
-        } catch { }
-      }
-    }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
+  const displayPrefs = useMemo(() => resolveDraftDisplayPrefs(business?.invoice_display_prefs), [business?.invoice_display_prefs]);
 
   const defaultValues = {
     customer_id: '',
@@ -1026,7 +991,7 @@ export function InvoiceForm({
                     <th className="pl-2 pr-0 py-1.5" style={colStyles.drag} aria-label="Reorder"></th>
                     <th className="pl-3 pr-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left whitespace-nowrap" style={colStyles.sNo}>S.No</th>
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left whitespace-nowrap" style={colStyles.description}>Description</th>
-                    {settings.showHsn && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.hsn}>HSN/SAC</th>}
+                    {displayPrefs.showHsn && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.hsn}>HSN/SAC</th>}
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.qty}>Qty</th>
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.uqc}>UQC</th>
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center select-none whitespace-nowrap" style={colStyles.rate}>
@@ -1042,7 +1007,7 @@ export function InvoiceForm({
                         <span className="text-xs text-muted-foreground font-bold font-sans flex items-center justify-center border border-muted-foreground/30 rounded-full size-3.5 select-none transition-colors hover:border-primary hover:text-primary">i</span>
                       </div>
                     </th>
-                    {settings.discEnabled && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.disc}>Disc (%)</th>}
+                    {displayPrefs.discEnabled && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.disc}>Disc (%)</th>}
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.gst}>GST Rate</th>
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.netAmt}>Net Amount</th>
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.action}></th>
@@ -1209,7 +1174,7 @@ export function InvoiceForm({
                         </td>
 
                         {/* HSN/SAC */}
-                        {settings.showHsn && (
+                        {displayPrefs.showHsn && (
                           <td className="px-2 py-1.5" style={colStyles.hsn}>
                             <input
                               type="text"
@@ -1264,7 +1229,7 @@ export function InvoiceForm({
                         </td>
 
                         {/* Disc */}
-                        {settings.discEnabled && (
+                        {displayPrefs.discEnabled && (
                           <td className="px-2 py-1.5" style={colStyles.disc}>
                             <input
                               type="number"
@@ -1484,7 +1449,7 @@ export function InvoiceForm({
       {/* Dynamic Live Print Preview Modal Overlay */}
       {mounted && isPreviewOpen && (() => {
         // Calculate elastic page and modal widths dynamically based on active columns
-        const templateWidth = 780 + (settings.showHsn ? 70 : 0) + (settings.discEnabled ? 70 : 0);
+        const templateWidth = 780 + (displayPrefs.showHsn ? 70 : 0) + (displayPrefs.discEnabled ? 70 : 0);
         const previewMaxWidth = `${templateWidth}px`;
         const modalMaxWidth = `${templateWidth + 80}px`;
 
@@ -1606,6 +1571,7 @@ export function InvoiceForm({
                     invoice={previewInvoiceData}
                     businessStateCode={business.state_code}
                     printSize={previewPrintSize}
+                    displayPrefs={displayPrefs}
                   />
                 </div>
               </div>
@@ -1622,6 +1588,7 @@ export function InvoiceForm({
             invoice={previewInvoiceData}
             businessStateCode={business.state_code}
             printSize={previewPrintSize}
+            displayPrefs={displayPrefs}
           />
         </div>
       )}

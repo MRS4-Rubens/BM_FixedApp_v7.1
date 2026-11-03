@@ -553,3 +553,19 @@ When a new database constraint requires user-friendly UI mapping:
 
 
 
+
+
+## Invoice display preferences (FE-001)
+
+- **Server-rendered Account-level Preferences**:
+  Invoice display preferences (`discEnabled`, `showHsn`, `showNextNo`, `showSignatory`, `enableFixedRows`, `fixedRowsCount`, `defaultGst`) are persisted at the business account level in `businesses.invoice_display_prefs` (`jsonb NOT NULL DEFAULT '{}'::jsonb`, guarded by `CHECK (jsonb_typeof(invoice_display_prefs) = 'object')`).
+- **Server-Side Rendering & Hydration Parity**:
+  Preferences are server-rendered during initial HTML generation, completely eliminating the client-side layout shift and hydration flicker previously caused by reading `localStorage` (`bm_invoice_settings`) in `useEffect`. All four invoice templates and `InvoicePrintView` accept strongly-typed `displayPrefs: InvoiceDisplayPrefs` props and are completely free of client storage side effects and `useEffect` state updates.
+- **Finalized Document Immutability & Snapshotting**:
+  When an invoice is finalized (`lib/invoices/finalize-invoice-tx.ts`), the business's current display preferences are snapshotted directly onto the invoice row in `invoices.display_prefs_snapshot` via `captureDisplayPrefsSnapshot(business.invoice_display_prefs)`.
+- **Database Trigger Guard (`bm_guard_invoices`)**:
+  The PostgreSQL row-level immutability trigger `bm_guard_invoices()` enforces an allow-list of mutable columns (`mutable_cols`) on finalized invoices. Because `display_prefs_snapshot` is omitted from `mutable_cols`, any subsequent attempt to mutate or overwrite the snapshot on a finalized invoice raises SQLSTATE `55000` (`BM_IMMUTABLE_RECORD`).
+- **Legacy Invoices & Runtime Fallback Guarantee**:
+  Finalized invoices created before migration 0026 have `display_prefs_snapshot IS NULL`. `resolveFinalizedDisplayPrefs(invoice.display_prefs_snapshot)` safely falls back to statutory default values (`DEFAULT_INVOICE_DISPLAY_PREFS`), preserving legal document reproducibility without requiring table-wide historical backfills.
+- **Legacy Browser Migration**:
+  For businesses with legacy display settings previously saved in browser `localStorage`, the settings page displays `<LegacyDisplayPrefsImport />` (subscribed via `useSyncExternalStore`). Users can import them with one click via the `importLegacyDisplayPrefs` Server Action (restricted to owners with active subscriptions), which safely clears browser storage on completion.

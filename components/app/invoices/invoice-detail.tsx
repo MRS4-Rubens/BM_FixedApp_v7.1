@@ -30,6 +30,7 @@ import { InvoicePrintView, type InvoicePrintViewProps } from './invoice-print-vi
 import { generateWhatsAppInvoiceUrl } from '@/lib/subscriptions/whatsapp'
 import { resolveSubscriptionPlan } from '@/lib/subscriptions/entitlements'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
+import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs'
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -84,6 +85,7 @@ interface InvoiceDetailProps {
     [key: string]: unknown
   }>
   businessStateCode: string
+  displayPrefs: InvoiceDisplayPrefs
   business?: {
     id?: string
     legal_name?: string
@@ -96,7 +98,7 @@ interface InvoiceDetailProps {
   } | null
 }
 
-export function InvoiceDetail({ invoice, payments = [], creditNotes = [], businessStateCode, business }: InvoiceDetailProps) {
+export function InvoiceDetail({ invoice, payments = [], creditNotes = [], businessStateCode, business, displayPrefs }: InvoiceDetailProps) {
   const [printSize, setPrintSize] = useState<'A4' | 'A5'>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
@@ -456,7 +458,8 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
               <InvoicePrintView 
                 invoice={invoice} 
                 businessStateCode={businessStateCode} 
-                printSize={printSize} 
+                printSize={printSize}
+                displayPrefs={displayPrefs}
               />
             </div>
           </div>
@@ -709,8 +712,9 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
         <InvoicePrintView 
           invoice={invoice} 
           businessStateCode={businessStateCode} 
-          printSize={printSize} 
-        />
+          printSize={printSize}
+                displayPrefs={displayPrefs}
+              />
       </div>
 
       <UpgradePromptModal

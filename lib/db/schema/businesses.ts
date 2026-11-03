@@ -1,6 +1,7 @@
-import { pgTable, text, varchar, timestamp, uuid, check, integer } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, timestamp, uuid, check, integer, jsonb } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { registrationTypeEnum, gstRateTypeEnum } from './enums'; // I will create an enums file
+import type { StoredInvoiceDisplayPrefs } from './_display_prefs';
 import { users } from './users';
 import { customers } from './customers';
 import { products } from './products';
@@ -40,6 +41,7 @@ export const businesses = pgTable('businesses', {
   bank_name: text('bank_name'),
   invoice_terms: text('invoice_terms').notNull().default('1. Goods once sold will not be taken back.\n2. Payment to be made within 30 days from the date of invoice.\n3. Interest @ 24% per annum will be charged on overdue invoices until payment is received.'),
   invoice_number_format: text('invoice_number_format').notNull().default('INV-{DD}/{MM}/{YY}/{SEQ:3}'),
+  invoice_display_prefs: jsonb('invoice_display_prefs').$type<StoredInvoiceDisplayPrefs>().notNull().default({}),
   default_invoice_template: text('default_invoice_template').$type<InvoiceTemplateValue>().notNull().default('template_1'),
   credit_note_number_prefix: text('credit_note_number_prefix').notNull().default('CN'),
   payment_due_days: integer('payment_due_days').notNull().default(30),
@@ -57,6 +59,7 @@ export const businesses = pgTable('businesses', {
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [
   check('businesses_gstin_length', sql`length(${table.gstin}) = 15`),
+  check('businesses_invoice_display_prefs_object', sql`jsonb_typeof(${table.invoice_display_prefs}) = 'object'`),
   // DB-004: CHECK constraints for state columns
   check('businesses_subscription_plan_valid', inList(table.subscription_plan, SUBSCRIPTION_PLANS)),
   check('businesses_subscription_status_valid', inList(table.subscription_status, SUBSCRIPTION_STATUSES)),

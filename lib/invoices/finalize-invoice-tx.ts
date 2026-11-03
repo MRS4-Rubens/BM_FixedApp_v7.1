@@ -17,6 +17,7 @@ import { assertInvoiceQuotaAvailable } from '@/lib/invoices/invoice-quota';
 import { formatIstDateAsIso, getIstDateParts, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
 import { captureSellerSnapshot } from '@/lib/invoices/seller-snapshot';
+import { captureDisplayPrefsSnapshot } from '@/lib/invoices/display-prefs';
 import { canUseTemplate, getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 
 export interface FinalizeInvoiceTxParams {
@@ -187,6 +188,7 @@ export async function finalizeDraftInvoiceInTransaction(
       place_of_supply_state_code: placeOfSupplyStateCode,
       seller_gstin_snapshot: business.gstin,
       ...captureSellerSnapshot(business),
+      display_prefs_snapshot: captureDisplayPrefsSnapshot(business.invoice_display_prefs),
       billing_name_snapshot: billingNameSnapshot,
       billing_gstin_snapshot: billingGstinSnapshot,
       billing_address_snapshot: billingAddressSnapshot,

@@ -46,6 +46,7 @@ export const saveInvoiceSettings = createAuthenticatedAction(
         default_invoice_template: input.default_invoice_template,
         default_gst_rate_type: input.default_gst_rate_type,
         invoice_terms: input.invoice_terms,
+        ...(input.display_prefs !== undefined ? { invoice_display_prefs: input.display_prefs } : {}),
         updated_at: new Date(),
       })
       .where(eq(businesses.id, businessId));
