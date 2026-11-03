@@ -569,3 +569,31 @@ When a new database constraint requires user-friendly UI mapping:
   Finalized invoices created before migration 0026 have `display_prefs_snapshot IS NULL`. `resolveFinalizedDisplayPrefs(invoice.display_prefs_snapshot)` safely falls back to statutory default values (`DEFAULT_INVOICE_DISPLAY_PREFS`), preserving legal document reproducibility without requiring table-wide historical backfills.
 - **Legacy Browser Migration**:
   For businesses with legacy display settings previously saved in browser `localStorage`, the settings page displays `<LegacyDisplayPrefsImport />` (subscribed via `useSyncExternalStore`). Users can import them with one click via the `importLegacyDisplayPrefs` Server Action (restricted to owners with active subscriptions), which safely clears browser storage on completion.
+
+
+## Route-level boundaries (FE-003)
+
+- **Boundary Hierarchy & Resilience Architecture**:
+  - `global-error.tsx` (root): Last line of defence replacing the HTML document for root layout crashes.
+  - `app/(app)/error.tsx` & `app/(admin)/error.tsx`: Segment-level Client Component boundaries wrapping page content while preserving the persistent AppShell / AdminShell (AppSidebar, AppTopbar).
+  - *Inline Error Precedence*: Server Action failures continue to return structured `ActionResult` and pages display inline error alerts (e.g. "Failed to load dashboard data."). Error boundaries act strictly as the safety net for unhandled exceptions during React rendering.
+- **Layout Error Scope Limitation (Next.js App Router Invariant)**:
+  - A segment's `error.tsx` catches errors thrown by that segment's *children* (page components and nested route subtrees). It does NOT catch errors thrown inside the same segment's `layout.tsx`. Any unhandled failure in `(app)/layout.tsx` or `(admin)/layout.tsx` bubbles up to the root `global-error.tsx`.
+- **Zero Information Leakage in Error UI**:
+  - Error views ([components/app/route-error-view.tsx](file:///e:/BM_Edits_Cld1.1/BM_FixApp_v1.1/components/app/route-error-view.tsx)) NEVER display raw `error.message` or `error.stack` to users. Only user-safe, static copy is rendered alongside the opaque `error.digest` reference hash.
+  - Sentry reporting executes automatically via `Sentry.captureException(error, { tags: { error_boundary: scope, digest: error.digest } })` in a `useEffect` hook without causing re-render loops.
+  - Server Component retry uses `startTransition(() => { router.refresh(); reset(); })` to trigger a server-side data re-fetch rather than merely unmounting the client boundary.
+- **Loading Skeleton Inheritance Rule**:
+  - In Next.js App Router, `loading.tsx` wraps its route segment AND all nested descendant routes in a Suspense boundary.
+  - *Mandatory Nested Overrides*: Any new nested route created under list segments (`invoices/`, `customers/`, `products/`) that renders a form or detail view MUST supply its own shape-correct `loading.tsx` (e.g. `invoices/new/loading.tsx` with `FormPageSkeleton`, `invoices/[id]/loading.tsx` with `DetailPageSkeleton`). Without this, the parent's table list skeleton will flash during navigation to forms and detail screens.
+- **Deterministic Accessible Skeletons ([components/app/skeletons/page-skeletons.tsx](file:///e:/BM_Edits_Cld1.1/BM_FixApp_v1.1/components/app/skeletons/page-skeletons.tsx))**:
+  - Skeletons are pure Server Components with zero database, authentication, or server action dependencies.
+  - Strictly deterministic static arrays (no `Math.random`, `Date.now`, or `new Date()`) to eliminate hydration mismatches.
+  - Built to WCAG 2.2 AA accessibility standards: wrapping shells use `role="status"`, `aria-busy="true"`, `aria-live="polite"`, and `<span className="sr-only">` announcements.
+  - `Skeleton` elements handle reduced-motion preferences (`prefers-reduced-motion: reduce`).
+- **Branded Not-Found Policy**:
+  - Root `app/not-found.tsx`: Renders a standalone full-page view for non-existent routes outside the authenticated app shell.
+  - App `app/(app)/not-found.tsx`: Renders inside the `(app)` layout so that invocations of `notFound()` (such as missing customers or products) keep the sidebar and topbar navigation intact.
+- **Development-Only Test Harnesses**:
+  - `app/(app)/dev-boundary-test/page.tsx` and `app/(admin)/admin/dev-boundary-test/page.tsx` provide test harnesses to simulate server render errors (`?mode=server`), client render errors (`?mode=client`), delayed navigation (`?mode=slow`), and a gallery preview of all skeletons (`?mode=skeletons`).
+  - Both test harnesses enforce `if (process.env.NODE_ENV === 'production') notFound();` and return 404 in production builds.
