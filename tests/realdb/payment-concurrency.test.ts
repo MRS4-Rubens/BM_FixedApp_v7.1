@@ -23,15 +23,13 @@ import {
   cleanupTestBusiness,
 } from './helpers/db';
 
-const testDbUrl = getTestDatabaseUrl();
-
-describe.skipIf(!testDbUrl)('Payment & Void Concurrency tests (REAL Postgres)', () => {
+describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
   let testDb: TestDb;
   let testBusiness: TestBusiness;
   let defaultFyId: string;
 
   beforeAll(async () => {
-    const validUrl = validateTestDatabaseUrl(testDbUrl);
+    const validUrl = validateTestDatabaseUrl(getTestDatabaseUrl());
     testDb = createTestDbClient(validUrl);
     testBusiness = await createTestBusiness(testDb);
 

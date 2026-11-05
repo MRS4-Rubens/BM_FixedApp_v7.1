@@ -719,3 +719,12 @@ When a new database constraint requires user-friendly UI mapping:
 - **Discrepancy Registry**:
   See `docs/TEST-001-findings.md` for registered statutory ambiguities, defects, and edge-case behaviors.
 
+
+## Testing strategy (TEST-002)
+
+Bill Matrix separates integration testing into two complementary layers:
+- **PGlite (`pnpm test:integration`)**: In-memory single-connection PostgreSQL WebAssembly for rapid verification of relational schema constraints, tenant IDOR boundaries, statutory business logic, and database trigger behavior without external infrastructure.
+- **Real-Postgres (`pnpm test:realdb`)**: Multi-connection TCP PostgreSQL test suites running against a Docker service container (`docker-compose.test.yml`) or disposable Neon branch. Exercises real row-level lock contention (`SELECT ... FOR UPDATE`), sequence counter gaplessness under injected rollbacks, parallel invoice/claim/quota race invariants, and URL safety guards.
+- Comprehensive details on test runner configuration, Docker setup, safety guards, and the concurrency matrix are maintained in [`docs/TESTING.md`](docs/TESTING.md).
+
+
