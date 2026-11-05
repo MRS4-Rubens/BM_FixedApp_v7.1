@@ -54,7 +54,7 @@ export const voidPayment = createAuthenticatedAction(
   'void-payment',
   {
     roles: OWNER_ONLY,
-    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'void-payment' },
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'void-payment', outage: 'fail-open' },
     requireActiveSubscription: true,
   },
 );

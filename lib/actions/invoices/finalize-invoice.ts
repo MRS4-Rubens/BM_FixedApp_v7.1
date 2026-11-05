@@ -51,7 +51,7 @@ export const finalizeInvoice = createAuthenticatedAction(
   },
   'finalize-invoice',
   {
-    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'finalize-invoice' },
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'finalize-invoice', outage: 'fail-open' },
     requireActiveSubscription: true,
   },
 );

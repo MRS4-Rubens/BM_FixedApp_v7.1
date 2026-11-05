@@ -42,6 +42,6 @@ export const getClaimScreenshotUrl = createAuthenticatedAction(
     return { url, expiresInSeconds: CLAIM_SCREENSHOT_URL_TTL_SECONDS };
   },
   'get-claim-screenshot-url',
-  { requirePlatformAdmin: true, rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'claim-screenshot' } },
+  { requirePlatformAdmin: true, rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'claim-screenshot', outage: 'fail-closed' } },
 );
 

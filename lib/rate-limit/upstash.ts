@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { getRateLimitEnv } from '@/lib/env';
@@ -7,6 +8,9 @@ import {
   EMAIL_DAILY_CAP_PER_BUSINESS,
   EMAIL_DAILY_WINDOW,
 } from '@/lib/email/send-policy';
+import { lazyLimiter, type RateLimiter } from './lazy-limiter';
+
+export type { RateLimiter } from './lazy-limiter';
 
 let redisInstance: Redis | undefined;
 
@@ -17,19 +21,6 @@ export function getRedis(): Redis {
     redisInstance = new Redis({ url: env.UPSTASH_REDIS_REST_URL, token: env.UPSTASH_REDIS_REST_TOKEN });
   }
   return redisInstance;
-}
-
-/** Structural subset of Ratelimit used across the app; lets limiters be lazy facades. */
-export type RateLimiter = Pick<Ratelimit, 'limit'>;
-
-function lazyLimiter(create: () => Ratelimit): RateLimiter {
-  let instance: Ratelimit | undefined;
-  return {
-    limit: (...args: Parameters<Ratelimit['limit']>) => {
-      instance ??= create();
-      return instance.limit(...args);
-    },
-  };
 }
 
 /**
@@ -69,12 +60,12 @@ export const recoveryEmailLimiter: RateLimiter = lazyLimiter(
 
 // sensitiveActionLimiter: 20 requests per 60 seconds (for finalizing invoices, sending emails, recording payments)
 export const sensitiveActionLimiter: RateLimiter = lazyLimiter(
-  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(20, '60 s'), prefix: '@upstash/ratelimit:sensitive' }),
+  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(20, '60 s'), prefix: '@upstash/ratelimit:sensitive', timeout: 2000 }),
 );
 
 // exportLimiter: 10 requests per 300 seconds (for Excel export and the archival-render route — heavier operations)
 export const exportLimiter: RateLimiter = lazyLimiter(
-  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(10, '300 s'), prefix: '@upstash/ratelimit:export' }),
+  () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(10, '300 s'), prefix: '@upstash/ratelimit:export', timeout: 2000 }),
 );
 
 // API-011: Outbound customer email burst and daily cap limiters
@@ -90,28 +81,31 @@ export const emailDailyCapLimiter: RateLimiter = lazyLimiter(
  * Helper to check rate limit and return retry-after in seconds
  */
 export async function checkRateLimit(limiter: RateLimiter, identifier: string): Promise<{ allowed: boolean; retryAfterSeconds: number }> {
-  const { success, reset } = await limiter.limit(identifier);
-  
-  // Calculate how many seconds until the window resets
-  const now = Date.now();
-  const retryAfterSeconds = Math.max(1, Math.ceil((reset - now) / 1000));
-  
-  return {
-    allowed: success,
-    retryAfterSeconds,
-  };
+  const { success, reset, reason } = await limiter.limit(identifier);
+  // @upstash/ratelimit silently allows a request when its internal timeout elapses. Surface that as an outage so the
+  // caller's explicit fail-open / fail-closed policy applies.
+  if (reason === 'timeout') throw new Error('Rate limiter timed out');
+  const retryAfterSeconds = Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+  return { allowed: success, retryAfterSeconds };
+}
+
+function firstValidIp(raw: string | null, pick: 'first' | 'last'): string | null {
+  if (raw === null) return null;
+  const entries = raw.split(',').map((entry) => entry.trim()).filter((entry) => entry !== '');
+  const ordered = pick === 'first' ? entries : [...entries].reverse();
+  for (const entry of ordered) if (isIP(entry) !== 0) return entry;
+  return null;
 }
 
 /**
- * Extracts the real client IP from the 'x-forwarded-for' header.
- * Falls back to 'unknown' if absent, never throws.
+ * Real client IP. On Vercel `x-vercel-forwarded-for` is set by the platform and cannot be spoofed by clients.
+ * Otherwise use the RIGHT-most valid `x-forwarded-for` entry (appended by the nearest trusted proxy; a client-supplied
+ * left-most value is ignored). Returns 'unknown' when nothing valid is present. Never throws.
  */
 export function getClientIp(headersList: Headers): string {
-  const forwardedFor = headersList.get('x-forwarded-for');
-  if (forwardedFor) {
-    // Vercel appends proxy IPs after the real one, so we take the first address
-    const ips = forwardedFor.split(',');
-    return ips[0].trim();
-  }
-  return 'unknown';
+  return (
+    firstValidIp(headersList.get('x-vercel-forwarded-for'), 'first') ??
+    firstValidIp(headersList.get('x-forwarded-for'), 'last') ??
+    'unknown'
+  );
 }

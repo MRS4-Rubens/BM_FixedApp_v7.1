@@ -150,6 +150,7 @@ export const sendFeedbackAction = createAuthenticatedAction(
     rateLimit: {
       limiter: sensitiveActionLimiter,
       keyPrefix: 'feedback',
+      outage: 'fail-closed',
     },
   }
 );

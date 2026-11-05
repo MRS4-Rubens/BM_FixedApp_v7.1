@@ -227,6 +227,6 @@ export const submitPaymentClaim = createAuthenticatedAction(
   'submit-payment-claim',
   {
     roles: OWNER_ONLY,
-    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'submit-payment-claim' },
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'submit-payment-claim', outage: 'fail-closed' },
   }
 );

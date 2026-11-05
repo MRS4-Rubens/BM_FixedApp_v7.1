@@ -86,6 +86,7 @@ describe('createAuthenticatedAction - Role-based Access Control (AUTH-003)', () 
         rateLimit: {
           limiter: {} as unknown as Parameters<typeof checkRateLimit>[0],
           keyPrefix: 'test',
+          outage: 'fail-closed',
         },
       }
     );

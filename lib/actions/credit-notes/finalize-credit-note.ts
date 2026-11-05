@@ -60,6 +60,7 @@ export const finalizeCreditNote = createAuthenticatedAction(
     rateLimit: {
       limiter: sensitiveActionLimiter,
       keyPrefix: 'finalize-credit-note',
+      outage: 'fail-open',
     },
     requireActiveSubscription: true,
   },

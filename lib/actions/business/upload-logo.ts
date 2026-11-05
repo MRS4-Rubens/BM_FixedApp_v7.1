@@ -143,7 +143,7 @@ export const uploadBusinessLogo = createAuthenticatedAction(
   'upload-business-logo',
   {
     roles: OWNER_ONLY,
-    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'upload-logo' },
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'upload-logo', outage: 'fail-closed' },
     requireActiveSubscription: true,
   }
 );

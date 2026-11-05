@@ -115,21 +115,64 @@ Archival of finalized invoices and credit notes executes reliably on serverless 
 
 Every folder above maps to exactly one future phase in `BillMatrix_Backend_Roadmap_v1.md`. Nothing here is speculative — each folder exists because a specific, already-planned phase needs it. This means the project never needs a restructuring pass later: as each phase is implemented, its code goes into a folder that was already waiting for it.
 
-## Security Conventions (established Phase 17)
+## Rate Limiting Policy (established Phase 17, hardened SEC-005)
 
-Rate limiting uses Upstash Redis and provides three core limiters:
-- **`authLimiter`**: 5 req/min, per IP (for login/signup endpoints without a session yet).
-- **`sensitiveActionLimiter`**: 20 req/min, per user ID (for critical actions like finalizing, sending email, or recording payments).
-- **`exportLimiter`**: 10 req/5min, per user ID or IP (for expensive PDF renders or Excel exports).
+Rate limiting is governed by Upstash Redis and provides centralized, multi-tier protection against denial-of-service, abuse, and brute-force attacks across server actions and route handlers.
 
-**Applying rate limits:**
-- **Server Actions**: Opt-in incrementally via the `options.rateLimit` property in `createAction` and `createAuthenticatedAction` without requiring changes to the bulk of generic database wrappers.
-  ```typescript
-  export const myAction = createAuthenticatedAction(schema, async (input, context) => {
-    // ...
-  }, 'my-action', { rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'my-action' } });
-  ```
-- **Route Handlers**: New Route Handlers added in the future need their own direct rate-limit checks (since the `createAction` wrapper does not govern Route Handlers). Check it using `checkRateLimit` alongside token verification or session extraction.
+### 1. Default Action Limiter
+Every authenticated Server Action (`createAuthenticatedAction`) is automatically protected by a default rate limiter unless explicitly overridden:
+- **Ceiling**: 120 requests per 60 seconds sliding window.
+- **Key Scheme**: `default:<scopeName>:<appUser.id>` (isolated per action per user).
+- **Outage Policy**: `fail-open` with scope `'action-default'`. If Redis is down, legitimate business operations continue unobstructed, and an outage alert is logged at most once per minute per scope.
+
+### 2. Explicit Action Limiters and Outage Policies
+Actions with distinct risk profiles declare an explicit `rateLimit` option in `createAuthenticatedAction` or `createAction`. The `outage` property is required by the TypeScript compiler:
+
+| Action Scope | Limiter | Window / Cap | Key Prefix / Scheme | Outage Policy | Reasoning |
+|---|---|---|---|---|---|
+| `email-invoice` | `emailBurstLimiter` | 5 req / 60 s | `email-invoice:<userId>` | `fail-closed` | Third-party cost amplification (Resend email quota) |
+| `send-payment-reminder` | `emailBurstLimiter` | 5 req / 60 s | `payment-reminder:<userId>` | `fail-closed` | Outbound external communication; prevents spam |
+| `send-feedback` | `sensitiveActionLimiter` | 20 req / 60 s | `feedback:<userId>` | `fail-closed` | External support webhook / email integration |
+| `submit-payment-claim` | `sensitiveActionLimiter` | 20 req / 60 s | `submit-payment-claim:<userId>` | `fail-closed` | Prevents administrative spam & screenshot processing |
+| `upload-business-logo` | `sensitiveActionLimiter` | 20 req / 60 s | `upload-logo:<userId>` | `fail-closed` | Heavy I/O & cloud storage write bandwidth |
+| `remove-business-logo` | `sensitiveActionLimiter` | 20 req / 60 s | `remove-logo:<userId>` | `fail-closed` | Mutation on cloud storage objects & business records |
+| `get-claim-screenshot-url` | `sensitiveActionLimiter` | 20 req / 60 s | `claim-screenshot:<userId>` | `fail-closed` | Sensitive cryptographic signature generation |
+| `finalize-invoice` | `sensitiveActionLimiter` | 20 req / 60 s | `finalize-invoice:<userId>` | `fail-open` | Database-only statutory billing; must not block invoicing |
+| `finalize-credit-note` | `sensitiveActionLimiter` | 20 req / 60 s | `finalize-credit-note:<userId>` | `fail-open` | Database-only statutory billing; must not block credit notes |
+| `void-credit-note` | `sensitiveActionLimiter` | 20 req / 60 s | `void-credit-note:<userId>` | `fail-open` | Database-only ledger adjustment |
+| `record-payment` | `sensitiveActionLimiter` | 20 req / 60 s | `record-payment:<userId>` | `fail-open` | Database-only ledger adjustment |
+| `void-payment` | `sensitiveActionLimiter` | 20 req / 60 s | `void-payment:<userId>` | `fail-open` | Database-only ledger adjustment |
+| `save-business-profile` | `sensitiveActionLimiter` | 20 req / 60 s | `save-business-profile:<userId>` | `fail-open` | Database-only business record updates |
+| `delete-invoice-draft` | `sensitiveActionLimiter` | 20 req / 60 s | `delete-invoice-draft:<userId>` | `fail-open` | Database-only draft cleanup |
+
+*Opt-Out*: Actions may pass `rateLimit: false` to disable rate limiting entirely if explicitly justified (e.g., purely internal read-only sub-actions).
+
+### 3. Client IP Trust & Determination
+`getClientIp(headersList)` resolves the real client IP using strict trust ordering:
+1. **`x-vercel-forwarded-for`**: Trusted platform header set by Vercel edge infrastructure. The first valid IP address is used. Cannot be spoofed by incoming clients.
+2. **`x-forwarded-for`**: If not running behind Vercel edge, extracts the **right-most** valid IP entry (nearest trusted reverse proxy), discarding client-supplied left-most entries.
+3. **Fallback**: Returns `'unknown'` if no valid IP entry is found or headers are absent. Never throws.
+
+### 4. Unknown IP Rule
+Public endpoints rate-limited per IP (such as `/api/business/[id]/logo`) skip rate limiting when the IP resolves to `'unknown'`. This avoids grouping all unidentifiable clients into a single global bucket that could lead to accidental denial-of-service for legitimate users.
+
+### 5. Timeout-as-Outage Rule
+`checkRateLimit` catches Upstash's default silent-allow behavior on timeout (`reason === 'timeout'`) and throws an explicit error (`Rate limiter timed out`). This ensures that `enforceRateLimit` treats timeouts as service outages and strictly executes the action's chosen `outage` policy (`fail-open` or `fail-closed`). Limiters enforce a 2000 ms timeout (`timeout: 2000`).
+
+### 6. Public Asset Limiting (`/api/business/[id]/logo`)
+The public logo image route is protected by `publicAssetLimiter`:
+- **Ceiling**: 300 requests per 60 seconds per IP.
+- **Policy**: `fail-open`, skipped on `'unknown'` IP.
+- **Headers**: 429 and 503 responses carry `Retry-After: <seconds>` and `Cache-Control: no-store` to prevent caching of rejection responses.
+
+### 7. How to Add a New Limiter
+1. Export the limiter definition from `lib/rate-limit/limiters.ts` using `lazyLimiter(() => new Ratelimit({ ... }))`.
+2. For Server Actions: Pass `options.rateLimit: { limiter, keyPrefix, outage: 'fail-closed' | 'fail-open' }`. The TypeScript compiler enforces the `outage` field.
+3. For Route Handlers: Resolve the client IP via `getClientIp(request.headers)`, invoke `await enforceRateLimit({ limiter, identifier, policy, scope })`, and return appropriate 429/503 responses with `Cache-Control: no-store` and `Retry-After`.
+
+### 8. Report-Only Items (Technical Debt Tracking)
+- **Direct `checkRateLimit` callers in Route Handlers**: `/api/reports/export` and `/api/{invoices,credit-notes}/[id]/archival-render` still invoke `checkRateLimit` directly without passing through `enforceRateLimit`, meaning they lack throttled outage logging and formal `fail-open` fallback.
+- **Shared Limiter Prefix**: `send-payment-reminder` uses key prefix `'payment-reminder'`, isolated from `'email-invoice'`.
 
 ## Monitoring & Logging (established Phase 18, hardened ARCH-005)
 

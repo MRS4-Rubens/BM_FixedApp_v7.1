@@ -58,7 +58,7 @@ export const deleteInvoiceDraft = createAuthenticatedAction(
   },
   'delete-invoice-draft',
   {
-    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'delete-invoice-draft' },
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'delete-invoice-draft', outage: 'fail-open' },
     requireActiveSubscription: true,
   },
 );

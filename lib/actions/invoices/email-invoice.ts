@@ -138,7 +138,7 @@ export const emailInvoice = createAuthenticatedAction(
   },
   'email-invoice',
   {
-    rateLimit: { limiter: emailBurstLimiter, keyPrefix: 'email-invoice' },
+    rateLimit: { limiter: emailBurstLimiter, keyPrefix: 'email-invoice', outage: 'fail-closed' },
     requireActiveSubscription: true,
   },
 );

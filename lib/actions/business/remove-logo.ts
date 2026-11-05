@@ -8,6 +8,7 @@ import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import { deleteLogoObjectIfUnreferenced } from '@/lib/storage/logo';
+import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -80,5 +81,9 @@ export const removeBusinessLogo = createAuthenticatedAction(
     return { success: true };
   },
   'remove-business-logo',
-  { roles: OWNER_ONLY, requireActiveSubscription: true }
+  {
+    roles: OWNER_ONLY,
+    requireActiveSubscription: true,
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'remove-logo', outage: 'fail-closed' },
+  }
 );

@@ -58,7 +58,7 @@ export const voidCreditNote = createAuthenticatedAction(
   'void-credit-note',
   {
     roles: OWNER_ONLY,
-    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'void-credit-note' },
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'void-credit-note', outage: 'fail-open' },
     requireActiveSubscription: true,
   },
 );

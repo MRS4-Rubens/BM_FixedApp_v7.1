@@ -73,6 +73,7 @@ export const saveBusinessProfile = createAuthenticatedAction(
     rateLimit: {
       limiter: sensitiveActionLimiter,
       keyPrefix: 'save-business-profile',
+      outage: 'fail-open',
     },
   },
 );

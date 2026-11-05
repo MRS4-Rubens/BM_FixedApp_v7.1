@@ -4,6 +4,10 @@ import { businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getFileBuffer } from '@/lib/storage/idrive';
 import { isLogoKeyReferenced } from '@/lib/storage/logo';
+import { getClientIp } from '@/lib/rate-limit/upstash';
+import { enforceRateLimit } from '@/lib/rate-limit/enforce';
+import { publicAssetLimiter } from '@/lib/rate-limit/limiters';
+import { logError } from '@/lib/actions/_shared/logger';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -29,6 +33,28 @@ export async function GET(
     const { id } = await params;
     if (!id || !UUID_REGEX.test(id)) {
       return new NextResponse('Invalid Business ID', { status: 400 });
+    }
+
+    const ip = getClientIp(request.headers);
+    if (ip !== 'unknown') {
+      const outcome = await enforceRateLimit({
+        limiter: publicAssetLimiter,
+        identifier: `logo:${ip}`,
+        policy: 'fail-open',
+        scope: 'logo-route',
+      });
+      if (!outcome.allowed) {
+        return new NextResponse(
+          outcome.reason === 'limited' ? 'Too Many Requests' : 'Service Unavailable',
+          {
+            status: outcome.reason === 'limited' ? 429 : 503,
+            headers: {
+              'Retry-After': String(outcome.retryAfterSeconds),
+              'Cache-Control': 'no-store',
+            },
+          }
+        );
+      }
     }
 
     const businessRows = await db
@@ -85,7 +111,7 @@ export async function GET(
       },
     });
   } catch (error: unknown) {
-    console.error('Error fetching logo:', error);
+    logError('logo-route', error);
     return new NextResponse('Failed to load logo', { status: 500 });
   }
 }

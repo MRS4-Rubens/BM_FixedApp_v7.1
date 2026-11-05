@@ -115,7 +115,7 @@ export const sendPaymentReminder = createAuthenticatedAction(
   },
   'send-payment-reminder',
   {
-    rateLimit: { limiter: emailBurstLimiter, keyPrefix: 'payment-reminder' },
+    rateLimit: { limiter: emailBurstLimiter, keyPrefix: 'payment-reminder', outage: 'fail-closed' },
     requireActiveSubscription: true,
   },
 );
