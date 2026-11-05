@@ -81,7 +81,7 @@ jobs:
         run: pnpm db:check
 
       - name: Unit tests
-        run: pnpm test
+        run: pnpm test:coverage
 
       - name: Production build
         run: pnpm build

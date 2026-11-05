@@ -697,3 +697,25 @@ When a new database constraint requires user-friendly UI mapping:
   Old 3-part v1 tokens are rejected immediately. Any archival jobs in flight during deployment fail once safely, refunding or incrementing the attempt count, and are automatically picked up and rendered by the background archival cron (`/api/cron/retry-invoice-archival`) using fresh v2 tokens.
 - **Accepted Architectural Limitation**:
   Because third-party headless PDF rendering engines require an absolute HTTP URL to fetch and render the page, the ephemeral single-use token travels as a query parameter (`?token=...`). The single-use Redis guard, 120s lifespan, and downstream error redaction neutralize token exposure in vendor access logs.
+
+
+## Testing & coverage (TEST-001)
+
+- **Scope & Protection**:
+  Unit test suite covers statutory tax math, invoice numbering, IST date handling, invoice payment/lifecycle status, subscription entitlements, and statutory words.
+- **Explicit Test Policy Labelling**:
+  All unit tests carry explicit policy labels in their describe/it titles:
+  - `SPEC`: Statutory / business specification (must never be broken without legal review).
+  - `ORACLE`: Cross-checked against independent reference model (BigInt, pure math).
+  - `PROP`: Mathematical property (invariance, symmetry, identity, monotonic).
+  - `CHAR`: Characterization of current production behaviour.
+  - `it.todo`: Documented gap, defect, or out-of-scope statutory extension.
+- **Oracle Differential Testing**:
+  Differential testing comparing Drizzle/JS runtime against an arbitrary-precision integer model (`BigInt`) across random seeds and full edge distributions.
+- **Coverage Thresholds & CI Enforcement**:
+  Thresholds: `lib/gst/**` ≥ 90% lines/branches/funcs/stmts; core modules ≥ 90% lines/stmts/funcs and ≥ 85% branches. Enforced in CI via `pnpm test:coverage`.
+- **Statutory Change Guard**:
+  Rule: no change to tax or rounding logic may land without an accompanying `SPEC` test.
+- **Discrepancy Registry**:
+  See `docs/TEST-001-findings.md` for registered statutory ambiguities, defects, and edge-case behaviors.
+
