@@ -37,3 +37,10 @@ pnpm-workspace.yaml
 # Repomix Output (Prevents the tool from reading its own output)
 repomix-output*
 .repomixignore
+
+# Playwright and E2E
+/playwright-report/
+/test-results/
+/e2e/.auth/
+/e2e/.state/
+.env.e2e*

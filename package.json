@@ -27,6 +27,12 @@
     "db:check": "drizzle-kit check",
     "lint:ratchet": "tsx scripts/ci/lint-ratchet.ts",
     "print-css:build": "tsx scripts/build-print-css.ts",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:ui": "playwright test --ui",
+    "e2e:list": "playwright test --list",
+    "e2e:report": "playwright show-report",
+    "e2e:migrate-staging": "tsx scripts/ci/migrate-staging.ts",
     "verify": "pnpm typecheck && pnpm lint:ratchet && pnpm db:check && pnpm test"
   },
   "dependencies": {
@@ -60,7 +66,9 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@electric-sql/pglite": "^0.5.11",
+    "@playwright/test": "1.64.1",
     "@tailwindcss/postcss": "^4.2.0",
     "@types/node": "^24",
     "@types/pg": "^8.23.1",

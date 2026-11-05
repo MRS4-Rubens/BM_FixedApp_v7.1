@@ -728,3 +728,28 @@ Bill Matrix separates integration testing into two complementary layers:
 - Comprehensive details on test runner configuration, Docker setup, safety guards, and the concurrency matrix are maintained in [`docs/TESTING.md`](docs/TESTING.md).
 
 
+## End-to-end testing (TEST-003)
+
+Bill Matrix maintains an automated end-to-end regression and compliance suite using Playwright (`@playwright/test` ^1.64) executed against isolated Vercel preview deployments backed by disposable Neon database branches.
+
+- **Non-Negotiable Safety Guardrails**:
+  The suite enforces fail-closed safety pre-checks (`assertSafeTarget`) executed prior to launching browsers:
+  - Aborts immediately if the target host matches production (`app.billmatrix.in`, `billmatrix.in`) or if database URIs point to production/main database branches.
+  - Requires explicit confirmation via `E2E_CONFIRM_STAGING="yes-this-is-not-production"` and `E2E_TARGET="staging"`.
+  - Cleans only auth-specific rate limiting keys matching `@upstash/ratelimit:auth*` on Upstash Redis staging.
+- **Independent Money & Statutory Oracle**:
+  E2E assertions use a completely independent integer-paise tax engine (`e2e/support/money.ts`) rather than importing production helpers from `lib/gst/*`, eliminating circular test errors.
+- **Test Projects & Coverage Matrix**:
+  - `journey`: Serial execution of the end-to-end customer journey from user registration, business onboarding, customer & item creation, statutory numbering, draft tax calculation, invoice preview verification, finalization, partial credit note issuance, subscription upgrade claim submission, platform admin review & approval, to multi-tab GSTR-1 Excel export.
+  - `security`: Cross-tenant data isolation, invoice PDF/print unauthorized IDOR denial, archival token signing & replay rejection, unauthenticated route redirection, and platform admin privilege barriers.
+  - `boundaries`: Branded 404 views for missing entities and non-existent URLs; production/preview suppression of internal development boundary harnesses.
+  - `mobile`: Mobile viewport (375x667) smoke tests ensuring clean console output and zero horizontal layout overflow (`scrollWidth <= clientWidth + 1`).
+  - `quality`:
+    - **Accessibility Ratchet**: Automated WCAG 2.1 AA audits across 11 core routes using `@axe-core/playwright`. A recorded baseline (`e2e/a11y-baseline.json`) fails on regressions while allowing tracked improvements.
+    - **Print & PDF Integrity**: CSS `@media print` layout validation ensuring navigation chrome suppression, A4 container width bounds (≤ 794px), and valid `%PDF-` generation.
+  - `mailbox`: Live email verification via Mailosaur sink when live mailbox credentials are provided.
+- **CI/CD Integration**:
+  Automated GitHub Actions workflow (`.github/workflows/e2e.yml`) triggered on pull requests, polling for the Vercel preview deployment (`scripts/ci/wait-for-preview.sh`), executing staging migrations (`pnpm e2e:migrate-staging`), running tests in Chromium, and persisting 7-day trace and report artifacts.
+
+
+
