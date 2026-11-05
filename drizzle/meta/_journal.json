@@ -190,6 +190,13 @@
       "when": 1793711615477,
       "tag": "0026_fe001_invoice_display_prefs",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1793886596938,
+      "tag": "0027_perf001_list_indexes",
+      "breakpoints": true
     }
   ]
 }

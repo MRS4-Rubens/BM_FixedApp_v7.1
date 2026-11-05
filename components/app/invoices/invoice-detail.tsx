@@ -71,18 +71,17 @@ interface InvoiceDetailProps {
     notes?: string | null
     [key: string]: unknown
   }>
-  creditNotes?: Array<{
+  creditNotes?: ReadonlyArray<{
     id: string
-    credit_note_number: string
+    credit_note_number: string | null
     issue_date: string | Date | null
-    reason: string
+    reason: string | null
     lifecycle_status: string
     grand_total_paise: number
     status?: string | null
     voided_at?: string | Date | null
     void_reason?: string | null
     void_notes?: string | null
-    [key: string]: unknown
   }>
   businessStateCode: string
   displayPrefs: InvoiceDisplayPrefs

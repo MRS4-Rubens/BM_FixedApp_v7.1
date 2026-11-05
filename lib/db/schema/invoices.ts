@@ -75,6 +75,11 @@ export const invoices = pgTable('invoices', {
     table.invoice_date
   ),
   index('invoices_biz_created_at_idx').on(table.business_id, table.created_at),
+  // PERF-001: composite keyset index and date/trigram indexes for server-side list paging and search
+  index('invoices_biz_created_id_idx').on(table.business_id, table.created_at.desc(), table.id.desc()),
+  index('invoices_biz_invoice_date_idx').on(table.business_id, table.invoice_date),
+  index('invoices_invoice_number_trgm_idx').using('gin', table.invoice_number.op('gin_trgm_ops')),
+  index('invoices_billing_name_trgm_idx').using('gin', table.billing_name_snapshot.op('gin_trgm_ops')),
   // DB-002: composite key target for payments/credit_notes + tenant-safe customer link.
   unique('invoices_biz_id_uq').on(table.business_id, table.id),
   foreignKey({

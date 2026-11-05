@@ -22,6 +22,10 @@ export const customers = pgTable('customers', {
   check('customers_gstin_length', sql`length(${table.gstin}) = 15`),
   index('customers_business_id_idx').on(table.business_id),
   index('customers_biz_name_idx').on(table.business_id, table.name),
+  // PERF-001: composite keyset index and trigram indexes for list paging and search
+  index('customers_biz_name_id_idx').on(table.business_id, table.name, table.id),
+  index('customers_name_trgm_idx').using('gin', table.name.op('gin_trgm_ops')),
+  index('customers_gstin_trgm_idx').using('gin', table.gstin.op('gin_trgm_ops')),
   // DB-002: lets other tables reference (business_id, id) so a link can never cross tenants.
   unique('customers_biz_id_uq').on(table.business_id, table.id)
 ]);

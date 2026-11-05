@@ -57,11 +57,13 @@ export const ACTION_ACCESS = {
   'deactivate-customer': 'any-member',
   'reactivate-customer': 'any-member',
   'list-customers': 'any-member',
+  'search-customer-options': 'any-member',
   'create-product': 'any-member',
   'update-product': 'any-member',
   'deactivate-product': 'any-member',
   'reactivate-product': 'any-member',
   'list-products': 'any-member',
+  'search-product-options': 'any-member',
   'send-feedback': 'any-member',
   // Reports (read): any member
   'get-dashboard-stats': 'any-member',

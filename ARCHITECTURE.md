@@ -597,3 +597,19 @@ When a new database constraint requires user-friendly UI mapping:
 - **Development-Only Test Harnesses**:
   - `app/(app)/dev-boundary-test/page.tsx` and `app/(admin)/admin/dev-boundary-test/page.tsx` provide test harnesses to simulate server render errors (`?mode=server`), client render errors (`?mode=client`), delayed navigation (`?mode=slow`), and a gallery preview of all skeletons (`?mode=skeletons`).
   - Both test harnesses enforce `if (process.env.NODE_ENV === 'production') notFound();` and return 404 in production builds.
+
+
+## List screens & pagination (PERF-001)
+
+- **Zero OFFSET Keyset Architecture**:
+  All entity listing screens (`invoices`, `credit-notes`, `customers`, `products`) enforce keyset (seek) pagination with a hard ban on SQL `OFFSET`. Forward pagination seeks `(column, id) < (cursor_val, cursor_id)` (or `>` for ascending), fetching `limit + 1` rows to detect whether a next page exists without scanning or sorting subsequent table pages.
+- **Opaque, Validated Cursors (`lib/pagination/keyset.ts`)**:
+  Cursors are opaque, base64url-encoded JSON payloads strictly validated by Zod schema (`v: 1, k: 'ts' | 'name', t: string, id: uuid`). Timestamps preserve PostgreSQL microseconds (`created_at::text`), completely eliminating boundary skips, duplicate row drift, and pagination instability during concurrent data creation.
+- **Server-Driven URL Search Parameters (`lib/invoices/list-params.ts`)**:
+  All list filters (search query `q`, `status`, `month`, `year`, `inactive`, `kind`) live as first-class URL search parameters. Filter updates drive `router.replace` with debounced transitions, keeping pages fully shareable, bookmarkable, and refresh-safe while rendering presentational server-rendered components.
+- **Picker Defenses & Scope Lookups (`lib/pickers/types.ts`)**:
+  `InvoiceForm` never loads entire `customers` or `products` tables into browser memory. Customer and product selections are powered by dedicated, debounced Server Actions (`searchCustomerOptions`, `searchProductOptions`) returning bounded, active-only rows prioritized by prefix matching.
+- **Btree & Trigram Indexing Hardening (Migration 0027)**:
+  Every keyset ordering path is backed by composite multi-column btree indexes (`(business_id, created_at, id)`, `(business_id, name, id)`). Text searches (`name`, `gstin`, `hsn_sac_code`, `invoice_number`) are accelerated by PostgreSQL GIN trigram indexes (`gin_trgm_ops`) with guarded extension registration.
+- **Safety Bounds on Non-Paginated Relations**:
+  Per-invoice payments lookup (`listPayments`) enforces a strict defensive `.limit(200)` cap to prevent unbounded memory allocation while preserving statutory accounting records.

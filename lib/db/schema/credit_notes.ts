@@ -60,6 +60,8 @@ export const creditNotes = pgTable('credit_notes', {
     .where(
       sql`${table.lifecycle_status} = 'finalized' AND ${table.archival_status} IN ('pending', 'failed') AND ${table.archival_attempts} < 5`
     ),
+  // PERF-001: composite keyset index for credit notes list paging
+  index('credit_notes_biz_created_id_idx').on(table.business_id, table.created_at.desc(), table.id.desc()),
   // DB-002: composite key target + tenant-safe link to the original invoice.
   unique('credit_notes_biz_id_uq').on(table.business_id, table.id),
   foreignKey({

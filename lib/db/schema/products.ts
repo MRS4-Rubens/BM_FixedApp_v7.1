@@ -21,6 +21,10 @@ export const products = pgTable('products', {
 }, (table) => [
   index('products_business_id_idx').on(table.business_id),
   index('products_biz_active_idx').on(table.business_id, table.is_active),
+  // PERF-001: composite keyset index and trigram indexes for list paging and search
+  index('products_biz_name_id_idx').on(table.business_id, table.name, table.id),
+  index('products_name_trgm_idx').using('gin', table.name.op('gin_trgm_ops')),
+  index('products_hsn_trgm_idx').using('gin', table.hsn_sac_code.op('gin_trgm_ops')),
   // DB-002: prepares tenant-safe references to products (see the line-item tenant triggers).
   unique('products_biz_id_uq').on(table.business_id, table.id)
 ]);

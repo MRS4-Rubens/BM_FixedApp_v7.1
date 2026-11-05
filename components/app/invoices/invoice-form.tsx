@@ -34,31 +34,24 @@ import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt
 import { TemplateSelector } from './template-selector'
 import { buildPreviewTaxLineInput } from '@/lib/invoices/line-math'
 
+import { searchCustomerOptions } from '@/lib/actions/customers/search-customer-options'
+import { searchProductOptions } from '@/lib/actions/products/search-product-options'
+import type { CustomerOption, ProductOption } from '@/lib/pickers/types'
+
 function formatINR(n: number) {
   return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-interface ProductCatalogItem {
-  id: string
-  name: string
-  hsn_sac_code: string | null
-  unit_of_measurement: string | null
-  default_sale_price_paise: number
-  default_tax_rate_id: string | null
-}
-
 export function InvoiceForm({
   initialData,
-  customers,
-  products,
+  initialCustomer,
   taxRates,
   business,
   activeFys,
   isDraft
 }: {
   initialData?: any;
-  customers: any[];
-  products: ProductCatalogItem[];
+  initialCustomer?: CustomerOption | null;
   taxRates: any[];
   business: any;
   activeFys: any[];
@@ -117,13 +110,36 @@ export function InvoiceForm({
   // Watch active GST rate type of this invoice to adapt headers and backward calculation math
   const gstRateTypeVal = watch('gst_rate_type') || 'exclusive'
 
-  const customer = customers.find(c => c.id === customerId)
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(initialCustomer ?? null)
+  const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>([])
+  const [isSearchingCustomers, setIsSearchingCustomers] = useState(false)
+  const customerReqIdRef = useRef(0)
 
-  const filteredCustomers = customers.filter(c =>
-    c.name.toLowerCase().includes(billingNameVal.toLowerCase())
-  )
+  useEffect(() => {
+    const query = billingNameVal.trim()
+    if (!query) {
+      setCustomerOptions([])
+      return
+    }
+    const reqId = ++customerReqIdRef.current
+    const timer = setTimeout(async () => {
+      setIsSearchingCustomers(true)
+      try {
+        const res = await searchCustomerOptions({ q: query })
+        if (reqId === customerReqIdRef.current && res.success) {
+          setCustomerOptions(res.data)
+        }
+      } finally {
+        if (reqId === customerReqIdRef.current) {
+          setIsSearchingCustomers(false)
+        }
+      }
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [billingNameVal])
 
-  const handleSelectCustomer = (cust: any) => {
+  const handleSelectCustomer = (cust: CustomerOption) => {
+    setSelectedCustomer(cust)
     setValue('customer_id', cust.id)
     setValue('billing_name', cust.name)
     setValue('billing_gstin', cust.gstin || '')
@@ -135,6 +151,7 @@ export function InvoiceForm({
     const val = e.target.value
     setValue('billing_name', val)
     setValue('customer_id', '') // Reset customer_id for ad-hoc customer typing
+    setSelectedCustomer(null)
     setIsSuggestionsOpen(true)
   }
 
@@ -144,6 +161,34 @@ export function InvoiceForm({
   const [activeInputRect, setActiveInputRect] = useState<{ top: number, left: number, width: number, height: number } | null>(null)
   const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [productOptions, setProductOptions] = useState<ProductOption[]>([])
+  const [isSearchingProducts, setIsSearchingProducts] = useState(false)
+  const productReqIdRef = useRef(0)
+
+  const activeRowDesc = suggestIdx !== null ? (watch(`line_items.${suggestIdx}.description`) || '') : ''
+
+  useEffect(() => {
+    const query = activeRowDesc.trim()
+    if (suggestIdx === null || !query) {
+      setProductOptions([])
+      return
+    }
+    const reqId = ++productReqIdRef.current
+    const timer = setTimeout(async () => {
+      setIsSearchingProducts(true)
+      try {
+        const res = await searchProductOptions({ q: query })
+        if (reqId === productReqIdRef.current && res.success) {
+          setProductOptions(res.data)
+        }
+      } finally {
+        if (reqId === productReqIdRef.current) {
+          setIsSearchingProducts(false)
+        }
+      }
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [suggestIdx, activeRowDesc])
 
   useEffect(() => {
     setMounted(true)
@@ -356,7 +401,7 @@ export function InvoiceForm({
     setValue('line_items', sorted)
   }
 
-  const handleSelectProduct = (idx: number, prod: ProductCatalogItem) => {
+  const handleSelectProduct = (idx: number, prod: ProductOption) => {
     setValue(`line_items.${idx}.product_id`, prod.id)
     setValue(`line_items.${idx}.description`, prod.name)
     setValue(`line_items.${idx}.hsn_sac_code`, prod.hsn_sac_code || '')
@@ -372,6 +417,7 @@ export function InvoiceForm({
       })
     }
     setIsProdSuggestionsOpen(false)
+    updateInputRect(null)
   }
 
   const handleDescChange = (idx: number, val: string) => {
@@ -665,13 +711,13 @@ export function InvoiceForm({
     })
 
     let billingAddressSnapshot: string | null = null
-    if (customer) {
-      const cityStatePincode = [customer.city, customer.state_code, customer.pincode]
+    if (selectedCustomer) {
+      const cityStatePincode = [selectedCustomer.city, selectedCustomer.state_code, selectedCustomer.pincode]
         .filter(Boolean)
         .join(', ')
       billingAddressSnapshot = [
-        customer.address_line1,
-        customer.address_line2,
+        selectedCustomer.address_line1,
+        selectedCustomer.address_line2,
         cityStatePincode,
       ]
         .filter(Boolean)
@@ -713,7 +759,7 @@ export function InvoiceForm({
       subscription_plan: business.subscription_plan,
       subscription_status: business.subscription_status,
       trial_ends_at: business.trial_ends_at,
-      customer: customer ? { phone: customer.phone } : null,
+      customer: selectedCustomer ? { phone: selectedCustomer.phone } : null,
       lineItems: lineItemsMapped,
     }
   })()
@@ -911,14 +957,15 @@ export function InvoiceForm({
                   />
                   {errors.billing_name && <p className="mt-1 text-xs text-destructive font-medium">{errors.billing_name.message}</p>}
 
-                  {isSuggestionsOpen && billingNameVal.trim().length > 0 && filteredCustomers.length > 0 && (
+                  {isSuggestionsOpen && billingNameVal.trim().length > 0 && customerOptions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-popover py-1.5 shadow-lg animate-fadeIn text-popover-foreground">
-                      {filteredCustomers.map(cust => (
+                      {customerOptions.map(cust => (
                         <button
                           key={cust.id}
                           type="button"
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => handleSelectCustomer(cust)}
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium flex justify-between items-center border-b border-border/40 last:border-b-0"
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium flex justify-between items-center border-b border-border/40 last:border-b-0 cursor-pointer"
                         >
                           <span>{cust.name}</span>
                           {cust.gstin && <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">{cust.gstin}</span>}
@@ -953,9 +1000,9 @@ export function InvoiceForm({
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
                     </div>
                     {errors.place_of_supply_state_code && <p className="mt-1 text-xs text-destructive font-medium">{errors.place_of_supply_state_code.message}</p>}
-                    {customer && customer.state_code && placeOfSupplyStateCodeVal && customer.state_code !== placeOfSupplyStateCodeVal ? (
+                    {selectedCustomer && selectedCustomer.state_code && placeOfSupplyStateCodeVal && selectedCustomer.state_code !== placeOfSupplyStateCodeVal ? (
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Customer is registered in {INDIAN_GST_STATES.find((s) => s.code === customer.state_code)?.name ?? customer.state_code}. Tax is calculated for the delivery state selected here.
+                        Customer is registered in {INDIAN_GST_STATES.find((s) => s.code === selectedCustomer.state_code)?.name ?? selectedCustomer.state_code}. Tax is calculated for the delivery state selected here.
                       </p>
                     ) : null}
                   </div>
@@ -1064,10 +1111,7 @@ export function InvoiceForm({
                       })
                     }
 
-                    const descVal = watch(`line_items.${idx}.description`) || ''
-                    const filteredProducts = products.filter(p =>
-                      p.name.toLowerCase().includes(descVal.toLowerCase())
-                    )
+                    const rowDescVal = watch(`line_items.${idx}.description`) || ''
 
                     const isDragging = draggedIdx === idx
                     const isDropTop = dropTargetIdx === idx && dropPosition === 'top' && draggedIdx !== idx
@@ -1141,7 +1185,7 @@ export function InvoiceForm({
                               }, 200)
                             }}
                           />
-                          {mounted && isProdSuggestionsOpen && suggestIdx === idx && descVal.trim().length > 0 && filteredProducts.length > 0 && activeInputRect && (
+                          {mounted && isProdSuggestionsOpen && suggestIdx === idx && rowDescVal.trim().length > 0 && productOptions.length > 0 && activeInputRect && (
                             createPortal(
                               <div
                                 style={{
@@ -1153,17 +1197,17 @@ export function InvoiceForm({
                                 }}
                                 className="max-h-48 overflow-y-auto rounded-lg border border-border bg-popover py-1.5 shadow-lg animate-fadeIn text-popover-foreground"
                               >
-                                {filteredProducts.map(prod => (
+                                {productOptions.map(prod => (
                                   <button
                                     key={prod.id}
                                     type="button"
                                     onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => handleSelectProduct(idx, prod)}
-                                    className="w-full text-left px-3 py-2 text-xs hover:bg-accent hover:text-accent-foreground transition-colors font-medium flex justify-between items-center border-b border-border/40 last:border-b-0"
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-accent hover:text-accent-foreground transition-colors font-medium flex justify-between items-center border-b border-border/40 last:border-b-0 cursor-pointer"
                                   >
                                     <span>{prod.name}</span>
                                     <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded animate-fadeIn">
-                                      {prod.hsn_sac_code || 'N/A'} | Rs.{(prod.default_sale_price_paise / 100).toFixed(2)}
+                                      {prod.hsn_sac_code || 'N/A'} | ₹{(prod.default_sale_price_paise / 100).toFixed(2)}
                                     </span>
                                   </button>
                                 ))}
