@@ -4,9 +4,7 @@ import { NextRequest } from 'next/server';
 import { db } from '@/lib/db/client';
 import { creditNotes, creditNoteLineItems, invoices } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { verifyArchivalToken } from '@/lib/security/archival-token';
-import { exportLimiter } from '@/lib/rate-limit/upstash';
-import { enforceRateLimit } from '@/lib/rate-limit/enforce';
+import { archivalResponse, authorizeArchivalRequest } from '@/lib/security/archival-route-guard';
 import { logError } from '@/lib/actions/_shared/logger';
 import { resolveSellerDetails, toCreditNotePrintBusiness, type SellerDetails } from '@/lib/invoices/seller-snapshot';
 import { loadLogoDataUri } from '@/lib/storage/logo';
@@ -18,44 +16,23 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const token = request.nextUrl.searchParams.get('token');
-
-  if (!token) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  const { valid, invoiceId } = verifyArchivalToken(token);
-  if (!valid || invoiceId !== id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  const rate = await enforceRateLimit({
-    limiter: exportLimiter,
-    identifier: `archival-render:credit_note:${id}`,
-    policy: 'fail-open',
-    scope: 'archival-render',
-  });
-  if (!rate.allowed) {
-    return new Response('Too Many Requests.', {
-      status: 429,
-      headers: { 'Retry-After': String(rate.retryAfterSeconds) },
-    });
-  }
+  const auth = await authorizeArchivalRequest(request, 'credit_note', id);
+  if (!auth.ok) return auth.response;
 
   // Fetch the credit note (verified finalized)
   const cnRows = await db.select().from(creditNotes).where(eq(creditNotes.id, id));
-  if (cnRows.length === 0) return new Response('Not Found', { status: 404 });
+  if (cnRows.length === 0) return archivalResponse('Not Found', { status: 404 });
   const creditNote = cnRows[0];
 
   if (creditNote.lifecycle_status !== 'finalized') {
-    return new Response('Credit note not finalized', { status: 400 });
+    return archivalResponse('Credit note not finalized', { status: 400 });
   }
 
   const invRows = await db
     .select()
     .from(invoices)
     .where(and(eq(invoices.id, creditNote.original_invoice_id), eq(invoices.business_id, creditNote.business_id)));
-  if (invRows.length === 0) return new Response('Original Invoice Not Found', { status: 404 });
+  if (invRows.length === 0) return archivalResponse('Original Invoice Not Found', { status: 404 });
   const originalInvoice = invRows[0];
 
   const lineItems = await db
@@ -69,7 +46,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     seller = resolveSellerDetails(creditNote, null);
   } catch (error: unknown) {
     logError('archival-render', error, { creditNoteId: id });
-    return new Response('Seller snapshot unavailable', { status: 500 });
+    return archivalResponse('Seller snapshot unavailable', { status: 500 });
   }
 
   const logoBase64 = seller.logoStorageKey ? await loadLogoDataUri(seller.logoStorageKey) : null;
@@ -100,7 +77,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     extraCss,
   });
 
-  return new Response(html, {
+  return archivalResponse(html, {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',

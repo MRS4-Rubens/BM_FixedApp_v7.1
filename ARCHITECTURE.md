@@ -629,3 +629,28 @@ When a new database constraint requires user-friendly UI mapping:
   `getSignedDownloadUrl` in `lib/storage/idrive.ts` enforces a strict ceiling of `MAX_SIGNED_URL_EXPIRY_SECONDS = 3600` (1 hour) and rejects non-integer, non-positive, or excessive expiries with `RangeError`, preventing inadvertent re-introduction of long-lived links.
 - **Follow-up Controls**:
   Future hardening will introduce structured audit logging for every admin evidence view (DB-007) and a lifecycle retention policy for automatic deletion of older payment verification images.
+
+
+## Archival render security (SEC-004)
+
+- **Token v2 Specification**:
+  Archival render authorization uses a five-part, URL-safe v2 token format: `<typ>.<documentId>.<jti>.<expiresAt>.<signature>`. `typ` is strictly bound to `'inv'` or `'cn'`, `documentId` is the document's UUID, `jti` is a cryptographically random 16-byte base64url nonce (22 chars), and `expiresAt` is the Unix seconds timestamp. The signature is computed via `HMAC-SHA256(ARCHIVAL_SIGNING_SECRET, "bm-archival-v2|<typ>|<documentId>|<jti>|<expiresAt>")` and verified in constant time (`crypto.timingSafeEqual`).
+- **Short-Lived Window & Expiry Ceiling**:
+  Tokens have a default TTL of 120 seconds (`ARCHIVAL_TOKEN_TTL_SECONDS = 120`), and verification explicitly rejects tokens whose remaining lifetime exceeds 300 seconds (`MAX_ARCHIVAL_TOKEN_TTL_SECONDS = 300`) to block unauthorized long-lived grants.
+- **Atomic Single-Use Primitive via Redis**:
+  Once token signature, document binding, and rate-limiting pass, the route guard atomically registers the nonce using `SET archival:jti:<jti> 1 NX EX <remainingLifetime + 60>`. If Redis returns `null`, the token has already been consumed and the request is immediately rejected with `401 Unauthorized`. The TTL guarantees that the replay tombstone covers the full validity window of the token plus a 60-second clock-skew grace period.
+- **Fail-Closed Policy & Uniform 401**:
+  Authentication rejects malformed tokens, bad signatures, expired timestamps, mismatched document types or IDs, duplicate query parameters, and replayed tokens with an identical, opaque `401 Unauthorized` body to prevent oracle attacks. Server-side failures (Redis outages, missing configuration) fail closed with `503 Service Unavailable` and `Retry-After: 5`, logged once with structured error context. Only `REPLAYED` security events are logged with `{ expected: true }`; other rejections remain silent to prevent scanner log noise.
+- **Uniform Security Headers**:
+  Every response from archival render routes (200, 4xx, 5xx) is constructed via `archivalResponse` and enforces:
+  - `Cache-Control: no-store, max-age=0`
+  - `X-Robots-Tag: noindex, nofollow, noarchive`
+  - `Referrer-Policy: no-referrer`
+  - `X-Content-Type-Options: nosniff`
+  Both routes export `export const dynamic = 'force-dynamic'` to prevent edge or build-time caching.
+- **Vendor Error Redaction**:
+  Vendor error bodies returned by the third-party PDF service are scrubbed using `redactArchivalTokens` to strip `?token=...` query parameters and any token-shaped strings before error messages are thrown or logged.
+- **Deployment Migration & Retries**:
+  Old 3-part v1 tokens are rejected immediately. Any archival jobs in flight during deployment fail once safely, refunding or incrementing the attempt count, and are automatically picked up and rendered by the background archival cron (`/api/cron/retry-invoice-archival`) using fresh v2 tokens.
+- **Accepted Architectural Limitation**:
+  Because third-party headless PDF rendering engines require an absolute HTTP URL to fetch and render the page, the ephemeral single-use token travels as a query parameter (`?token=...`). The single-use Redis guard, 120s lifespan, and downstream error redaction neutralize token exposure in vendor access logs.

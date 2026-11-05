@@ -4,9 +4,7 @@ import { NextRequest } from 'next/server';
 import { db } from '@/lib/db/client';
 import { invoices, invoiceLineItems } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { verifyArchivalToken } from '@/lib/security/archival-token';
-import { exportLimiter } from '@/lib/rate-limit/upstash';
-import { enforceRateLimit } from '@/lib/rate-limit/enforce';
+import { archivalResponse, authorizeArchivalRequest } from '@/lib/security/archival-route-guard';
 import { logError } from '@/lib/actions/_shared/logger';
 import { resolveSellerDetails, toInvoicePrintFields, type SellerDetails } from '@/lib/invoices/seller-snapshot';
 import { loadLogoDataUri } from '@/lib/storage/logo';
@@ -19,37 +17,16 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const token = request.nextUrl.searchParams.get('token');
-
-  if (!token) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  const { valid, invoiceId } = verifyArchivalToken(token);
-  if (!valid || invoiceId !== id) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  const rate = await enforceRateLimit({
-    limiter: exportLimiter,
-    identifier: `archival-render:invoice:${id}`,
-    policy: 'fail-open',
-    scope: 'archival-render',
-  });
-  if (!rate.allowed) {
-    return new Response('Too Many Requests.', {
-      status: 429,
-      headers: { 'Retry-After': String(rate.retryAfterSeconds) },
-    });
-  }
+  const auth = await authorizeArchivalRequest(request, 'invoice', id);
+  if (!auth.ok) return auth.response;
 
   // Fetch the invoice (verified finalized)
   const existing = await db.select().from(invoices).where(eq(invoices.id, id));
-  if (existing.length === 0) return new Response('Not Found', { status: 404 });
+  if (existing.length === 0) return archivalResponse('Not Found', { status: 404 });
   const invoice = existing[0];
 
   if (invoice.lifecycle_status !== 'finalized') {
-    return new Response('Invoice not finalized', { status: 400 });
+    return archivalResponse('Invoice not finalized', { status: 400 });
   }
 
   const lineItems = await db
@@ -63,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     seller = resolveSellerDetails(invoice, null);
   } catch (error: unknown) {
     logError('archival-render', error, { invoiceId: id });
-    return new Response('Seller snapshot unavailable', { status: 500 });
+    return archivalResponse('Seller snapshot unavailable', { status: 500 });
   }
 
   const logoBase64 = seller.logoStorageKey ? await loadLogoDataUri(seller.logoStorageKey) : null;
@@ -97,7 +74,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     bodyClass: 'antialiased font-sans',
   });
 
-  return new Response(html, {
+  return archivalResponse(html, {
     status: 200,
     headers: {
       'Content-Type': 'text/html; charset=utf-8',

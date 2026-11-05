@@ -81,10 +81,10 @@ export async function archiveClaimedDocument(
       throw new Error('Financial year not found');
     }
 
-    const token = createArchivalToken(id);
+    const token = createArchivalToken(kind, id);
     const baseUrl = getAppEnv().NEXT_PUBLIC_APP_URL;
     const pathPrefix = kind === 'invoice' ? 'invoices' : 'credit-notes';
-    const renderUrl = `${baseUrl}/api/${pathPrefix}/${id}/archival-render?token=${token}`;
+    const renderUrl = `${baseUrl}/api/${pathPrefix}/${id}/archival-render?token=${encodeURIComponent(token)}`;
 
     const pdfBuffer = await renderUrlToPdfBuffer(renderUrl);
     const storageKey = `${pathPrefix}/${doc.businessId}/${fyLabel}/${id}.pdf`;

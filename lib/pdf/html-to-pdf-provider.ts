@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { getPdfEnv } from '@/lib/env';
+import { redactArchivalTokens } from '@/lib/security/archival-token';
 
 export const PDF_RENDER_TIMEOUT_MS = 25_000;
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
@@ -39,7 +40,8 @@ export async function renderUrlToPdfBuffer(url: string, options: RenderOptions =
       signal: AbortSignal.timeout(options.timeoutMs ?? PDF_RENDER_TIMEOUT_MS),
     });
     if (!response.ok) {
-      const text = (await response.text()).replace(/[\u0000-\u001f]+/g, ' ').slice(0, MAX_ERROR_TEXT_CHARS);
+      const rawText = (await response.text()).replace(/[\u0000-\u001f]+/g, ' ');
+      const text = redactArchivalTokens(rawText).slice(0, MAX_ERROR_TEXT_CHARS);
       throw new PdfRenderError('http', `PDF rendering failed (${response.status}): ${text}`, response.status);
     }
     bytes = Buffer.from(await response.arrayBuffer()); // body read is covered by the same timeout signal
