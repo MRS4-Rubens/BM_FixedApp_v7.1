@@ -28,6 +28,7 @@ export const ACTION_ACCESS = {
   'get-all-businesses': 'platform-admin',
   'get-all-users': 'platform-admin',
   'get-pending-requests': 'platform-admin',
+  'get-claim-screenshot-url': 'platform-admin',
   'process-subscription-claim': 'platform-admin',
   'update-business-subscription': 'platform-admin',
 

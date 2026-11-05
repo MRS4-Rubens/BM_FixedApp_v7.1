@@ -29,7 +29,7 @@ export default async function SettingsPage({
     amountPaise: number;
     paymentMethod: string;
     paymentReference: string;
-    screenshotStorageKey: string | null;
+    hasScreenshot: boolean;
     status: string;
     rejectReason: string | null;
     approvedAt: Date | null;
@@ -77,7 +77,7 @@ export default async function SettingsPage({
             amountPaise: subscriptionRequests.amount_paise,
             paymentMethod: subscriptionRequests.payment_method,
             paymentReference: subscriptionRequests.payment_reference,
-            screenshotStorageKey: subscriptionRequests.screenshot_storage_key,
+            hasScreenshot: sql<boolean>`${subscriptionRequests.screenshot_storage_key} IS NOT NULL`.mapWith(Boolean),
             status: subscriptionRequests.status,
             rejectReason: subscriptionRequests.reject_reason,
             approvedAt: subscriptionRequests.approved_at,

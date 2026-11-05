@@ -5,7 +5,6 @@ import { getAdminDashboardStats } from '@/lib/actions/subscriptions/get-admin-da
 import { getPendingRequests } from '@/lib/actions/subscriptions/get-pending-requests';
 import { getAllBusinesses } from '@/lib/actions/subscriptions/get-all-businesses';
 import { getAllUsers } from '@/lib/actions/subscriptions/get-all-users';
-import { getSignedDownloadUrl } from '@/lib/storage/idrive';
 import { loadPayeeConfig, describePayeeProblems } from '@/lib/config/payee';
 
 export const metadata: Metadata = {
@@ -42,24 +41,11 @@ export default async function AdminPage() {
   const businessesRaw = businessesRes.data;
   const usersRaw = usersRes.data;
 
-  // 3. Resolve S3 signed URLs for payment screenshot images server-side (7 days validity)
-  const pendingRequests = await Promise.all(
-    pendingRaw.map(async (req) => {
-      let screenshotUrl = null;
-      if (req.screenshotStorageKey) {
-        try {
-          screenshotUrl = await getSignedDownloadUrl(req.screenshotStorageKey, 604800, { forceDownload: true });
-        } catch (e) {
-          console.error('[AdminPage] Failed to generate signed URL:', e);
-        }
-      }
-      return {
-        ...req,
-        screenshotUrl,
-        createdAt: req.createdAt.toISOString(),
-      };
-    })
-  );
+  // 3. Serialize pending requests date columns to ISO strings
+  const pendingRequests = pendingRaw.map((req) => ({
+    ...req,
+    createdAt: req.createdAt.toISOString(),
+  }));
 
   // 4. Serialize date columns to ISO strings
   const businessesProp = businessesRaw.map((b) => ({

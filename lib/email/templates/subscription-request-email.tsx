@@ -10,7 +10,7 @@ interface SubscriptionRequestEmailProps {
   amountFormatted: string;
   utr: string;
   paymentMethod: string;
-  screenshotUrl: string | null;
+  hasScreenshot: boolean;
   approveLink: string;
 }
 
@@ -23,7 +23,7 @@ export const SubscriptionRequestEmail = ({
   amountFormatted,
   utr,
   paymentMethod,
-  screenshotUrl,
+  hasScreenshot,
   approveLink,
 }: SubscriptionRequestEmailProps) => {
   const methodLabel =
@@ -69,12 +69,10 @@ export const SubscriptionRequestEmail = ({
               </Text>
             </Section>
 
-            {screenshotUrl && (
-              <Section style={btnSection}>
-                <Link href={screenshotUrl} style={screenshotBtn}>
-                  🖼️ View Payment Screenshot
-                </Link>
-              </Section>
+            {hasScreenshot && (
+              <Text style={text}>
+                🖼️ A payment screenshot was uploaded. For security it is not attached or linked here; open it from the Admin Console (sign-in required).
+              </Text>
             )}
 
             <Hr style={hr} />
@@ -164,18 +162,6 @@ const utrText = {
 const btnSection = {
   textAlign: 'center' as const,
   margin: '25px 0',
-};
-
-const screenshotBtn = {
-  backgroundColor: '#64748b',
-  borderRadius: '6px',
-  color: '#ffffff',
-  fontSize: '14px',
-  fontWeight: 'bold',
-  textDecoration: 'none',
-  textAlign: 'center' as const,
-  display: 'inline-block',
-  padding: '10px 18px',
 };
 
 const approveBtn = {

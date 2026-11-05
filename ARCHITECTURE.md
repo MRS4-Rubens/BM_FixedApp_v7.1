@@ -613,3 +613,19 @@ When a new database constraint requires user-friendly UI mapping:
   Every keyset ordering path is backed by composite multi-column btree indexes (`(business_id, created_at, id)`, `(business_id, name, id)`). Text searches (`name`, `gstin`, `hsn_sac_code`, `invoice_number`) are accelerated by PostgreSQL GIN trigram indexes (`gin_trgm_ops`) with guarded extension registration.
 - **Safety Bounds on Non-Paginated Relations**:
   Per-invoice payments lookup (`listPayments`) enforces a strict defensive `.limit(200)` cap to prevent unbounded memory allocation while preserving statutory accounting records.
+
+
+## Payment evidence access (SEC-003)
+
+- **Storage Isolation & Scoping**:
+  Uploaded payment screenshot evidence files are stored under `payment-screenshots/<businessId>/<uuid>.<ext>` with `Content-Disposition: attachment` and `Cache-Control: private, no-store`.
+- **Zero URL Leakage Policy**:
+  Signed download URLs are never sent in emails, never recorded in server logs, and never embedded in page props or React Server Component (RSC) serialization payloads. Browser-facing APIs and payloads carry boolean `hasScreenshot` only.
+- **On-Demand Short-Lived Access (`getClaimScreenshotUrl`)**:
+  Platform administrators obtain secure access strictly on demand via the platform-admin-only Server Action `getClaimScreenshotUrl({ requestId })`. It returns a short-lived (5-minute / 300-second) presigned URL with `forceDownload: true`.
+- **Defense in Depth Prefix Guard**:
+  `getClaimScreenshotUrl` strictly verifies that the stored key starts with `payment-screenshots/<request.business_id>/`. Any attempt to sign a key outside the claim's own business directory is rejected with `NOT_FOUND` and logged as a security alert.
+- **Global Storage Expiry Ceiling**:
+  `getSignedDownloadUrl` in `lib/storage/idrive.ts` enforces a strict ceiling of `MAX_SIGNED_URL_EXPIRY_SECONDS = 3600` (1 hour) and rejects non-integer, non-positive, or excessive expiries with `RangeError`, preventing inadvertent re-introduction of long-lived links.
+- **Follow-up Controls**:
+  Future hardening will introduce structured audit logging for every admin evidence view (DB-007) and a lifecycle retention policy for automatic deletion of older payment verification images.

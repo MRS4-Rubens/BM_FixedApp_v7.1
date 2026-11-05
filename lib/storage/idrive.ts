@@ -63,6 +63,9 @@ export interface SignedUrlOptions {
   readonly forceDownload?: boolean;
 }
 
+/** Hard ceiling for any presigned URL issued by this app (SEC-003). */
+export const MAX_SIGNED_URL_EXPIRY_SECONDS = 3600;
+
 /**
  * Generates a signed URL for downloading an object, expiring in the specified seconds.
  */
@@ -71,6 +74,9 @@ export async function getSignedDownloadUrl(
   expirySeconds: number = 300,
   options: SignedUrlOptions = {}
 ): Promise<string> {
+  if (!Number.isInteger(expirySeconds) || expirySeconds < 1 || expirySeconds > MAX_SIGNED_URL_EXPIRY_SECONDS) {
+    throw new RangeError(`Signed URL expiry must be an integer between 1 and ${MAX_SIGNED_URL_EXPIRY_SECONDS} seconds`);
+  }
   const { client, bucket } = getStorage();
   const command = new GetObjectCommand({
     Bucket: bucket,

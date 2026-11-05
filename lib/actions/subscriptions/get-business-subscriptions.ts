@@ -6,7 +6,7 @@ import { db } from '@/lib/db/client';
 import { subscriptionRequests, users } from '@/lib/db/schema';
 import { isPlatformAdmin } from '@/lib/auth/admin';
 import { evaluateRoleAccess, OWNER_ONLY } from '@/lib/auth/rbac';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 const getBusinessSubscriptionsSchema = z.object({
@@ -37,7 +37,7 @@ export const getBusinessSubscriptions = createAuthenticatedAction(
         amountPaise: subscriptionRequests.amount_paise,
         paymentMethod: subscriptionRequests.payment_method,
         paymentReference: subscriptionRequests.payment_reference,
-        screenshotStorageKey: subscriptionRequests.screenshot_storage_key,
+        hasScreenshot: sql<boolean>`${subscriptionRequests.screenshot_storage_key} IS NOT NULL`.mapWith(Boolean),
         status: subscriptionRequests.status,
         rejectReason: subscriptionRequests.reject_reason,
         approvedAt: subscriptionRequests.approved_at,

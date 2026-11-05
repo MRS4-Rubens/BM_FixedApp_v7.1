@@ -41,7 +41,7 @@ export interface SubscriptionHistoryItem {
   amountPaise: number
   paymentMethod: string
   paymentReference: string
-  screenshotStorageKey: string | null
+  hasScreenshot: boolean
   status: string
   rejectReason: string | null
   approvedAt: Date | null

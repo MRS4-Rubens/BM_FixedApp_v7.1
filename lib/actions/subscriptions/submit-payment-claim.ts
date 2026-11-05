@@ -1,5 +1,6 @@
 'use server';
 
+import * as React from 'react';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
@@ -11,7 +12,7 @@ import { db } from '@/lib/db/client';
 import { subscriptionRequests, businesses } from '@/lib/db/schema';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
-import { uploadFileToStorage, getSignedDownloadUrl, deleteFileFromStorage } from '@/lib/storage/idrive';
+import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
 import { getResend } from '@/lib/email/resend';
 import { getAdminEnv, getAppEnv, getEmailEnv } from '@/lib/env';
 import { SubscriptionRequestEmail } from '@/lib/email/templates/subscription-request-email';
@@ -111,7 +112,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
           cacheControl: 'private, no-store',
         });
       } catch (err: unknown) {
-        console.error('[submitPaymentClaim] Screenshot upload failed:', err);
+        logError('submit-payment-claim', err, { stage: 'screenshot-upload' });
         throw new ActionError('Failed to upload the payment screenshot. Please try again.', {
           code: 'UPLOAD_FAILED',
         });
@@ -160,7 +161,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
     } catch (err: unknown) {
       if (screenshotKey) {
         deleteFileFromStorage(screenshotKey).catch((cleanupErr: unknown) => {
-          console.warn('[submitPaymentClaim] Best-effort cleanup of orphan screenshot failed:', cleanupErr);
+          logError('submit-payment-claim', cleanupErr, { stage: 'orphan-screenshot-cleanup' });
         });
       }
       if (err instanceof ActionError) throw err;
@@ -185,12 +186,11 @@ export const submitPaymentClaim = createAuthenticatedAction(
         const ownerEmail = session?.data?.user?.email || 'No email';
         const amountFormatted = formatPaiseAsInr(authoritativeAmountPaise);
 
-        // Generate a temporary signed S3 URL for the admin to view the screenshot (expires in 7 days)
-        const screenshotUrl = screenshotKey ? await getSignedDownloadUrl(screenshotKey, 604800, { forceDownload: true }) : null;
+        const hasScreenshot = screenshotKey !== null;
 
         const approveLink = `${getAppEnv().NEXT_PUBLIC_APP_URL}/admin?request=${requestRecord.id}`;
 
-        const emailContent = SubscriptionRequestEmail({
+        const emailContent = React.createElement(SubscriptionRequestEmail, {
           businessName: business.legal_name,
           ownerEmail: ownerEmail,
           gstin: business.gstin || null,
@@ -199,7 +199,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
           amountFormatted,
           utr: input.payment_reference,
           paymentMethod: input.payment_method,
-          screenshotUrl,
+          hasScreenshot,
           approveLink,
         });
 
@@ -212,7 +212,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
       }
     } catch (err: unknown) {
       // Log error but don't fail the action, as the DB request was successfully saved
-      console.error('[submitPaymentClaim] Email notification failed to send:', err);
+      logError('submit-payment-claim', err, { stage: 'admin-notification' });
     }
 
     revalidatePath('/settings');

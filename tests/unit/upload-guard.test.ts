@@ -12,7 +12,7 @@ describe('Upload Security Architectural Guards (SEC-002)', () => {
   const feedbackSource = readSource('lib/actions/feedback/send-feedback.ts');
   const idriveSource = readSource('lib/storage/idrive.ts');
   const logoRouteSource = readSource('app/api/business/[id]/logo/route.ts');
-  const adminPageSource = readSource('app/(admin)/admin/page.tsx');
+  const claimScreenshotUrlSource = readSource('lib/actions/subscriptions/get-claim-screenshot-url.ts');
   const archiveInvoiceSource = readSource('lib/storage/archive-invoice.ts');
   const archiveCreditNoteSource = readSource('lib/storage/archive-credit-note.ts');
   const invoicePdfUrlSource = readSource('lib/actions/invoices/get-archived-pdf-url.ts');
@@ -59,8 +59,8 @@ describe('Upload Security Architectural Guards (SEC-002)', () => {
     expect(logoRouteSource).toContain('nosniff');
   });
 
-  it('verifies admin page enables forced download for user-uploaded screenshots', () => {
-    expect(adminPageSource).toContain('forceDownload: true');
+  it('verifies claim screenshot URL action enables forced download for user-uploaded screenshots', () => {
+    expect(claimScreenshotUrlSource).toContain('forceDownload: true');
   });
 
   it('verifies archive modules and invoice/credit-note PDF signed URLs do NOT contain forceDownload', () => {
