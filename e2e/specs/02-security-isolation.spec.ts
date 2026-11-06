@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import * as path from 'path';
 import { loadJourneyState } from '../fixtures/test';
 import { loadE2eEnv } from '../support/env';
+import { e2eExtraHttpHeaders } from '../support/http-headers';
 
 test.describe('02 - Security & Cross-Tenant Isolation', () => {
   const adminAuthFile = path.resolve(process.cwd(), 'e2e/.auth/admin.json');
@@ -21,6 +22,7 @@ test.describe('02 - Security & Cross-Tenant Isolation', () => {
 
     // Create browser context authenticated as the admin (a distinct tenant)
     const adminContext = await browser.newContext({
+      extraHTTPHeaders: e2eExtraHttpHeaders(),
       storageState: adminAuthFile,
       baseURL: targetUrl,
     });
@@ -29,16 +31,20 @@ test.describe('02 - Security & Cross-Tenant Isolation', () => {
     // 1. Invoice detail page for another tenant's invoice must return 404 or redirect
     const res = await page.goto(`/invoices/${journey.invoiceId}`);
     const status = res ? res.status() : 200;
-    const bodyText = await page.locator('body').innerText();
-
-    // Must be 404/redirect or show not found, and must NEVER leak the invoice number
-    if (journey.invoiceNumber) {
-      expect(bodyText).not.toContain(journey.invoiceNumber);
-    }
     expect([404, 307, 308, 302, 200]).toContain(status);
-    if (status === 200) {
-      // If 200, must be the branded not-found boundary
-      expect(bodyText.toLowerCase()).toContain('not found');
+
+    // The route streams (loading.tsx), so wait for the FINAL outcome: either the branded not-found boundary or a
+    // redirect away from the invoice (e.g. to /settings for an account without a business).
+    const notFoundHeading = page.getByRole('heading', { name: "We couldn't find that page" });
+    await expect(async () => {
+      const stillOnInvoice = new URL(page.url()).pathname.startsWith(`/invoices/${journey.invoiceId}`);
+      if (stillOnInvoice) await expect(notFoundHeading).toBeVisible({ timeout: 1_000 });
+    }).toPass({ timeout: 30_000 });
+
+    // Must NEVER leak the invoice: check the whole document (visible text AND serialized server payload).
+    if (journey.invoiceNumber) {
+      expect(await page.locator('body').innerText()).not.toContain(journey.invoiceNumber);
+      expect(await page.content()).not.toContain(journey.invoiceNumber);
     }
 
     // 2. Archival render API without a valid signed token must return 401 or 403 or 404
@@ -58,7 +64,7 @@ test.describe('02 - Security & Cross-Tenant Isolation', () => {
   }) => {
     const targetUrl = baseURL ?? loadE2eEnv(process.env).E2E_BASE_URL;
     // Completely unauthenticated context (no storage state)
-    const unauthContext = await browser.newContext({ baseURL: targetUrl });
+    const unauthContext = await browser.newContext({ baseURL: targetUrl, extraHTTPHeaders: e2eExtraHttpHeaders() });
     const page = await unauthContext.newPage();
 
     const protectedPages = ['/dashboard', '/invoices', '/admin'];
@@ -82,6 +88,7 @@ test.describe('02 - Security & Cross-Tenant Isolation', () => {
     const targetUrl = baseURL ?? loadE2eEnv(process.env).E2E_BASE_URL;
     // Normal user context
     const userContext = await browser.newContext({
+      extraHTTPHeaders: e2eExtraHttpHeaders(),
       storageState: userAuthFile,
       baseURL: targetUrl,
     });

@@ -120,6 +120,10 @@ export class InvoiceFormPage {
     });
 
     await this.finalizeButton.click();
+
+    // On success the app navigates to the same /invoices/<id> URL, so a URL wait alone returns immediately and
+    // a follow-up navigation could abort the in-flight finalize. Wait for the draft editor to go away instead.
+    await expect(this.page.getByRole('heading', { name: 'Edit Draft Invoice' })).toBeHidden({ timeout: 30_000 });
   }
 }
 

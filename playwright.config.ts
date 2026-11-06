@@ -1,12 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
+import { e2eExtraHttpHeaders } from './e2e/support/http-headers';
 
 const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
 
-const extraHTTPHeaders: Record<string, string> = {};
-if (process.env.E2E_VERCEL_BYPASS_SECRET) {
-  extraHTTPHeaders['x-vercel-protection-bypass'] = process.env.E2E_VERCEL_BYPASS_SECRET;
-  extraHTTPHeaders['x-vercel-set-bypass-cookie'] = 'true';
-}
+// Skip the Vercel preview toolbar and pass Deployment Protection (see e2e/support/http-headers.ts).
+const extraHTTPHeaders = e2eExtraHttpHeaders();
 
 const reporters: Array<[string] | [string, Record<string, unknown>]> = [
   ['list'],

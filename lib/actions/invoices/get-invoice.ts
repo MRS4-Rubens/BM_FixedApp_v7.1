@@ -10,13 +10,14 @@ import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 
 export const getInvoice = createAuthenticatedAction(z.object({ id: z.string().uuid() }), async ({ id }, context) => {
   const businessId = context.appUser.business_id;
-  if (!businessId) throw new ActionError('No business linked.');
+  if (!businessId) throw new ActionError('No business linked.', { code: 'NO_BUSINESS' });
 
   const existing = await db.select().from(invoices).where(eq(invoices.id, id));
-  if (existing.length === 0) throw new ActionError('Invoice not found.');
+  // Same message and code for 'missing' and 'another business' so the response never reveals that an id exists.
+  if (existing.length === 0) throw new ActionError('Invoice not found.', { code: 'NOT_FOUND' });
   
   const invoice = existing[0];
-  if (invoice.business_id !== businessId) throw new ActionError('Invoice not found.');
+  if (invoice.business_id !== businessId) throw new ActionError('Invoice not found.', { code: 'NOT_FOUND' });
 
   // Tenant isolation (API-001): never return a customer row that belongs to another business.
   const customer = invoice.customer_id ? await findOwnedCustomer(db, businessId, invoice.customer_id) : null;

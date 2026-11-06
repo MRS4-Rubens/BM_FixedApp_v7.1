@@ -4,7 +4,7 @@ import { InvoiceDetail } from '@/components/app/invoices/invoice-detail';
 import { db } from '@/lib/db/client';
 import { businesses, customers, taxRates, financialYears } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { getCurrentAppUser } from '@/lib/auth/session';
 import { listPayments, type PaymentListItem } from '@/lib/actions/payments/list-payments';
 import { listCreditNotes, type CreditNoteListItem } from '@/lib/actions/credit-notes/list-credit-notes';
@@ -21,8 +21,15 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   
   const result = await getInvoice({ id });
   if (!result.success) {
-    if (result.error.code === 'UNAUTHORIZED') redirect('/login');
-    return <div className="p-4 text-destructive">Invoice not found or you do not have access.</div>;
+    const { code } = result.error;
+    // createAuthenticatedAction reports a missing session/app user as NO_APP_USER.
+    if (code === 'NO_APP_USER') redirect('/login');
+    if (code === 'NO_BUSINESS') redirect('/settings');
+    // Missing, another business's invoice, or a malformed id: the branded 404 (and noindex), never a hint that
+    // the id exists.
+    if (code === 'NOT_FOUND' || code === 'VALIDATION_ERROR') notFound();
+    // Anything else is unexpected: let the route error boundary handle it instead of mislabelling it "not found".
+    throw new Error('Failed to load invoice.');
   }
   
   const invoice = result.data;

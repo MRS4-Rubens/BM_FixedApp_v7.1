@@ -31,13 +31,25 @@ export class SettingsPage {
     this.celebrationDismissButton = page.locator('button:has-text("Go to Dashboard Now")');
   }
 
+  private tourHandlerRegistered = false;
+
   async goto(): Promise<void> {
+    // The "Welcome to Business Setup" tour modal opens asynchronously after load and covers the form, so a
+    // one-off visibility check races it. A locator handler dismisses it whenever it appears before an action.
+    if (!this.tourHandlerRegistered) {
+      await this.page.addLocatorHandler(this.skipTourButton, async () => {
+        await this.skipTourButton.click();
+      });
+      this.tourHandlerRegistered = true;
+    }
     await this.page.goto('/settings');
     await this.dismissTourIfPresent();
   }
 
   async dismissTourIfPresent(): Promise<void> {
-    // If the welcome setup modal or celebration popup is visible, dismiss it cleanly
+    // Once the locator handler is registered it dismisses the modal before any action; clicking it here as well
+    // would race the handler (the button disappears mid-click).
+    if (this.tourHandlerRegistered) return;
     const isSkipVisible = await this.skipTourButton.isVisible().catch(() => false);
     if (isSkipVisible) {
       await this.skipTourButton.click();

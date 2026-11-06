@@ -2,6 +2,15 @@ import { Pool } from '@neondatabase/serverless';
 import { z } from 'zod';
 import { assertSafeTarget, loadE2eEnv, E2eSafetyError, type E2eEnv } from './env';
 
+/**
+ * Postgres returns BIGINT columns (all *_paise money columns) as strings to avoid precision loss. Parse them
+ * strictly into safe integers for assertions; a non-integer or out-of-range value fails the schema.
+ */
+export const bigintPaise = z
+  .union([z.string().regex(/^-?\d+$/, 'must be an integer string'), z.number().int()])
+  .transform((value) => Number(value))
+  .refine((value) => Number.isSafeInteger(value), 'must be a safe integer');
+
 let poolInstance: Pool | null = null;
 
 function getPool(env: E2eEnv): Pool {

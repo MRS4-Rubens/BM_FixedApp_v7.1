@@ -62,16 +62,18 @@ export function getIndianFinancialYear(date: Date | string | number = new Date()
 }
 
 /**
- * Returns a regex matching the default invoice number format:
- * `^INV/<FY>/<SEQ:4>$` (e.g. `^INV/2026-27/0001$`).
+ * Returns a regex matching the default invoice number format a new business gets
+ * (DEFAULT_INVOICE_NUMBER_FORMAT = `BMA/{FY}/{SEQ:4}` in lib/business/save-profile-tx.ts), where `{FY}` renders
+ * the short financial-year label: `^BMA/<YY-YY>/<SEQ:4>$` (e.g. `^BMA/26-27/0001$` for FY 2026-27).
  */
 export function getExpectedInvoiceNumberPattern(
   sequence = 1,
   fyLabel?: string,
 ): RegExp {
   const fy = fyLabel ?? getIndianFinancialYear();
+  const shortFy = fy.slice(2); // '2026-27' -> '26-27'
   const seqStr = String(sequence).padStart(4, '0');
-  const escapedFy = fy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`^INV/${escapedFy}/${seqStr}$`);
+  const escapedFy = shortFy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^BMA/${escapedFy}/${seqStr}$`);
 }
 

@@ -18,25 +18,35 @@ export class AdminPage {
     await expect(this.adminConsoleHeading).toBeVisible({ timeout: 15_000 });
   }
 
+  /** The innermost element that contains both this UTR and an "Approve" button: exactly this claim's queue row. */
+  private claimRow(utr: string): Locator {
+    const approve = this.page.getByRole('button', { name: 'Approve', exact: true });
+    return this.page.locator('div').filter({ hasText: utr }).filter({ has: approve }).last();
+  }
+
   async approveClaimByUtr(utr: string): Promise<void> {
-    // Locate the row containing the UTR
-    const row = this.page.locator('tr, div').filter({ hasText: utr }).first();
+    const row = this.claimRow(utr);
     await expect(row).toBeVisible({ timeout: 15_000 });
 
-    const approveBtn = row.locator('button:has-text("Approve"), button:has-text("Approve Claim")').first();
-    await expect(approveBtn).toBeVisible();
+    const approveBtn = row.getByRole('button', { name: 'Approve', exact: true });
+    await expect(approveBtn).toHaveCount(1);
 
-    // Accept window.confirm() dialog
+    // handleApprove() asks window.confirm() first.
     this.page.once('dialog', async (dialog) => {
       await dialog.accept();
     });
-
     await approveBtn.click();
 
-    // Verify row leaves pending state
-    await expect(row.locator('button:has-text("Approve"), button:has-text("Approve Claim")')).not.toBeVisible({
-      timeout: 15_000,
-    });
+    // The approval commits within seconds, but the console's post-approval router.refresh() re-fetches the whole
+    // admin dataset and can keep the buttons disabled for a while. Wait for that transition to settle (row gone or
+    // its Approve button re-enabled), then reload and assert against fresh server state.
+    await expect(async () => {
+      const remaining = await this.claimRow(utr).count();
+      if (remaining > 0) await expect(approveBtn).toBeEnabled({ timeout: 1_000 });
+    }).toPass({ timeout: 60_000 });
+    await this.page.reload();
+    await expect(this.adminConsoleHeading).toBeVisible({ timeout: 15_000 });
+    await expect(this.claimRow(utr)).toHaveCount(0, { timeout: 15_000 });
   }
 }
 

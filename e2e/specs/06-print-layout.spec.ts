@@ -27,27 +27,21 @@ test.describe('06 - Print Layout & PDF Generation', () => {
     // Wait for the invoice detail container to load
     await expect(page.locator('#inv-controls')).toBeVisible();
 
-    // Emulate print media
+    // A printer lays the page out at paper width, but emulateMedia keeps the 1440px desktop viewport. Use an A4
+    // viewport (794x1123 CSS px at 96 dpi) so the layout is measured the way it is printed.
+    await page.setViewportSize({ width: 794, height: 1123 });
     await page.emulateMedia({ media: 'print' });
 
     // 1. Sidebar, topbar and invoice controls should be hidden in print mode
+    // Use real visibility (ancestors included): the controls live inside a print:hidden container, so their own
+    // computed display stays 'flex' while nothing is rendered.
     const sidebar = page.locator('aside, [data-testid="app-sidebar"]').first();
-    if (await sidebar.count() > 0) {
-      const sidebarDisplay = await sidebar.evaluate((el) => window.getComputedStyle(el).display);
-      expect(sidebarDisplay).toBe('none');
-    }
+    if (await sidebar.count() > 0) await expect(sidebar).toBeHidden();
 
     const topbar = page.locator('header').first();
-    if (await topbar.count() > 0) {
-      const topbarDisplay = await topbar.evaluate((el) => window.getComputedStyle(el).display);
-      expect(topbarDisplay).toBe('none');
-    }
+    if (await topbar.count() > 0) await expect(topbar).toBeHidden();
 
-    const controls = page.locator('#inv-controls');
-    if (await controls.count() > 0) {
-      const controlsDisplay = await controls.evaluate((el) => window.getComputedStyle(el).display);
-      expect(controlsDisplay).toBe('none');
-    }
+    await expect(page.locator('#inv-controls')).toBeHidden();
 
     // 2. Printable invoice view should be visible and not exceed A4 width (794px + 2px tolerance)
     const printView = page.locator('.print\\:block');
@@ -58,6 +52,9 @@ test.describe('06 - Print Layout & PDF Generation', () => {
     if (boundingBox) {
       expect(boundingBox.width).toBeLessThanOrEqual(796); // 794px + 2px tolerance
     }
+    // Nothing may spill sideways off the A4 page.
+    const fitsA4 = await page.evaluate(() => document.documentElement.scrollWidth <= 796);
+    expect(fitsA4).toBe(true);
 
     // 3. Generate PDF via Playwright (Chromium only)
     const pdfBuffer = await page.pdf({ format: 'A4' });

@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import * as path from 'path';
 import * as fs from 'fs';
+import { e2eExtraHttpHeaders } from '../support/http-headers';
 
 test.describe('03 - Not Found and Route Boundaries', () => {
   test('unmatched route shows branded 404 with navigation links', async ({ page }) => {
@@ -25,13 +26,21 @@ test.describe('03 - Not Found and Route Boundaries', () => {
     }
 
     const authContext = await browser.newContext({
+      extraHTTPHeaders: e2eExtraHttpHeaders(),
       storageState: userStatePath,
+      baseURL: process.env.E2E_BASE_URL,
     });
 
     try {
       const authPage = await authContext.newPage();
       const response = await authPage.goto('/customers/00000000-0000-0000-0000-000000000000/edit');
-      expect(response?.status()).toBe(404);
+      // This route has a loading.tsx boundary, so Next.js streams the response: headers (status 200) are sent
+      // before the page calls notFound(). Next then renders the not-found UI and injects a robots noindex tag.
+      // Accept either status, but a 200 must carry noindex so the page is never indexed.
+      expect([200, 404]).toContain(response?.status());
+      if (response?.status() === 200) {
+        await expect(authPage.locator('meta[name="robots"][content*="noindex"]').first()).toBeAttached();
+      }
       // App shell sidebar / navigation must be visible
       await expect(authPage.getByRole('navigation')).toBeVisible();
       // Branded 404 heading inside shell

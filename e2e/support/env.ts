@@ -21,7 +21,11 @@ export const e2eEnvSchema = z.object({
   E2E_DATABASE_URL: z.string().min(1, 'E2E_DATABASE_URL must not be empty'),
   E2E_DB_HOST_ALLOWLIST: z.string().min(1, 'E2E_DB_HOST_ALLOWLIST must not be empty'),
   E2E_FORBIDDEN_DB_HOSTS: z.string().min(1, 'E2E_FORBIDDEN_DB_HOSTS must not be empty'),
-  E2E_VERIFY_MODE: z.enum(['db', 'mailbox', 'direct_db']).default('db'),
+  // 'direct_db' is accepted as an alias of 'db' (the name used in the workflow and setup docs).
+  E2E_VERIFY_MODE: z
+    .enum(['db', 'mailbox', 'direct_db'])
+    .default('db')
+    .transform((mode): 'db' | 'mailbox' => (mode === 'direct_db' ? 'db' : mode)),
   E2E_EXPECT_VERIFICATION_REQUIRED: booleanFromString.default(true),
   E2E_ADMIN_EMAIL: z.string().email('E2E_ADMIN_EMAIL must be a valid email'),
   E2E_ADMIN_PASSWORD: z.string().min(8, 'E2E_ADMIN_PASSWORD must be at least 8 characters'),

@@ -47,17 +47,17 @@ export class ProductsPage {
       await this.uomSelect.selectOption(data.uom);
     }
 
-    if (data.taxRateOptionText) {
-      // Find option by label containing e.g. "18%"
-      await this.taxRateSelect.selectOption({ label: data.taxRateOptionText });
-    } else {
-      // Fallback: select option containing 18
-      const options = await this.taxRateSelect.locator('option').allInnerTexts();
-      const match = options.find((opt) => opt.includes('18%') || opt.includes('18'));
-      if (match) {
-        await this.taxRateSelect.selectOption({ label: match });
-      }
+    // Options render as "<label> GST (<rate>%)", e.g. "18% GST (18.00%)", so match on the leading label text
+    // and select by value. Defaults to the 18% slab.
+    const wanted = data.taxRateOptionText ?? '18%';
+    const options = await this.taxRateSelect
+      .locator('option')
+      .evaluateAll((els) => els.map((el) => ({ value: (el as HTMLOptionElement).value, text: (el.textContent ?? '').trim() })));
+    const match = options.find((option) => option.value !== '' && option.text.startsWith(wanted));
+    if (!match) {
+      throw new Error(`No tax rate option starts with "${wanted}". Options: ${options.map((o) => o.text).join(' | ')}`);
     }
+    await this.taxRateSelect.selectOption(match.value);
 
     await this.submitButton.click();
   }

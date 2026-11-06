@@ -177,6 +177,19 @@ export type RateLimitEnv = Readonly<{
 /* CORE groups                                                          */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Vercel Preview deployments each get their own generated address, so NEXT_PUBLIC_APP_URL cannot be set to one
+ * fixed value for the Preview environment. When it is unset on a Preview deployment, use the deployment's own
+ * address (VERCEL_URL, a bare host injected by Vercel). Production never falls back: it must set the variable
+ * explicitly (ARCH-002 fail-closed), and an explicit value always wins.
+ */
+function vercelPreviewOrigin(source: EnvSource): string | null {
+  if (source.VERCEL_ENV !== 'preview') return null;
+  const host = source.VERCEL_URL?.trim() ?? '';
+  if (host === '' || host.includes('/') || host.includes('://')) return null;
+  return `https://${host}`;
+}
+
 function parseAppEnv(source: EnvSource): ParseOutcome<AppEnv> {
   const name = 'NEXT_PUBLIC_APP_URL';
   const fail = (message: string): ParseOutcome<AppEnv> => ({
@@ -187,7 +200,7 @@ function parseAppEnv(source: EnvSource): ParseOutcome<AppEnv> {
   const isProduction = source.NODE_ENV === 'production';
   const strict = isProduction && !isEnvValidationSkipped(source);
   const raw = source[name]?.trim() ?? '';
-  const candidate = raw !== '' ? raw : isProduction ? '' : DEV_DEFAULT_APP_URL;
+  const candidate = raw !== '' ? raw : (vercelPreviewOrigin(source) ?? (isProduction ? '' : DEV_DEFAULT_APP_URL));
 
   if (candidate === '') {
     return fail('is required in production (e.g. https://app.example.com)');

@@ -199,6 +199,7 @@ describe('API-001: tenant isolation of customers, products and invoices', () => 
   let ownFinalId: string;
   let ownDraftId: string;
   let leakedCreditNoteId: string;
+  let victimFinalId: string;
 
   function draftInput(options: { customerId: string; productId: string; id?: string }): Record<string, unknown> {
     return {
@@ -242,7 +243,7 @@ describe('API-001: tenant isolation of customers, products and invoices', () => 
     ownDraftId = await plantInvoice(pg, a, a.customerId, a.productId, 'DRAFT-OWN-1', false);
     leakedDraftId = await plantInvoice(pg, a, b.customerId, a.productId, 'DRAFT-LEAK-1', false);
     leakedFinalId = await plantInvoice(pg, a, b.customerId, b.productId, 'INV-LEAK-1', true);
-    const victimFinalId = await plantInvoice(pg, b, b.customerId, b.productId, 'INV-B-1', true);
+    victimFinalId = await plantInvoice(pg, b, b.customerId, b.productId, 'INV-B-1', true);
     leakedCreditNoteId = await insertOne(
       pg,
       `INSERT INTO credit_notes (business_id, original_invoice_id, financial_year_id, credit_note_number, reason)
@@ -349,6 +350,12 @@ describe('API-001: tenant isolation of customers, products and invoices', () => 
   });
 
   describe('reads: nothing of another business may be returned', () => {
+    it('getInvoice: another business\'s invoice and a missing id fail identically with NOT_FOUND', async () => {
+      // Same code and message for both, so the response never reveals that the other business's id exists.
+      expectFailure(await getInvoice({ id: victimFinalId }), 'NOT_FOUND', /^Invoice not found\.$/);
+      expectFailure(await getInvoice({ id: '00000000-0000-4000-8000-000000000000' }), 'NOT_FOUND', /^Invoice not found\.$/);
+    });
+
     it('getInvoice returns no customer data for a legacy leaked link, but returns the own customer normally', async () => {
       const leaked = expectSuccess(await getInvoice({ id: leakedFinalId }));
       const text = JSON.stringify(leaked);

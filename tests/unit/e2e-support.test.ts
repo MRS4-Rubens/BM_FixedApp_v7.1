@@ -154,9 +154,10 @@ describe('e2e support helpers', () => {
 
     it('produces valid expected invoice number regex', () => {
       const pattern = getExpectedInvoiceNumberPattern(1, '2026-27');
-      expect(pattern.test('INV/2026-27/0001')).toBe(true);
-      expect(pattern.test('INV/2026-27/0002')).toBe(false);
-      expect(pattern.test('INV/2025-26/0001')).toBe(false);
+      expect(pattern.test('BMA/26-27/0001')).toBe(true);
+      expect(pattern.test('BMA/26-27/0002')).toBe(false);
+      expect(pattern.test('BMA/25-26/0001')).toBe(false);
+      expect(pattern.test('INV/2026-27/0001')).toBe(false);
     });
   });
 

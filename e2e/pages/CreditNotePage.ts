@@ -36,7 +36,8 @@ export class CreditNotePage {
   async finalize(): Promise<void> {
     await expect(this.finalizeButton).toBeEnabled();
     await this.finalizeButton.click();
-    await this.page.waitForURL(/\/credit-notes\/[0-9a-fA-F-]+/, { timeout: 15_000 });
+    // Finalizing runs a locked numbering transaction; on a cold preview it can exceed 15s.
+    await this.page.waitForURL(/\/credit-notes\/[0-9a-fA-F-]+/, { timeout: 45_000 });
   }
 }
 

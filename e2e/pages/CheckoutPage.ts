@@ -18,7 +18,8 @@ export class CheckoutPage {
     this.utrInput = page.locator('#payment_reference');
     this.submitButton = page.locator('button[type="submit"]:has-text("Submit Payment Claim")');
     this.successNotice = page.locator('text=Claim Submitted Successfully!');
-    this.pendingScreenIndicator = page.locator('text=Payment Verification Pending');
+    // Shown while a claim awaits admin verification (app/(app)/checkout: "Payment Claim Under Review").
+    this.pendingScreenIndicator = page.getByRole('heading', { name: 'Payment Claim Under Review' });
   }
 
   async goto(): Promise<void> {
@@ -36,8 +37,12 @@ export class CheckoutPage {
     await this.submitButton.click();
   }
 
+  /**
+   * The success notice is transient: after the claim is stored the page refreshes into the "Payment Claim Under
+   * Review" screen. Either one proves the claim was logged, so accept whichever is showing.
+   */
   async expectSuccess(): Promise<void> {
-    await expect(this.successNotice).toBeVisible({ timeout: 15_000 });
+    await expect(this.successNotice.or(this.pendingScreenIndicator).first()).toBeVisible({ timeout: 30_000 });
   }
 
   async expectPendingNotice(): Promise<void> {

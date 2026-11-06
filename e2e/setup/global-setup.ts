@@ -1,9 +1,10 @@
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 import { assertSafeTarget, loadE2eEnv } from '../support/env';
 import { resetAuthRateLimits } from '../support/rate-limits';
 import { markEmailVerified } from '../support/db';
+import { e2eExtraHttpHeaders } from '../support/http-headers';
 
 export default async function globalSetup(): Promise<void> {
   const env = loadE2eEnv(process.env);
@@ -18,11 +19,8 @@ export default async function globalSetup(): Promise<void> {
     fs.mkdirSync(authDir, { recursive: true });
   }
 
-  const extraHTTPHeaders: Record<string, string> = {};
-  if (env.E2E_VERCEL_BYPASS_SECRET) {
-    extraHTTPHeaders['x-vercel-protection-bypass'] = env.E2E_VERCEL_BYPASS_SECRET;
-    extraHTTPHeaders['x-vercel-set-bypass-cookie'] = 'true';
-  }
+  // Same headers as playwright.config.ts: skip the Vercel preview toolbar, bypass Deployment Protection.
+  const extraHTTPHeaders = e2eExtraHttpHeaders(env.E2E_VERCEL_BYPASS_SECRET);
 
   // 3. Ensure persistent admin account
   const browser = await chromium.launch({ headless: true });
@@ -34,24 +32,30 @@ export default async function globalSetup(): Promise<void> {
 
   const adminStoragePath = path.join(authDir, 'admin.json');
 
-  try {
+  // After login the app redirects to /dashboard; a user without a business (the platform admin has none) is
+  // then sent on to /settings. Any of these means the session was established.
+  const signedInUrl = /\/(dashboard|admin|settings)(?:[/?#]|$)/;
+
+  const login = async (timeout: number): Promise<boolean> => {
     await page.goto('/?auth=login');
     await page.locator('#login-email').fill(env.E2E_ADMIN_EMAIL);
     await page.locator('#login-password').fill(env.E2E_ADMIN_PASSWORD);
     await page.locator('form button[type="submit"]').click();
-
-    // Check if login succeeded (redirect to /dashboard or /admin)
-    let loggedIn = false;
     try {
-      await page.waitForURL(/\/(dashboard|admin)/, { timeout: 8_000 });
-      loggedIn = true;
+      await page.waitForURL(signedInUrl, { timeout });
+      return true;
     } catch {
-      loggedIn = false;
+      return false;
     }
+  };
+
+  try {
+    const loggedIn = await login(8_000);
 
     if (!loggedIn) {
-      // Credentials rejected or account does not exist -> sign up ONCE
-      console.log(`[E2E Global Setup] Admin account not found or credentials rejected. Signing up admin: ${env.E2E_ADMIN_EMAIL}`);
+      // Credentials rejected, account missing, or account exists but is unverified. Signing up an existing
+      // account is rejected by the auth service and is harmless; the verification step below handles both.
+      console.log(`[E2E Global Setup] Admin login failed. Signing up admin (no-op if it already exists): ${env.E2E_ADMIN_EMAIL}`);
       await page.goto('/?auth=signup');
       await page.locator('#signup-owner').fill('Platform Super Admin');
       await page.locator('#signup-email').fill(env.E2E_ADMIN_EMAIL);
@@ -59,18 +63,20 @@ export default async function globalSetup(): Promise<void> {
       await page.locator('#signup-confirm').fill(env.E2E_ADMIN_PASSWORD);
       await page.locator('#terms').check();
       await page.locator('form button[type="submit"]').click();
+      // Wait for the sign-up request to finish (the button shows "Creating account..." meanwhile).
+      await expect(page.getByRole('button', { name: /Creating account/i })).toHaveCount(0, { timeout: 45_000 });
+    }
 
-      if (env.E2E_EXPECT_VERIFICATION_REQUIRED) {
-        if (env.E2E_VERIFY_MODE === 'db') {
-          await markEmailVerified(env.E2E_ADMIN_EMAIL, env);
-        }
-        // Log in after verification
-        await page.goto('/?auth=login');
-        await page.locator('#login-email').fill(env.E2E_ADMIN_EMAIL);
-        await page.locator('#login-password').fill(env.E2E_ADMIN_PASSWORD);
-        await page.locator('form button[type="submit"]').click();
-        await page.waitForURL(/\/(dashboard|admin)/, { timeout: 15_000 });
+    // Platform admin access by e-mail requires a VERIFIED e-mail (lib/auth/admin-policy.ts). Make sure it is
+    // verified on every run (idempotent), then sign in again so the session carries emailVerified=true.
+    if (env.E2E_VERIFY_MODE === 'db') {
+      await markEmailVerified(env.E2E_ADMIN_EMAIL, env);
+      await context.clearCookies();
+      if (!(await login(20_000))) {
+        throw new Error('Admin login failed after marking the e-mail verified. Check E2E_ADMIN_PASSWORD.');
       }
+    } else if (!loggedIn) {
+      throw new Error(`Admin is not signed in and E2E_VERIFY_MODE=${env.E2E_VERIFY_MODE} cannot verify it automatically.`);
     }
 
     // Verify /admin accessibility
