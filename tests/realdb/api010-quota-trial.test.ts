@@ -45,6 +45,8 @@ vi.mock('@/lib/storage/archive-invoice', () => ({
 vi.mock('@/lib/storage/archive-credit-note', () => ({
   archiveCreditNotePdf: async () => ({ status: 'archived', storageKey: 'k' }),
 }));
+// finalizeInvoice schedules archival with next/server after(), which only works inside a real request scope.
+vi.mock('@/lib/storage/schedule-archival', () => ({ scheduleArchival: () => undefined }));
 vi.mock('@/lib/email/resend', async () => (await import('./helpers/harness')).emailModule());
 vi.mock('@/lib/env', async () => (await import('./helpers/harness')).envModule());
 

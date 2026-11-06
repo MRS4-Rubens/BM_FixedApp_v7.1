@@ -12,6 +12,7 @@ import {
   voidPaymentInTransaction,
 } from '@/lib/invoices/payment-tx';
 import { voidCreditNoteInTransaction } from '@/lib/invoices/void-credit-note-tx';
+import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import {
   TestDb,
   TestBusiness,
@@ -22,16 +23,33 @@ import {
   createTestDraftInvoice,
   cleanupTestBusiness,
 } from './helpers/db';
+import { createTestUser } from './helpers/fixtures';
+
+// All document and payment dates are derived from today's IST date so the invoice date policy
+// (no future dates, bounded backdating, payment_date <= today) holds on whatever day the suite runs.
+const TODAY_IST = formatIstDateAsIso(new Date());
+
+function shiftIsoDate(isoDate: string, days: number): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
 
 describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
   let testDb: TestDb;
   let testBusiness: TestBusiness;
   let defaultFyId: string;
+  /** Real users row: voided_by / audit actor columns are uuid FKs, so a fake id string is rejected by Postgres. */
+  let voidActorUserId: string;
 
   beforeAll(async () => {
     const validUrl = validateTestDatabaseUrl(getTestDatabaseUrl());
     testDb = createTestDbClient(validUrl);
     testBusiness = await createTestBusiness(testDb);
+    const voidActor = await createTestUser(testDb, {
+      email: `void-actor-${randomBytes(6).toString('hex')}@example.com`,
+      businessId: testBusiness.id,
+    });
+    voidActorUserId = voidActor.id;
 
     // Warm up the financial year
     const warmup = await createTestDraftInvoice(testDb, testBusiness.id);
@@ -54,7 +72,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
 
   async function createCustomFinalizedInvoice(
     grandTotalPaise: number,
-    invoiceDate = '2026-10-28',
+    invoiceDate = TODAY_IST,
   ): Promise<string> {
     const [invoice] = await testDb
       .insert(schema.invoices)
@@ -135,7 +153,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
         reason: 'Correction of figures',
         lifecycle_status: 'draft',
         status: 'active',
-        issue_date: '2026-10-28',
+        issue_date: TODAY_IST,
         subtotal_paise: amountPaise,
         total_cgst_paise: 0,
         total_sgst_paise: 0,
@@ -228,10 +246,10 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
             input: {
               invoice_id: invoiceId,
               amount: 600,
-              payment_date: '2026-10-28',
+              payment_date: TODAY_IST,
               payment_method: 'bank_transfer',
             },
-            todayIst: '2026-10-28',
+            todayIst: TODAY_IST,
           }),
         ),
       ),
@@ -250,7 +268,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
         expect(rej.reason).toBeInstanceOf(ActionError);
         const actionErr = rej.reason as ActionError;
         expect(actionErr.code).toBe('OVERPAYMENT');
-        expect(actionErr.message).toMatch(/exceeds.*remaining balance|no remaining balance/);
+        expect(actionErr.message).toMatch(/would exceed the invoice's remaining balance|no remaining balance/);
       }
     }
 
@@ -276,10 +294,10 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
             input: {
               invoice_id: invoiceId,
               amount: 100,
-              payment_date: '2026-10-28',
+              payment_date: TODAY_IST,
               payment_method: 'bank_transfer',
             },
-            todayIst: '2026-10-28',
+            todayIst: TODAY_IST,
           }),
         ),
       ),
@@ -311,10 +329,10 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
         input: {
           invoice_id: invoiceId,
           amount: 400,
-          payment_date: '2026-10-28',
+          payment_date: TODAY_IST,
           payment_method: 'bank_transfer',
         },
-        todayIst: '2026-10-28',
+        todayIst: TODAY_IST,
       }),
     );
 
@@ -332,7 +350,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
         testDb.transaction((tx) =>
           voidPaymentInTransaction(tx, {
             businessId: testBusiness.id,
-            userId: 'test-user-id',
+            userId: voidActorUserId,
             operatorDisplayName: 'Tester',
             requestContext: NO_AUDIT_REQUEST_CONTEXT,
             input: {
@@ -389,7 +407,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
         testDb.transaction((tx) =>
           voidCreditNoteInTransaction(tx, {
             businessId: testBusiness.id,
-            userId: 'test-user-id',
+            userId: voidActorUserId,
             operatorDisplayName: 'Tester',
             requestContext: NO_AUDIT_REQUEST_CONTEXT,
             input: {
@@ -451,10 +469,10 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
           input: {
             invoice_id: invoiceId,
             amount: 400,
-            payment_date: '2026-10-28',
+            payment_date: TODAY_IST,
             payment_method: 'bank_transfer',
           },
-          todayIst: '2026-10-28',
+          todayIst: TODAY_IST,
         }),
       ),
     );
@@ -474,7 +492,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
       testDb.transaction((tx) =>
         voidCreditNoteInTransaction(tx, {
           businessId: testBusiness.id,
-          userId: 'test-user-id',
+          userId: voidActorUserId,
           operatorDisplayName: 'Tester',
           requestContext: NO_AUDIT_REQUEST_CONTEXT,
           input: {
@@ -500,10 +518,10 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
   });
 
   it('Test 6: date validation at boundary', async () => {
-    const invoiceId = await createCustomFinalizedInvoice(100000, '2026-10-20');
-    const todayIst = '2026-10-28';
+    const invoiceId = await createCustomFinalizedInvoice(100000, TODAY_IST);
+    const todayIst = TODAY_IST;
 
-    // 1. payment_date = invoice_date - 1 day ('2026-10-19') -> rejected
+    // 1. payment_date = invoice_date - 1 day -> rejected
     await expect(
       testDb.transaction((tx) =>
         recordPaymentInTransaction(tx, {
@@ -513,7 +531,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
           input: {
             invoice_id: invoiceId,
             amount: 10,
-            payment_date: '2026-10-19',
+            payment_date: shiftIsoDate(TODAY_IST, -1),
             payment_method: 'bank_transfer',
           },
           todayIst,
@@ -521,7 +539,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
       ),
     ).rejects.toThrow(/cannot be before the invoice date/);
 
-    // 2. payment_date = invoice_date ('2026-10-20') -> accepted
+    // 2. payment_date = invoice_date -> accepted
     const res1 = await testDb.transaction((tx) =>
       recordPaymentInTransaction(tx, {
         businessId: testBusiness.id,
@@ -530,7 +548,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
         input: {
           invoice_id: invoiceId,
           amount: 10,
-          payment_date: '2026-10-20',
+          payment_date: TODAY_IST,
           payment_method: 'bank_transfer',
         },
         todayIst,
@@ -538,7 +556,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
     );
     expect(res1.payment_status).toBe('partially_paid');
 
-    // 3. payment_date = today IST ('2026-10-28') -> accepted
+    // 3. payment_date = today IST (TODAY_IST) -> accepted
     const res2 = await testDb.transaction((tx) =>
       recordPaymentInTransaction(tx, {
         businessId: testBusiness.id,
@@ -547,7 +565,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
         input: {
           invoice_id: invoiceId,
           amount: 10,
-          payment_date: '2026-10-28',
+          payment_date: TODAY_IST,
           payment_method: 'bank_transfer',
         },
         todayIst,
@@ -555,7 +573,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
     );
     expect(res2.payment_status).toBe('partially_paid');
 
-    // 4. payment_date = today + 1 day ('2026-10-29') -> rejected
+    // 4. payment_date = today + 1 day -> rejected
     await expect(
       testDb.transaction((tx) =>
         recordPaymentInTransaction(tx, {
@@ -565,7 +583,7 @@ describe('Payment & Void Concurrency tests (REAL Postgres)', () => {
           input: {
             invoice_id: invoiceId,
             amount: 10,
-            payment_date: '2026-10-29',
+            payment_date: shiftIsoDate(TODAY_IST, 1),
             payment_method: 'bank_transfer',
           },
           todayIst,

@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, type SQL } from 'drizzle-orm';
 import type { getDb } from '@/lib/db/client';
 import * as schema from '@/lib/db/schema';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
@@ -35,6 +35,19 @@ export async function closeTestDb(testDb: TestDb): Promise<void> {
   if (pool) {
     await pool.end();
   }
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Postgres cannot bind parameters inside DDL (CREATE TRIGGER ... WHEN (...)), so test triggers must embed the
+ * id as a literal. The value is validated as a UUID first, which makes the raw literal injection-safe.
+ */
+export function uuidLiteral(id: string): SQL {
+  if (!UUID_PATTERN.test(id)) {
+    throw new Error(`uuidLiteral: not a UUID: ${id}`);
+  }
+  return sql.raw(`'${id}'::uuid`);
 }
 
 export interface TestBusiness {
@@ -144,6 +157,18 @@ export async function createTestDraftCreditNote(
   originalInvoiceId: string,
   financialYearId: string,
 ): Promise<{ readonly creditNoteId: string }> {
+  // API-004: every credit-note line must reference a line of the original invoice
+  // (CHECK cnli_original_line_required), and finalize re-derives amounts from that line.
+  const [originalLine] = await testDb
+    .select({ id: schema.invoiceLineItems.id })
+    .from(schema.invoiceLineItems)
+    .where(eq(schema.invoiceLineItems.invoice_id, originalInvoiceId))
+    .orderBy(schema.invoiceLineItems.sort_order)
+    .limit(1);
+  if (!originalLine) {
+    throw new Error('createTestDraftCreditNote: the original invoice has no line items');
+  }
+
   const [cn] = await testDb
     .insert(schema.creditNotes)
     .values({
@@ -154,7 +179,7 @@ export async function createTestDraftCreditNote(
       reason: 'Overbilling correction',
       lifecycle_status: 'draft',
       status: 'active',
-      issue_date: '2026-10-28',
+      issue_date: formatIstDateAsIso(new Date()),
       subtotal_paise: 5000,
       total_cgst_paise: 450,
       total_sgst_paise: 450,
@@ -170,6 +195,7 @@ export async function createTestDraftCreditNote(
 
   await testDb.insert(schema.creditNoteLineItems).values({
     credit_note_id: cn.id,
+    original_line_item_id: originalLine.id,
     description: 'Test Item',
     hsn_sac_code: '998311',
     quantity: '0.500',

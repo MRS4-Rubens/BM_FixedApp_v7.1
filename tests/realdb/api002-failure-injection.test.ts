@@ -15,6 +15,7 @@ import {
   createTestBusiness,
   createTestDraftInvoice,
   createTestDraftCreditNote,
+  uuidLiteral,
 } from './helpers/db';
 import {
   createTestUser,
@@ -112,7 +113,7 @@ describe('API-002: Real-DB Failure Injection & Gapless Sequences (REAL Postgres)
       CREATE TRIGGER bm_test_trg_fail_finalize
       BEFORE UPDATE ON invoices
       FOR EACH ROW
-      WHEN (NEW.id = ${d2.invoiceId}::uuid AND NEW.lifecycle_status = 'finalized')
+      WHEN (NEW.id = ${uuidLiteral(d2.invoiceId)} AND NEW.lifecycle_status = 'finalized')
       EXECUTE FUNCTION bm_test_fail_finalize();
     `);
 
@@ -261,7 +262,7 @@ describe('API-002: Real-DB Failure Injection & Gapless Sequences (REAL Postgres)
       CREATE TRIGGER bm_test_trg_fail_cn
       BEFORE UPDATE ON credit_notes
       FOR EACH ROW
-      WHEN (NEW.id = ${cn2}::uuid AND NEW.lifecycle_status = 'finalized')
+      WHEN (NEW.id = ${uuidLiteral(cn2)} AND NEW.lifecycle_status = 'finalized')
       EXECUTE FUNCTION bm_test_fail_cn();
     `);
 
@@ -340,7 +341,7 @@ describe('API-002: Real-DB Failure Injection & Gapless Sequences (REAL Postgres)
       CREATE TRIGGER bm_test_trg_fail_finalize
       BEFORE UPDATE ON invoices
       FOR EACH ROW
-      WHEN (NEW.id = ${poisonedDraftId}::uuid AND NEW.lifecycle_status = 'finalized')
+      WHEN (NEW.id = ${uuidLiteral(poisonedDraftId)} AND NEW.lifecycle_status = 'finalized')
       EXECUTE FUNCTION bm_test_fail_finalize();
     `);
 

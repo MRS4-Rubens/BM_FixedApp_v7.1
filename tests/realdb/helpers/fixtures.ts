@@ -96,8 +96,11 @@ export async function createFreePlanBusiness(
       city: 'Mumbai',
       state_code: '27',
       pincode: '400001',
+      // Canonical Free tier as the app stores it (ALLOWED_STATUSES_BY_PLAN.free = expired | suspended).
+      // 'free' + 'active' is not a state the app writes, and resolveBusinessPlan currently maps it to
+      // Essentials (known defect F-ENT-3), which would silently disable every quota under test.
       subscription_plan: 'free',
-      subscription_status: 'active',
+      subscription_status: 'expired',
       invoice_number_format: 'INV/{YY}/{SEQ:4}',
       credit_note_number_prefix: 'CN',
       default_invoice_template: 'template_1',

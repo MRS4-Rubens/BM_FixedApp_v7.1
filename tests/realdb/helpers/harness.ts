@@ -115,9 +115,12 @@ export function loggerModule(): {
     logError: (scope: string, error: unknown, meta?: Record<string, unknown>) => {
       loggedErrors.push({ scope, error, meta });
       // Unexpected errors are otherwise invisible (actions return a generic INTERNAL_ERROR). Surface the real
-      // cause so a red CI run is diagnosable; expected ActionErrors stay silent.
+      // cause so a red CI run is diagnosable; expected ActionErrors get a one-line code only.
       if (meta?.expected !== true) {
         console.error(`[realdb logError] ${describeLoggedError(scope, error)}`);
+      } else {
+        const code = typeof meta.code === 'string' ? meta.code : 'NO_CODE';
+        console.info(`[realdb expected] ${scope}: ${code}`);
       }
     },
   };

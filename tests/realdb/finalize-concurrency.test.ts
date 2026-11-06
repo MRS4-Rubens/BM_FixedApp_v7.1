@@ -223,16 +223,17 @@ describe('Finalize concurrency tests (REAL Postgres)', () => {
       .where(eq(schema.financialYears.id, defaultFyId));
     const baselineSeq = fyBefore?.count ?? 0;
 
-    // Set invoice_number_format to a format that produces > 16 characters
+    // A syntactically VALID format whose resolved number exceeds the 16-character CGST Rule 46(b) limit:
+    // the counter is incremented first, then numbering throws FORMAT_CAPACITY_EXCEEDED, so this proves rollback.
+    // ({SEQ:8} would be rejected by the format parser before any counter write, testing nothing.)
     await testDb
       .update(schema.businesses)
-      .set({ invoice_number_format: 'LONGFORMATEXCEEDINGLIMIT-{SEQ:8}' })
+      .set({ invoice_number_format: 'LONGFORMATEXCEEDING/{SEQ:4}' })
       .where(eq(schema.businesses.id, testBusiness.id));
-
-    const badDraft = await createTestDraftInvoice(testDb, testBusiness.id);
 
     let errorThrown: unknown;
     try {
+      const badDraft = await createTestDraftInvoice(testDb, testBusiness.id);
       await testDb.transaction((tx) =>
         finalizeDraftInvoiceInTransaction(tx, {
           invoiceId: badDraft.invoiceId,
@@ -243,6 +244,12 @@ describe('Finalize concurrency tests (REAL Postgres)', () => {
       );
     } catch (err: unknown) {
       errorThrown = err;
+    } finally {
+      // Always restore, so a failure here can never cascade into later cases.
+      await testDb
+        .update(schema.businesses)
+        .set({ invoice_number_format: 'INV-{YY}/{SEQ:4}' })
+        .where(eq(schema.businesses.id, testBusiness.id));
     }
 
     expect(errorThrown).toBeInstanceOf(ActionError);
@@ -254,12 +261,6 @@ describe('Finalize concurrency tests (REAL Postgres)', () => {
       .from(schema.financialYears)
       .where(eq(schema.financialYears.id, defaultFyId));
     expect(fyAfterRollback?.count).toBe(baselineSeq);
-
-    // Restore format
-    await testDb
-      .update(schema.businesses)
-      .set({ invoice_number_format: 'INV-{YY}/{SEQ:4}' })
-      .where(eq(schema.businesses.id, testBusiness.id));
 
     // Next finalization receives baseline + 1 (no gap!)
     const goodDraft = await createTestDraftInvoice(testDb, testBusiness.id);
