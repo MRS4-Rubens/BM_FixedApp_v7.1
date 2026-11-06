@@ -8,11 +8,6 @@ import { OWNER_ONLY } from '@/lib/auth/rbac';
 import {
   saveBusinessProfileInTransaction,
   type SaveProfileTxResult,
-  DEFAULT_INVOICE_NUMBER_FORMAT,
-  DEFAULT_CREDIT_NOTE_PREFIX,
-  DEFAULT_PAYMENT_DUE_DAYS,
-  TRIAL_DURATION_DAYS,
-  DEFAULT_INVOICE_TERMS,
 } from '@/lib/business/save-profile-tx';
 import {
   isGstinUniqueViolation,
@@ -23,13 +18,8 @@ import { toBusyActionError, withTransactionRetry } from '@/lib/db/transaction';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { businessProfileSchema } from '@/lib/validations/business';
 
-export {
-  DEFAULT_INVOICE_NUMBER_FORMAT,
-  DEFAULT_CREDIT_NOTE_PREFIX,
-  DEFAULT_PAYMENT_DUE_DAYS,
-  TRIAL_DURATION_DAYS,
-  DEFAULT_INVOICE_TERMS,
-};
+// A 'use server' module may export ONLY async functions (server actions). Profile defaults live in
+// '@/lib/business/save-profile-tx'; import them from there, never re-export them here.
 
 export const saveBusinessProfile = createAuthenticatedAction(
   businessProfileSchema,

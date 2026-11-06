@@ -1,4 +1,4 @@
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import { buildSecurityHeaderRules } from "./config/security-headers.mjs";
 
 /** @type {import('next').NextConfig} */
