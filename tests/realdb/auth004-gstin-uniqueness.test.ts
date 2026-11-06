@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq, sql } from 'drizzle-orm';
 import * as schema from '@/lib/db/schema';
@@ -21,6 +21,7 @@ import {
 import {
   createTestUser,
   makeValidGstin,
+  randomPan,
 } from './helpers/fixtures';
 import { runConcurrently, countFulfilled } from './helpers/concurrency';
 
@@ -102,7 +103,7 @@ describe('AUTH-004: GSTIN Uniqueness & Identity Concurrency (REAL Postgres)', ()
   }
 
   it('1. Concurrent first-time saveBusinessProfile with SAME GSTIN as 2 different users: exactly 1 winner, 1 friendly field error', async () => {
-    const pan = `ABCDE${randomBytes(2).toString('hex').toUpperCase()}1A`;
+    const pan = randomPan();
     const targetGstin = makeValidGstin('27', pan);
 
     const user1 = await createTestUser(testDb, {
@@ -179,7 +180,7 @@ describe('AUTH-004: GSTIN Uniqueness & Identity Concurrency (REAL Postgres)', ()
   });
 
   it('2. Same user double-submits 5x concurrently: exactly 1 business created, user linked once', async () => {
-    const pan = `ABCDE${randomBytes(2).toString('hex').toUpperCase()}1A`;
+    const pan = randomPan();
     const targetGstin = makeValidGstin('27', pan);
 
     const user = await createTestUser(testDb, {
@@ -225,7 +226,7 @@ describe('AUTH-004: GSTIN Uniqueness & Identity Concurrency (REAL Postgres)', ()
   });
 
   it('3. Case variants of the same GSTIN collide per AUTH-004 normalisation', async () => {
-    const pan = `ABCDE${randomBytes(2).toString('hex').toUpperCase()}1A`;
+    const pan = randomPan();
     const canonicalGstin = makeValidGstin('27', pan);
     const lowerVariantGstin = canonicalGstin.toLowerCase();
 
@@ -275,9 +276,9 @@ describe('AUTH-004: GSTIN Uniqueness & Identity Concurrency (REAL Postgres)', ()
   });
 
   it('4. Editing existing business to a GSTIN owned by another business returns friendly field error', async () => {
-    const pan1 = `ABCDE${randomBytes(2).toString('hex').toUpperCase()}1A`;
+    const pan1 = randomPan();
     const gstin1 = makeValidGstin('27', pan1);
-    const pan2 = `ABCDE${randomBytes(2).toString('hex').toUpperCase()}1A`;
+    const pan2 = randomPan();
     const gstin2 = makeValidGstin('27', pan2);
 
     const user1 = await createTestUser(testDb, {
@@ -328,9 +329,9 @@ describe('AUTH-004: GSTIN Uniqueness & Identity Concurrency (REAL Postgres)', ()
   });
 
   it('5. After a FINALIZED invoice exists, changing GSTIN/state is rejected with IDENTITY_LOCKED; before it, allowed', async () => {
-    const panA = `ABCDE${randomBytes(2).toString('hex').toUpperCase()}1A`;
+    const panA = randomPan();
     const gstinA = makeValidGstin('27', panA);
-    const panB = `ABCDE${randomBytes(2).toString('hex').toUpperCase()}1A`;
+    const panB = randomPan();
     const gstinB = makeValidGstin('27', panB);
 
     const user = await createTestUser(testDb, {
@@ -384,7 +385,7 @@ describe('AUTH-004: GSTIN Uniqueness & Identity Concurrency (REAL Postgres)', ()
     );
 
     // 5c. After finalized invoice exists: attempting to change GSTIN must fail with IDENTITY_LOCKED
-    const panC = `ABCDE${randomBytes(2).toString('hex').toUpperCase()}1A`;
+    const panC = randomPan();
     const gstinC = makeValidGstin('27', panC);
 
     const editAfterFinalize = await runAs(hUserWithBiz, () =>

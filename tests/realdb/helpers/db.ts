@@ -5,6 +5,8 @@ import { eq, sql } from 'drizzle-orm';
 import type { getDb } from '@/lib/db/client';
 import * as schema from '@/lib/db/schema';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
+import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
+import { makeValidGstin, randomPan } from './fixtures';
 
 export { validateTestDatabaseUrl } from './url-guard';
 
@@ -43,8 +45,8 @@ export interface TestBusiness {
 
 export async function createTestBusiness(testDb: TestDb): Promise<TestBusiness> {
   const hex = randomBytes(4).toString('hex').toUpperCase();
-  // Format GSTIN: 2 digits state + 10 alphanumeric PAN-like + 1 entity + 'Z' + 1 checksum (15 chars)
-  const gstin = `27TESTB${hex}1Z5`;
+  // Real 15-char GSTIN: state(2) + PAN(10) + entity(1) + 'Z' + Mod-36 check char. businesses.gstin is varchar(15).
+  const gstin = makeValidGstin('27', randomPan());
   const legalName = `API002 Test Business ${hex}`;
 
   const [inserted] = await testDb
@@ -95,7 +97,9 @@ export async function createTestDraftInvoice(
       financial_year_id: fy.id,
       invoice_number: `DRAFT-${randomBytes(6).toString('hex')}`,
       lifecycle_status: 'draft',
-      invoice_date: '2026-10-28',
+      // Same IST calendar day the financial year was resolved for, so the date policy (no future dates,
+      // bounded backdating) holds whenever the suite runs.
+      invoice_date: formatIstDateAsIso(dateObj),
       place_of_supply_state_code: '27',
       subtotal_paise: 10000,
       total_cgst_paise: 900,

@@ -84,8 +84,7 @@ export async function createFreePlanBusiness(
   overrides?: Partial<typeof schema.businesses.$inferInsert>,
 ): Promise<TestBusiness> {
   const hex = randomBytes(4).toString('hex').toUpperCase();
-  const pan = `ABCDE${hex.slice(0, 4)}F`;
-  const gstin = makeValidGstin('27', pan);
+  const gstin = makeValidGstin('27', randomPan());
   const legalName = `Free Plan Biz ${hex}`;
 
   const [biz] = await testDb
@@ -130,8 +129,18 @@ export async function createTrialBusiness(
   });
 }
 
+const PAN_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+/** Random PAN in the statutory shape AAAAA9999A (5 letters, 4 digits, 1 letter). */
+export function randomPan(): string {
+  const bytes = randomBytes(10);
+  const letter = (i: number): string => PAN_LETTERS[(bytes[i] ?? 0) % 26] ?? 'A';
+  const digit = (i: number): string => String((bytes[i] ?? 0) % 10);
+  return `${letter(0)}${letter(1)}${letter(2)}${letter(3)}${letter(4)}${digit(5)}${digit(6)}${digit(7)}${digit(8)}${letter(9)}`;
+}
+
 export function makeValidGstin(stateCode: string, pan?: string, entity = '1'): string {
-  const panPart = pan ?? `ABCDE${randomBytes(2).toString('hex').toUpperCase()}1A`;
+  const panPart = pan ?? randomPan();
   const first14 = `${stateCode}${panPart.slice(0, 10)}${entity}Z`;
   const checkChar = computeGstinCheckChar(first14);
   if (!checkChar) {

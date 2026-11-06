@@ -97,12 +97,28 @@ export function authServerModule(): {
   };
 }
 
+function describeLoggedError(scope: string, error: unknown): string {
+  if (!(error instanceof Error)) return `${scope}: ${String(error)}`;
+  const cause: unknown = error.cause;
+  const pgCode =
+    typeof cause === 'object' && cause !== null && 'code' in cause && typeof cause.code === 'string'
+      ? ` [pg ${cause.code}]`
+      : '';
+  const causeMessage = cause instanceof Error ? ` <- ${cause.message}` : '';
+  return `${scope}: ${error.name}: ${error.message}${causeMessage}${pgCode}`;
+}
+
 export function loggerModule(): {
   logError: (scope: string, error: unknown, meta?: Record<string, unknown>) => void;
 } {
   return {
     logError: (scope: string, error: unknown, meta?: Record<string, unknown>) => {
       loggedErrors.push({ scope, error, meta });
+      // Unexpected errors are otherwise invisible (actions return a generic INTERNAL_ERROR). Surface the real
+      // cause so a red CI run is diagnosable; expected ActionErrors stay silent.
+      if (meta?.expected !== true) {
+        console.error(`[realdb logError] ${describeLoggedError(scope, error)}`);
+      }
     },
   };
 }
