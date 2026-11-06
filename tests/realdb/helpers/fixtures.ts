@@ -176,5 +176,7 @@ export async function readGaplessSequences(testDb: TestDb, businessId: string): 
       sequences.push(parseInt(match[1], 10));
     }
   }
-  return sequences;
+  // Concurrent finalizations commit in arbitrary order, so draft creation order says nothing about numbering.
+  // "Gapless" is a property of the sorted set: it must be exactly 1..n.
+  return sequences.sort((a, b) => a - b);
 }

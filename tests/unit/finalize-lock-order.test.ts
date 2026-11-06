@@ -12,7 +12,9 @@ describe('architectural lock order and transaction invariants', () => {
     const src = readProjectFile('lib/invoices/finalize-invoice-tx.ts');
 
     const lockIdx = src.indexOf('lockDraftInvoice(');
-    const lockBizIdx = src.indexOf('lockBusinessRow(');
+    // Must be a real call, not text in a comment (a commented-out lockBusinessRow once hid an API-010 regression).
+    const lockBizIdx = src.search(/^\s*const business = await lockBusinessRow\(tx, params\.businessId\);/m);
+    expect(src).not.toMatch(/^\s*\/\/.*lockBusinessRow\(/m);
     const evalDateIdx = src.indexOf('evaluateInvoiceDate(');
     const quotaIdx = src.indexOf('assertInvoiceQuotaAvailable(');
     const getFyIdx = src.indexOf('getOrCreateCurrentFinancialYear(');

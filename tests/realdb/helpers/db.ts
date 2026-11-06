@@ -50,6 +50,17 @@ export function uuidLiteral(id: string): SQL {
   return sql.raw(`'${id}'::uuid`);
 }
 
+/** Message of an error plus every nested `cause` (Drizzle wraps driver errors as "Failed query: ..."). */
+export function errorChainText(error: unknown): string {
+  const parts: string[] = [];
+  let current: unknown = error;
+  for (let depth = 0; depth < 6 && current !== undefined && current !== null; depth += 1) {
+    parts.push(current instanceof Error ? current.message : String(current));
+    current = current instanceof Error ? current.cause : undefined;
+  }
+  return parts.join(' <- ');
+}
+
 export interface TestBusiness {
   readonly id: string;
   readonly gstin: string;

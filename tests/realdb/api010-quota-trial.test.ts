@@ -22,6 +22,8 @@ import {
 import {
   createFreePlanBusiness,
   createTestUser,
+  makeValidGstin,
+  randomPan,
 } from './helpers/fixtures';
 import { runConcurrently, countFulfilled } from './helpers/concurrency';
 
@@ -169,7 +171,7 @@ describe('API-010: Quota & Trial Concurrency Invariants (REAL Postgres)', () => 
       .insert(schema.businesses)
       .values({
         legal_name: 'Suspended Corp',
-        gstin: '27AAAAA0000A1Z5',
+        gstin: makeValidGstin('27', randomPan()),
         address_line1: '123 Street',
         city: 'Mumbai',
         state_code: '27',
@@ -207,7 +209,7 @@ describe('API-010: Quota & Trial Concurrency Invariants (REAL Postgres)', () => 
       .insert(schema.businesses)
       .values({
         legal_name: 'Expired Trial Corp',
-        gstin: '27BBBBB0000B1Z4',
+        gstin: makeValidGstin('27', randomPan()),
         address_line1: '123 Street',
         city: 'Mumbai',
         state_code: '27',
@@ -258,7 +260,7 @@ describe('API-010: Quota & Trial Concurrency Invariants (REAL Postgres)', () => 
       .insert(schema.businesses)
       .values({
         legal_name: 'Active Trial Corp',
-        gstin: '27CCCCC0000C1Z3',
+        gstin: makeValidGstin('27', randomPan()),
         address_line1: '123 Street',
         city: 'Mumbai',
         state_code: '27',
@@ -306,7 +308,7 @@ describe('API-010: Quota & Trial Concurrency Invariants (REAL Postgres)', () => 
       .insert(schema.businesses)
       .values({
         legal_name: 'Paid Corp',
-        gstin: '27DDDDD0000D1Z2',
+        gstin: makeValidGstin('27', randomPan()),
         address_line1: '123 Street',
         city: 'Mumbai',
         state_code: '27',

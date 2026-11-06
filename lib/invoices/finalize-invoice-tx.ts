@@ -4,7 +4,8 @@ import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import { writeAudit, type AuditRequestContext } from '@/lib/audit/log';
 import { roundToRupeePaise } from '@/lib/credit-notes/derivation';
 import type { DbTransaction } from '@/lib/db/client';
-import { businesses, invoiceLineItems, invoices } from '@/lib/db/schema';
+import { lockBusinessRow } from '@/lib/actions/_shared/business-lock';
+import { invoiceLineItems, invoices } from '@/lib/db/schema';
 import { assertDraftTotalsMatch, resolveDraftPlaceOfSupply } from '@/lib/invoices/place-of-supply';
 import { calculateInvoiceTaxOrActionError } from '@/lib/invoices/tax-calculation';
 import type { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
@@ -43,12 +44,12 @@ export async function finalizeDraftInvoiceInTransaction(
   // 2. Lock draft invoice row FOR UPDATE and validate state
   const invoice = await lockDraftInvoice(tx, { id: params.invoiceId, businessId: params.businessId });
 
-  // 3. Fetch Business and Customer (lock order: invoice -> business -> financial_years -> counters)
-  // lockBusinessRow(tx, params.businessId);
-  // AUTH-004: shared lock serializes with profile identity edits (FOR UPDATE) so a finalized invoice can never carry a GSTIN that changed concurrently.
-  const businessResult = await tx.select().from(businesses).where(eq(businesses.id, params.businessId)).for('share');
-  if (businessResult.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
-  const business = businessResult[0];
+  // 3. Lock the business row FOR NO KEY UPDATE (lock order: invoice -> business -> financial_years -> counters).
+  //    API-010: the lock is exclusive among finalizers, so the monthly quota count below is serialized. A FOR SHARE
+  //    lock would let concurrent finalizers all read the same count and overshoot the plan limit.
+  //    AUTH-004 / COMP-001: it also conflicts with profile, identity and logo edits (FOR UPDATE), so the seller
+  //    snapshot can never capture a GSTIN, state or logo key that is being changed concurrently.
+  const business = await lockBusinessRow(tx, params.businessId);
 
   // Entitlement Checks
   const entitlements = getPlanEntitlements(business);

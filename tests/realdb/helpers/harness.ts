@@ -11,10 +11,21 @@ export const harnessState: { db: unknown } = {
   db: undefined,
 };
 
-export const loggedErrors: unknown[] = [];
+export interface LoggedErrorEntry {
+  readonly scope: string;
+  readonly error: unknown;
+  readonly meta: Record<string, unknown> | undefined;
+}
+
+export const loggedErrors: LoggedErrorEntry[] = [];
 
 export function resetLoggedErrors(): void {
   loggedErrors.length = 0;
+}
+
+/** Logged entries that are NOT expected business errors (ActionErrors are logged with meta.expected === true). */
+export function unexpectedLoggedErrors(): LoggedErrorEntry[] {
+  return loggedErrors.filter((entry) => entry.meta?.expected !== true);
 }
 
 const userStorage = new AsyncLocalStorage<HarnessUser>();

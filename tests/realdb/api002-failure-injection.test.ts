@@ -16,6 +16,7 @@ import {
   createTestDraftInvoice,
   createTestDraftCreditNote,
   uuidLiteral,
+  errorChainText,
 } from './helpers/db';
 import {
   createTestUser,
@@ -119,16 +120,18 @@ describe('API-002: Real-DB Failure Injection & Gapless Sequences (REAL Postgres)
 
     try {
       // Finalizing D2 must throw BM_TEST_INJECTED_FAILURE
-      await expect(
-        testDb.transaction((tx) =>
+      const injectedError = await testDb
+        .transaction((tx) =>
           finalizeDraftInvoiceInTransaction(tx, {
             invoiceId: d2.invoiceId,
             businessId: biz.id,
             actorUserId: user.id,
             requestContext: NO_AUDIT_REQUEST_CONTEXT,
           }),
-        ),
-      ).rejects.toThrow('BM_TEST_INJECTED_FAILURE');
+        )
+        .then(() => null, (error: unknown) => error);
+      // Drizzle wraps the Postgres error ("Failed query: ..."); the RAISE text lives in error.cause.
+      expect(errorChainText(injectedError)).toContain('BM_TEST_INJECTED_FAILURE');
 
       // Verify D2 remains a draft in the database
       const [d2Post] = await testDb.select().from(schema.invoices).where(eq(schema.invoices.id, d2.invoiceId));
@@ -233,9 +236,9 @@ describe('API-002: Real-DB Failure Injection & Gapless Sequences (REAL Postgres)
 
     const fyId = inv.financialYearId;
 
+    // API-004: draft credit notes reserve creditable quantity. Each helper draft credits 0.5 of a 1.0 line, so at
+    // most two may exist at once: cn1 (finalized) + cn2 (fails, then deleted like a user would) + cn3.
     const { creditNoteId: cn1 } = await createTestDraftCreditNote(testDb, biz.id, inv.invoiceId, fyId);
-    const { creditNoteId: cn2 } = await createTestDraftCreditNote(testDb, biz.id, inv.invoiceId, fyId);
-    const { creditNoteId: cn3 } = await createTestDraftCreditNote(testDb, biz.id, inv.invoiceId, fyId);
 
     // Finalize CN 1 -> sequence 1
     const r1 = await testDb.transaction((tx) =>
@@ -247,6 +250,8 @@ describe('API-002: Real-DB Failure Injection & Gapless Sequences (REAL Postgres)
       }),
     );
     expect(r1.creditNoteNumber).toMatch(/(?:[\/\-])0*1$/);
+
+    const { creditNoteId: cn2 } = await createTestDraftCreditNote(testDb, biz.id, inv.invoiceId, fyId);
 
     // Install trigger on credit_notes table to fail for cn2
     await testDb.execute(sql`
@@ -267,16 +272,17 @@ describe('API-002: Real-DB Failure Injection & Gapless Sequences (REAL Postgres)
     `);
 
     try {
-      await expect(
-        testDb.transaction((tx) =>
+      const injectedCnError = await testDb
+        .transaction((tx) =>
           finalizeDraftCreditNoteInTransaction(tx, {
             creditNoteId: cn2,
             businessId: biz.id,
             actorUserId: user.id,
             requestContext: NO_AUDIT_REQUEST_CONTEXT,
           }),
-        ),
-      ).rejects.toThrow('BM_TEST_INJECTED_CN_FAILURE');
+        )
+        .then(() => null, (error: unknown) => error);
+      expect(errorChainText(injectedCnError)).toContain('BM_TEST_INJECTED_CN_FAILURE');
 
       const [cn2Post] = await testDb.select().from(schema.creditNotes).where(eq(schema.creditNotes.id, cn2));
       expect(cn2Post.lifecycle_status).toBe('draft');
@@ -284,6 +290,11 @@ describe('API-002: Real-DB Failure Injection & Gapless Sequences (REAL Postgres)
       await testDb.execute(sql`DROP TRIGGER IF EXISTS bm_test_trg_fail_cn ON credit_notes;`);
       await testDb.execute(sql`DROP FUNCTION IF EXISTS bm_test_fail_cn();`);
     }
+
+    // The failed draft is discarded (as the user would), releasing its reserved quantity.
+    await testDb.delete(schema.creditNoteLineItems).where(eq(schema.creditNoteLineItems.credit_note_id, cn2));
+    await testDb.delete(schema.creditNotes).where(eq(schema.creditNotes.id, cn2));
+    const { creditNoteId: cn3 } = await createTestDraftCreditNote(testDb, biz.id, inv.invoiceId, fyId);
 
     // Finalize CN 3 -> must receive sequence 2
     const r3 = await testDb.transaction((tx) =>
@@ -366,7 +377,7 @@ describe('API-002: Real-DB Failure Injection & Gapless Sequences (REAL Postgres)
       expect(rejected).toHaveLength(1);
 
       if (rejected[0].status === 'rejected') {
-        expect(String(rejected[0].reason)).toContain('BM_TEST_POISONED_DRAFT');
+        expect(errorChainText(rejected[0].reason)).toContain('BM_TEST_POISONED_DRAFT');
       }
 
       // Read gapless sequences from DB: must be strictly [1, 2, 3, 4, 5, 6, 7, 8, 9] with NO gaps

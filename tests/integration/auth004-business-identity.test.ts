@@ -605,12 +605,15 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     }
   });
 
-  it('7. Static guard test: finalize-invoice-tx.ts business select ends with .for("share")', () => {
+  it('7. Static guard test: finalize-invoice-tx.ts locks the business row via lockBusinessRow (FOR NO KEY UPDATE)', () => {
+    // FOR NO KEY UPDATE conflicts with the profile/identity FOR UPDATE (AUTH-004) AND is exclusive among
+    // finalizers (API-010 quota). FOR SHARE satisfied only the first and let concurrent finalizers overshoot quota.
     const src = readFileSync(
       join(process.cwd(), 'lib', 'invoices', 'finalize-invoice-tx.ts'),
       'utf8'
     );
-    expect(src).toMatch(/from\(businesses\)\.where\(eq\(businesses\.id,\s*params\.businessId\)\)\.for\(['"]share['"]\)/);
+    expect(src).toMatch(/^\s*const business = await lockBusinessRow\(tx, params\.businessId\);/m);
+    expect(src).not.toMatch(/\.for\(['"]share['"]\)/);
   });
 
   it('8. Staff user calling saveBusinessProfile is rejected with FORBIDDEN_ROLE', async () => {

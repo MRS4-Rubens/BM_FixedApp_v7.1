@@ -201,9 +201,9 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 
 1. **Global Lock-Order Contract:**
    All transactional modifications must acquire locks in the strict hierarchical sequence:
-   `users (identity, first-time setup only) ; invoice -> credit-note -> payment -> business (FOR SHARE in finalize, FOR UPDATE in profile/identity/subscription flows) -> financial_years -> invoice_number_counters`
+   `users (identity, first-time setup only) ; invoice -> credit-note -> payment -> business (FOR NO KEY UPDATE in invoice finalize, FOR SHARE in credit-note finalize, FOR UPDATE in profile/identity/logo/subscription flows) -> financial_years -> invoice_number_counters`
    Never acquire an earlier lock after a later one in the same transaction (rule: "never take a document lock after a business lock").
-   *Business Row Lock (API-010 / AUTH-004):* `lockBusinessRow(tx, businessId)` acquires `FOR NO KEY UPDATE` for quota/entitlement serialization; `finalizeDraftInvoiceInTransaction` acquires `FOR SHARE` on the business row to serialize against concurrent profile identity edits (`FOR UPDATE`), ensuring a finalized invoice never carries a GSTIN that changed concurrently. `finalizeDraftCreditNoteInTransaction` acquires the same `FOR SHARE` on the business row (Step-0) so credit-note seller snapshots, including `logo_storage_key_snapshot`, serialize with profile and logo edits.
+   *Business Row Lock (API-010 / AUTH-004):* `lockBusinessRow(tx, businessId)` acquires `FOR NO KEY UPDATE` for quota/entitlement serialization; `finalizeDraftInvoiceInTransaction` uses `lockBusinessRow` (`FOR NO KEY UPDATE`): exclusive among finalizers so the monthly quota count is serialized (API-010), and conflicting with profile identity/logo edits (`FOR UPDATE`) so a finalized invoice never carries a GSTIN or logo that changed concurrently (AUTH-004). Do not weaken it to `FOR SHARE`: shared locks let concurrent finalizers read the same quota count and overshoot the limit (regression fixed on PR #4, proven by `tests/realdb/api010-quota-trial.test.ts`). `finalizeDraftCreditNoteInTransaction` acquires the same `FOR SHARE` on the business row (Step-0) so credit-note seller snapshots, including `logo_storage_key_snapshot`, serialize with profile and logo edits.
    *Note on Archival Claims (API-008):* Archival claims are single-row UPDATEs outside any document transaction; they hold no other lock; batch claims use SKIP LOCKED; targeted claims wait. Draft-save actions lock only the specific document they edit (`FOR UPDATE`).
 
 2. **Pure Transactional Modules (`lib/invoices/*-tx.ts`):**
@@ -388,9 +388,9 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
   - Non-identity profile fields (legal name, address, phone, email, bank details) remain editable and save normally.
   - Permitted identity changes write an audit row to `audit_log` with action `business_identity_changed` capturing `previous` and `next` identities.
 - **Finalize / Profile Serialization**:
-  - `finalizeDraftInvoiceInTransaction` acquires `FOR SHARE` on the business row before capturing the seller snapshot (`captureSellerSnapshot`).
+  - `finalizeDraftInvoiceInTransaction` acquires `FOR NO KEY UPDATE` on the business row (`lockBusinessRow`) before capturing the seller snapshot (`captureSellerSnapshot`).
   - Profile identity edits acquire `FOR UPDATE` on the business row.
-  - In PostgreSQL, `FOR SHARE` and `FOR UPDATE` on the same row conflict: a finalizing invoice will never snapshot a GSTIN or state that was concurrently modified in a profile update.
+  - In PostgreSQL, `FOR NO KEY UPDATE` (and `FOR SHARE`, used by credit-note finalize) conflict with `FOR UPDATE` on the same row: a finalizing document will never snapshot a GSTIN or state that was concurrently modified in a profile update.
 - **Platform Admin Override**:
   - Action `adminUpdateBusinessIdentity` (`requirePlatformAdmin: true`) allows platform administrators to legally correct a business's GSTIN and state even after invoices have been finalized.
   - Requires a mandatory explanation of at least 10 characters (`reason`).

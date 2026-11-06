@@ -12,7 +12,7 @@ import {
 } from './helpers/db';
 import {
   harnessState,
-  loggedErrors,
+  unexpectedLoggedErrors,
   resetLoggedErrors,
   runAs,
   type HarnessUser,
@@ -167,10 +167,14 @@ describe('API-009: Double Approval & Claim Concurrency (REAL Postgres)', () => {
       .where(
         eq(schema.auditLog.business_id, biz.id),
       );
-    const approveAudits = auditRows.filter((a) => a.action === 'subscription_request/approve');
+    // writeAudit stores entity_type and action as separate columns ('subscription_request' + 'approve').
+    const approveAudits = auditRows.filter(
+      (a) => a.entity_type === 'subscription_request' && a.action === 'approve' && a.entity_id === claim.id,
+    );
     expect(approveAudits).toHaveLength(1);
 
-    expect(loggedErrors).toEqual([]);
+    // The 7 losers are logged as expected ActionErrors (ALREADY_PROCESSED); nothing unexpected may be logged.
+    expect(unexpectedLoggedErrors()).toEqual([]);
   });
 
   it('2. Approve vs reject race (4 approve + 4 reject concurrent): exactly one terminal outcome', async () => {
