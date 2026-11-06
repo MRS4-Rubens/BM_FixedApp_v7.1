@@ -3,9 +3,11 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { writeAudit } from '@/lib/audit/log';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
+import { setLocalLockTimeout, withTransactionRetry } from '@/lib/db/transaction';
 import { businesses } from '@/lib/db/schema';
 import { deleteLogoObjectIfUnreferenced } from '@/lib/storage/logo';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
@@ -23,38 +25,30 @@ export const removeBusinessLogo = createAuthenticatedAction(
 
     const requestContext = await getAuditRequestContext();
 
-    const existing = await db
-      .select({ logo_storage_key: businesses.logo_storage_key })
-      .from(businesses)
-      .where(eq(businesses.id, businessId))
-      .limit(1);
-
-    if (existing[0]?.logo_storage_key) {
-      try {
-        await deleteLogoObjectIfUnreferenced(businessId, existing[0].logo_storage_key);
-      } catch (delError) {
-        console.warn('Failed to delete logo from iDrive E2 storage:', delError);
-      }
-    }
-
+    let previousKey: string | null = null;
     try {
-      await db.transaction(async (tx) => {
-        const [row] = await tx
-          .select({ key: businesses.logo_storage_key })
-          .from(businesses)
-          .where(eq(businesses.id, businessId))
-          .for('update');
-        if (!row) throw new ActionError('Business profile not found.', { code: 'NOT_FOUND' });
+      previousKey = await withTransactionRetry(() =>
+        db.transaction(async (tx) => {
+          await setLocalLockTimeout(tx);
+          const [row] = await tx
+            .select({ key: businesses.logo_storage_key })
+            .from(businesses)
+            .where(eq(businesses.id, businessId))
+            .for('update');
+          if (!row) throw new ActionError('Business profile not found.', { code: 'NOT_FOUND' });
 
-        await tx
-          .update(businesses)
-          .set({
-            logo_storage_key: null,
-            updated_at: new Date(),
-          })
-          .where(eq(businesses.id, businessId));
+          if (row.key === null) {
+            return null;
+          }
 
-        if (row.key !== null) {
+          await tx
+            .update(businesses)
+            .set({
+              logo_storage_key: null,
+              updated_at: new Date(),
+            })
+            .where(eq(businesses.id, businessId));
+
           await writeAudit(tx, {
             businessId,
             actorUserId: context.appUser.id,
@@ -66,12 +60,17 @@ export const removeBusinessLogo = createAuthenticatedAction(
               previous_logo_storage_key: row.key,
             },
           });
-        }
-      });
-    } catch (dbError) {
+
+          return row.key;
+        }),
+      );
+    } catch (dbError: unknown) {
       if (dbError instanceof ActionError) throw dbError;
-      console.error('Failed to clear business logo in DB:', dbError);
-      throw new ActionError('Failed to remove logo record from database.', { code: 'DB_UPDATE_FAILED' });
+      throw toThrowable(dbError);
+    }
+
+    if (previousKey !== null) {
+      await deleteLogoObjectIfUnreferenced(businessId, previousKey);
     }
 
     revalidatePath('/settings');

@@ -35,11 +35,14 @@ describe('Upload Security Architectural Guards (SEC-002)', () => {
     expect(logoSource).toContain("contentDisposition: 'attachment'");
     expect(logoSource).toContain('rateLimit');
 
+    // Step-0 / COMP-001 Logo Retention Rule: the previous logo is only deleted after the DB swap commits,
+    // and only through the snapshot-aware helper. A raw delete of previousKey must never come back.
     const txIndex = logoSource.indexOf('db.transaction(');
-    const deleteIndex = logoSource.indexOf('deleteFileFromStorage(previousKey');
+    const deleteIndex = logoSource.indexOf('deleteLogoObjectIfUnreferenced(businessId, previousKey');
     expect(txIndex).toBeGreaterThan(-1);
     expect(deleteIndex).toBeGreaterThan(-1);
     expect(deleteIndex).toBeGreaterThan(txIndex);
+    expect(logoSource).not.toContain('deleteFileFromStorage(previousKey');
   });
 
   it('verifies send-feedback.ts adheres to upload security rules', () => {

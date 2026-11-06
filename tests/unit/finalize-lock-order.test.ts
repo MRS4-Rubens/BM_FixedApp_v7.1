@@ -55,6 +55,11 @@ describe('architectural lock order and transaction invariants', () => {
     expect(lockInvIdx).toBeLessThan(lockCnIdx);
     expect(lockCnIdx).toBeLessThan(getNextCnNumIdx);
 
+    const shareIdx = src.search(/\.for\(\s*['"]share['"]\s*\)/);
+    expect(shareIdx).toBeGreaterThan(-1);
+    expect(lockCnIdx).toBeLessThan(shareIdx);
+    expect(shareIdx).toBeLessThan(getNextCnNumIdx);
+
     expect(src).toContain('returning(');
     expect(src).toContain("'draft'");
     expect(src).not.toContain('revalidatePath');

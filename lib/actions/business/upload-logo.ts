@@ -3,11 +3,15 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { logError } from '@/lib/actions/_shared/logger';
+import { toLoggableError, toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { writeAudit } from '@/lib/audit/log';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
+import { setLocalLockTimeout, withTransactionRetry } from '@/lib/db/transaction';
 import { businesses } from '@/lib/db/schema';
 import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
+import { deleteLogoObjectIfUnreferenced } from '@/lib/storage/logo';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -78,8 +82,8 @@ export const uploadBusinessLogo = createAuthenticatedAction(
         cacheControl: 'public, max-age=3600',
       });
     } catch (uploadError) {
-      console.error('Failed to upload logo to iDrive E2:', uploadError);
-      throw new ActionError('Failed to upload image to cloud storage. Please check your storage configuration.', {
+      logError('upload-business-logo', toLoggableError(uploadError), { stage: 'storage-upload' });
+      throw new ActionError('Failed to upload image to cloud storage. Please try again.', {
         code: 'STORAGE_UPLOAD_FAILED',
       });
     }
@@ -87,48 +91,49 @@ export const uploadBusinessLogo = createAuthenticatedAction(
     // 3. Swap the key in ONE transaction that locks the business row and returns the previous key
     let previousKey: string | null = null;
     try {
-      previousKey = await db.transaction(async (tx) => {
-        const [row] = await tx
-          .select({ key: businesses.logo_storage_key })
-          .from(businesses)
-          .where(eq(businesses.id, businessId))
-          .for('update');
-        if (!row) throw new ActionError('Business profile not found.', { code: 'NOT_FOUND' });
+      previousKey = await withTransactionRetry(() =>
+        db.transaction(async (tx) => {
+          await setLocalLockTimeout(tx);
+          const [row] = await tx
+            .select({ key: businesses.logo_storage_key })
+            .from(businesses)
+            .where(eq(businesses.id, businessId))
+            .for('update');
+          if (!row) throw new ActionError('Business profile not found.', { code: 'NOT_FOUND' });
 
-        await tx
-          .update(businesses)
-          .set({ logo_storage_key: storageKey, updated_at: new Date() })
-          .where(eq(businesses.id, businessId));
+          await tx
+            .update(businesses)
+            .set({ logo_storage_key: storageKey, updated_at: new Date() })
+            .where(eq(businesses.id, businessId));
 
-        await writeAudit(tx, {
-          businessId,
-          actorUserId: context.appUser.id,
-          entityType: 'business',
-          entityId: businessId,
-          action: 'logo_upload',
-          requestContext,
-          metadata: {
-            logo_storage_key: storageKey,
-            previous_logo_storage_key: row.key,
-          },
-        });
+          await writeAudit(tx, {
+            businessId,
+            actorUserId: context.appUser.id,
+            entityType: 'business',
+            entityId: businessId,
+            action: 'logo_upload',
+            requestContext,
+            metadata: {
+              logo_storage_key: storageKey,
+              previous_logo_storage_key: row.key,
+            },
+          });
 
-        return row.key;
-      });
+          return row.key;
+        }),
+      );
     } catch (dbError: unknown) {
-      await deleteFileFromStorage(storageKey).catch(() => undefined); // do not orphan the new object
+      await deleteFileFromStorage(storageKey).catch((cleanupError: unknown) => {
+        logError('upload-business-logo', toLoggableError(cleanupError), { stage: 'orphan-cleanup', storageKey });
+      });
       if (dbError instanceof ActionError) throw dbError;
-      console.error('Failed to update business logo in DB:', dbError);
-      throw new ActionError('Failed to update business profile record.', { code: 'DB_UPDATE_FAILED' });
+      throw toThrowable(dbError);
     }
 
-    // 4. Only AFTER the swap succeeds, best-effort delete previousKey
-    if (previousKey) {
-      try {
-        await deleteFileFromStorage(previousKey);
-      } catch (delError: unknown) {
-        console.warn('Failed to delete previous logo from storage:', delError);
-      }
+    // 4. Only AFTER the swap succeeds, delete previousKey if unreferenced
+    // The reference check must run AFTER commit so any finalize holding FOR SHARE on the business row has already committed its snapshot.
+    if (previousKey !== null && previousKey !== storageKey) {
+      await deleteLogoObjectIfUnreferenced(businessId, previousKey);
     }
 
     revalidatePath('/settings');

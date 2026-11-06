@@ -156,7 +156,9 @@ export async function finalizeDraftCreditNoteInTransaction(
   );
 
   // 6. Fetch business profile
-  const bizRows = await tx.select().from(businesses).where(eq(businesses.id, params.businessId));
+  // COMP-001 / AUTH-004: shared lock, identical to finalize-invoice-tx, so the seller snapshot (incl. logo key)
+  // can never be captured from a business row that a concurrent profile/logo edit (FOR UPDATE) is changing.
+  const bizRows = await tx.select().from(businesses).where(eq(businesses.id, params.businessId)).for('share');
   if (bizRows.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
   const business = bizRows[0];
 
