@@ -6,9 +6,10 @@ import { makeGstin } from '../support/gstin';
 import { FIXTURES } from '../support/money';
 import { getExpectedInvoiceNumberPattern, getIndianFinancialYear } from '../support/financial-year';
 import { loadE2eEnv } from '../support/env';
-import { markEmailVerified, queryRows } from '../support/db';
+import { bigintPaise, markEmailVerified, queryRows } from '../support/db';
 import { saveJourneyState, type JourneyState } from '../fixtures/test';
 import { parseGstr1Workbook } from '../support/xlsx';
+import { e2eExtraHttpHeaders } from '../support/http-headers';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -146,10 +147,10 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
           id: z.string(),
           business_id: z.string(),
           lifecycle_status: z.string(),
-          subtotal_paise: z.number().int(),
-          total_cgst_paise: z.number().int(),
-          total_sgst_paise: z.number().int(),
-          grand_total_paise: z.number().int(),
+          subtotal_paise: bigintPaise,
+          total_cgst_paise: bigintPaise,
+          total_sgst_paise: bigintPaise,
+          grand_total_paise: bigintPaise,
         }),
         env,
       );
@@ -182,7 +183,7 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
           id: z.string(),
           invoice_number: z.string(),
           lifecycle_status: z.string(),
-          grand_total_paise: z.number().int(),
+          grand_total_paise: bigintPaise,
         }),
         env,
       );
@@ -195,19 +196,20 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
       await invoiceDetailPage.goto(invoiceId);
       await invoiceDetailPage.recordPayment(FIXTURES.PAYMENT_1_PAISE / 100); // ₹1,500.00
 
-      const balance = await invoiceDetailPage.getBalancePaise();
-      expect(balance).toBe(FIXTURES.BALANCE_AFTER_PAYMENT_1_PAISE); // 204000 paise
+      // The balance re-renders after the server action revalidates the page; poll instead of reading once.
+      await expect
+        .poll(() => invoiceDetailPage.getBalancePaise(), { timeout: 15_000 })
+        .toBe(FIXTURES.BALANCE_AFTER_PAYMENT_1_PAISE); // 204000 paise
 
-      const status = await invoiceDetailPage.getPaymentStatusText();
-      expect(status).toContain('partially paid');
+      await expect.poll(() => invoiceDetailPage.getPaymentStatusText(), { timeout: 15_000 }).toBe('partially paid');
 
       const pRows = await queryRows(
         `SELECT SUM(amount_paise) as total_paid FROM payments WHERE invoice_id = $1 AND status = 'active'`,
         [invoiceId],
-        z.object({ total_paid: z.string().or(z.number()) }),
+        z.object({ total_paid: bigintPaise }),
         env,
       );
-      expect(Number(pRows[0]?.total_paid)).toBe(FIXTURES.PAYMENT_1_PAISE);
+      expect(pRows[0]?.total_paid).toBe(FIXTURES.PAYMENT_1_PAISE);
     });
 
     // ── Step 7: Credit Note and Payment 2 (Settlement) ────────────────────────
@@ -230,21 +232,26 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
 
       // Payment 2 for the exact remainder (₹860.00)
       await invoiceDetailPage.recordPayment(FIXTURES.PAYMENT_2_PAISE / 100);
-      const finalBalance = await invoiceDetailPage.getBalancePaise();
-      expect(finalBalance).toBe(0);
-
-      const finalStatus = await invoiceDetailPage.getPaymentStatusText();
-      expect(finalStatus).toContain('paid');
+      await expect.poll(() => invoiceDetailPage.getBalancePaise(), { timeout: 15_000 }).toBe(0);
+      await expect.poll(() => invoiceDetailPage.getPaymentStatusText(), { timeout: 15_000 }).toBe('paid');
     });
 
-    // ── Step 8: Trial Export Blocked ─────────────────────────────────────────
-    await test.step('Step 8: Verify trial export blocked (HTTP 403 & UI prompt)', async () => {
+    // ── Step 8: Trial includes statutory exports ─────────────────────────────
+    // Product rule (lib/subscriptions/entitlements.ts getPlanEntitlements): an ACTIVE trial gets every Essentials
+    // feature, including Excel exports. The locked path (free/expired plans -> 403 REPORT_EXPORT_LOCKED) is covered
+    // by the entitlement unit tests; the E2E database helper is read-only, so it cannot expire the trial here.
+    await test.step('Step 8: Active trial can export GSTR-1 (UI link + API)', async () => {
       await reportsPage.goto();
-      await reportsPage.expectTrialExportBlocked();
+      await reportsPage.expectExportAvailable();
 
-      // Direct API check using browser context cookies
-      const apiRes = await page.request.get('/api/reports/export?type=gstr1');
-      expect(apiRes.status()).toBe(403);
+      // Direct API check of the exact URL the page links to (it carries the required startDate/endDate),
+      // using the browser context's session cookies.
+      const exportHref = await reportsPage.gstr1ExportButton.getAttribute('href');
+      expect(exportHref).toMatch(/^\/api\/reports\/export\?type=gstr1&/);
+      const apiRes = await page.request.get(exportHref!);
+      expect(apiRes.status()).toBe(200);
+      const body = await apiRes.body();
+      expect(body.subarray(0, 2).toString('latin1')).toBe('PK'); // .xlsx is a ZIP container
     });
 
     // ── Step 9: Submit Payment Claim ────────────────────────────────────────
@@ -262,6 +269,7 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
     await test.step('Step 10: Super admin approves claim', async () => {
       const adminStorage = path.resolve(process.cwd(), 'e2e/.auth/admin.json');
       const adminContext = await browser.newContext({
+        extraHTTPHeaders: e2eExtraHttpHeaders(),
         storageState: adminStorage,
         baseURL: env.E2E_BASE_URL,
       });

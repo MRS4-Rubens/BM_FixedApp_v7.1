@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import * as path from 'path';
 import * as fs from 'fs';
+import { e2eExtraHttpHeaders } from '../support/http-headers';
 
 test.describe('03 - Not Found and Route Boundaries', () => {
   test('unmatched route shows branded 404 with navigation links', async ({ page }) => {
@@ -25,7 +26,9 @@ test.describe('03 - Not Found and Route Boundaries', () => {
     }
 
     const authContext = await browser.newContext({
+      extraHTTPHeaders: e2eExtraHttpHeaders(),
       storageState: userStatePath,
+      baseURL: process.env.E2E_BASE_URL,
     });
 
     try {

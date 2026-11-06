@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import * as path from 'path';
 import { loadJourneyState } from '../fixtures/test';
 import { loadE2eEnv } from '../support/env';
+import { e2eExtraHttpHeaders } from '../support/http-headers';
 
 test.describe('02 - Security & Cross-Tenant Isolation', () => {
   const adminAuthFile = path.resolve(process.cwd(), 'e2e/.auth/admin.json');
@@ -21,6 +22,7 @@ test.describe('02 - Security & Cross-Tenant Isolation', () => {
 
     // Create browser context authenticated as the admin (a distinct tenant)
     const adminContext = await browser.newContext({
+      extraHTTPHeaders: e2eExtraHttpHeaders(),
       storageState: adminAuthFile,
       baseURL: targetUrl,
     });
@@ -58,7 +60,7 @@ test.describe('02 - Security & Cross-Tenant Isolation', () => {
   }) => {
     const targetUrl = baseURL ?? loadE2eEnv(process.env).E2E_BASE_URL;
     // Completely unauthenticated context (no storage state)
-    const unauthContext = await browser.newContext({ baseURL: targetUrl });
+    const unauthContext = await browser.newContext({ baseURL: targetUrl, extraHTTPHeaders: e2eExtraHttpHeaders() });
     const page = await unauthContext.newPage();
 
     const protectedPages = ['/dashboard', '/invoices', '/admin'];
@@ -82,6 +84,7 @@ test.describe('02 - Security & Cross-Tenant Isolation', () => {
     const targetUrl = baseURL ?? loadE2eEnv(process.env).E2E_BASE_URL;
     // Normal user context
     const userContext = await browser.newContext({
+      extraHTTPHeaders: e2eExtraHttpHeaders(),
       storageState: userAuthFile,
       baseURL: targetUrl,
     });
