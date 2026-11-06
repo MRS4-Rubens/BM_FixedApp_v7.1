@@ -1,203 +1,57 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
-import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
-import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
-import { z } from 'zod';
+import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
-import { invoices, invoiceLineItems, businesses, taxRates } from '@/lib/db/schema';
-import { calculateInvoiceTax } from '@/lib/gst/calculate';
-import { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
-import { eq, inArray, and, between, sql } from 'drizzle-orm';
+import { withTransactionRetry } from '@/lib/db/transaction';
+import { finalizeDraftInvoiceInTransaction } from '@/lib/invoices/finalize-invoice-tx';
+import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
+import { scheduleArchival } from '@/lib/storage/schedule-archival';
 import { revalidatePath } from 'next/cache';
-import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
-import { formatIstDateAsIso, getIstDateParts, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
-import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
-import { logError } from '@/lib/actions/_shared/logger';
-import { archiveInvoicePdf } from '@/lib/storage/archive-invoice';
-import { canCreateInvoice, canUseTemplate, getPlanEntitlements } from '@/lib/subscriptions/entitlements';
-import { getCurrentMonthRange } from '@/lib/reports/period';
+import { z } from 'zod';
 
-export const finalizeInvoice = createAuthenticatedAction(z.object({ id: z.string().uuid() }), async ({ id }, context) => {
-  const businessId = context.appUser.business_id;
-  if (!businessId) {
-    throw new ActionError('Your account is not linked to a business profile.', { code: 'NO_BUSINESS_LINKED' });
-  }
+export const finalizeInvoice = createAuthenticatedAction(
+  z.object({
+    id: z.string().uuid(),
+    confirm_cross_financial_year: z.boolean().optional(),
+  }),
+  async ({ id, confirm_cross_financial_year }, context) => {
+    const businessId = context.appUser.business_id;
+    if (!businessId) {
+      throw new ActionError('Your account is not linked to a business profile.', { code: 'NO_BUSINESS_LINKED' });
+    }
 
-  try {
-    const result = await db.transaction(async (tx) => {
-      // 1. Fetch Draft Invoice
-      const existing = await tx.select().from(invoices).where(eq(invoices.id, id));
-      if (existing.length === 0) throw new ActionError('Invoice not found.', { code: 'NOT_FOUND' });
-      
-      const invoice = existing[0];
-      if (invoice.business_id !== businessId) throw new ActionError('Invoice not found.', { code: 'NOT_FOUND' });
-      if (invoice.lifecycle_status !== 'draft') {
-        throw new ActionError('This invoice has already been finalized.', { code: 'ALREADY_FINALIZED' });
-      }
+    try {
+      const requestContext = await getAuditRequestContext();
+      const result = await withTransactionRetry(() =>
+        db.transaction((tx) =>
+          finalizeDraftInvoiceInTransaction(tx, {
+            invoiceId: id,
+            businessId,
+            actorUserId: context.appUser.id,
+            requestContext,
+            confirmCrossFinancialYear: confirm_cross_financial_year,
+          }),
+        ),
+      );
 
-      // 2. Fetch Business and Customer
-      const businessResult = await tx.select().from(businesses).where(eq(businesses.id, businessId));
-      if (businessResult.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
-      const business = businessResult[0];
-
-      // Entitlement Checks
-      const entitlements = getPlanEntitlements(business);
-      if (entitlements.isSuspended) {
-        throw new ActionError('Your account has been suspended. Please contact platform support.', { code: 'ACCOUNT_SUSPENDED' });
-      }
-
-      const templateCheck = canUseTemplate(business, invoice.invoice_template || 'template_1');
-      if (!templateCheck.allowed) {
-        throw new ActionError(templateCheck.reason || 'Template requires Essentials Pro.', { code: 'TEMPLATE_LOCKED' });
-      }
-
-      const monthRange = getCurrentMonthRange();
-      const finalizedCountRes = await tx
-        .select({ count: sql<number>`count(*)` })
-        .from(invoices)
-        .where(
-          and(
-            eq(invoices.business_id, businessId),
-            eq(invoices.lifecycle_status, 'finalized'),
-            between(invoices.invoice_date, monthRange.startDate, monthRange.endDate)
-          )
-        );
-      const finalizedThisMonth = Number(finalizedCountRes[0]?.count || 0);
-
-      const quotaCheck = canCreateInvoice(business, finalizedThisMonth);
-      if (!quotaCheck.allowed) {
-        throw new ActionError(
-          quotaCheck.reason || 'Monthly limit of 30 finalized invoices reached on the Free Plan. Please upgrade your subscription.',
-          { code: quotaCheck.code || 'QUOTA_EXCEEDED' }
-        );
-      }
-
-      if (business.registration_type === 'composition') {
-        throw new ActionError('Composition-scheme invoicing (Bill of Supply) is not yet supported — this MVP handles Regular-scheme tax invoices only.', { code: 'NOT_SUPPORTED' });
-      }
-
-      const hasCustomer = !!invoice.customer_id;
-      // Tenant isolation (API-001): only a customer of THIS business may be copied into the invoice snapshot.
-      const customer = invoice.customer_id ? await findOwnedCustomer(tx, businessId, invoice.customer_id) : null;
-
-      if (hasCustomer && !customer) throw new ActionError('Customer not found.', { code: 'NOT_FOUND' });
-      const placeOfSupplyStateCode = customer ? customer.state_code : invoice.place_of_supply_state_code;
-
-      // 3. Fetch Line Items and Tax Rates for authoritative recalc
-      const lineItems = await tx.select().from(invoiceLineItems).where(eq(invoiceLineItems.invoice_id, id)).orderBy(invoiceLineItems.sort_order);
-      if (lineItems.length === 0) throw new ActionError('Cannot finalize an invoice with no line items.', { code: 'NO_ITEMS' });
-
-      // Note: the draft might have stale tax rates if they changed, though our draft stores tax_rate_percentage
-      // To strictly follow "recompute authoritatively", we just use the stored rate from line items or fetch from DB if we stored the relation.
-      // Wait, invoice_line_items doesn't store tax_rate_id directly (schema only has tax_rate_percentage). 
-      // But we just re-run calculateInvoiceTax with the percentages currently in line items to ensure mathematical consistency.
-      const taxLineItemInputs: TaxLineItemInput[] = lineItems.map(li => ({
-        quantity: Number(li.quantity),
-        unitPricePaise: li.unit_price_paise,
-        discountPaise: li.discount_paise,
-        taxRatePercentage: Number(li.tax_rate_percentage)
-      }));
-
-      const taxCalcInput: TaxCalculationInput = {
-        sellerStateCode: business.state_code,
-        placeOfSupplyStateCode: placeOfSupplyStateCode || business.state_code,
-        lineItems: taxLineItemInputs,
-        // Authoritatively recalculate using the locked calculation mode of the invoice
-        gstRateType: invoice.gst_rate_type
-      };
-
-      const taxResult = calculateInvoiceTax(taxCalcInput);
-
-      // 4. Update Line Items if any rounding differences occurred (defense in depth)
-      // Since it's finalized, we want to make absolutely sure line items match the calculation.
-      for (let i = 0; i < lineItems.length; i++) {
-        const li = lineItems[i];
-        const calcLi = taxResult.lineItems[i];
-        await tx.update(invoiceLineItems).set({
-          taxable_value_paise: calcLi.taxableValuePaise,
-          cgst_paise: calcLi.cgstPaise,
-          sgst_paise: calcLi.sgstPaise,
-          igst_paise: calcLi.igstPaise,
-          line_total_paise: calcLi.lineTotalPaise
-        }).where(eq(invoiceLineItems.id, li.id));
-      }
-
-      // 5. Get Next Invoice Number
-      const invoiceDate = invoice.invoice_date ? parseIsoDateToIstDate(invoice.invoice_date) : new Date();
-      const fy = await getOrCreateCurrentFinancialYear(tx, businessId, invoiceDate);
-
-      const { invoiceNumber, absoluteSequence } = await getNextInvoiceNumber(tx, {
-        businessId: business.id,
-        financialYearId: fy.id,
-        fyLabel: fy.label,
-        invoiceNumberFormat: business.invoice_number_format,
-        invoiceDate
-      });
-
-      // 6. Snapshot fields
-      let billingNameSnapshot = invoice.billing_name_snapshot;
-      let billingGstinSnapshot = invoice.billing_gstin_snapshot;
-      let billingAddressSnapshot = invoice.billing_address_snapshot;
-
-      if (customer) {
-        billingNameSnapshot = customer.name;
-        billingGstinSnapshot = customer.gstin;
-        const cityStatePincode = [customer.city, customer.state_code, customer.pincode].filter(Boolean).join(', ');
-        billingAddressSnapshot = [
-          customer.address_line1,
-          customer.address_line2,
-          cityStatePincode
-        ].filter(Boolean).join('\n');
-      }
-
-      const { year, month, day } = getIstDateParts(invoiceDate);
-      const dueIstDate = new Date(Date.UTC(year, month - 1, day + business.payment_due_days));
-      const dueDateString = `${dueIstDate.getUTCFullYear()}-${String(dueIstDate.getUTCMonth() + 1).padStart(2, '0')}-${String(dueIstDate.getUTCDate()).padStart(2, '0')}`;
-
-      await tx.update(invoices).set({
-        invoice_sequence: absoluteSequence,
-        invoice_number: invoiceNumber,
-        financial_year_id: fy.id,
-        lifecycle_status: 'finalized',
-        invoice_date: formatIstDateAsIso(invoiceDate),
-        due_date: dueDateString,
-        finalized_at: invoiceDate,
-        place_of_supply_state_code: placeOfSupplyStateCode || business.state_code,
-        seller_gstin_snapshot: business.gstin,
-        billing_name_snapshot: billingNameSnapshot,
-        billing_gstin_snapshot: billingGstinSnapshot,
-        billing_address_snapshot: billingAddressSnapshot,
-        subtotal_paise: taxResult.subtotalPaise,
-        total_cgst_paise: taxResult.totalCgstPaise,
-        total_sgst_paise: taxResult.totalSgstPaise,
-        total_igst_paise: taxResult.totalIgstPaise,
-        total_tax_paise: taxResult.totalTaxPaise,
-        grand_total_paise: Math.round(taxResult.grandTotalPaise / 100) * 100,
-        // Confirm calculation mode is locked at finalization
-        gst_rate_type: invoice.gst_rate_type,
-      }).where(eq(invoices.id, id));
-
+      // Cache invalidation only AFTER commit.
       revalidatePath('/invoices');
       revalidatePath(`/invoices/${id}`);
 
-      return { invoiceId: id, invoiceNumber };
-    });
-    
-    // Archival is intentionally decoupled from the finalize transaction — a slow or temporarily-down 
-    // PDF provider must never block a business owner from finalizing a real invoice. If this fails here, 
-    // the daily retry cron (Task 7) will catch it.
-    archiveInvoicePdf(id).then(result => {
-      if (!result.success) {
-        logError('finalize-invoice', new Error(result.error || 'Archival failed'), { invoiceId: id });
-      }
-    });
+      // Archival scheduled via Next.js after() to run reliably on serverless after response.
+      scheduleArchival('invoice', id);
 
-    return result;
-  } catch (error) {
-    if (error instanceof ActionError) throw error;
-    console.error('Error finalizing invoice:', error);
-    throw new ActionError('We could not finalize the invoice. Please try again.', { code: 'TRANSACTION_FAILED' });
-  }
-}, 'finalize-invoice', { rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'finalize-invoice' } });
+      return result;
+    } catch (error: unknown) {
+      throw toThrowable(error);
+    }
+  },
+  'finalize-invoice',
+  {
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'finalize-invoice', outage: 'fail-open' },
+    requireActiveSubscription: true,
+  },
+);

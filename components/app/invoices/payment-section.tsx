@@ -8,6 +8,7 @@ import { recordPayment } from '@/lib/actions/payments/record-payment';
 import { VoidPaymentDialog, VoidablePayment } from './void-payment-dialog';
 import { Button } from '@/components/ui/button';
 import { formatPaiseAsInr, paiseToRupees } from '@/lib/money';
+import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import {
   Ban,
   Wallet2,
@@ -87,7 +88,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
     defaultValues: {
       invoice_id: invoice.id,
       amount: balanceDue > 0 ? balanceDueRupees : 0,
-      payment_date: new Date().toISOString().split('T')[0],
+      payment_date: formatIstDateAsIso(new Date()),
       payment_method: 'bank_transfer',
       reference_number: '',
       notes: ''
@@ -131,7 +132,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
       reset({
         invoice_id: invoice.id,
         amount: remainingPaise > 0 ? paiseToRupees(remainingPaise) : 0,
-        payment_date: new Date().toISOString().split('T')[0],
+        payment_date: formatIstDateAsIso(new Date()),
         payment_method: data.payment_method,
         reference_number: '',
         notes: ''
@@ -242,6 +243,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                   <input
                     type="number"
                     step="0.01"
+                    min="0.01"
                     placeholder="0.00"
                     className={cn(inputCls, "pl-7 font-bold text-[13px] sm:text-[15px]", errors.amount && 'border-destructive focus:ring-destructive/30')}
                     {...register('amount')}
@@ -256,6 +258,8 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                 </div>
                 <input
                   type="date"
+                  max={formatIstDateAsIso(new Date())}
+                  min={typeof invoice.invoice_date === 'string' ? invoice.invoice_date.slice(0, 10) : undefined}
                   className={cn(inputCls, errors.payment_date && 'border-destructive focus:ring-destructive/30')}
                   {...register('payment_date')}
                 />

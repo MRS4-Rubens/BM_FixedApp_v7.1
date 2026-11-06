@@ -1,13 +1,14 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { invoiceSettingsSchema } from '@/lib/validations/invoice-settings';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { canUseTemplate, getPlanEntitlements } from '@/lib/subscriptions/entitlements';
+import { checkInvoiceSettingsEntitlement } from '@/lib/subscriptions/invoice-settings-gate';
 
 export const saveInvoiceSettings = createAuthenticatedAction(
   invoiceSettingsSchema,
@@ -30,50 +31,25 @@ export const saveInvoiceSettings = createAuthenticatedAction(
       throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
     }
 
-    // Server-side entitlement check for custom invoice number formats
-    const { canCustomizeInvoiceFormat } = getPlanEntitlements(business);
-    if (!canCustomizeInvoiceFormat) {
-      if (
-        input.invoice_number_format !== business.invoice_number_format &&
-        input.invoice_number_format !== 'BMA/{FY}/{SEQ:4}' &&
-        input.invoice_number_format !== 'INV-{DD}/{MM}/{YY}/{SEQ:3}'
-      ) {
-        throw new ActionError(
-          'Custom invoice numbering formats and brand prefixes are exclusive to paid plans. Upgrade to Essentials Pro to customize your invoice format.',
-          { code: 'INVOICE_FORMAT_LOCKED' }
-        );
-      }
-    }
+    const gate = checkInvoiceSettingsEntitlement(business, business.invoice_number_format, {
+      invoice_number_format: input.invoice_number_format,
+      default_invoice_template: input.default_invoice_template,
+    });
+    if (!gate.allowed) throw new ActionError(gate.message, { code: gate.code });
 
-    // Server-side entitlement check for default invoice template
-    const templateCheck = canUseTemplate(business, input.default_invoice_template);
-    if (!templateCheck.allowed) {
-      throw new ActionError(
-        templateCheck.reason ||
-          'Your current plan only supports the Classic (Template 1) layout. Please upgrade to unlock premium invoice templates.',
-        { code: templateCheck.code || 'PLAN_LIMIT_REACHED' }
-      );
-    }
-
-    try {
-      await db
-        .update(businesses)
-        .set({
-          invoice_number_format: input.invoice_number_format,
-          credit_note_number_prefix: input.credit_note_number_prefix,
-          payment_due_days: input.payment_due_days,
-          default_invoice_template: input.default_invoice_template,
-          default_gst_rate_type: input.default_gst_rate_type,
-          invoice_terms: input.invoice_terms,
-          updated_at: new Date(),
-        })
-        .where(eq(businesses.id, businessId));
-    } catch (error) {
-      console.error('Error saving invoice settings:', error);
-      throw new ActionError('Failed to save invoice settings. Please try again.', {
-        code: 'UPDATE_FAILED',
-      });
-    }
+    await db
+      .update(businesses)
+      .set({
+        invoice_number_format: input.invoice_number_format,
+        credit_note_number_prefix: input.credit_note_number_prefix,
+        payment_due_days: input.payment_due_days,
+        default_invoice_template: input.default_invoice_template,
+        default_gst_rate_type: input.default_gst_rate_type,
+        invoice_terms: input.invoice_terms,
+        ...(input.display_prefs !== undefined ? { invoice_display_prefs: input.display_prefs } : {}),
+        updated_at: new Date(),
+      })
+      .where(eq(businesses.id, businessId));
 
     revalidatePath('/settings');
     revalidatePath('/invoices');
@@ -82,5 +58,6 @@ export const saveInvoiceSettings = createAuthenticatedAction(
 
     return { success: true };
   },
-  'save-invoice-settings'
+  'save-invoice-settings',
+  { roles: OWNER_ONLY, requireActiveSubscription: true }
 );

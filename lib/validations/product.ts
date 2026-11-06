@@ -1,5 +1,8 @@
 import { z } from 'zod';
 import { UNIT_OF_MEASUREMENT_OPTIONS } from '../gst/units';
+import { MAX_UNIT_PRICE_RUPEES } from '@/lib/validations/limits';
+import { MAX_UNIT_PRICE_LABEL } from '@/lib/money-limits';
+import { moneyRupees } from '@/lib/validations/common';
 
 export const productSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200, 'Name must be 200 characters or less'),
@@ -11,7 +14,11 @@ export const productSchema = z.object({
   unit_of_measurement: z.enum(UNIT_OF_MEASUREMENT_OPTIONS, {
     message: 'Please select a valid unit of measurement.',
   }),
-  default_sale_price: z.coerce.number().min(0, 'Price must be 0 or greater'),
+  default_sale_price: moneyRupees({
+    label: 'Price',
+    max: MAX_UNIT_PRICE_RUPEES,
+    maxMessage: `Price cannot exceed ${MAX_UNIT_PRICE_LABEL}`,
+  }),
   default_tax_rate_id: z.string().uuid().optional().or(z.literal('')),
   stock_quantity: z.coerce.number().int('Stock must be a whole number').min(0, 'Stock cannot be negative').optional().or(z.literal('')),
 });

@@ -1,4 +1,4 @@
-import { getIstDateParts, formatIstDateAsIso } from '@/lib/invoices/ist-date';
+import { getIstDateParts } from '@/lib/invoices/ist-date';
 import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
 
 // Centralizing period-range logic here means Phase 15's ITR/GST Excel export reuses these exact same functions rather than recalculating date ranges independently.
@@ -13,6 +13,24 @@ export function getMonthRange(year: number, month: number): { startDate: string;
   const label = `${monthNames[month - 1]} ${year}`;
   
   return { startDate, endDate, label };
+}
+
+const ISO_DATE_PATTERN = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+
+/** Month range (IST calendar month) containing an ISO date `YYYY-MM-DD`. Throws RangeError on malformed input. */
+export function getMonthRangeForIsoDate(isoDate: string): { startDate: string; endDate: string; label: string } {
+  const match = ISO_DATE_PATTERN.exec(isoDate);
+  if (match === null) {
+    throw new RangeError('Expected an ISO calendar date (YYYY-MM-DD).');
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  if (day > daysInMonth) {
+    throw new RangeError('Expected an ISO calendar date (YYYY-MM-DD).');
+  }
+  return getMonthRange(year, month);
 }
 
 export function getCurrentMonthRange(asOfDate: Date = new Date()): { startDate: string; endDate: string; label: string } {

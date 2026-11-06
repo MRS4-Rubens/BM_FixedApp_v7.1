@@ -1,17 +1,26 @@
+import { redirect } from 'next/navigation';
 import { listInvoices } from '@/lib/actions/invoices/list-invoices';
 import { listCreditNotes } from '@/lib/actions/credit-notes/list-credit-notes';
 import { InvoicesClient } from './client';
-import { redirect } from 'next/navigation';
 import { getCurrentAppUser } from '@/lib/auth/session';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { parseInvoiceListParams, type RawSearchParams } from '@/lib/invoices/list-params';
+import { buildListHref } from '@/lib/pagination/url';
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<RawSearchParams>;
+}) {
   const appUser = await getCurrentAppUser();
   if (!appUser?.business_id) {
     redirect('/settings');
   }
+
+  const rawParams = searchParams ? await searchParams : {};
+  const params = parseInvoiceListParams(rawParams);
 
   const businessResult = await db
     .select({ state_code: businesses.state_code })
@@ -20,23 +29,89 @@ export default async function InvoicesPage() {
     .limit(1);
   const businessStateCode = businessResult[0]?.state_code || '';
 
-  const [result, cnResult] = await Promise.all([
-    listInvoices({}),
-    listCreditNotes({})
+  const isActiveInvoices = params.tab === 'invoices';
+
+  const [invoicesResult, cnResult] = await Promise.all([
+    listInvoices(
+      isActiveInvoices
+        ? {
+            q: params.q ?? undefined,
+            month: params.month,
+            year: params.year,
+            status: params.status,
+            limit: params.size,
+            after: params.after,
+            before: params.before,
+          }
+        : {
+            month: params.month,
+            year: params.year,
+            limit: 10,
+          }
+    ),
+    listCreditNotes(
+      !isActiveInvoices
+        ? {
+            q: params.q ?? undefined,
+            month: params.month,
+            year: params.year,
+            limit: params.size,
+            after: params.after,
+            before: params.before,
+          }
+        : {
+            month: params.month,
+            year: params.year,
+            limit: 10,
+          }
+    ),
   ]);
-  
-  if (!result.success) {
-    if (result.error.code === 'UNAUTHORIZED') {
+
+  if (!invoicesResult.success) {
+    if (invoicesResult.error.code === 'UNAUTHORIZED') {
       redirect('/login');
     }
     return <div className="p-4 text-destructive">Failed to load invoices.</div>;
   }
 
+  if (!cnResult.success) {
+    if (cnResult.error.code === 'UNAUTHORIZED') {
+      redirect('/login');
+    }
+    return <div className="p-4 text-destructive">Failed to load credit notes.</div>;
+  }
+
+  const activePageInfo = isActiveInvoices
+    ? invoicesResult.data.pageInfo
+    : cnResult.data.pageInfo;
+
+  const baseFilterParams = {
+    tab: params.tab,
+    q: params.q || undefined,
+    status: isActiveInvoices && params.status !== 'all' ? params.status : undefined,
+    month: params.month,
+    year: params.year,
+  };
+
+  const previousHref =
+    activePageInfo.hasPreviousPage && activePageInfo.startCursor
+      ? buildListHref('/invoices', { ...baseFilterParams, before: activePageInfo.startCursor })
+      : null;
+
+  const nextHref =
+    activePageInfo.hasNextPage && activePageInfo.endCursor
+      ? buildListHref('/invoices', { ...baseFilterParams, after: activePageInfo.endCursor })
+      : null;
+
   return (
-    <InvoicesClient 
-      initialInvoices={result.data || []} 
-      initialCreditNotes={cnResult.success ? cnResult.data : []}
-      businessStateCode={businessStateCode} 
+    <InvoicesClient
+      invoicesPage={invoicesResult.data}
+      creditNotesPage={cnResult.data}
+      businessStateCode={businessStateCode}
+      activeTab={params.tab}
+      previousHref={previousHref}
+      nextHref={nextHref}
+      currentParams={params}
     />
   );
 }

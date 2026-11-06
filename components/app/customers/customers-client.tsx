@@ -1,33 +1,82 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Search, Users, Plus, MapPin, Phone, ShieldCheck } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { MapPin, Phone, Plus, Search, ShieldCheck, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/app/empty-state';
-import { listCustomers } from '@/lib/actions/customers/list-customers';
-import { customers as customersSchema } from '@/lib/db/schema';
+import { PaginationControls } from '@/components/app/pagination-controls';
+import type { CustomerRow } from '@/lib/actions/customers/list-customers';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
+import type { CustomerListParams } from '@/lib/invoices/list-params';
+import type { Page } from '@/lib/pagination/keyset';
+import { buildListHref } from '@/lib/pagination/url';
+import { cn } from '@/lib/utils';
 
-export function CustomersClient({ initialCustomers }: { initialCustomers: (typeof customersSchema.$inferSelect)[] }) {
-  const [customers, setCustomers] = useState(initialCustomers);
-  const [search, setSearch] = useState('');
-  const [includeInactive, setIncludeInactive] = useState(false);
-  const [loading, setLoading] = useState(false);
+export interface CustomersClientProps {
+  readonly page: Page<CustomerRow>;
+  readonly previousHref: string | null;
+  readonly nextHref: string | null;
+  readonly currentParams: CustomerListParams;
+}
 
+export function CustomersClient({
+  page,
+  previousHref,
+  nextHref,
+  currentParams,
+}: CustomersClientProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const [search, setSearch] = useState(currentParams.q ?? '');
+  const [prevQ, setPrevQ] = useState(currentParams.q ?? '');
+  if (prevQ !== (currentParams.q ?? '')) {
+    setPrevQ(currentParams.q ?? '');
+    setSearch(currentParams.q ?? '');
+  }
+
+  const [includeInactive, setIncludeInactive] = useState(currentParams.includeInactive);
+  const [prevInactive, setPrevInactive] = useState(currentParams.includeInactive);
+  if (prevInactive !== currentParams.includeInactive) {
+    setPrevInactive(currentParams.includeInactive);
+    setIncludeInactive(currentParams.includeInactive);
+  }
+
+  // 300ms debounced search driving router.replace (drops cursors)
   useEffect(() => {
-    const fetchCustomers = async () => {
-      setLoading(true);
-      const result = await listCustomers({ search, includeInactive });
-      if (result.success && result.data) {
-        setCustomers(result.data.customers);
-      }
-      setLoading(false);
-    };
+    const trimmed = search.trim();
+    if (trimmed === (currentParams.q ?? '')) {
+      return;
+    }
 
-    const debounce = setTimeout(fetchCustomers, 300);
-    return () => clearTimeout(debounce);
-  }, [search, includeInactive]);
+    const timer = setTimeout(() => {
+      const targetHref = buildListHref('/customers', {
+        q: trimmed || undefined,
+        inactive: currentParams.includeInactive ? 'true' : undefined,
+      });
+
+      startTransition(() => {
+        router.replace(targetHref);
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search, currentParams.includeInactive, currentParams.q, router]);
+
+  function handleInactiveToggle(checked: boolean) {
+    setIncludeInactive(checked);
+    const targetHref = buildListHref('/customers', {
+      q: search.trim() || undefined,
+      inactive: checked ? 'true' : undefined,
+    });
+    startTransition(() => {
+      router.replace(targetHref);
+    });
+  }
+
+  const customers = page.items;
 
   return (
     <div className="space-y-6">
@@ -76,7 +125,7 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: (typeo
                 type="checkbox" 
                 className="rounded border-border/70 text-indigo-600 focus:ring-indigo-500/20 size-4 cursor-pointer"
                 checked={includeInactive}
-                onChange={(e) => setIncludeInactive(e.target.checked)}
+                onChange={(e) => handleInactiveToggle(e.target.checked)}
               />
               Show inactive
             </label>
@@ -84,106 +133,117 @@ export function CustomersClient({ initialCustomers }: { initialCustomers: (typeo
         </div>
       </div>
 
-      {loading && <div className="text-sm font-medium text-muted-foreground mb-4">Loading customers...</div>}
+      <div className={cn("transition-opacity duration-150", isPending && "opacity-60 pointer-events-none")}>
+        {/* Customer cards */}
+        {customers.length > 0 ? (
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            {customers.map((c) => {
+              const state = INDIAN_GST_STATES.find((s) => s.code === c.state_code);
+              const stateDisplay = state ? `${state.name} (${c.state_code})` : c.state_code;
+              const initials =
+                c.name
+                  .trim()
+                  .split(/\s+/)
+                  .slice(0, 2)
+                  .map((w) => w[0])
+                  .join('')
+                  .toUpperCase() || c.name.substring(0, 2).toUpperCase();
 
-      {/* Customer cards */}
-      {!loading && customers.length > 0 ? (
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-          {customers.map((c) => {
-            const state = INDIAN_GST_STATES.find((s) => s.code === c.state_code)
-            const stateDisplay = state ? `${state.name} (${c.state_code})` : c.state_code
-            const initials = c.name
-              .trim()
-              .split(/\s+/)
-              .slice(0, 2)
-              .map((w) => w[0])
-              .join('')
-              .toUpperCase() || c.name.substring(0, 2).toUpperCase()
-
-            return (
-              <div
-                key={c.id}
-                className={`group relative rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs hover:shadow-md hover:border-indigo-500/30 transition-all duration-200 flex flex-col justify-between ${
-                  !c.is_active ? 'opacity-60 bg-muted/20' : ''
-                }`}
-              >
-                {/* Top Row: Avatar, Name & GSTIN, Status Badge */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold border border-border/50 shadow-2xs">
-                      {initials}
+              return (
+                <div
+                  key={c.id}
+                  className={`group relative rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs hover:shadow-md hover:border-indigo-500/30 transition-all duration-200 flex flex-col justify-between ${
+                    !c.is_active ? 'opacity-60 bg-muted/20' : ''
+                  }`}
+                >
+                  {/* Top Row: Avatar, Name & GSTIN, Status Badge */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold border border-border/50 shadow-2xs">
+                        {initials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={`/customers/${c.id}/edit`}
+                          className="font-bold text-base sm:text-lg text-foreground group-hover:text-indigo-600 transition-colors truncate block leading-snug"
+                        >
+                          {c.name}
+                        </Link>
+                        <p className="mt-0.5 text-sm font-mono text-muted-foreground truncate">
+                          {c.gstin ? (
+                            <span>{c.gstin}</span>
+                          ) : (
+                            <span className="text-muted-foreground/70 font-sans italic text-xs">Unregistered</span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        href={`/customers/${c.id}/edit`}
-                        className="font-bold text-base sm:text-lg text-foreground group-hover:text-indigo-600 transition-colors truncate block leading-snug"
-                      >
-                        {c.name}
-                      </Link>
-                      <p className="mt-0.5 text-sm font-mono text-muted-foreground truncate">
-                        {c.gstin ? (
-                          <span>{c.gstin}</span>
-                        ) : (
-                          <span className="text-muted-foreground/70 font-sans italic text-xs">Unregistered</span>
-                        )}
-                      </p>
+
+                    {/* Top Right Badges */}
+                    <div className="shrink-0 flex items-center gap-1.5">
+                      {!c.is_active ? (
+                        <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-bold text-destructive border border-destructive/20">
+                          Inactive
+                        </span>
+                      ) : c.gstin ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          <ShieldCheck className="size-3.5 shrink-0" />
+                          B2B
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-slate-500/10 px-2.5 py-0.5 text-xs font-bold text-slate-600 dark:text-slate-400 border border-slate-500/20">
+                          Consumer
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Top Right Badges */}
-                  <div className="shrink-0 flex items-center gap-1.5">
-                    {!c.is_active ? (
-                      <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-bold text-destructive border border-destructive/20">
-                        Inactive
-                      </span>
-                    ) : c.gstin ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        <ShieldCheck className="size-3.5 shrink-0" />
-                        B2B
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center rounded-full bg-slate-500/10 px-2.5 py-0.5 text-xs font-bold text-slate-600 dark:text-slate-400 border border-slate-500/20">
-                        Consumer
-                      </span>
-                    )}
+                  {/* Bottom Row: State Name on Left, Mobile Number on Right */}
+                  <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between text-sm text-muted-foreground font-medium gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0 truncate">
+                      <MapPin className="size-4 shrink-0 text-muted-foreground/80" />
+                      <span className="truncate">{stateDisplay}</span>
+                    </div>
+
+                    <div className="shrink-0 flex items-center gap-1.5 text-right font-medium">
+                      {c.phone ? (
+                        <>
+                          <Phone className="size-3.5 text-muted-foreground/80 shrink-0" />
+                          <span className="font-mono text-sm text-foreground font-bold">{c.phone}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground/50 text-xs">No phone</span>
+                      )}
+                    </div>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        ) : null}
 
-                {/* Bottom Row: State Name on Left, Mobile Number on Right */}
-                <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between text-sm text-muted-foreground font-medium gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0 truncate">
-                    <MapPin className="size-4 shrink-0 text-muted-foreground/80" />
-                    <span className="truncate">{stateDisplay}</span>
-                  </div>
+        {/* Empty state */}
+        {customers.length === 0 && (
+          <div className="mt-6">
+            <EmptyState
+              icon={<Users className="size-5" />}
+              title={search || includeInactive ? "No matching customers found" : "No customers yet"}
+              description={search || includeInactive ? "Try adjusting your search or filters." : "Add your first customer to build your directory."}
+              action={!search && !includeInactive ? { label: 'Add Customer', href: '/customers/new' } : undefined}
+            />
+          </div>
+        )}
 
-                  <div className="shrink-0 flex items-center gap-1.5 text-right font-medium">
-                    {c.phone ? (
-                      <>
-                        <Phone className="size-3.5 text-muted-foreground/80 shrink-0" />
-                        <span className="font-mono text-sm text-foreground font-bold">{c.phone}</span>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground/50 text-xs">No phone</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      ) : null}
-
-      {/* Empty state */}
-      {!loading && customers.length === 0 && (
-        <div className="mt-6">
-          <EmptyState
-            icon={<Users className="size-5" />}
-            title={search || includeInactive ? "No matching customers found" : "No customers yet"}
-            description={search || includeInactive ? "Try adjusting your search or filters." : "Add your first customer to build your directory."}
-            action={!search && !includeInactive ? { label: 'Add Customer', href: '/customers/new' } : undefined}
+        {customers.length > 0 && (
+          <PaginationControls
+            shown={customers.length}
+            total={page.totalCount}
+            previousHref={previousHref}
+            nextHref={nextHref}
+            label="customers"
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,9 @@
 'use server'
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { CUSTOMER_MAPPINGS } from '@/lib/actions/_shared/pg-constraint-mappings';
 import { customerSchema } from '@/lib/validations/customer';
 import { db } from '@/lib/db/client';
 import { customers } from '@/lib/db/schema';
@@ -44,13 +46,12 @@ export const updateCustomer = createAuthenticatedAction(updateCustomerSchema, as
     if (result.length === 0) {
       throw new ActionError('Customer not found.', { code: 'NOT_FOUND' });
     }
-  } catch (error) {
-    if (error instanceof ActionError) throw error;
-    throw new ActionError('We could not update the customer. Please try again.', { code: 'TRANSACTION_FAILED' });
+  } catch (error: unknown) {
+    throw toThrowable(error, CUSTOMER_MAPPINGS);
   }
 
   revalidatePath('/customers');
   revalidatePath(`/customers/${id}/edit`);
 
   return { success: true };
-}, 'update-customer');
+}, 'update-customer', { requireActiveSubscription: true });

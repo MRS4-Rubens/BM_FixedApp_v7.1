@@ -30,6 +30,7 @@ import { InvoicePrintView, type InvoicePrintViewProps } from './invoice-print-vi
 import { generateWhatsAppInvoiceUrl } from '@/lib/subscriptions/whatsapp'
 import { resolveSubscriptionPlan } from '@/lib/subscriptions/entitlements'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
+import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs'
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -51,6 +52,8 @@ interface InvoiceDetailProps {
     pdf_storage_key?: string | null
     emailed_at?: string | Date | null
     email_send_count?: number
+    reminder_count?: number
+    last_reminder_at?: string | Date | null
     customer?: { email?: string | null; phone?: string | null; name?: string | null } | null
     customer_name?: string | null
     customer_email?: string | null
@@ -68,20 +71,20 @@ interface InvoiceDetailProps {
     notes?: string | null
     [key: string]: unknown
   }>
-  creditNotes?: Array<{
+  creditNotes?: ReadonlyArray<{
     id: string
-    credit_note_number: string
+    credit_note_number: string | null
     issue_date: string | Date | null
-    reason: string
+    reason: string | null
     lifecycle_status: string
     grand_total_paise: number
     status?: string | null
     voided_at?: string | Date | null
     void_reason?: string | null
     void_notes?: string | null
-    [key: string]: unknown
   }>
   businessStateCode: string
+  displayPrefs: InvoiceDisplayPrefs
   business?: {
     id?: string
     legal_name?: string
@@ -94,7 +97,7 @@ interface InvoiceDetailProps {
   } | null
 }
 
-export function InvoiceDetail({ invoice, payments = [], creditNotes = [], businessStateCode, business }: InvoiceDetailProps) {
+export function InvoiceDetail({ invoice, payments = [], creditNotes = [], businessStateCode, business, displayPrefs }: InvoiceDetailProps) {
   const [printSize, setPrintSize] = useState<'A4' | 'A5'>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
@@ -311,6 +314,11 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                     Emailed ({invoice.email_send_count}x)
                   </span>
                 )}
+                {invoice.last_reminder_at && (
+                  <span className="text-[9px] bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900 font-semibold whitespace-nowrap shrink-0">
+                    Reminder sent ({invoice.reminder_count ?? 1}x) · {new Date(invoice.last_reminder_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -449,7 +457,8 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
               <InvoicePrintView 
                 invoice={invoice} 
                 businessStateCode={businessStateCode} 
-                printSize={printSize} 
+                printSize={printSize}
+                displayPrefs={displayPrefs}
               />
             </div>
           </div>
@@ -702,8 +711,9 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
         <InvoicePrintView 
           invoice={invoice} 
           businessStateCode={businessStateCode} 
-          printSize={printSize} 
-        />
+          printSize={printSize}
+                displayPrefs={displayPrefs}
+              />
       </div>
 
       <UpgradePromptModal

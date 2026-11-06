@@ -3,6 +3,7 @@ import { InvoiceTemplate2 } from './templates/template-2';
 import { InvoiceTemplate3 } from './templates/template-3';
 import { InvoiceTemplate4 } from './templates/template-4';
 import { resolveSubscriptionPlan } from '@/lib/subscriptions/entitlements';
+import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs';
 
 export interface InvoicePrintViewProps {
   invoice: {
@@ -51,9 +52,10 @@ export interface InvoicePrintViewProps {
   businessStateCode: string;
   printSize?: 'A4' | 'A5';
   hasWatermark?: boolean;
+  displayPrefs: InvoiceDisplayPrefs;
 }
 
-export function InvoicePrintView({ invoice, businessStateCode, printSize = 'A4', hasWatermark }: InvoicePrintViewProps) {
+export function InvoicePrintView({ invoice, businessStateCode, printSize = 'A4', hasWatermark, displayPrefs }: InvoicePrintViewProps) {
   const templateId = invoice.invoice_template || 'template_1';
 
   const logoUrl = invoice.logo_url 
@@ -98,6 +100,7 @@ export function InvoicePrintView({ invoice, businessStateCode, printSize = 'A4',
     businessStateCode,
     printSize,
     hasWatermark: effectiveHasWatermark,
+    displayPrefs,
   };
 
   switch (templateId) {

@@ -5,6 +5,7 @@ import { eq, and, desc, sql, between } from 'drizzle-orm';
 import { SettingsClient } from '@/components/app/settings/settings-client';
 import { redirect } from 'next/navigation';
 import { getCurrentMonthRange } from '@/lib/reports/period';
+import { hasFinalizedInvoices } from '@/lib/business/identity-lock';
 
 export default async function SettingsPage({
   searchParams,
@@ -28,7 +29,7 @@ export default async function SettingsPage({
     amountPaise: number;
     paymentMethod: string;
     paymentReference: string;
-    screenshotStorageKey: string | null;
+    hasScreenshot: boolean;
     status: string;
     rejectReason: string | null;
     approvedAt: Date | null;
@@ -76,7 +77,7 @@ export default async function SettingsPage({
             amountPaise: subscriptionRequests.amount_paise,
             paymentMethod: subscriptionRequests.payment_method,
             paymentReference: subscriptionRequests.payment_reference,
-            screenshotStorageKey: subscriptionRequests.screenshot_storage_key,
+            hasScreenshot: sql<boolean>`${subscriptionRequests.screenshot_storage_key} IS NOT NULL`.mapWith(Boolean),
             status: subscriptionRequests.status,
             rejectReason: subscriptionRequests.reject_reason,
             approvedAt: subscriptionRequests.approved_at,
@@ -125,6 +126,8 @@ export default async function SettingsPage({
     }
   }
 
+  const identityLocked = business ? await hasFinalizedInvoices(db, business.id) : false;
+
   return (
     <SettingsClient
       business={business}
@@ -132,6 +135,7 @@ export default async function SettingsPage({
       initialTab={initialTab}
       initialSubscriptions={subscriptionHistory}
       usageStats={usageStats}
+      identityLocked={identityLocked}
     />
   );
 }

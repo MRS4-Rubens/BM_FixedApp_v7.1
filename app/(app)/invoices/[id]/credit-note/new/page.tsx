@@ -2,8 +2,11 @@ import { redirect } from 'next/navigation';
 import { getCreditNoteFormData } from '@/lib/actions/credit-notes/get-credit-note-form-data';
 import { CreditNoteForm } from '@/components/app/credit-notes/credit-note-form';
 
+// bounds after()-scheduled PDF archival started by finalize server actions
+export const maxDuration = 60;
+
 export default async function NewCreditNotePage({
-  params
+  params,
 }: {
   params: Promise<{ id: string }>;
 }) {
@@ -24,30 +27,23 @@ export default async function NewCreditNotePage({
     );
   }
 
-  const { invoice, previouslyCreditedPaise, business, lineItems, taxRates } = result.data;
-
-  // Filter out any items that have 0 remaining creditable quantity
-  const creditableItems = lineItems.map(item => ({
-    product_id: item.product_id,
-    description: item.description,
-    hsn_sac_code: item.hsn_sac_code,
-    unit_of_measurement: item.unit_of_measurement,
-    unit_price: item.unit_price_rupees,
-    discount: item.discount_percentage,
-    tax_rate_id: item.tax_rate_id,
-    tax_rate_percentage: item.tax_rate_percentage,
-    original_quantity: item.original_quantity,
-    remaining_creditable_quantity: item.remaining_creditable_quantity,
-    quantity: item.remaining_creditable_quantity
-  }));
+  const {
+    invoice,
+    previouslyCreditedPaise,
+    previouslyCreditedExactPaise,
+    invoiceExactTotalPaise,
+    business,
+    lineStates,
+  } = result.data;
 
   return (
     <CreditNoteForm
       originalInvoice={invoice}
       previouslyCreditedPaise={previouslyCreditedPaise}
+      previouslyCreditedExactPaise={previouslyCreditedExactPaise}
+      invoiceExactTotalPaise={invoiceExactTotalPaise}
       business={business}
-      initialLineItems={creditableItems}
-      taxRates={taxRates}
+      initialLineStates={lineStates}
     />
   );
 }

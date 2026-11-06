@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: bm-test-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bm_test
+    ports:
+      - "54329:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bm_test"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+

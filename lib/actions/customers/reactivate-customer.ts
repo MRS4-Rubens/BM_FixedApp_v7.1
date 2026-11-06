@@ -19,22 +19,17 @@ export const reactivateCustomer = createAuthenticatedAction(reactivateSchema, as
     throw new ActionError('Please complete your business profile in Settings before updating customers.', { code: 'NOT_FOUND' });
   }
 
-  try {
-    const result = await db.update(customers)
-      .set({ is_active: true, updated_at: new Date() })
-      .where(and(eq(customers.id, input.id), eq(customers.business_id, businessId)))
-      .returning({ id: customers.id });
+  const result = await db.update(customers)
+    .set({ is_active: true, updated_at: new Date() })
+    .where(and(eq(customers.id, input.id), eq(customers.business_id, businessId)))
+    .returning({ id: customers.id });
 
-    if (result.length === 0) {
-      throw new ActionError('Customer not found.', { code: 'NOT_FOUND' });
-    }
-  } catch (error) {
-    if (error instanceof ActionError) throw error;
-    throw new ActionError('We could not reactivate the customer. Please try again.', { code: 'TRANSACTION_FAILED' });
+  if (result.length === 0) {
+    throw new ActionError('Customer not found.', { code: 'NOT_FOUND' });
   }
 
   revalidatePath('/customers');
   revalidatePath(`/customers/${input.id}/edit`);
 
   return { success: true };
-}, 'reactivate-customer');
+}, 'reactivate-customer', { requireActiveSubscription: true });

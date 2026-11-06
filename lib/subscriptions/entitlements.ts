@@ -186,11 +186,12 @@ export function resolveBusinessPlan(business?: BusinessSubscriptionSource | null
       };
     }
 
-    // Default 14-day trial if no timestamp set
+    // API-010: a trial with NO recorded end date can never be verified, so it is treated as EXPIRED
+    // (fail closed). Migration `api010_trial_end_backfill` gives every legacy row an end date.
     return {
-      tier: 'trial',
-      effectiveStatus: 'trial',
-      daysRemaining: 14,
+      tier: 'free',
+      effectiveStatus: 'expired',
+      daysRemaining: 0,
       targetExpiry: null,
     };
   }
@@ -255,8 +256,23 @@ export function getPlanEntitlements(business?: BusinessSubscriptionSource | null
 
 export const resolveSubscriptionPlan = getPlanEntitlements;
 
+/** API-010: a suspended business is read-only. Pure; the DB-aware guard lives in lib/actions/_shared/subscription-guard.ts. */
+export function checkAccountNotSuspended(
+  business: BusinessSubscriptionSource | null | undefined,
+): { allowed: boolean; reason?: string; code?: string } {
+  if (getPlanEntitlements(business).isSuspended) {
+    return {
+      allowed: false,
+      reason: 'Your account has been suspended. Please contact platform support.',
+      code: 'ACCOUNT_SUSPENDED',
+    };
+  }
+  return { allowed: true };
+}
+
 /**
- * Evaluates whether an invoice can be created or finalized
+ * Evaluates whether an invoice can be created or finalized.
+ * currentMonthInvoiceCount MUST be the number of FINALIZED invoices whose invoice_date is in the IST month of the invoice being finalized. Drafts never count.
  */
 export function canCreateInvoice(
   business: BusinessSubscriptionSource | null | undefined,

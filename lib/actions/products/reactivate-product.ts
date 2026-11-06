@@ -39,5 +39,6 @@ export const reactivateProduct = createAuthenticatedAction(
 
     return result[0];
   },
-  'reactivate-product'
+  'reactivate-product',
+  { requireActiveSubscription: true }
 );

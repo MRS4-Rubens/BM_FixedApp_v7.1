@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { maxBase64Chars } from '@/lib/security/upload';
 
 export const FEEDBACK_CATEGORIES = ['bug', 'feature_request', 'ui_ux', 'general'] as const;
 export type FeedbackCategory = (typeof FEEDBACK_CATEGORIES)[number];
@@ -20,11 +21,16 @@ export const ALLOWED_MIME_TYPES = [
 
 export const feedbackAttachmentSchema = z.object({
   filename: z.string().min(1, 'File name is required').max(150, 'File name is too long'),
-  contentBase64: z.string().min(1, 'File content cannot be empty'),
+  contentBase64: z
+    .string()
+    .min(1, 'File content cannot be empty')
+    .max(maxBase64Chars(MAX_FILE_SIZE_BYTES)),
+  // advisory only; the server validates the decoded bytes
   mimeType: z.string().refine(
     (mime) => ALLOWED_MIME_TYPES.includes(mime as (typeof ALLOWED_MIME_TYPES)[number]),
     { message: 'Only PNG, JPEG, WebP, and PDF files are allowed.' }
   ),
+  // advisory only; the server validates the decoded bytes
   sizeBytes: z.number().int().positive().max(MAX_FILE_SIZE_BYTES, 'Each file must be 2.5 MB or smaller'),
 });
 

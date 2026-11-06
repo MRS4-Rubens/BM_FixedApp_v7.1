@@ -4,8 +4,9 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests, users } from '@/lib/db/schema';
-import { auth } from '@/lib/auth/server';
-import { eq, desc } from 'drizzle-orm';
+import { isPlatformAdmin } from '@/lib/auth/admin';
+import { evaluateRoleAccess, OWNER_ONLY } from '@/lib/auth/rbac';
+import { eq, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 const getBusinessSubscriptionsSchema = z.object({
@@ -15,17 +16,13 @@ const getBusinessSubscriptionsSchema = z.object({
 export const getBusinessSubscriptions = createAuthenticatedAction(
   getBusinessSubscriptionsSchema,
   async (input, context) => {
-    // 1. Authorize user by checking session email against PLATFORM_ADMIN_EMAILS or verifying user belongs to the business
-    const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
-    const adminEmails = adminEmailsEnv.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+    // 1. Authorize user by checking if platform admin or verifying user is business owner
+    const isAdmin = await isPlatformAdmin();
+    const isBusinessOwner =
+      context.appUser.business_id === input.business_id &&
+      evaluateRoleAccess(context.appUser.role, OWNER_ONLY).allowed;
 
-    const session = await auth.getSession();
-    const userEmail = session?.data?.user?.email?.toLowerCase();
-
-    const isPlatformAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
-    const isBusinessMember = context.appUser.business_id === input.business_id;
-
-    if (!isPlatformAdmin && !isBusinessMember) {
+    if (!isAdmin && !isBusinessOwner) {
       throw new ActionError('Unauthorized: Access denied.', {
         code: 'UNAUTHORIZED_ACCESS',
       });
@@ -40,7 +37,7 @@ export const getBusinessSubscriptions = createAuthenticatedAction(
         amountPaise: subscriptionRequests.amount_paise,
         paymentMethod: subscriptionRequests.payment_method,
         paymentReference: subscriptionRequests.payment_reference,
-        screenshotStorageKey: subscriptionRequests.screenshot_storage_key,
+        hasScreenshot: sql<boolean>`${subscriptionRequests.screenshot_storage_key} IS NOT NULL`.mapWith(Boolean),
         status: subscriptionRequests.status,
         rejectReason: subscriptionRequests.reject_reason,
         approvedAt: subscriptionRequests.approved_at,

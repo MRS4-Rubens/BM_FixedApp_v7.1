@@ -15,9 +15,15 @@ __v0_jsx-dev-runtime.ts
 !.env.example
 
 # Common ignores
-node_modules
+node_modules/
+out/
+.turbo/
 .next/
+coverage/
 .DS_Store
+
+# Claude Internal Cache
+.claude/
 
 # TypeScript cache
 *.tsbuildinfo
@@ -25,13 +31,13 @@ node_modules
 # Editor settings
 .vscode/
 
-# Package Manager Lockfiles (Saves thousands of lines of text)
-pnpm-lock.yaml
-pnpm-workspace.yaml
-
-# Configuration and Local Settings
-.npmrc
-.nvmrc
-
 # Repomix Output (Prevents the tool from reading its own output)
-repomix-output.txt
+repomix-output*
+.repomixignore
+
+# Playwright and E2E
+/playwright-report/
+/test-results/
+/e2e/.auth/
+/e2e/.state/
+.env.e2e*

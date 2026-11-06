@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
 import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
+import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs';
 
 export interface InvoiceLineItem {
   id: string;
@@ -58,49 +58,11 @@ export interface InvoiceTemplateProps {
   businessStateCode: string;
   printSize: 'A4' | 'A5';
   hasWatermark?: boolean;
+  displayPrefs: InvoiceDisplayPrefs;
 }
 
-export function InvoiceTemplate1({ invoice, businessStateCode, printSize, hasWatermark }: InvoiceTemplateProps) {
-  const [settings, setSettings] = useState<{
-    showHsn: boolean;
-    enableFixedRows: boolean;
-    fixedRowsCount: number;
-  }>({
-    showHsn: true,
-    enableFixedRows: true,
-    fixedRowsCount: 13,
-  });
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('bm_invoice_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSettings({
-          showHsn: parsed.showHsn ?? true,
-          enableFixedRows: parsed.enableFixedRows ?? true,
-          fixedRowsCount: Number(parsed.fixedRowsCount) || 13,
-        });
-      }
-    } catch { }
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'bm_invoice_settings' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          setSettings({
-            showHsn: parsed.showHsn ?? true,
-            enableFixedRows: parsed.enableFixedRows ?? true,
-            fixedRowsCount: Number(parsed.fixedRowsCount) || 13,
-          });
-        } catch { }
-      }
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
-
-  const { showHsn, enableFixedRows, fixedRowsCount } = settings;
+export function InvoiceTemplate1({ invoice, businessStateCode, printSize, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
+  const { showHsn, enableFixedRows, fixedRowsCount } = displayPrefs;
   const isIntra = invoice.total_igst_paise === 0;
   const supplyLabel = isIntra ? 'Intra-State' : 'Inter-State';
 

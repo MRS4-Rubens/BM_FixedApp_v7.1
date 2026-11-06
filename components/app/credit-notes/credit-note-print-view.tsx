@@ -32,6 +32,7 @@ export interface CreditNotePrintViewProps {
       email?: string | null;
       logo_storage_key?: string | null;
       logo_base64?: string | null;
+      logo_url?: string | null;
     };
     originalInvoice: {
       id: string;
@@ -83,6 +84,7 @@ export function CreditNotePrintView({ creditNote, printSize = 'A4' }: CreditNote
 
   const logoUrl =
     biz.logo_base64 ||
+    biz.logo_url ||
     (biz.id && biz.logo_storage_key ? `/api/business/${biz.id}/logo` : null);
 
   return (

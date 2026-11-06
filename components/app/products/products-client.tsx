@@ -1,48 +1,105 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Plus, Search, PackageOpen } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { PackageOpen, Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { listProducts } from '@/lib/actions/products/list-products';
-import { products, taxRates } from '@/lib/db/schema';
+import { PaginationControls } from '@/components/app/pagination-controls';
+import type { ProductListItem } from '@/lib/actions/products/list-products';
+import type { ProductListParams } from '@/lib/invoices/list-params';
 import { formatPaiseAsInr } from '@/lib/money';
+import type { Page } from '@/lib/pagination/keyset';
+import { buildListHref } from '@/lib/pagination/url';
+import { cn } from '@/lib/utils';
 
-type ProductResult = {
-  product: typeof products.$inferSelect;
-  taxRate: typeof taxRates.$inferSelect | null;
-};
-
-const tabs = ['Products', 'Services'] as const;
+const tabs = ['All', 'Products', 'Services'] as const;
 type Tab = (typeof tabs)[number];
 
-export function ProductsClient({ initialData }: { initialData: ProductResult[] }) {
-  const [data, setData] = useState<ProductResult[]>(initialData);
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [includeInactive, setIncludeInactive] = useState(false);
+export interface ProductsClientProps {
+  readonly page: Page<ProductListItem>;
+  readonly previousHref: string | null;
+  readonly nextHref: string | null;
+  readonly currentParams: ProductListParams;
+}
+
+export function ProductsClient({
+  page,
+  previousHref,
+  nextHref,
+  currentParams,
+}: ProductsClientProps) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [activeTab, setActiveTab] = useState<Tab>('Products');
 
+  const [search, setSearch] = useState(currentParams.q ?? '');
+  const [prevQ, setPrevQ] = useState(currentParams.q ?? '');
+  if (prevQ !== (currentParams.q ?? '')) {
+    setPrevQ(currentParams.q ?? '');
+    setSearch(currentParams.q ?? '');
+  }
+
+  const [includeInactive, setIncludeInactive] = useState(currentParams.includeInactive);
+  const [prevInactive, setPrevInactive] = useState(currentParams.includeInactive);
+  if (prevInactive !== currentParams.includeInactive) {
+    setPrevInactive(currentParams.includeInactive);
+    setIncludeInactive(currentParams.includeInactive);
+  }
+
+  // 300ms debounced search driving router.replace (drops cursors)
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    const trimmed = search.trim();
+    if (trimmed === (currentParams.q ?? '')) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const targetHref = buildListHref('/products', {
+        q: trimmed || undefined,
+        inactive: currentParams.includeInactive ? 'true' : undefined,
+        kind: currentParams.kind !== 'all' ? currentParams.kind : undefined,
+      });
+
+      startTransition(() => {
+        router.replace(targetHref);
+      });
+    }, 300);
+
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, currentParams.includeInactive, currentParams.kind, currentParams.q, router]);
 
-  useEffect(() => {
-    startTransition(async () => {
-      const result = await listProducts({ search: debouncedSearch, includeInactive });
-      if (result.success) {
-        setData(result.data);
-      }
+  function handleInactiveToggle(checked: boolean) {
+    setIncludeInactive(checked);
+    const targetHref = buildListHref('/products', {
+      q: search.trim() || undefined,
+      inactive: checked ? 'true' : undefined,
+      kind: currentParams.kind !== 'all' ? currentParams.kind : undefined,
     });
-  }, [debouncedSearch, includeInactive]);
+    startTransition(() => {
+      router.replace(targetHref);
+    });
+  }
 
-  const filteredData = data.filter((item) => {
-    const isService = item.product.hsn_sac_code.startsWith('99');
-    return activeTab === 'Services' ? isService : !isService;
-  });
+  function handleTabChange(tab: Tab) {
+    const kindParam = tab === 'Services' ? 'service' : tab === 'Products' ? 'product' : undefined;
+    const targetHref = buildListHref('/products', {
+      q: search.trim() || undefined,
+      inactive: currentParams.includeInactive ? 'true' : undefined,
+      kind: kindParam,
+    });
+    startTransition(() => {
+      router.replace(targetHref);
+    });
+  }
+
+  const activeTab: Tab =
+    currentParams.kind === 'service'
+      ? 'Services'
+      : currentParams.kind === 'product'
+      ? 'Products'
+      : 'All';
+
+  const items = page.items;
 
   return (
     <div className="space-y-6">
@@ -91,7 +148,7 @@ export function ProductsClient({ initialData }: { initialData: ProductResult[] }
               <input
                 type="checkbox"
                 checked={includeInactive}
-                onChange={(e) => setIncludeInactive(e.target.checked)}
+                onChange={(e) => handleInactiveToggle(e.target.checked)}
                 className="rounded border-border/70 text-indigo-600 focus:ring-indigo-500/20 size-4 cursor-pointer"
               />
               Show inactive
@@ -106,9 +163,9 @@ export function ProductsClient({ initialData }: { initialData: ProductResult[] }
           <button
             key={tab}
             type="button"
-            onClick={() => setActiveTab(tab)}
+            onClick={() => handleTabChange(tab)}
             className={cn(
-              'pb-1.5 text-sm uppercase tracking-wider font-bold transition-colors',
+              'pb-1.5 text-sm uppercase tracking-wider font-bold transition-colors cursor-pointer',
               activeTab === tab
                 ? 'border-b-2 border-primary text-foreground'
                 : 'text-muted-foreground hover:text-foreground',
@@ -119,83 +176,95 @@ export function ProductsClient({ initialData }: { initialData: ProductResult[] }
         ))}
       </div>
 
-      {/* Product cards */}
-      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-        {filteredData.map(({ product, taxRate }) => {
-          const isService = product.hsn_sac_code.startsWith('99')
-          const codePrefix = isService ? 'SAC' : 'HSN'
+      <div className={cn("transition-opacity duration-150", isPending && "opacity-60 pointer-events-none")}>
+        {/* Product cards */}
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          {items.map(({ product, taxRate }) => {
+            const isService = Boolean(product.hsn_sac_code && product.hsn_sac_code.startsWith('99'));
+            const codePrefix = isService ? 'SAC' : 'HSN';
 
-          return (
-            <Link 
-              key={product.id} 
-              href={`/products/${product.id}/edit`}
-              className={cn(
-                "group relative rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs hover:shadow-md hover:border-indigo-500/30 transition-all duration-200 flex flex-col justify-between",
-                !product.is_active && "opacity-60 bg-muted/20"
-              )}
-            >
-              {/* Line 1: Name on Left, GST% on Complete Right */}
-              <div className="flex items-start justify-between gap-3">
-                <p className="font-bold text-base sm:text-lg text-foreground group-hover:text-indigo-600 transition-colors truncate block leading-snug flex-1">
-                  {product.name}
-                </p>
-
-                <div className="shrink-0 flex items-center gap-1.5">
-                  {taxRate ? (
-                    <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      {taxRate.label} GST
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                      No rate
-                    </span>
-                  )}
-                  {!product.is_active && (
-                    <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-bold text-destructive border border-destructive/20">
-                      Inactive
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Line 2 (below Line 1): Rate/Price + Unit + (HSN/SAC Code) on left, Stock docked on right */}
-              <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between gap-1.5 text-sm overflow-hidden">
-                <div className="flex items-baseline gap-1.5 shrink-0 whitespace-nowrap min-w-0">
-                  <span className="text-base sm:text-lg font-extrabold text-foreground font-heading shrink-0">
-                    {formatPaiseAsInr(product.default_sale_price_paise)}
-                  </span>
-                  <span className="text-xs font-semibold text-muted-foreground/80 shrink-0">
-                    / {product.unit_of_measurement}
-                  </span>
-                  <span className="text-xs font-mono font-medium text-muted-foreground shrink-0">
-                    ({codePrefix}: {product.hsn_sac_code})
-                  </span>
-                </div>
-
-                {product.stock_quantity !== null && product.stock_quantity !== undefined && (
-                  <span className="shrink-0 text-[11px] font-bold text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded border border-border/40 ml-auto">
-                    Stock: {product.stock_quantity}
-                  </span>
+            return (
+              <Link 
+                key={product.id} 
+                href={`/products/${product.id}/edit`}
+                className={cn(
+                  "group relative rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs hover:shadow-md hover:border-indigo-500/30 transition-all duration-200 flex flex-col justify-between",
+                  !product.is_active && "opacity-60 bg-muted/20"
                 )}
-              </div>
-            </Link>
-          )
-        })}
+              >
+                {/* Line 1: Name on Left, GST% on Complete Right */}
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-bold text-base sm:text-lg text-foreground group-hover:text-indigo-600 transition-colors truncate block leading-snug flex-1">
+                    {product.name}
+                  </p>
 
-        {filteredData.length === 0 && !isPending && (
-          <div className="col-span-full flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-16 text-center">
-            <PackageOpen className="mb-4 size-10 text-muted-foreground/50" />
-            <p className="text-sm font-medium text-foreground">
-              {data.length === 0 && !search && !includeInactive
-                ? `No ${activeTab.toLowerCase()} added yet`
-                : 'No matches found'}
-            </p>
-            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-              {data.length === 0 && !search && !includeInactive
-                ? `Add your first ${activeTab.slice(0, -1).toLowerCase()} to start building your catalogue.`
-                : 'Try adjusting your search or filters.'}
-            </p>
-          </div>
+                  <div className="shrink-0 flex items-center gap-1.5">
+                    {taxRate ? (
+                      <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        {taxRate.label} GST
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        No rate
+                      </span>
+                    )}
+                    {!product.is_active && (
+                      <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-bold text-destructive border border-destructive/20">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Line 2 (below Line 1): Rate/Price + Unit + (HSN/SAC Code) on left, Stock docked on right */}
+                <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between gap-1.5 text-sm overflow-hidden">
+                  <div className="flex items-baseline gap-1.5 shrink-0 whitespace-nowrap min-w-0">
+                    <span className="text-base sm:text-lg font-extrabold text-foreground font-heading shrink-0">
+                      {formatPaiseAsInr(product.default_sale_price_paise)}
+                    </span>
+                    <span className="text-xs font-semibold text-muted-foreground/80 shrink-0">
+                      / {product.unit_of_measurement}
+                    </span>
+                    <span className="text-xs font-mono font-medium text-muted-foreground shrink-0">
+                      ({codePrefix}: {product.hsn_sac_code})
+                    </span>
+                  </div>
+
+                  {product.stock_quantity !== null && product.stock_quantity !== undefined && (
+                    <span className="shrink-0 text-[11px] font-bold text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded border border-border/40 ml-auto">
+                      Stock: {product.stock_quantity}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+
+          {items.length === 0 && !isPending && (
+            <div className="col-span-full flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 py-16 text-center">
+              <PackageOpen className="mb-4 size-10 text-muted-foreground/50" />
+              <p className="text-sm font-medium text-foreground">
+                {page.totalCount === 0 && !search && !includeInactive
+                  ? `No ${activeTab.toLowerCase()} added yet`
+                  : 'No matches found'}
+              </p>
+              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                {page.totalCount === 0 && !search && !includeInactive
+                  ? `Add your first ${activeTab === 'Services' ? 'service' : 'product'} to start building your catalogue.`
+                  : 'Try adjusting your search or filters.'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {items.length > 0 && (
+          <PaginationControls
+            shown={items.length}
+            total={page.totalCount}
+            previousHref={previousHref}
+            nextHref={nextHref}
+            label={currentParams.kind === 'service' ? 'services' : currentParams.kind === 'product' ? 'products' : 'items'}
+          />
         )}
       </div>
     </div>

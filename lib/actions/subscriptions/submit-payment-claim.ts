@@ -1,20 +1,32 @@
 'use server';
 
+import * as React from 'react';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { logError } from '@/lib/actions/_shared/logger';
 import { subscriptionClaimSchema } from '@/lib/validations/subscription';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests, businesses } from '@/lib/db/schema';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
-import { uploadFileToStorage, getSignedDownloadUrl } from '@/lib/storage/idrive';
+import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
 import { getResend } from '@/lib/email/resend';
-import { getAppEnv, getEmailEnv } from '@/lib/env';
+import { getAdminEnv, getAppEnv, getEmailEnv } from '@/lib/env';
 import { SubscriptionRequestEmail } from '@/lib/email/templates/subscription-request-email';
 import { formatPaiseAsInr } from '@/lib/money';
 import { auth } from '@/lib/auth/server';
+import { classifyClaimInsertError } from '@/lib/subscriptions/claim-errors';
+import { requireValidUpload, buildUploadKey, IMAGE_MIMES } from '@/lib/security/upload';
+
+const SCREENSHOT_MAX_BYTES = 4 * 1024 * 1024; // module-level const (matches the checkout UI limit)
+
+const NEUTRAL_DUPLICATE_MESSAGE =
+  'This payment reference could not be accepted. Please double-check the UTR/transaction ID; if it is correct, contact support and quote it.';
+const PENDING_CLAIM_MESSAGE =
+  'You already have a payment verification request pending. Please wait for our team to review it.';
 
 export const submitPaymentClaim = createAuthenticatedAction(
   subscriptionClaimSchema,
@@ -66,7 +78,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
 
     if (existingPending.length > 0) {
       throw new ActionError(
-        'You already have a payment verification request pending. Please wait for our team to review it.',
+        PENDING_CLAIM_MESSAGE,
         { code: 'PENDING_CLAIM_EXISTS' }
       );
     }
@@ -79,7 +91,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
 
     if (duplicateUtr.length > 0) {
       throw new ActionError(
-        'This payment transaction reference/UTR has already been submitted.',
+        NEUTRAL_DUPLICATE_MESSAGE,
         { code: 'DUPLICATE_REFERENCE' }
       );
     }
@@ -88,72 +100,97 @@ export const submitPaymentClaim = createAuthenticatedAction(
 
     // 4. Handle base64 image upload if provided
     if (input.screenshot_base64) {
+      // Validate the real bytes first; validation errors are specific, user-safe ActionErrors.
+      const screenshot = requireValidUpload(input.screenshot_base64, {
+        maxBytes: SCREENSHOT_MAX_BYTES,
+        allowed: IMAGE_MIMES,
+      });
+      const key = buildUploadKey(`payment-screenshots/${businessId}`, screenshot.ext);
       try {
-        const mimeType = input.screenshot_mime || 'image/jpeg';
-        const extension = mimeType.split('/')[1] || 'jpg';
-
-        // Remove base64 data header if present (e.g. data:image/png;base64,)
-        const base64Data = input.screenshot_base64.replace(/^data:image\/\w+;base64,/, '');
-        const buffer = Buffer.from(base64Data, 'base64');
-
-        screenshotKey = `payment-screenshots/${businessId}/${input.payment_reference}.${extension}`;
-
-        await uploadFileToStorage(screenshotKey, buffer, mimeType);
+        await uploadFileToStorage(key, screenshot.buffer, screenshot.mime, {
+          contentDisposition: 'attachment',
+          cacheControl: 'private, no-store',
+        });
       } catch (err: unknown) {
-        console.error('[submitPaymentClaim] Screenshot S3 upload failed:', err);
-        throw new ActionError('Failed to upload the payment screenshot to S3. Please try again.', {
+        logError('submit-payment-claim', err, { stage: 'screenshot-upload' });
+        throw new ActionError('Failed to upload the payment screenshot. Please try again.', {
           code: 'UPLOAD_FAILED',
         });
       }
+      screenshotKey = key;
     }
 
-    // 5. Insert record into database using authoritative server-side price
-    let requestRecord;
+    // 5. Insert record into database using authoritative server-side price inside a transaction
+    let requestRecord: typeof subscriptionRequests.$inferSelect;
     try {
-      const [record] = await db
-        .insert(subscriptionRequests)
-        .values({
-          business_id: businessId,
-          user_id: context.appUser.id,
-          plan_name: input.plan_name,
-          billing_cycle: input.billing_cycle,
-          amount_paise: authoritativeAmountPaise,
-          payment_method: input.payment_method,
-          payment_reference: input.payment_reference,
-          screenshot_storage_key: screenshotKey,
-          status: 'pending',
-        })
-        .returning();
-      requestRecord = record;
+      requestRecord = await db.transaction(async (tx) => {
+        // Serialise concurrent submissions of THIS business (lock order: business -> request).
+        const [lockedBusiness] = await tx
+          .select({ id: businesses.id })
+          .from(businesses)
+          .where(eq(businesses.id, businessId))
+          .for('update');
+        if (!lockedBusiness) throw new ActionError('Business profile not found.', { code: 'BUSINESS_NOT_FOUND' });
+        const [pending] = await tx
+          .select({ id: subscriptionRequests.id })
+          .from(subscriptionRequests)
+          .where(and(eq(subscriptionRequests.business_id, businessId), eq(subscriptionRequests.status, 'pending')))
+          .limit(1);
+        if (pending) throw new ActionError(PENDING_CLAIM_MESSAGE, { code: 'PENDING_CLAIM_EXISTS' });
+        const [record] = await tx
+          .insert(subscriptionRequests)
+          .values({
+            business_id: businessId,
+            user_id: context.appUser.id,
+            plan_name: input.plan_name,
+            billing_cycle: input.billing_cycle,
+            amount_paise: authoritativeAmountPaise,
+            payment_method: input.payment_method,
+            payment_reference: input.payment_reference,
+            screenshot_storage_key: screenshotKey,
+            status: 'pending',
+          })
+          .returning();
+        if (!record) {
+          throw new ActionError('Failed to record payment claim. Please check your reference and try again.', {
+            code: 'DB_INSERT_FAILED',
+          });
+        }
+        return record;
+      });
     } catch (err: unknown) {
-      const dbErr = err as { code?: string; message?: string };
-      if (dbErr.code === '23505' || dbErr.message?.includes('unique')) {
-        throw new ActionError('This payment transaction reference/UTR has already been submitted.', {
-          code: 'DUPLICATE_REFERENCE',
+      if (screenshotKey) {
+        deleteFileFromStorage(screenshotKey).catch((cleanupErr: unknown) => {
+          logError('submit-payment-claim', cleanupErr, { stage: 'orphan-screenshot-cleanup' });
         });
       }
-      console.error('[submitPaymentClaim] DB insert failed:', err);
+      if (err instanceof ActionError) throw err;
+      const failure = classifyClaimInsertError(err);
+      if (failure === 'PENDING_CLAIM_EXISTS') {
+        throw new ActionError(PENDING_CLAIM_MESSAGE, { code: 'PENDING_CLAIM_EXISTS' });
+      }
+      if (failure === 'DUPLICATE_REFERENCE') {
+        throw new ActionError(NEUTRAL_DUPLICATE_MESSAGE, { code: 'DUPLICATE_REFERENCE' });
+      }
+      logError('submit-payment-claim', err);
       throw new ActionError('Failed to record payment claim. Please check your reference and try again.', {
         code: 'DB_INSERT_FAILED',
       });
     }
 
     // 6. Send Email notification to Super Admins (via Resend)
-    const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
-    const adminEmails = adminEmailsEnv.split(',').map((e) => e.trim()).filter(Boolean);
-
-    if (adminEmails.length > 0) {
-      try {
+    try {
+      const adminEmails = getAdminEnv().PLATFORM_ADMIN_EMAILS;
+      if (adminEmails.length > 0) {
         const session = await auth.getSession();
         const ownerEmail = session?.data?.user?.email || 'No email';
         const amountFormatted = formatPaiseAsInr(authoritativeAmountPaise);
 
-        // Generate a temporary signed S3 URL for the admin to view the screenshot (expires in 7 days)
-        const screenshotUrl = screenshotKey ? await getSignedDownloadUrl(screenshotKey, 604800) : null;
+        const hasScreenshot = screenshotKey !== null;
 
         const approveLink = `${getAppEnv().NEXT_PUBLIC_APP_URL}/admin?request=${requestRecord.id}`;
 
-        const emailContent = SubscriptionRequestEmail({
+        const emailContent = React.createElement(SubscriptionRequestEmail, {
           businessName: business.legal_name,
           ownerEmail: ownerEmail,
           gstin: business.gstin || null,
@@ -162,20 +199,20 @@ export const submitPaymentClaim = createAuthenticatedAction(
           amountFormatted,
           utr: input.payment_reference,
           paymentMethod: input.payment_method,
-          screenshotUrl,
+          hasScreenshot,
           approveLink,
         });
 
         await getResend().emails.send({
           from: getEmailEnv().RESEND_FROM_EMAIL,
-          to: adminEmails,
+          to: [...adminEmails],
           subject: `🔔 Payment Claim: ${business.legal_name} - ${input.plan_name.toUpperCase()}`,
           react: emailContent,
         });
-      } catch (err: unknown) {
-        // Log error but don't fail the action, as the DB request was successfully saved
-        console.error('[submitPaymentClaim] Email notification failed to send:', err);
       }
+    } catch (err: unknown) {
+      // Log error but don't fail the action, as the DB request was successfully saved
+      logError('submit-payment-claim', err, { stage: 'admin-notification' });
     }
 
     revalidatePath('/settings');
@@ -188,5 +225,8 @@ export const submitPaymentClaim = createAuthenticatedAction(
     };
   },
   'submit-payment-claim',
-  { rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'submit-payment-claim' } }
+  {
+    roles: OWNER_ONLY,
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'submit-payment-claim', outage: 'fail-closed' },
+  }
 );

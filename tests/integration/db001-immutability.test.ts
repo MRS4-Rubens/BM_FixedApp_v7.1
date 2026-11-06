@@ -367,6 +367,11 @@ describe('DB-001: CHECK constraints and immutability of finalized records', () =
       await db.query(`UPDATE invoices SET payment_status = 'paid' WHERE id = $1`, [invoiceId]);
       await db.query(`UPDATE invoices SET pdf_storage_key = 'k', archival_status = 'archived', archival_attempts = 2, archived_at = now() WHERE id = $1`, [invoiceId]);
       await db.query(`UPDATE invoices SET emailed_at = now(), email_send_count = 3, updated_at = now() WHERE id = $1`, [invoiceId]);
+      for (const statement of statementsOf('0025_api011_email_reminder_tracking')) {
+        await db.exec(statement);
+      }
+      await db.query(`UPDATE invoices SET last_reminder_at = now(), reminder_count = 1 WHERE id = $1`, [invoiceId]);
+      await db.query(`UPDATE invoices SET last_reminder_at = now(), reminder_count = 1 WHERE id = $1`, [invoiceId]);
     });
 
     it('treats a no-op update of a protected column as allowed (value unchanged)', async () => {

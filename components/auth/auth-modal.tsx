@@ -11,6 +11,7 @@ import {
   Lock,
   User,
   AlertCircle,
+  CheckCircle2,
 } from 'lucide-react'
 import { useAuthModal } from './auth-modal-context'
 import { loginAction } from '@/app/(auth)/login/actions'
@@ -126,6 +127,7 @@ export function AuthenticationModal() {
 
   // Trigger shake animation when form state error changes
   const activeError = mode === 'login' ? loginState?.error : signupState?.error
+  const activeNotice = mode === 'signup' ? signupState?.notice : undefined
   useEffect(() => {
     if (activeError) {
       const frame = requestAnimationFrame(() => setShake(true))
@@ -226,6 +228,16 @@ export function AuthenticationModal() {
           <div className="w-full mb-3 rounded-xl bg-rose-50 border border-rose-200/80 p-2.5 sm:p-3 flex items-center gap-2.5 text-sm font-medium text-rose-700">
             <AlertCircle className="size-5 shrink-0 text-rose-500" />
             <span>{activeError}</span>
+          </div>
+        )}
+
+        {activeNotice && (
+          <div
+            role="status"
+            className="w-full mb-3 rounded-xl bg-emerald-50 border border-emerald-200/80 p-2.5 sm:p-3 flex items-center gap-2.5 text-sm font-medium text-emerald-800"
+          >
+            <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
+            <span>{activeNotice}</span>
           </div>
         )}
 

@@ -47,5 +47,6 @@ export const deleteCreditNoteDraft = createAuthenticatedAction(
 
     return { success: true };
   },
-  'delete-credit-note-draft'
+  'delete-credit-note-draft',
+  { requireActiveSubscription: true }
 );

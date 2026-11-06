@@ -1,9 +1,17 @@
 import { z } from 'zod';
+import { parseRupeesToPaise } from '@/lib/money';
+import { isoDate } from '@/lib/validations/common';
+
+export const MAX_PAYMENT_RUPEES = 99_999_999.99; // sanity bound only; the overpayment rule is the real bound
 
 export const recordPaymentSchema = z.object({
   invoice_id: z.string().uuid(),
-  amount: z.coerce.number().positive('Amount must be greater than zero'),
-  payment_date: z.string().min(1, 'Payment date is required'),
+  amount: z.coerce
+    .number({ error: 'Enter a valid amount' })
+    .min(0.01, 'Amount must be at least ₹0.01')
+    .max(MAX_PAYMENT_RUPEES, 'Amount is too large')
+    .refine((value) => parseRupeesToPaise(value) !== null, 'Amount can have at most 2 decimal places'),
+  payment_date: isoDate,
   payment_method: z.enum(['cash', 'upi', 'bank_transfer', 'cheque', 'card', 'other']),
   reference_number: z.string().max(100).optional().or(z.literal('')),
   notes: z.string().max(500).optional().or(z.literal('')),

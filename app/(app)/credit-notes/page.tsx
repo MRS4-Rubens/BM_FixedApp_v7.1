@@ -1,32 +1,58 @@
-import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { desc, eq } from 'drizzle-orm'
-import { getCurrentAppUser } from '@/lib/auth/session'
-import { db } from '@/lib/db/client'
-import { creditNotes, invoices } from '@/lib/db/schema'
-import { formatPaiseAsInr } from '@/lib/money'
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getCurrentAppUser } from '@/lib/auth/session';
+import { listCreditNotes } from '@/lib/actions/credit-notes/list-credit-notes';
+import { PaginationControls } from '@/components/app/pagination-controls';
+import { parseCreditNoteListParams, type RawSearchParams } from '@/lib/invoices/list-params';
+import { formatPaiseAsInr } from '@/lib/money';
+import { buildListHref } from '@/lib/pagination/url';
 
-export default async function CreditNotesListPage() {
-  const appUser = await getCurrentAppUser()
-  if (!appUser) redirect('/login')
-  if (!appUser.business_id) redirect('/settings')
+export default async function CreditNotesListPage({
+  searchParams,
+}: {
+  searchParams?: Promise<RawSearchParams>;
+}) {
+  const appUser = await getCurrentAppUser();
+  if (!appUser) redirect('/login');
+  if (!appUser.business_id) redirect('/settings');
 
-  const rows = await db
-    .select({
-      id: creditNotes.id,
-      credit_note_number: creditNotes.credit_note_number,
-      issue_date: creditNotes.issue_date,
-      lifecycle_status: creditNotes.lifecycle_status,
-      status: creditNotes.status,
-      grand_total_paise: creditNotes.grand_total_paise,
-      original_invoice_id: creditNotes.original_invoice_id,
-      original_invoice_number: invoices.invoice_number,
-      customer_name_snapshot: invoices.billing_name_snapshot,
-    })
-    .from(creditNotes)
-    .innerJoin(invoices, eq(creditNotes.original_invoice_id, invoices.id))
-    .where(eq(creditNotes.business_id, appUser.business_id))
-    .orderBy(desc(creditNotes.created_at))
+  const rawParams = searchParams ? await searchParams : {};
+  const params = parseCreditNoteListParams(rawParams);
+
+  const result = await listCreditNotes({
+    q: params.q ?? undefined,
+    month: params.month,
+    year: params.year,
+    limit: params.size,
+    after: params.after,
+    before: params.before,
+  });
+
+  if (!result.success) {
+    if (result.error.code === 'UNAUTHORIZED') {
+      redirect('/login');
+    }
+    return <div className="p-4 text-destructive">Failed to load credit notes.</div>;
+  }
+
+  const page = result.data;
+  const rows = page.items;
+
+  const baseFilterParams = {
+    q: params.q || undefined,
+    month: params.month,
+    year: params.year,
+  };
+
+  const previousHref =
+    page.pageInfo.hasPreviousPage && page.pageInfo.startCursor
+      ? buildListHref('/credit-notes', { ...baseFilterParams, before: page.pageInfo.startCursor })
+      : null;
+
+  const nextHref =
+    page.pageInfo.hasNextPage && page.pageInfo.endCursor
+      ? buildListHref('/credit-notes', { ...baseFilterParams, after: page.pageInfo.endCursor })
+      : null;
 
   return (
     <div className="space-y-4">
@@ -73,7 +99,7 @@ export default async function CreditNotesListPage() {
                         {cn.original_invoice_number || '—'}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-foreground font-semibold">{cn.customer_name_snapshot || '—'}</td>
+                    <td className="px-4 py-3 text-foreground font-semibold">{cn.billing_name_snapshot || '—'}</td>
                     <td className="px-4 py-3 capitalize text-muted-foreground">{cn.lifecycle_status}</td>
                     <td className="px-4 py-3 capitalize text-muted-foreground">{cn.status}</td>
                     <td className="px-4 py-3 text-right font-mono font-bold text-red-600 dark:text-red-400">
@@ -106,7 +132,7 @@ export default async function CreditNotesListPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-bold text-foreground truncate">
-                      {cn.customer_name_snapshot || 'Cash Customer'}
+                      {cn.billing_name_snapshot || 'Cash Customer'}
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5 text-xs">
                       <span className="text-muted-foreground">Against:</span>
@@ -140,8 +166,16 @@ export default async function CreditNotesListPage() {
               </div>
             ))}
           </div>
+
+          <PaginationControls
+            shown={rows.length}
+            total={page.totalCount}
+            previousHref={previousHref}
+            nextHref={nextHref}
+            label="credit notes"
+          />
         </>
       )}
     </div>
-  )
+  );
 }

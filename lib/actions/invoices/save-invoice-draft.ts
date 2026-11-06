@@ -1,19 +1,42 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { assertOwnedCustomer, assertOwnedProducts } from '@/lib/actions/_shared/ownership';
+import { roundToRupeePaise } from '@/lib/credit-notes/derivation';
 import { invoiceDraftSchema } from '@/lib/validations/invoice';
 import { db } from '@/lib/db/client';
-import { invoices, invoiceLineItems, businesses, customers, taxRates } from '@/lib/db/schema';
+import { invoices, invoiceLineItems, businesses, taxRates } from '@/lib/db/schema';
 import { calculateInvoiceTax } from '@/lib/gst/calculate';
-import { TaxCalculationInput, TaxLineItemInput } from '@/lib/gst/types';
-import { eq, inArray, and, gte, sql } from 'drizzle-orm';
+import { GstCalculationError } from '@/lib/gst/errors';
+import { TaxCalculationInput, TaxCalculationResult, TaxLineItemInput } from '@/lib/gst/types';
+import { isTaxRateEffectiveOn } from '@/lib/gst/tax-rate-validity';
+import { buildTaxLineInput, assertTaxResultWithinCeiling, LineMathError } from '@/lib/invoices/line-math';
+import { eq, inArray, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { lockDraftInvoice } from '@/lib/invoices/document-locks';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
-import { parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
-import { canCreateInvoice, canUseTemplate } from '@/lib/subscriptions/entitlements';
-import { getCurrentMonthRange } from '@/lib/reports/period';
+import { formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
+import { canUseTemplate } from '@/lib/subscriptions/entitlements';
+
+function toCalculationActionError(error: unknown): ActionError | null {
+  if (error instanceof ActionError) return error;
+  if (error instanceof LineMathError || error instanceof GstCalculationError) {
+    return new ActionError(error.message, {
+      code:
+        error instanceof LineMathError && error.code === 'DOCUMENT_TOTAL_TOO_LARGE'
+          ? 'AMOUNT_TOO_LARGE'
+          : 'CALCULATION_ERROR',
+    });
+  }
+  return null;
+}
+
+/** invoice_line_items.quantity is numeric(10,3): calculate with exactly what is stored (COMP-003). */
+function toStoredQuantity(quantity: number): number {
+  return Number(quantity.toFixed(3));
+}
 
 export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, async (input, context) => {
   const businessId = context.appUser.business_id;
@@ -24,64 +47,35 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
   try {
     return await db.transaction(async (tx) => {
       // 1. Check if updating existing
-      let currentInvoice = null;
       if (input.id) {
-        const existing = await tx.select().from(invoices).where(eq(invoices.id, input.id));
-        if (existing.length === 0) {
-          throw new ActionError('Invoice not found.', { code: 'NOT_FOUND' });
-        }
-        currentInvoice = existing[0];
-        if (currentInvoice.business_id !== businessId) {
-          throw new ActionError('Invoice not found.', { code: 'NOT_FOUND' });
-        }
-        if (currentInvoice.lifecycle_status !== 'draft') {
-          throw new ActionError('This invoice has already been finalized and cannot be edited. Issue a credit note instead.', { code: 'ALREADY_FINALIZED' });
-        }
+        await lockDraftInvoice(
+          tx,
+          { id: input.id, businessId },
+          { alreadyFinalized: 'This invoice has already been finalized and cannot be edited. Issue a credit note instead.' },
+        );
       }
 
-      // 2. Fetch dependencies for tax calculation and subscription verification
-      const businessResult = await tx.select({ 
-        state_code: businesses.state_code,
-        default_invoice_template: businesses.default_invoice_template,
-        subscription_plan: businesses.subscription_plan,
-        subscription_status: businesses.subscription_status,
-        trial_ends_at: businesses.trial_ends_at,
-        subscription_ends_at: businesses.subscription_ends_at,
-      }).from(businesses).where(eq(businesses.id, businessId));
-      if (businessResult.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
-      const business = businessResult[0];
+      // Fetch business
+      const [business] = await tx.select().from(businesses).where(eq(businesses.id, businessId)).limit(1);
+      if (!business) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
 
-      // 2a. Tenant isolation (API-001): every referenced customer/product must belong to THIS business.
+      // Ownership checks for customer and any selected products (fail fast before tax/insert)
       if (input.customer_id) {
         await assertOwnedCustomer(tx, businessId, input.customer_id);
       }
-      await assertOwnedProducts(tx, businessId, input.line_items.map((li) => li.product_id));
+      const referencedProductIds = input.line_items
+        .map((li) => li.product_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+      await assertOwnedProducts(tx, businessId, referencedProductIds);
 
+      // 2. Fetch business defaults if needed
       const businessStateCode = business.state_code;
-      const defaultTemplate = business.default_invoice_template || 'template_1';
+      const defaultTemplate = business.default_invoice_template || 'classic';
 
-      // Subscription & Quota Check: if creating a new invoice, verify monthly creation quota using created_at
-      if (!input.id) {
-        const monthRange = getCurrentMonthRange();
-        const monthStartUTC = new Date(`${monthRange.startDate}T00:00:00+05:30`);
-        const countRes = await tx
-          .select({ count: sql<number>`count(*)` })
-          .from(invoices)
-          .where(and(
-            eq(invoices.business_id, businessId),
-            gte(invoices.created_at, monthStartUTC)
-          ));
-        const currentMonthCount = Number(countRes[0]?.count || 0);
-
-        const quotaCheck = canCreateInvoice(business, currentMonthCount);
-        if (!quotaCheck.allowed) {
-          throw new ActionError(
-            quotaCheck.reason || 'Monthly limit of 30 invoices reached on the Free Plan. Please upgrade your subscription to create unlimited invoices.',
-            {
-              code: quotaCheck.code || 'QUOTA_EXCEEDED',
-            }
-          );
-        }
+      if (!businessStateCode) {
+        throw new ActionError('Please set your registered state in Settings before creating invoices.', {
+          code: 'BUSINESS_STATE_MISSING',
+        });
       }
 
       // Template Entitlement Check
@@ -93,40 +87,64 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
         });
       }
 
-      const customerStateCode = input.place_of_supply_state_code;
+      const placeOfSupplyStateCode = input.place_of_supply_state_code;
 
-      const taxRateIds = input.line_items.map(li => li.tax_rate_id);
-      const fetchedTaxRates = await tx.select({ id: taxRates.id, rate_percentage: taxRates.rate_percentage }).from(taxRates).where(inArray(taxRates.id, taxRateIds));
-      const taxRateMap = new Map(fetchedTaxRates.map(tr => [tr.id, Number(tr.rate_percentage)]));
+      const taxRateIds = input.line_items.map((li) => li.tax_rate_id);
+      const referenceIso = input.invoice_date ?? formatIstDateAsIso(new Date());
+      const fetchedTaxRates = await tx
+        .select({
+          id: taxRates.id,
+          rate_percentage: taxRates.rate_percentage,
+          is_active: taxRates.is_active,
+          effective_from: taxRates.effective_from,
+          effective_to: taxRates.effective_to,
+        })
+        .from(taxRates)
+        .where(inArray(taxRates.id, taxRateIds));
+      const taxRateMap = new Map(
+        fetchedTaxRates
+          .filter((rate) => isTaxRateEffectiveOn(rate, referenceIso))
+          .map((rate) => [rate.id, Number(rate.rate_percentage)] as const),
+      );
 
-      // 3. Prepare Tax Calculation Input
-      const taxLineItemInputs: TaxLineItemInput[] = input.line_items.map(li => {
-        const ratePct = taxRateMap.get(li.tax_rate_id);
-        if (ratePct === undefined) throw new ActionError(`Invalid tax rate ID: ${li.tax_rate_id}`);
-        const grossPaise = Math.round(li.quantity * Math.round(li.unit_price * 100));
-        const discountPaise = Math.round(grossPaise * (li.discount / 100));
-        return {
-          quantity: li.quantity,
-          unitPricePaise: Math.round(li.unit_price * 100),
-          discountPaise,
-          taxRatePercentage: ratePct
+      // 3. Prepare Tax Calculation Input & Validate Calculations
+      let taxLineItemInputs: TaxLineItemInput[];
+      let taxResult: TaxCalculationResult;
+      try {
+        taxLineItemInputs = input.line_items.map((li) => {
+          const ratePct = taxRateMap.get(li.tax_rate_id);
+          if (ratePct === undefined) {
+            throw new ActionError(
+              'One or more selected GST rates are inactive or not valid on the invoice date. Please re-select the GST rate on your line items.',
+              { code: 'INVALID_TAX_RATE' },
+            );
+          }
+          return buildTaxLineInput({
+            quantity: toStoredQuantity(li.quantity),
+            unitPriceRupees: li.unit_price,
+            discountPercent: li.discount,
+            taxRatePercentage: ratePct,
+          });
+        });
+
+        const taxCalcInput: TaxCalculationInput = {
+          sellerStateCode: businessStateCode,
+          placeOfSupplyStateCode: placeOfSupplyStateCode,
+          lineItems: taxLineItemInputs,
+          gstRateType: input.gst_rate_type || 'exclusive',
         };
-      });
 
-      const taxCalcInput: TaxCalculationInput = {
-        sellerStateCode: businessStateCode,
-        placeOfSupplyStateCode: customerStateCode,
-        lineItems: taxLineItemInputs,
-        // Set the active GST rate calculation type (inclusive vs exclusive)
-        gstRateType: input.gst_rate_type || 'exclusive'
-      };
-
-      // 4. Calculate Taxes
-      const taxResult = calculateInvoiceTax(taxCalcInput);
+        taxResult = calculateInvoiceTax(taxCalcInput);
+        assertTaxResultWithinCeiling(taxResult);
+      } catch (error: unknown) {
+        const actionError = toCalculationActionError(error);
+        if (actionError !== null) throw actionError;
+        throw error;
+      }
 
       // 5. Create or Update Invoice
       let invoiceId = input.id;
-      
+
       const invoiceData = {
         business_id: businessId,
         customer_id: input.customer_id || null,
@@ -138,12 +156,11 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
         total_sgst_paise: taxResult.totalSgstPaise,
         total_igst_paise: taxResult.totalIgstPaise,
         total_tax_paise: taxResult.totalTaxPaise,
-        grand_total_paise: Math.round(taxResult.grandTotalPaise / 100) * 100,
+        grand_total_paise: roundToRupeePaise(taxResult.grandTotalPaise),
         billing_name_snapshot: input.billing_name,
         billing_gstin_snapshot: input.billing_gstin || null,
         place_of_supply_state_code: input.place_of_supply_state_code,
         invoice_template: input.invoice_template || defaultTemplate,
-        // Calculation mode locked for this specific invoice to preserve print layout history
         gst_rate_type: input.gst_rate_type || 'exclusive',
       };
 
@@ -154,15 +171,32 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
         const [newInv] = await tx.insert(invoices).values({
           ...invoiceData,
           financial_year_id: activeFy.id,
-          invoice_sequence: null, // Placeholder for draft
-          invoice_number: `DRAFT-${Date.now()}` // Placeholder for draft uniqueness
+          invoice_sequence: null,
+          invoice_number: `DRAFT-${Date.now()}`,
         }).returning({ id: invoices.id });
         invoiceId = newInv.id;
       } else {
-        await tx.update(invoices).set({
-          ...invoiceData,
-          financial_year_id: activeFy.id
-        }).where(eq(invoices.id, invoiceId));
+        const updated = await tx
+          .update(invoices)
+          .set({
+            ...invoiceData,
+            financial_year_id: activeFy.id,
+          })
+          .where(
+            and(
+              eq(invoices.id, invoiceId),
+              eq(invoices.business_id, businessId),
+              eq(invoices.lifecycle_status, 'draft'),
+            ),
+          )
+          .returning({ id: invoices.id });
+
+        if (updated.length !== 1) {
+          throw new ActionError(
+            'This invoice has already been finalized and cannot be edited. Issue a credit note instead.',
+            { code: 'ALREADY_FINALIZED' },
+          );
+        }
       }
 
       // 6. Replace Line Items
@@ -177,9 +211,9 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
           product_id: li.product_id || null,
           description: li.description,
           hsn_sac_code: li.hsn_sac_code,
-          quantity: li.quantity.toString(),
+          quantity: toStoredQuantity(li.quantity).toFixed(3),
           unit_of_measurement: li.unit_of_measurement,
-          unit_price_paise: Math.round(li.unit_price * 100),
+          unit_price_paise: taxLineItemInputs[idx].unitPricePaise,
           discount_paise: calcLi.discountPaise,
           taxable_value_paise: calcLi.taxableValuePaise,
           tax_rate_percentage: calcLi.taxRatePercentage.toString(),
@@ -187,7 +221,7 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
           sgst_paise: calcLi.sgstPaise,
           igst_paise: calcLi.igstPaise,
           line_total_paise: calcLi.lineTotalPaise,
-          sort_order: idx
+          sort_order: idx,
         };
       });
 
@@ -198,9 +232,7 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
 
       return { invoiceId };
     });
-  } catch (error) {
-    if (error instanceof ActionError) throw error;
-    console.error('Error saving invoice draft:', error);
-    throw new ActionError('We could not save the invoice draft. Please try again.', { code: 'TRANSACTION_FAILED' });
+  } catch (error: unknown) {
+    throw toThrowable(error);
   }
-}, 'save-invoice-draft');
+}, 'save-invoice-draft', { requireActiveSubscription: true });

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Html, Head, Body, Container, Section, Text, Heading, Hr } from '@react-email/components';
+import { SenderFooter, type SenderBusinessInfo } from './sender-footer';
 
 interface InvoiceDeliveryEmailProps {
   businessName: string;
@@ -8,6 +9,7 @@ interface InvoiceDeliveryEmailProps {
   invoiceDate: string;
   grandTotalFormatted: string;
   dueDate: string | null;
+  sender: SenderBusinessInfo;
 }
 
 export const InvoiceDeliveryEmail = ({
@@ -17,6 +19,7 @@ export const InvoiceDeliveryEmail = ({
   invoiceDate,
   grandTotalFormatted,
   dueDate,
+  sender,
 }: InvoiceDeliveryEmailProps) => {
   return (
     <Html>
@@ -49,6 +52,8 @@ export const InvoiceDeliveryEmail = ({
               <br />
               {businessName}
             </Text>
+
+            <SenderFooter {...sender} />
           </Section>
         </Container>
       </Body>

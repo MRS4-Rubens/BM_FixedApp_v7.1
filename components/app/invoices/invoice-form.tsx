@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { resolveDraftDisplayPrefs } from '@/lib/invoices/display-prefs'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Trash2, Send, ChevronDown, User, Receipt, ListTodo, ClipboardEdit, AlertCircle, Calendar, Percent, Eye, Printer, GripVertical, ArrowUpDown } from 'lucide-react'
@@ -27,34 +28,30 @@ import { resolveInvoiceNumber } from '@/lib/invoices/number-format'
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states'
 import { InvoicePrintView } from './invoice-print-view'
 import { canUseTemplate } from '@/lib/subscriptions/entitlements'
+import { isInvoiceTemplateId } from '@/lib/invoices/template-ids'
+import { DeleteDraftButton } from '@/components/app/invoices/delete-draft-button'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
 import { TemplateSelector } from './template-selector'
+import { buildPreviewTaxLineInput } from '@/lib/invoices/line-math'
+
+import { searchCustomerOptions } from '@/lib/actions/customers/search-customer-options'
+import { searchProductOptions } from '@/lib/actions/products/search-product-options'
+import type { CustomerOption, ProductOption } from '@/lib/pickers/types'
 
 function formatINR(n: number) {
   return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-interface ProductCatalogItem {
-  id: string
-  name: string
-  hsn_sac_code: string | null
-  unit_of_measurement: string | null
-  default_sale_price_paise: number
-  default_tax_rate_id: string | null
-}
-
 export function InvoiceForm({
   initialData,
-  customers,
-  products,
+  initialCustomer,
   taxRates,
   business,
   activeFys,
   isDraft
 }: {
   initialData?: any;
-  customers: any[];
-  products: ProductCatalogItem[];
+  initialCustomer?: CustomerOption | null;
   taxRates: any[];
   business: any;
   activeFys: any[];
@@ -75,43 +72,7 @@ export function InvoiceForm({
   const [showPreviewWarning, setShowPreviewWarning] = useState(false)
   const [previewPrintSize, setPreviewPrintSize] = useState<'A4' | 'A5'>('A5')
 
-  // Load invoice settings (discEnabled, showHsn)
-  const [settings, setSettings] = useState<{
-    discEnabled: boolean
-    showHsn: boolean
-  }>({
-    discEnabled: true,
-    showHsn: true
-  })
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('bm_invoice_settings')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        setSettings({
-          discEnabled: parsed.discEnabled ?? true,
-          showHsn: parsed.showHsn ?? true
-        })
-      }
-    } catch (e) {
-      console.error('Failed to load invoice settings:', e)
-    }
-
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'bm_invoice_settings' && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue)
-          setSettings({
-            discEnabled: parsed.discEnabled ?? true,
-            showHsn: parsed.showHsn ?? true
-          })
-        } catch { }
-      }
-    }
-    window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
-  }, [])
+  const displayPrefs = useMemo(() => resolveDraftDisplayPrefs(business?.invoice_display_prefs), [business?.invoice_display_prefs]);
 
   const defaultValues = {
     customer_id: '',
@@ -149,13 +110,36 @@ export function InvoiceForm({
   // Watch active GST rate type of this invoice to adapt headers and backward calculation math
   const gstRateTypeVal = watch('gst_rate_type') || 'exclusive'
 
-  const customer = customers.find(c => c.id === customerId)
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(initialCustomer ?? null)
+  const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>([])
+  const [isSearchingCustomers, setIsSearchingCustomers] = useState(false)
+  const customerReqIdRef = useRef(0)
 
-  const filteredCustomers = customers.filter(c =>
-    c.name.toLowerCase().includes(billingNameVal.toLowerCase())
-  )
+  useEffect(() => {
+    const query = billingNameVal.trim()
+    if (!query) {
+      setCustomerOptions([])
+      return
+    }
+    const reqId = ++customerReqIdRef.current
+    const timer = setTimeout(async () => {
+      setIsSearchingCustomers(true)
+      try {
+        const res = await searchCustomerOptions({ q: query })
+        if (reqId === customerReqIdRef.current && res.success) {
+          setCustomerOptions(res.data)
+        }
+      } finally {
+        if (reqId === customerReqIdRef.current) {
+          setIsSearchingCustomers(false)
+        }
+      }
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [billingNameVal])
 
-  const handleSelectCustomer = (cust: any) => {
+  const handleSelectCustomer = (cust: CustomerOption) => {
+    setSelectedCustomer(cust)
     setValue('customer_id', cust.id)
     setValue('billing_name', cust.name)
     setValue('billing_gstin', cust.gstin || '')
@@ -167,6 +151,7 @@ export function InvoiceForm({
     const val = e.target.value
     setValue('billing_name', val)
     setValue('customer_id', '') // Reset customer_id for ad-hoc customer typing
+    setSelectedCustomer(null)
     setIsSuggestionsOpen(true)
   }
 
@@ -176,6 +161,34 @@ export function InvoiceForm({
   const [activeInputRect, setActiveInputRect] = useState<{ top: number, left: number, width: number, height: number } | null>(null)
   const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [productOptions, setProductOptions] = useState<ProductOption[]>([])
+  const [isSearchingProducts, setIsSearchingProducts] = useState(false)
+  const productReqIdRef = useRef(0)
+
+  const activeRowDesc = suggestIdx !== null ? (watch(`line_items.${suggestIdx}.description`) || '') : ''
+
+  useEffect(() => {
+    const query = activeRowDesc.trim()
+    if (suggestIdx === null || !query) {
+      setProductOptions([])
+      return
+    }
+    const reqId = ++productReqIdRef.current
+    const timer = setTimeout(async () => {
+      setIsSearchingProducts(true)
+      try {
+        const res = await searchProductOptions({ q: query })
+        if (reqId === productReqIdRef.current && res.success) {
+          setProductOptions(res.data)
+        }
+      } finally {
+        if (reqId === productReqIdRef.current) {
+          setIsSearchingProducts(false)
+        }
+      }
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [suggestIdx, activeRowDesc])
 
   useEffect(() => {
     setMounted(true)
@@ -388,7 +401,7 @@ export function InvoiceForm({
     setValue('line_items', sorted)
   }
 
-  const handleSelectProduct = (idx: number, prod: ProductCatalogItem) => {
+  const handleSelectProduct = (idx: number, prod: ProductOption) => {
     setValue(`line_items.${idx}.product_id`, prod.id)
     setValue(`line_items.${idx}.description`, prod.name)
     setValue(`line_items.${idx}.hsn_sac_code`, prod.hsn_sac_code || '')
@@ -404,6 +417,7 @@ export function InvoiceForm({
       })
     }
     setIsProdSuggestionsOpen(false)
+    updateInputRect(null)
   }
 
   const handleDescChange = (idx: number, val: string) => {
@@ -460,20 +474,14 @@ export function InvoiceForm({
       const taxLineItemInputs: TaxLineItemInput[] = lineItems
         .map((li) => {
           const ratePct = taxRates.find((tr) => tr.id === li.tax_rate_id)?.rate_percentage || 0
-          const rawQty = Number(li.quantity) || 0
-          const safeQty = rawQty > 0 ? rawQty : 0
-          const unitPaise = Math.max(0, Math.round((Number(li.unit_price) || 0) * 100))
-          const grossPaise = Math.round(safeQty * unitPaise)
-          const discPercent = Math.min(100, Math.max(0, Number(li.discount) || 0))
-          const discPaise = Math.round((grossPaise * discPercent) / 100)
-          return {
-            quantity: safeQty,
-            unitPricePaise: unitPaise,
-            discountPaise: discPaise,
+          return buildPreviewTaxLineInput({
+            quantity: li.quantity,
+            unitPriceRupees: li.unit_price,
+            discountPercent: li.discount,
             taxRatePercentage: Number(ratePct),
-          }
+          })
         })
-        .filter((li) => li.quantity > 0)
+        .filter((li): li is TaxLineItemInput => li !== null)
 
       if (taxLineItemInputs.length > 0) {
         const taxCalcInput: TaxCalculationInput = {
@@ -619,25 +627,22 @@ export function InvoiceForm({
     const indexedInputs = (watchLineItems ?? []).map((li, idx) => {
       const tr = taxRates.find((r) => r.id === li.tax_rate_id)
       const ratePct = tr ? Number(tr.rate_percentage) : 0
-      const rawQty = Number(li.quantity) || 0
-      const safeQty = rawQty > 0 ? rawQty : 0
-      const unitPaise = Math.max(0, Math.round((Number(li.unit_price) || 0) * 100))
-      const grossPaise = Math.round(safeQty * unitPaise)
-      const discPercent = Math.min(100, Math.max(0, Number(li.discount) || 0))
-      const discPaise = Math.round((grossPaise * discPercent) / 100)
+      const input = buildPreviewTaxLineInput({
+        quantity: li.quantity,
+        unitPriceRupees: li.unit_price,
+        discountPercent: li.discount,
+        taxRatePercentage: ratePct,
+      })
 
       return {
         idx,
-        input: {
-          quantity: safeQty,
-          unitPricePaise: unitPaise,
-          discountPaise: discPaise,
-          taxRatePercentage: ratePct,
-        } satisfies TaxLineItemInput,
+        input,
       }
     })
 
-    const validIndexedInputs = indexedInputs.filter((entry) => entry.input.quantity > 0)
+    const validIndexedInputs = indexedInputs.filter(
+      (entry): entry is { idx: number; input: TaxLineItemInput } => entry.input !== null
+    )
 
     let previewTaxResult: TaxCalculationResult = {
       supplyType:
@@ -706,13 +711,13 @@ export function InvoiceForm({
     })
 
     let billingAddressSnapshot: string | null = null
-    if (customer) {
-      const cityStatePincode = [customer.city, customer.state_code, customer.pincode]
+    if (selectedCustomer) {
+      const cityStatePincode = [selectedCustomer.city, selectedCustomer.state_code, selectedCustomer.pincode]
         .filter(Boolean)
         .join(', ')
       billingAddressSnapshot = [
-        customer.address_line1,
-        customer.address_line2,
+        selectedCustomer.address_line1,
+        selectedCustomer.address_line2,
         cityStatePincode,
       ]
         .filter(Boolean)
@@ -754,7 +759,7 @@ export function InvoiceForm({
       subscription_plan: business.subscription_plan,
       subscription_status: business.subscription_status,
       trial_ends_at: business.trial_ends_at,
-      customer: customer ? { phone: customer.phone } : null,
+      customer: selectedCustomer ? { phone: selectedCustomer.phone } : null,
       lineItems: lineItemsMapped,
     }
   })()
@@ -794,7 +799,17 @@ export function InvoiceForm({
         setIsFinalizing(false)
         return
       }
-      const finRes = await finalizeInvoice({ id: draftRes.data?.invoiceId as string })
+      const invoiceId = draftRes.data?.invoiceId
+      if (!invoiceId) {
+        setIsFinalizing(false)
+        return
+      }
+      let finRes = await finalizeInvoice({ id: invoiceId })
+      if (!finRes.success && finRes.error.code === 'INVOICE_DATE_CROSS_FY') {
+        if (confirm(`${finRes.error.message}\n\nProceed with this back-dated invoice?`)) {
+          finRes = await finalizeInvoice({ id: invoiceId, confirm_cross_financial_year: true })
+        }
+      }
       if (finRes.success) {
         router.push(`/invoices/${finRes.data?.invoiceId}`)
       } else {
@@ -837,6 +852,11 @@ export function InvoiceForm({
             <ArrowLeft className="size-4" />
           </Link>
           <h1 className="text-2xl font-bold tracking-tight font-heading text-foreground whitespace-nowrap">{isDraft ? 'Edit Draft Invoice' : 'New Invoice'}</h1>
+          {isDraft && initialData?.id ? (
+            <div className="ml-auto">
+              <DeleteDraftButton invoiceId={initialData.id} variant="button" redirectTo="/invoices" onError={setGlobalError} />
+            </div>
+          ) : null}
         </div>
 
         {globalError && (
@@ -937,14 +957,15 @@ export function InvoiceForm({
                   />
                   {errors.billing_name && <p className="mt-1 text-xs text-destructive font-medium">{errors.billing_name.message}</p>}
 
-                  {isSuggestionsOpen && billingNameVal.trim().length > 0 && filteredCustomers.length > 0 && (
+                  {isSuggestionsOpen && billingNameVal.trim().length > 0 && customerOptions.length > 0 && (
                     <div className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-popover py-1.5 shadow-lg animate-fadeIn text-popover-foreground">
-                      {filteredCustomers.map(cust => (
+                      {customerOptions.map(cust => (
                         <button
                           key={cust.id}
                           type="button"
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => handleSelectCustomer(cust)}
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium flex justify-between items-center border-b border-border/40 last:border-b-0"
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium flex justify-between items-center border-b border-border/40 last:border-b-0 cursor-pointer"
                         >
                           <span>{cust.name}</span>
                           {cust.gstin && <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">{cust.gstin}</span>}
@@ -979,6 +1000,11 @@ export function InvoiceForm({
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
                     </div>
                     {errors.place_of_supply_state_code && <p className="mt-1 text-xs text-destructive font-medium">{errors.place_of_supply_state_code.message}</p>}
+                    {selectedCustomer && selectedCustomer.state_code && placeOfSupplyStateCodeVal && selectedCustomer.state_code !== placeOfSupplyStateCodeVal ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Customer is registered in {INDIAN_GST_STATES.find((s) => s.code === selectedCustomer.state_code)?.name ?? selectedCustomer.state_code}. Tax is calculated for the delivery state selected here.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </div>
@@ -1012,7 +1038,7 @@ export function InvoiceForm({
                     <th className="pl-2 pr-0 py-1.5" style={colStyles.drag} aria-label="Reorder"></th>
                     <th className="pl-3 pr-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left whitespace-nowrap" style={colStyles.sNo}>S.No</th>
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left whitespace-nowrap" style={colStyles.description}>Description</th>
-                    {settings.showHsn && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.hsn}>HSN/SAC</th>}
+                    {displayPrefs.showHsn && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.hsn}>HSN/SAC</th>}
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.qty}>Qty</th>
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.uqc}>UQC</th>
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center select-none whitespace-nowrap" style={colStyles.rate}>
@@ -1028,7 +1054,7 @@ export function InvoiceForm({
                         <span className="text-xs text-muted-foreground font-bold font-sans flex items-center justify-center border border-muted-foreground/30 rounded-full size-3.5 select-none transition-colors hover:border-primary hover:text-primary">i</span>
                       </div>
                     </th>
-                    {settings.discEnabled && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.disc}>Disc (%)</th>}
+                    {displayPrefs.discEnabled && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.disc}>Disc (%)</th>}
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.gst}>GST Rate</th>
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.netAmt}>Net Amount</th>
                     <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.action}></th>
@@ -1085,10 +1111,7 @@ export function InvoiceForm({
                       })
                     }
 
-                    const descVal = watch(`line_items.${idx}.description`) || ''
-                    const filteredProducts = products.filter(p =>
-                      p.name.toLowerCase().includes(descVal.toLowerCase())
-                    )
+                    const rowDescVal = watch(`line_items.${idx}.description`) || ''
 
                     const isDragging = draggedIdx === idx
                     const isDropTop = dropTargetIdx === idx && dropPosition === 'top' && draggedIdx !== idx
@@ -1162,7 +1185,7 @@ export function InvoiceForm({
                               }, 200)
                             }}
                           />
-                          {mounted && isProdSuggestionsOpen && suggestIdx === idx && descVal.trim().length > 0 && filteredProducts.length > 0 && activeInputRect && (
+                          {mounted && isProdSuggestionsOpen && suggestIdx === idx && rowDescVal.trim().length > 0 && productOptions.length > 0 && activeInputRect && (
                             createPortal(
                               <div
                                 style={{
@@ -1174,17 +1197,17 @@ export function InvoiceForm({
                                 }}
                                 className="max-h-48 overflow-y-auto rounded-lg border border-border bg-popover py-1.5 shadow-lg animate-fadeIn text-popover-foreground"
                               >
-                                {filteredProducts.map(prod => (
+                                {productOptions.map(prod => (
                                   <button
                                     key={prod.id}
                                     type="button"
                                     onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => handleSelectProduct(idx, prod)}
-                                    className="w-full text-left px-3 py-2 text-xs hover:bg-accent hover:text-accent-foreground transition-colors font-medium flex justify-between items-center border-b border-border/40 last:border-b-0"
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-accent hover:text-accent-foreground transition-colors font-medium flex justify-between items-center border-b border-border/40 last:border-b-0 cursor-pointer"
                                   >
                                     <span>{prod.name}</span>
                                     <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded animate-fadeIn">
-                                      {prod.hsn_sac_code || 'N/A'} | Rs.{(prod.default_sale_price_paise / 100).toFixed(2)}
+                                      {prod.hsn_sac_code || 'N/A'} | ₹{(prod.default_sale_price_paise / 100).toFixed(2)}
                                     </span>
                                   </button>
                                 ))}
@@ -1195,7 +1218,7 @@ export function InvoiceForm({
                         </td>
 
                         {/* HSN/SAC */}
-                        {settings.showHsn && (
+                        {displayPrefs.showHsn && (
                           <td className="px-2 py-1.5" style={colStyles.hsn}>
                             <input
                               type="text"
@@ -1250,7 +1273,7 @@ export function InvoiceForm({
                         </td>
 
                         {/* Disc */}
-                        {settings.discEnabled && (
+                        {displayPrefs.discEnabled && (
                           <td className="px-2 py-1.5" style={colStyles.disc}>
                             <input
                               type="number"
@@ -1470,7 +1493,7 @@ export function InvoiceForm({
       {/* Dynamic Live Print Preview Modal Overlay */}
       {mounted && isPreviewOpen && (() => {
         // Calculate elastic page and modal widths dynamically based on active columns
-        const templateWidth = 780 + (settings.showHsn ? 70 : 0) + (settings.discEnabled ? 70 : 0);
+        const templateWidth = 780 + (displayPrefs.showHsn ? 70 : 0) + (displayPrefs.discEnabled ? 70 : 0);
         const previewMaxWidth = `${templateWidth}px`;
         const modalMaxWidth = `${templateWidth + 80}px`;
 
@@ -1496,7 +1519,9 @@ export function InvoiceForm({
                     business={business}
                     compact
                     onChange={(chosen) => {
-                      setValue('invoice_template', chosen);
+                      if (isInvoiceTemplateId(chosen)) {
+                        setValue('invoice_template', chosen);
+                      }
                     }}
                     onUpgradeClick={() => {
                       setValue('invoice_template', 'template_1');
@@ -1590,6 +1615,7 @@ export function InvoiceForm({
                     invoice={previewInvoiceData}
                     businessStateCode={business.state_code}
                     printSize={previewPrintSize}
+                    displayPrefs={displayPrefs}
                   />
                 </div>
               </div>
@@ -1606,6 +1632,7 @@ export function InvoiceForm({
             invoice={previewInvoiceData}
             businessStateCode={business.state_code}
             printSize={previewPrintSize}
+            displayPrefs={displayPrefs}
           />
         </div>
       )}

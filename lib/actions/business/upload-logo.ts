@@ -1,25 +1,37 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { logError } from '@/lib/actions/_shared/logger';
+import { toLoggableError, toThrowable } from '@/lib/actions/_shared/action-error-mapping';
+import { writeAudit } from '@/lib/audit/log';
+import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
+import { setLocalLockTimeout, withTransactionRetry } from '@/lib/db/transaction';
 import { businesses } from '@/lib/db/schema';
 import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
+import { deleteLogoObjectIfUnreferenced } from '@/lib/storage/logo';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { canUploadBusinessLogo } from '@/lib/subscriptions/entitlements';
-
-const uploadLogoSchema = z.object({
-  base64Data: z.string().min(1, 'Image data is required'),
-  mimeType: z.string().refine(
-    (type) => ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(type.toLowerCase()),
-    { message: 'Only PNG, JPEG, and WebP images are supported.' }
-  ),
-  fileName: z.string().optional(),
-});
+import {
+  requireValidUpload,
+  buildUploadKey,
+  IMAGE_MIMES,
+  maxBase64Chars,
+} from '@/lib/security/upload';
+import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+
+const uploadLogoSchema = z.object({
+  base64Data: z.string().min(1, 'Image data is required').max(maxBase64Chars(MAX_FILE_SIZE_BYTES)),
+  // client hint, ignored; kept so the existing client call still validates
+  mimeType: z.string().max(100).optional(),
+  fileName: z.string().optional(),
+});
 
 export const uploadBusinessLogo = createAuthenticatedAction(
   uploadLogoSchema,
@@ -30,6 +42,8 @@ export const uploadBusinessLogo = createAuthenticatedAction(
         code: 'NO_BUSINESS',
       });
     }
+
+    const requestContext = await getAuditRequestContext();
 
     // 1. Check existing business and entitlement
     const existing = await db
@@ -55,60 +69,71 @@ export const uploadBusinessLogo = createAuthenticatedAction(
       });
     }
 
-    // Clean base64 header if present
-    const base64Clean = input.base64Data.replace(/^data:image\/[a-zA-Z+]+;base64,/, '');
-    const buffer = Buffer.from(base64Clean, 'base64');
+    const logo = requireValidUpload(input.base64Data, {
+      maxBytes: MAX_FILE_SIZE_BYTES,
+      allowed: IMAGE_MIMES,
+    });
+    const storageKey = buildUploadKey(`logos/${businessId}`, logo.ext);
 
-    if (buffer.length > MAX_FILE_SIZE_BYTES) {
-      throw new ActionError('Image size exceeds the 5MB limit. Please compress or choose a smaller image.', {
-        code: 'FILE_TOO_LARGE',
-      });
-    }
-
-    // Delete previous logo from iDrive E2 if present
-    if (existing[0]?.logo_storage_key) {
-      try {
-        await deleteFileFromStorage(existing[0].logo_storage_key);
-      } catch (delError) {
-        console.warn('Failed to delete previous logo from storage:', delError);
-      }
-    }
-
-    // 2. Determine file extension
-    let extension = '.png';
-    const lowerMime = input.mimeType.toLowerCase();
-    if (lowerMime.includes('jpeg') || lowerMime.includes('jpg')) {
-      extension = '.jpg';
-    } else if (lowerMime.includes('webp')) {
-      extension = '.webp';
-    }
-
-    const storageKey = `logos/${businessId}/logo-${Date.now()}${extension}`;
-
-    // 3. Upload to iDrive E2
+    // 2. Upload to storage first (upload -> locked DB swap -> best-effort delete of previous)
     try {
-      await uploadFileToStorage(storageKey, buffer, input.mimeType);
+      await uploadFileToStorage(storageKey, logo.buffer, logo.mime, {
+        contentDisposition: 'attachment',
+        cacheControl: 'public, max-age=3600',
+      });
     } catch (uploadError) {
-      console.error('Failed to upload logo to iDrive E2:', uploadError);
-      throw new ActionError('Failed to upload image to cloud storage. Please check your storage configuration.', {
+      logError('upload-business-logo', toLoggableError(uploadError), { stage: 'storage-upload' });
+      throw new ActionError('Failed to upload image to cloud storage. Please try again.', {
         code: 'STORAGE_UPLOAD_FAILED',
       });
     }
 
-    // 4. Update database
+    // 3. Swap the key in ONE transaction that locks the business row and returns the previous key
+    let previousKey: string | null = null;
     try {
-      await db
-        .update(businesses)
-        .set({
-          logo_storage_key: storageKey,
-          updated_at: new Date(),
-        })
-        .where(eq(businesses.id, businessId));
-    } catch (dbError) {
-      console.error('Failed to update business logo in DB:', dbError);
-      throw new ActionError('Failed to update business profile record.', {
-        code: 'DB_UPDATE_FAILED',
+      previousKey = await withTransactionRetry(() =>
+        db.transaction(async (tx) => {
+          await setLocalLockTimeout(tx);
+          const [row] = await tx
+            .select({ key: businesses.logo_storage_key })
+            .from(businesses)
+            .where(eq(businesses.id, businessId))
+            .for('update');
+          if (!row) throw new ActionError('Business profile not found.', { code: 'NOT_FOUND' });
+
+          await tx
+            .update(businesses)
+            .set({ logo_storage_key: storageKey, updated_at: new Date() })
+            .where(eq(businesses.id, businessId));
+
+          await writeAudit(tx, {
+            businessId,
+            actorUserId: context.appUser.id,
+            entityType: 'business',
+            entityId: businessId,
+            action: 'logo_upload',
+            requestContext,
+            metadata: {
+              logo_storage_key: storageKey,
+              previous_logo_storage_key: row.key,
+            },
+          });
+
+          return row.key;
+        }),
+      );
+    } catch (dbError: unknown) {
+      await deleteFileFromStorage(storageKey).catch((cleanupError: unknown) => {
+        logError('upload-business-logo', toLoggableError(cleanupError), { stage: 'orphan-cleanup', storageKey });
       });
+      if (dbError instanceof ActionError) throw dbError;
+      throw toThrowable(dbError);
+    }
+
+    // 4. Only AFTER the swap succeeds, delete previousKey if unreferenced
+    // The reference check must run AFTER commit so any finalize holding FOR SHARE on the business row has already committed its snapshot.
+    if (previousKey !== null && previousKey !== storageKey) {
+      await deleteLogoObjectIfUnreferenced(businessId, previousKey);
     }
 
     revalidatePath('/settings');
@@ -120,5 +145,10 @@ export const uploadBusinessLogo = createAuthenticatedAction(
       logoUrl: `/api/business/${businessId}/logo?t=${Date.now()}`,
     };
   },
-  'upload-business-logo'
+  'upload-business-logo',
+  {
+    roles: OWNER_ONLY,
+    rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'upload-logo', outage: 'fail-closed' },
+    requireActiveSubscription: true,
+  }
 );

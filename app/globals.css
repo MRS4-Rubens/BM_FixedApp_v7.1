@@ -2,6 +2,15 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
+/* Tailwind scans only real UI sources. Docs, tests and tooling contain prose/class-like words that must
+   never change the shipped or archival CSS (see Step-0 / print-stylesheet freshness test). */
+@source not "../docs";
+@source not "../tests";
+@source not "../e2e";
+@source not "../scripts";
+@source not "../drizzle";
+@source not "../**/*.md";
+
 @variant dark (&:where(.dark, .dark *));
 
 /* Bill Matrix design system — deep navy primary, emerald accent, Inter, light mode only */

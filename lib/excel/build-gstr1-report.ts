@@ -83,6 +83,7 @@ export async function buildGstr1Workbook(data: Gstr1ExportData): Promise<ExcelJS
     { name: 'Table 5: B2CL Invoices (Large Inter-State)', count: sum.b2clCount, taxable: sum.b2clTaxablePaise, tax: sum.b2clTaxPaise },
     { name: 'Table 7: B2CS Supplies (Small / Retail)', count: sum.b2csCount, taxable: sum.b2csTaxablePaise, tax: sum.b2csTaxPaise },
     { name: 'Table 9B: Credit / Debit Notes (CDNR)', count: sum.cdnrCount, taxable: sum.cdnrTaxablePaise, tax: sum.cdnrTaxPaise },
+    { name: 'Table 9B: Credit / Debit Notes — Unregistered (CDNUR)', count: sum.cdnurCount, taxable: sum.cdnurTaxablePaise, tax: sum.cdnurTaxPaise },
   ];
 
   let curRow = 5;
@@ -187,7 +188,8 @@ export async function buildGstr1Workbook(data: Gstr1ExportData): Promise<ExcelJS
   }
 
   // =========================================================================
-  // SHEET 3: b2cl (Official Table 5: Taxable outward inter-State supplies to unregistered persons > 2.5L)
+  // SHEET 3: b2cl (Official Table 5: Taxable outward inter-State supplies to unregistered persons where the invoice value
+  // is more than ₹1 lakh from 01-Aug-2024 (more than ₹2.5 lakh before that date) - see lib/gst/thresholds.ts)
   // =========================================================================
   const sheetB2cl = workbook.addWorksheet('b2cl', { views: [{ state: 'frozen', ySplit: 1 }] });
   sheetB2cl.columns = [
@@ -275,6 +277,43 @@ export async function buildGstr1Workbook(data: Gstr1ExportData): Promise<ExcelJS
       pos: item.placeOfSupply,
       rc: item.reverseCharge,
       supply_type: item.noteSupplyType,
+      note_val: paiseToRupees(item.noteValuePaise),
+      app_rate: item.applicableTaxRatePercent,
+      rate: item.ratePercentage,
+      taxable: paiseToRupees(item.taxableValuePaise),
+      cess: paiseToRupees(item.cessAmountPaise)
+    });
+  }
+
+  // =========================================================================
+  // SHEET 5b: cdnur (Official Table 9B: Credit/Debit Notes to UNREGISTERED persons - only notes against B2CL invoices)
+  // =========================================================================
+  const sheetCdnur = workbook.addWorksheet('cdnur', { views: [{ state: 'frozen', ySplit: 1 }] });
+  sheetCdnur.columns = [
+    { header: 'UR Type', key: 'ur_type', width: 12 },
+    { header: 'Note/Refund Voucher Number', key: 'note_no', width: 26 },
+    { header: 'Note/Refund Voucher date', key: 'note_date', width: 20 },
+    { header: 'Document Type', key: 'doc_type', width: 15 },
+    { header: 'Invoice/Advance Receipt Number', key: 'inv_no', width: 28 },
+    { header: 'Invoice/Advance Receipt date', key: 'inv_date', width: 24 },
+    { header: 'Place Of Supply', key: 'pos', width: 24 },
+    { header: 'Note/Refund Voucher Value', key: 'note_val', width: 22, style: { numFmt: currencyFormat } },
+    { header: 'Applicable % of Tax Rate', key: 'app_rate', width: 22 },
+    { header: 'Rate', key: 'rate', width: 10 },
+    { header: 'Taxable Value', key: 'taxable', width: 16, style: { numFmt: currencyFormat } },
+    { header: 'Cess Amount', key: 'cess', width: 14, style: { numFmt: currencyFormat } }
+  ];
+  applyGstnHeaderStyle(sheetCdnur);
+
+  for (const item of (data.cdnur || [])) {
+    sheetCdnur.addRow({
+      ur_type: item.urType,
+      note_no: item.noteNumber,
+      note_date: item.noteDate,
+      doc_type: item.documentType,
+      inv_no: item.originalInvoiceNumber,
+      inv_date: item.originalInvoiceDate,
+      pos: item.placeOfSupply,
       note_val: paiseToRupees(item.noteValuePaise),
       app_rate: item.applicableTaxRatePercent,
       rate: item.ratePercentage,

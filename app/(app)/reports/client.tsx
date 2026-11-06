@@ -200,7 +200,7 @@ const statutoryCards = [
     iconColor: 'text-indigo-600 dark:text-indigo-400',
     iconBg: 'bg-indigo-500/10',
     title: 'GSTR-1 Outward Supplies',
-    description: 'Official GSTN Offline Utility format (b2b, b2cl, b2cs, cdnr, hsn, doc) ready for CA portal upload.',
+    description: 'Official GSTN Offline Utility format (b2b, b2cl, b2cs, cdnr, cdnur, hsn, doc) ready for CA portal upload.',
   },
   {
     type: 'sales_register',

@@ -155,7 +155,10 @@ export type DatabaseEnv = Readonly<{ DATABASE_URL: string }>;
 export type AuthEnv = Readonly<{ NEON_AUTH_BASE_URL: string; NEON_AUTH_COOKIE_SECRET: string }>;
 export type ArchivalEnv = Readonly<{ ARCHIVAL_SIGNING_SECRET: string }>;
 export type CronEnv = Readonly<{ CRON_SECRET: string }>;
-export type AdminEnv = Readonly<{ PLATFORM_ADMIN_EMAILS: readonly string[] }>;
+export type AdminEnv = Readonly<{
+  PLATFORM_ADMIN_EMAILS: readonly string[];
+  PLATFORM_ADMIN_USER_IDS: readonly string[];
+}>;
 export type StorageEnv = Readonly<{
   IDRIVE_E2_ENDPOINT: string;
   IDRIVE_E2_REGION: string;
@@ -207,24 +210,31 @@ function parseAppEnv(source: EnvSource): ParseOutcome<AppEnv> {
   return { ok: true, value: { NEXT_PUBLIC_APP_URL: url.origin } };
 }
 
-function parseAdminEnv(source: EnvSource): ParseOutcome<AdminEnv> {
-  const name = 'PLATFORM_ADMIN_EMAILS';
-  const fail = (message: string): ParseOutcome<AdminEnv> => ({
-    ok: false,
-    issues: [{ group: 'admin', name, message }],
-  });
-  const emails = (source[name] ?? '')
-    .split(',')
-    .map((entry) => entry.trim().toLowerCase())
-    .filter((entry) => entry !== '');
+const USER_ID_PATTERN = /^[A-Za-z0-9_-]{8,128}$/;
 
-  if (emails.length === 0) {
-    return fail('must list at least one administrator e-mail (comma-separated)');
-  }
+function splitList(raw: string | undefined): string[] {
+  return (raw ?? '').split(',').map((entry) => entry.trim()).filter((entry) => entry !== '');
+}
+
+function parseAdminEnv(source: EnvSource): ParseOutcome<AdminEnv> {
+  const emails = splitList(source.PLATFORM_ADMIN_EMAILS).map((entry) => entry.toLowerCase());
+  const userIds = splitList(source.PLATFORM_ADMIN_USER_IDS);
+  const issues: EnvIssue[] = [];
   if (!emails.every((email) => EMAIL_PATTERN.test(email))) {
-    return fail('contains an invalid e-mail address');
+    issues.push({ group: 'admin', name: 'PLATFORM_ADMIN_EMAILS', message: 'contains an invalid e-mail address' });
   }
-  return { ok: true, value: { PLATFORM_ADMIN_EMAILS: emails } };
+  if (!userIds.every((id) => USER_ID_PATTERN.test(id))) {
+    issues.push({ group: 'admin', name: 'PLATFORM_ADMIN_USER_IDS', message: 'contains an invalid user id' });
+  }
+  if (issues.length === 0 && emails.length === 0 && userIds.length === 0) {
+    issues.push({
+      group: 'admin',
+      name: 'PLATFORM_ADMIN_USER_IDS',
+      message: 'configure at least one administrator: PLATFORM_ADMIN_USER_IDS (preferred) or PLATFORM_ADMIN_EMAILS',
+    });
+  }
+  if (issues.length > 0) return { ok: false, issues };
+  return { ok: true, value: { PLATFORM_ADMIN_EMAILS: emails, PLATFORM_ADMIN_USER_IDS: userIds } };
 }
 
 export const appEnv: EnvGroup<AppEnv> = defineGroup('app', parseAppEnv);

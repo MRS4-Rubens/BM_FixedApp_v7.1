@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation';
 import { getCreditNote } from '@/lib/actions/credit-notes/get-credit-note';
 import { CreditNoteDetail } from '@/components/app/credit-notes/credit-note-detail';
 
+// bounds after()-scheduled PDF archival started by finalize server actions
+export const maxDuration = 60;
+
 export default async function CreditNotePage({
   params
 }: {

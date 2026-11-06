@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { invoiceSettingsSchema, InvoiceSettingsInput } from '@/lib/validations/invoice-settings';
@@ -24,7 +24,6 @@ import {
   AlertCircle,
   Sparkles,
   Lock,
-  Crown,
   ArrowRight,
 } from 'lucide-react';
 import { InvoiceFormatGuideModal } from './invoice-format-guide-modal';
@@ -32,6 +31,14 @@ import { canUseTemplate, canCustomizeInvoiceNumberFormat } from '@/lib/subscript
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal';
 import { TemplateSelector } from '@/components/app/invoices/template-selector';
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip';
+import {
+  parseStoredDisplayPrefs,
+  FIXED_ROWS_MAX,
+  FIXED_ROWS_MIN,
+} from '@/lib/invoices/display-prefs';
+import { clearLegacyDisplayPrefs } from '@/lib/invoices/legacy-display-prefs';
+import { LegacyDisplayPrefsImport } from './legacy-display-prefs-import';
+import { DEFAULT_GST_OPTIONS, type DefaultGstOption } from '@/lib/db/schema/_display_prefs';
 
 interface InvoiceSettingsFormProps {
   business: typeof businesses.$inferSelect | null;
@@ -102,33 +109,15 @@ export function InvoiceSettingsForm({ business, currentFy }: InvoiceSettingsForm
     ? 'INV/{FY}/{SEQ:4}'
     : 'BMA/{FY}/{SEQ:4}';
 
-  // Client-side UI toggles stored in localStorage
-  const [discEnabled, setDiscEnabled] = useState(true);
-  const [showHsn, setShowHsn] = useState(true);
-  const [showNextNo, setShowNextNo] = useState(true);
-  const [showSignatory, setShowSignatory] = useState(true);
-  const [enableFixedRows, setEnableFixedRows] = useState(true);
-  const [fixedRowsCount, setFixedRowsCount] = useState(13);
-  const [defaultGst, setDefaultGst] = useState('18');
-
-  // Load localStorage preferences on client mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('bm_invoice_settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.discEnabled !== undefined) setDiscEnabled(parsed.discEnabled);
-        if (parsed.showHsn !== undefined) setShowHsn(parsed.showHsn);
-        if (parsed.showNextNo !== undefined) setShowNextNo(parsed.showNextNo);
-        if (parsed.showSignatory !== undefined) setShowSignatory(parsed.showSignatory);
-        if (parsed.enableFixedRows !== undefined) setEnableFixedRows(parsed.enableFixedRows);
-        if (parsed.fixedRowsCount !== undefined) setFixedRowsCount(Number(parsed.fixedRowsCount) || 13);
-        if (parsed.defaultGst !== undefined) setDefaultGst(parsed.defaultGst);
-      }
-    } catch (e) {
-      console.error('Failed to load local invoice preferences:', e);
-    }
-  }, []);
+  // Display preferences stored on account (businesses.invoice_display_prefs)
+  const [initialPrefs] = useState(() => parseStoredDisplayPrefs(business?.invoice_display_prefs));
+  const [discEnabled, setDiscEnabled] = useState(() => initialPrefs.discEnabled);
+  const [showHsn, setShowHsn] = useState(() => initialPrefs.showHsn);
+  const [showNextNo, setShowNextNo] = useState(() => initialPrefs.showNextNo);
+  const [showSignatory, setShowSignatory] = useState(() => initialPrefs.showSignatory);
+  const [enableFixedRows, setEnableFixedRows] = useState(() => initialPrefs.enableFixedRows);
+  const [fixedRowsCount, setFixedRowsCount] = useState(() => initialPrefs.fixedRowsCount);
+  const [defaultGst, setDefaultGst] = useState<DefaultGstOption>(() => initialPrefs.defaultGst);
 
   const rawTemplate = business?.default_invoice_template || 'template_1';
   const initialTemplate = canUseTemplate(business, rawTemplate).allowed
@@ -199,8 +188,23 @@ export function InvoiceSettingsForm({ business, currentFy }: InvoiceSettingsForm
     setSuccess(false);
     setGlobalError(null);
 
-    // 1. Persist database-backed fields via Server Action
-    const result = await saveInvoiceSettings(data);
+    const clampedFixedRows = Math.min(Math.max(Number(fixedRowsCount) || 13, FIXED_ROWS_MIN), FIXED_ROWS_MAX);
+
+    const payload: InvoiceSettingsInput = {
+      ...data,
+      display_prefs: {
+        discEnabled,
+        showHsn,
+        showNextNo,
+        showSignatory,
+        enableFixedRows,
+        fixedRowsCount: clampedFixedRows,
+        defaultGst,
+      },
+    };
+
+    // 1. Persist database-backed fields & display prefs via Server Action
+    const result = await saveInvoiceSettings(payload);
     if (!result.success) {
       if (result.error.fieldErrors) {
         Object.entries(result.error.fieldErrors).forEach(([field, messages]) => {
@@ -214,31 +218,8 @@ export function InvoiceSettingsForm({ business, currentFy }: InvoiceSettingsForm
       return;
     }
 
-    // 2. Persist UI display preferences to localStorage & trigger sync event
-    try {
-      const localPrefs = {
-        discEnabled,
-        showHsn,
-        showNextNo,
-        showSignatory,
-        enableFixedRows,
-        fixedRowsCount,
-        defaultGst,
-        // Also keep mirrored keys so existing templates stay fully backward-compatible
-        invoicePrefix: data.credit_note_number_prefix,
-        dueDays: String(data.payment_due_days),
-        defaultTerms: data.invoice_terms,
-      };
-      localStorage.setItem('bm_invoice_settings', JSON.stringify(localPrefs));
-      window.dispatchEvent(
-        new StorageEvent('storage', {
-          key: 'bm_invoice_settings',
-          newValue: JSON.stringify(localPrefs),
-        })
-      );
-    } catch (e) {
-      console.error('Failed to sync local preferences:', e);
-    }
+    // Clear legacy browser localStorage now that prefs are saved to account
+    clearLegacyDisplayPrefs();
 
     setSuccess(true);
     setTimeout(() => setSuccess(false), 3000);
@@ -261,6 +242,8 @@ export function InvoiceSettingsForm({ business, currentFy }: InvoiceSettingsForm
           <span>{globalError}</span>
         </div>
       )}
+
+      <LegacyDisplayPrefsImport />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {/* -- SECTION 1: Invoice & Credit Note Numbering (Dark Navy / Blue - blue-900) -- */}
@@ -450,7 +433,7 @@ export function InvoiceSettingsForm({ business, currentFy }: InvoiceSettingsForm
                 business={business}
                 buttonClassName={inputTealClass}
                 onChange={(chosen) => {
-                  setValue('default_invoice_template', chosen as any, {
+                  setValue('default_invoice_template', chosen as 'template_1' | 'template_2' | 'template_3' | 'template_4', {
                     shouldValidate: true,
                     shouldDirty: true,
                   });
@@ -475,9 +458,9 @@ export function InvoiceSettingsForm({ business, currentFy }: InvoiceSettingsForm
                 id="defaultGst"
                 className={inputTealClass}
                 value={defaultGst}
-                onChange={(e) => setDefaultGst(e.target.value)}
+                onChange={(e) => setDefaultGst(e.target.value as DefaultGstOption)}
               >
-                {['0', '5', '12', '18', '28'].map((r) => (
+                {DEFAULT_GST_OPTIONS.map((r) => (
                   <option key={r} value={r}>
                     {r}% Standard GST
                   </option>
@@ -700,7 +683,7 @@ export function InvoiceSettingsForm({ business, currentFy }: InvoiceSettingsForm
                 max={50}
                 className={cn(inputAmberClass, 'font-mono')}
                 value={fixedRowsCount}
-                onChange={(e) => setFixedRowsCount(Math.max(1, Number(e.target.value) || 13))}
+                onChange={(e) => setFixedRowsCount(Math.min(FIXED_ROWS_MAX, Math.max(FIXED_ROWS_MIN, Number(e.target.value) || 13)))}
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 Invoices with fewer line items will be padded with empty rows up to this count (Standard: 13).

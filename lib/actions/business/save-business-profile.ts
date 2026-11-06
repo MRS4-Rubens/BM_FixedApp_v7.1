@@ -1,101 +1,79 @@
-'use server'
+'use server';
 
+import { revalidatePath } from 'next/cache';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
-import { businessProfileSchema } from '@/lib/validations/business';
+import { getAuditRequestContext } from '@/lib/audit/request-context';
+import { OWNER_ONLY } from '@/lib/auth/rbac';
+import {
+  saveBusinessProfileInTransaction,
+  type SaveProfileTxResult,
+  DEFAULT_INVOICE_NUMBER_FORMAT,
+  DEFAULT_CREDIT_NOTE_PREFIX,
+  DEFAULT_PAYMENT_DUE_DAYS,
+  TRIAL_DURATION_DAYS,
+  DEFAULT_INVOICE_TERMS,
+} from '@/lib/business/save-profile-tx';
+import {
+  isGstinUniqueViolation,
+  buildGstinTakenMessage,
+} from '@/lib/business/identity-policy';
 import { db } from '@/lib/db/client';
-import { businesses, financialYears, users } from '@/lib/db/schema';
-import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
-import { eq } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
+import { toBusyActionError, withTransactionRetry } from '@/lib/db/transaction';
+import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
+import { businessProfileSchema } from '@/lib/validations/business';
 
-export const saveBusinessProfile = createAuthenticatedAction(businessProfileSchema, async (input, context) => {
-  const profileData = {
-    legal_name: input.legal_name,
-    trade_name: input.trade_name || null,
-    gstin: input.gstin,
-    pan: input.pan || null,
-    registration_type: input.registration_type,
-    address_line1: input.address_line1,
-    address_line2: input.address_line2 || null,
-    city: input.city,
-    state_code: input.state_code,
-    pincode: input.pincode,
-    phone: input.phone || null,
-    email: input.email || null,
-    bank_account_name: input.bank_account_name || null,
-    bank_account_number: input.bank_account_number || null,
-    bank_ifsc: input.bank_ifsc || null,
-    bank_name: input.bank_name || null,
-    nature_of_business: input.nature_of_business || null,
-    alternate_phone: input.alternate_phone || null,
-  };
+export {
+  DEFAULT_INVOICE_NUMBER_FORMAT,
+  DEFAULT_CREDIT_NOTE_PREFIX,
+  DEFAULT_PAYMENT_DUE_DAYS,
+  TRIAL_DURATION_DAYS,
+  DEFAULT_INVOICE_TERMS,
+};
 
-  let businessId = context.appUser.business_id;
+export const saveBusinessProfile = createAuthenticatedAction(
+  businessProfileSchema,
+  async (input, context): Promise<{ businessId: string }> => {
+    const requestContext = await getAuditRequestContext();
+    let result: SaveProfileTxResult;
 
-  try {
-    await db.transaction(async (tx) => {
-      if (!businessId) {
-        // First-time setup: initialize with legal details + statutory default invoice settings
-        const newBusinessData = {
-          ...profileData,
-          invoice_number_format: input.invoice_number_format || 'BMA/{FY}/{SEQ:4}',
-          credit_note_number_prefix: input.credit_note_number_prefix || 'CN',
-          invoice_terms: input.invoice_terms || '1. Goods once sold will not be taken back.\n2. Payment to be made within 30 days from the date of invoice.\n3. Interest @ 24% per annum will be charged on overdue invoices until payment is received.',
-          payment_due_days: input.payment_due_days ?? 30,
-          default_invoice_template: input.default_invoice_template || 'template_1',
-          default_gst_rate_type: input.default_gst_rate_type || 'exclusive',
-          subscription_plan: 'trial',
-          subscription_status: 'trial',
-          trial_ends_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-        };
-
-        const [newBusiness] = await tx.insert(businesses).values(newBusinessData).returning({ id: businesses.id });
-        businessId = newBusiness.id;
-
-        const currentFY = getIndianFinancialYearForDate(new Date());
-
-        await tx.insert(financialYears).values({
-          business_id: businessId,
-          label: currentFY.label,
-          start_date: currentFY.startDate.toISOString(),
-          end_date: currentFY.endDate.toISOString(),
-          is_current: true,
-          invoice_sequence_counter: 0,
-          credit_note_sequence_counter: 0,
+    try {
+      result = await withTransactionRetry(() =>
+        db.transaction((tx) =>
+          saveBusinessProfileInTransaction(tx, {
+            userId: context.appUser.id,
+            profile: input,
+            requestContext,
+          }),
+        ),
+      );
+    } catch (error: unknown) {
+      if (error instanceof ActionError) throw error;
+      if (isGstinUniqueViolation(error)) {
+        throw new ActionError(buildGstinTakenMessage(), {
+          code: 'GSTIN_ALREADY_REGISTERED',
+          fieldErrors: { gstin: [buildGstinTakenMessage()] },
         });
-
-        await tx.update(users)
-          .set({ business_id: businessId })
-          .where(eq(users.id, context.appUser.id));
-      } else {
-        // Editing existing profile: update profile details and only touch invoice settings if explicitly supplied
-        const updatePayload: Record<string, unknown> = {
-          ...profileData,
-          updated_at: new Date(),
-        };
-
-        if (input.invoice_number_format !== undefined) updatePayload.invoice_number_format = input.invoice_number_format;
-        if (input.credit_note_number_prefix !== undefined) updatePayload.credit_note_number_prefix = input.credit_note_number_prefix;
-        if (input.invoice_terms !== undefined) updatePayload.invoice_terms = input.invoice_terms;
-        if (input.payment_due_days !== undefined) updatePayload.payment_due_days = input.payment_due_days;
-        if (input.default_invoice_template !== undefined) updatePayload.default_invoice_template = input.default_invoice_template;
-        if (input.default_gst_rate_type !== undefined) updatePayload.default_gst_rate_type = input.default_gst_rate_type;
-
-        await tx.update(businesses)
-          .set(updatePayload)
-          .where(eq(businesses.id, businessId));
       }
-    });
-  } catch (error) {
-    console.error('Error saving business profile:', error);
-    throw new ActionError('We could not save your business profile. Please try again.', { code: 'TRANSACTION_FAILED' });
-  }
+      const busy = toBusyActionError(error);
+      if (busy) throw busy;
+      throw error;
+    }
 
-  // Flush NextJS client router cache for settings and invoice pages
-  revalidatePath('/settings');
-  revalidatePath('/invoices/new');
-  revalidatePath('/invoices');
+    revalidatePath('/settings');
+    revalidatePath('/invoices/new');
+    revalidatePath('/invoices');
 
-  return { businessId: businessId as string };
-}, 'save-business-profile');
+    return { businessId: result.businessId };
+  },
+  'save-business-profile',
+  {
+    roles: OWNER_ONLY,
+    requireActiveSubscription: true,
+    rateLimit: {
+      limiter: sensitiveActionLimiter,
+      keyPrefix: 'save-business-profile',
+      outage: 'fail-open',
+    },
+  },
+);

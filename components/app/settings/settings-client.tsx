@@ -33,6 +33,7 @@ interface SettingsClientProps {
     productsCount: number;
     currentMonthLabel: string;
   };
+  identityLocked?: boolean;
 }
 
 const navItems = [
@@ -63,6 +64,7 @@ export function SettingsClient({
   initialTab,
   initialSubscriptions,
   usageStats,
+  identityLocked = false,
 }: SettingsClientProps) {
   const resolveInitialTab = (): NavItem => {
     if (initialTab) {
@@ -181,6 +183,7 @@ export function SettingsClient({
               business={business}
               currentFy={currentFy}
               onSwitchTab={(tab) => setActive(tab as NavItem)}
+              identityLocked={identityLocked}
             />
           )}
 

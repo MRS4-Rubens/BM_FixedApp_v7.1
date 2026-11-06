@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useTransition, useEffect, useMemo } from 'react';
+import { useState, useTransition, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPaiseAsInr } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 import { processSubscriptionClaim } from '@/lib/actions/subscriptions/process-request';
 import { updateBusinessSubscription } from '@/lib/actions/subscriptions/update-business-subscription';
 import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-business-subscriptions';
+import { getClaimScreenshotUrl } from '@/lib/actions/subscriptions/get-claim-screenshot-url';
 import {
   TrendingUp,
   Building2,
@@ -43,6 +44,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FEEDBACK_RECIPIENT_EMAIL } from '@/lib/config/contact';
+
+type ProofViewer =
+  | { readonly requestId: string; readonly businessName: string; readonly title: string; readonly utr: string; readonly status: 'loading' }
+  | { readonly requestId: string; readonly businessName: string; readonly title: string; readonly utr: string; readonly status: 'ready'; readonly url: string; readonly expiresInSeconds: number }
+  | { readonly requestId: string; readonly businessName: string; readonly title: string; readonly utr: string; readonly status: 'error'; readonly message: string };
 
 const ROWS_PER_PAGE = 7;
 
@@ -91,8 +97,7 @@ interface AdminConsoleProps {
     amountPaise: number;
     paymentMethod: string;
     paymentReference: string;
-    screenshotStorageKey: string | null;
-    screenshotUrl: string | null;
+    hasScreenshot: boolean;
     createdAt: string;
   }>;
   businesses: Array<{
@@ -127,7 +132,7 @@ interface AdminConsoleProps {
     ifsc: string;
   } | null;
   payeeConfigIssue?: string | null;
-  adminEmailAllowlist?: string;
+
 }
 
 function PayeeNotConfiguredNotice({ issue }: { issue: string | null }) {
@@ -152,7 +157,7 @@ export function AdminConsole({
   users,
   upiConfig,
   payeeConfigIssue = null,
-  adminEmailAllowlist = '',
+
 }: AdminConsoleProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -171,6 +176,11 @@ export function AdminConsole({
   // User list filters
   const [userSearch, setUserSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'owner' | 'staff'>('all');
+  const roleFilterOptions = useMemo(
+    () => (users.some((u) => u.role === 'staff') ? (['all', 'owner', 'staff'] as const) : (['all', 'owner'] as const)),
+    [users],
+  );
+  const effectiveRoleFilter = roleFilterOptions.some((option) => option === userRoleFilter) ? userRoleFilter : 'all';
 
   // Pagination state (7 rows per page)
   const [bizPage, setBizPage] = useState(1);
@@ -189,8 +199,63 @@ export function AdminConsole({
   const [overrideStatus, setOverrideStatus] = useState<'trial' | 'active' | 'expired' | 'suspended'>('active');
   const [overrideEndsAt, setOverrideEndsAt] = useState('');
 
-  // Screenshot Lightbox Modal
-  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string; utr: string } | null>(null);
+  // Screenshot Lightbox Modal (SEC-003: lazy on-demand 300s presigned URLs)
+  const [proofViewer, setProofViewer] = useState<ProofViewer | null>(null);
+  const proofRequestSeq = useRef(0);
+
+  const openProof = useCallback(async (req: { id: string; businessName: string; paymentReference: string }): Promise<void> => {
+    const seq = ++proofRequestSeq.current;
+    const base = {
+      requestId: req.id,
+      businessName: req.businessName,
+      title: `${req.businessName} - Payment Proof`,
+      utr: req.paymentReference,
+    } as const;
+    setProofViewer({ ...base, status: 'loading' });
+    const result = await getClaimScreenshotUrl({ requestId: req.id });
+    if (seq !== proofRequestSeq.current) return; // closed or superseded: drop the response
+    setProofViewer(
+      result.success
+        ? { ...base, status: 'ready', url: result.data.url, expiresInSeconds: result.data.expiresInSeconds }
+        : { ...base, status: 'error', message: result.error.message },
+    );
+  }, []);
+
+  const closeProof = useCallback((): void => {
+    proofRequestSeq.current += 1; // invalidates in-flight requests
+    setProofViewer(null); // drops the URL from state
+  }, []);
+
+  // SEC-003: Auto-expire the secure link 10 seconds before server TTL expires
+  useEffect(() => {
+    if (!proofViewer || proofViewer.status !== 'ready') return;
+
+    const delayMs = Math.max(proofViewer.expiresInSeconds - 10, 1) * 1000;
+    const timer = setTimeout(() => {
+      setProofViewer((current) => {
+        if (!current || current.status !== 'ready' || current.requestId !== proofViewer.requestId) return current;
+        return {
+          ...current,
+          status: 'error',
+          message: 'This secure link has expired. Click Try again to load a fresh one.',
+        };
+      });
+    }, delayMs);
+
+    return () => clearTimeout(timer);
+  }, [proofViewer]);
+
+  // SEC-003: Escape key handler for dialog accessibility
+  useEffect(() => {
+    if (!proofViewer) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        closeProof();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [proofViewer, closeProof]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -246,10 +311,10 @@ export function AdminConsole({
       const matchSearch =
         (u.displayName && u.displayName.toLowerCase().includes(userSearch.toLowerCase())) ||
         (u.businessName && u.businessName.toLowerCase().includes(userSearch.toLowerCase()));
-      const matchRole = userRoleFilter === 'all' ? true : u.role === userRoleFilter;
+      const matchRole = effectiveRoleFilter === 'all' ? true : u.role === effectiveRoleFilter;
       return matchSearch && matchRole;
     });
-  }, [users, userSearch, userRoleFilter]);
+  }, [users, userSearch, effectiveRoleFilter]);
 
   // Reset pagination to first page whenever search, filters, or sorting change
   useEffect(() => {
@@ -258,7 +323,7 @@ export function AdminConsole({
 
   useEffect(() => {
     setUserPage(1);
-  }, [userSearch, userRoleFilter]);
+  }, [userSearch, effectiveRoleFilter]);
 
   // Businesses pagination calculations
   const totalBizPages = Math.max(1, Math.ceil(filteredBusinesses.length / ROWS_PER_PAGE));
@@ -889,17 +954,11 @@ export function AdminConsole({
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
-                      {req.screenshotUrl && (
+                      {req.hasScreenshot && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() =>
-                            setLightboxImage({
-                              url: req.screenshotUrl!,
-                              title: `${req.businessName} - Payment Proof`,
-                              utr: req.paymentReference,
-                            })
-                          }
+                          onClick={() => void openProof(req)}
                           className="h-7.5 px-2.5 text-xs font-bold text-muted-foreground hover:text-indigo-600"
                         >
                           <Eye className="size-3.5 mr-1" /> Proof
@@ -1022,16 +1081,10 @@ export function AdminConsole({
 
                   {/* Action row */}
                   <div className="flex items-center justify-between pt-1 border-t border-border/40">
-                    {req.screenshotUrl ? (
+                    {req.hasScreenshot ? (
                       <button
                         type="button"
-                        onClick={() =>
-                          setLightboxImage({
-                            url: req.screenshotUrl!,
-                            title: `${req.businessName} - Payment Proof`,
-                            utr: req.paymentReference,
-                          })
-                        }
+                        onClick={() => void openProof(req)}
                         className="inline-flex items-center gap-1 text-sm font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
                       >
                         <Maximize2 className="size-4" /> View Payment Proof
@@ -1389,14 +1442,14 @@ export function AdminConsole({
             </div>
 
             <div className="flex items-center gap-1">
-              {(['all', 'owner', 'staff'] as const).map((r) => (
+              {roleFilterOptions.map((r) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => setUserRoleFilter(r)}
                   className={cn(
                     'rounded-lg px-2.5 py-1 text-sm font-bold capitalize transition cursor-pointer',
-                    userRoleFilter === r
+                    effectiveRoleFilter === r
                       ? 'bg-indigo-600 text-white'
                       : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
@@ -1668,14 +1721,10 @@ export function AdminConsole({
                 </h4>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Super Admin operations and route protection are governed by the server-side environment allowlist{' '}
-                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground font-bold">
-                  PLATFORM_ADMIN_EMAILS
-                </code>
-                . Only sessions with these emails can access this portal or execute status overrides.
+                Allowlist source
               </p>
               <div className="rounded-lg bg-muted/40 p-3 border border-border/50 text-sm font-mono text-foreground font-bold break-all">
-                {adminEmailAllowlist || 'Configured via server environment'}
+                Managed in server configuration. Only verified identities are accepted.
               </div>
             </div>
 
@@ -2044,48 +2093,105 @@ export function AdminConsole({
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 3: SCREENSHOT LIGHTBOX MODAL */}
+      {/* MODAL 3: SCREENSHOT LIGHTBOX MODAL (SEC-003) */}
       {/* ========================================================================= */}
-      {lightboxImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
+      {proofViewer && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={proofViewer.title}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeProof();
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4"
+        >
           <div className="w-full max-w-3xl rounded-xl border border-border bg-card p-4 shadow-2xl relative animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-3">
               <div>
                 <h3 className="text-base font-bold text-foreground font-heading">
-                  {lightboxImage.title}
+                  {proofViewer.title}
                 </h3>
                 <p className="text-xs font-mono text-muted-foreground font-bold">
-                  UTR: {lightboxImage.utr}
+                  UTR: {proofViewer.utr}
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
-                <a
-                  href={lightboxImage.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-md border border-border px-2.5 py-1 text-sm font-bold text-muted-foreground hover:text-indigo-600 hover:bg-muted transition"
-                >
-                  Open Original ↗
-                </a>
+                {proofViewer.status === 'ready' && (
+                  <a
+                    href={proofViewer.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md border border-border px-2.5 py-1 text-sm font-bold text-muted-foreground hover:text-indigo-600 hover:bg-muted transition"
+                  >
+                    Open Original ↗
+                  </a>
+                )}
                 <button
                   type="button"
-                  onClick={() => setLightboxImage(null)}
-                  className="text-muted-foreground hover:text-foreground p-1"
+                  onClick={closeProof}
+                  aria-label="Close"
+                  className="text-muted-foreground hover:text-foreground p-1 cursor-pointer"
                 >
                   <X className="size-5" />
                 </button>
               </div>
             </div>
 
-            <div className="flex justify-center items-center max-h-[70vh] overflow-hidden rounded-lg bg-black/5 p-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={lightboxImage.url}
-                alt="Payment proof screenshot"
-                className="max-h-[65vh] w-auto object-contain rounded-md shadow-sm"
-              />
-            </div>
+            {proofViewer.status === 'loading' && (
+              <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 py-12">
+                <Loader2 className="size-8 animate-spin text-indigo-600" />
+                <p className="text-sm font-semibold text-muted-foreground">Fetching secure link…</p>
+              </div>
+            )}
+
+            {proofViewer.status === 'error' && (
+              <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 py-12 text-center px-4">
+                <div className="rounded-full bg-rose-500/10 p-3 text-rose-600">
+                  <XCircle className="size-8" />
+                </div>
+                <div className="max-w-md">
+                  <p className="text-sm font-bold text-foreground">Failed to load payment proof</p>
+                  <p className="text-xs text-muted-foreground mt-1">{proofViewer.message}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    void openProof({
+                      id: proofViewer.requestId,
+                      businessName: proofViewer.businessName,
+                      paymentReference: proofViewer.utr,
+                    })
+                  }
+                  className="font-bold cursor-pointer"
+                >
+                  <RefreshCw className="size-3.5 mr-1.5" /> Try again
+                </Button>
+              </div>
+            )}
+
+            {proofViewer.status === 'ready' && (
+              <div className="flex justify-center items-center max-h-[70vh] overflow-hidden rounded-lg bg-black/5 p-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={proofViewer.url}
+                  referrerPolicy="no-referrer"
+                  alt="Payment proof screenshot"
+                  onError={() => {
+                    setProofViewer((current) => {
+                      if (!current || current.status !== 'ready' || current.requestId !== proofViewer.requestId) return current;
+                      return {
+                        ...current,
+                        status: 'error',
+                        message: 'This secure link has expired or could not be loaded. Click Try again to load a fresh one.',
+                      };
+                    });
+                  }}
+                  className="max-h-[65vh] w-auto object-contain rounded-md shadow-sm"
+                />
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -113,6 +113,90 @@
       "when": 1792954608402,
       "tag": "0015_db002_tenant_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793042276056,
+      "tag": "0016_db002b_validate_tenant_fks",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793206663932,
+      "tag": "0017_api004_credit_note_original_line_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793210401785,
+      "tag": "0018_comp001_document_seller_snapshots",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793541393708,
+      "tag": "0019_db003_paise_bigint_and_js_safe_checks",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793552659387,
+      "tag": "0020_db004_state_check_constraints",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793555786391,
+      "tag": "0021_db005_index_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793561239566,
+      "tag": "0022_db007_audit_log_append_only",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793633672469,
+      "tag": "0023_api008_archival_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793638159594,
+      "tag": "0024_api010_trial_end_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793691004606,
+      "tag": "0025_api011_email_reminder_tracking",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793711615477,
+      "tag": "0026_fe001_invoice_display_prefs",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1793886596938,
+      "tag": "0027_perf001_list_indexes",
+      "breakpoints": true
     }
   ]
 }

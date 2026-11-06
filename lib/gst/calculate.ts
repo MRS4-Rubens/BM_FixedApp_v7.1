@@ -1,6 +1,17 @@
 import { INDIAN_GST_STATES } from './indian-states';
-import { GstCalculationError } from './errors';
+import { GstCalculationError, MoneyLimitError } from './errors';
 import { SupplyType, TaxLineItemInput, TaxLineItemResult, TaxCalculationInput, TaxCalculationResult } from './types';
+import { multiplyMilliByPaiseRoundHalfUp, parseQuantityToMilli } from '@/lib/money';
+import {
+  MAX_DOCUMENT_TOTAL_PAISE,
+  MAX_INVOICE_LINE_ITEMS,
+  MAX_LINE_GROSS_PAISE,
+  MAX_QUANTITY,
+  MAX_QUANTITY_LABEL,
+  MAX_UNIT_PRICE_LABEL,
+  MAX_UNIT_PRICE_PAISE,
+  MAX_AMOUNT_LABEL,
+} from '../money-limits';
 
 export function getSupplyType(sellerStateCode: string, placeOfSupplyStateCode: string): SupplyType {
   const sellerState = INDIAN_GST_STATES.find(s => s.code === sellerStateCode);
@@ -37,8 +48,38 @@ function calculateLineItem(
     throw new GstCalculationError('Discount must be non-negative');
   }
 
-  // Calculate gross value (entered rate * quantity) in integer paise
-  const grossPaise = Math.round(item.quantity * item.unitPricePaise);
+  if (!Number.isFinite(item.quantity)) {
+    throw new GstCalculationError('Quantity must be a finite number');
+  }
+  if (!Number.isSafeInteger(item.unitPricePaise)) {
+    throw new GstCalculationError('Unit price must be a whole number of paise');
+  }
+  if (item.quantity > MAX_QUANTITY) {
+    throw new MoneyLimitError(`Quantity cannot exceed ${MAX_QUANTITY_LABEL}.`);
+  }
+  if (item.unitPricePaise > MAX_UNIT_PRICE_PAISE) {
+    throw new MoneyLimitError(`Rate cannot exceed ${MAX_UNIT_PRICE_LABEL}.`);
+  }
+
+  const quantityMilli = parseQuantityToMilli(item.quantity);
+  let grossPaise: number;
+  if (quantityMilli !== null) {
+    try {
+      grossPaise = multiplyMilliByPaiseRoundHalfUp(quantityMilli, item.unitPricePaise);
+    } catch {
+      throw new MoneyLimitError(`A line amount cannot exceed ${MAX_AMOUNT_LABEL}. Reduce the quantity or rate.`);
+    }
+  } else if (typeof item.quantity === 'number' && Number.isFinite(item.quantity) && item.quantity >= 0) {
+    grossPaise = Math.round(item.quantity * item.unitPricePaise);
+  } else {
+    throw new GstCalculationError('Quantity can have at most 3 decimal places');
+  }
+
+  // Plain comparison on purpose: at the extreme input bounds the raw product exceeds 2^53 and loses precision,
+  // but such a value is rejected here, so the imprecision never reaches any stored amount.
+  if (grossPaise > MAX_LINE_GROSS_PAISE) {
+    throw new MoneyLimitError(`A line amount cannot exceed ${MAX_AMOUNT_LABEL}. Reduce the quantity or rate.`);
+  }
 
   if (discountPaise > grossPaise) {
     throw new GstCalculationError("Discount cannot exceed the line item's gross value");
@@ -100,6 +141,9 @@ export function calculateInvoiceTax(input: TaxCalculationInput): TaxCalculationR
   if (!input.lineItems || input.lineItems.length === 0) {
     throw new GstCalculationError("At least one line item is required");
   }
+  if (input.lineItems.length > MAX_INVOICE_LINE_ITEMS) {
+    throw new MoneyLimitError(`A document cannot have more than ${MAX_INVOICE_LINE_ITEMS} line items.`);
+  }
 
   const supplyType = getSupplyType(input.sellerStateCode, input.placeOfSupplyStateCode);
   const gstRateType = input.gstRateType || 'exclusive';
@@ -121,6 +165,10 @@ export function calculateInvoiceTax(input: TaxCalculationInput): TaxCalculationR
 
   const totalTaxPaise = totalCgstPaise + totalSgstPaise + totalIgstPaise;
   const grandTotalPaise = subtotalPaise + totalTaxPaise;
+
+  if (grandTotalPaise > MAX_DOCUMENT_TOTAL_PAISE) {
+    throw new MoneyLimitError(`The document total cannot exceed ${MAX_AMOUNT_LABEL}.`);
+  }
 
   return {
     supplyType,

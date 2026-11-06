@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/app/app-sidebar';
 import { AppTopbar } from '@/components/app/app-topbar';
-import { auth } from '@/lib/auth/server';
+import { getPlatformAdminDecision } from '@/lib/auth/admin';
 import { getCurrentAppUser } from '@/lib/auth/session';
 
 export const dynamic = 'force-dynamic';
@@ -12,23 +12,12 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // 1. Authenticated check
-  const session = await auth.getSession();
-  const userEmail = session?.data?.user?.email?.toLowerCase();
-  
-  if (!userEmail) {
-    redirect('/login');
+  const decision = await getPlatformAdminDecision();
+  if (!decision.allowed) {
+    redirect(decision.reason === 'no_session' ? '/login' : '/dashboard');
   }
 
-  // 2. Authorization check against platform admin emails
-  const adminEmailsEnv = process.env.PLATFORM_ADMIN_EMAILS || '';
-  const adminEmails = adminEmailsEnv.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
-
-  if (!adminEmails.includes(userEmail)) {
-    redirect('/dashboard');
-  }
-
-  // 3. Fetch app user profile details for sidebar initialization
+  // Fetch app user profile details for sidebar initialization
   const user = await getCurrentAppUser();
   const cookieStore = await cookies();
   const defaultCollapsed = cookieStore.get('sidebar:collapsed')?.value === 'true';
@@ -48,11 +37,9 @@ export default async function AdminLayout({
         <AppSidebar user={userProp} defaultCollapsed={defaultCollapsed} isAdminUser={true} />
       </div>
       <div className="flex flex-1 flex-col overflow-hidden print:overflow-visible">
-        <div className="print:hidden">
-          <AppTopbar />
-        </div>
-        <main className="flex-1 overflow-y-auto pt-2.5 pb-6 px-6 lg:pt-3 lg:pb-8 lg:px-8 print:overflow-visible print:p-0">
-          {children}
+        <AppTopbar />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-muted/20">
+          <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
     </div>

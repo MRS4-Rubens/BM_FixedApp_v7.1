@@ -3,7 +3,11 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
-import { sendFeedbackSchema } from '@/lib/validations/feedback';
+import {
+  sendFeedbackSchema,
+  MAX_FILE_SIZE_BYTES,
+  MAX_TOTAL_SIZE_BYTES,
+} from '@/lib/validations/feedback';
 import { auth } from '@/lib/auth/server';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
@@ -13,6 +17,11 @@ import { getEmailEnv } from '@/lib/env';
 import { FeedbackNotificationEmail } from '@/lib/email/templates/feedback-notification-email';
 import { logError } from '@/lib/actions/_shared/logger';
 import { FEEDBACK_RECIPIENT_EMAIL } from '@/lib/config/contact';
+import {
+  requireValidUpload,
+  makeAttachmentFilenames,
+  IMAGE_AND_PDF_MIMES,
+} from '@/lib/security/upload';
 
 const CATEGORY_LABELS: Record<string, string> = {
   bug: 'Bug Report',
@@ -58,10 +67,27 @@ export const sendFeedbackAction = createAuthenticatedAction(
 
     const categoryLabel = CATEGORY_LABELS[input.category] || 'Feedback';
 
-    // 3. Convert Base64 attachments in-memory into temporary Node.js Buffers (Zero DB/S3 writes)
-    const emailAttachments = input.attachments.map((file) => ({
-      filename: file.filename,
-      content: Buffer.from(file.contentBase64, 'base64'),
+    // 3. Convert Base64 attachments into validated, sanitised in-memory buffers (Zero DB/S3 writes)
+    const validated = input.attachments.map((file) => ({
+      file,
+      upload: requireValidUpload(file.contentBase64, {
+        maxBytes: MAX_FILE_SIZE_BYTES,
+        allowed: IMAGE_AND_PDF_MIMES,
+      }),
+    }));
+    const totalBytes = validated.reduce((sum, item) => sum + item.upload.sizeBytes, 0);
+    if (totalBytes > MAX_TOTAL_SIZE_BYTES) {
+      throw new ActionError('Total combined attachment size must be 10 MB or smaller.', {
+        code: 'FILE_TOO_LARGE',
+      });
+    }
+    const attachmentNames = makeAttachmentFilenames(
+      validated.map((item) => ({ original: item.file.filename, ext: item.upload.ext }))
+    );
+    const emailAttachments = validated.map((item, index) => ({
+      filename: attachmentNames.at(index) ?? `attachment-${index + 1}.${item.upload.ext}`,
+      content: item.upload.buffer,
+      contentType: item.upload.mime,
     }));
 
     // 4. Determine sender and recipient addresses
@@ -93,7 +119,7 @@ export const sendFeedbackAction = createAuthenticatedAction(
           businessName,
           businessGstin,
           diagnostics: input.diagnostics,
-          attachmentNames: input.attachments.map((a) => a.filename),
+          attachmentNames,
         }),
         attachments: emailAttachments,
       });
@@ -101,7 +127,7 @@ export const sendFeedbackAction = createAuthenticatedAction(
       if (result.error) {
         logError('send-feedback', result.error);
         throw new ActionError(
-          `Failed to deliver your feedback email: ${result.error.message}`,
+          'We could not send your feedback right now. Please try again.',
           { code: 'EMAIL_SEND_FAILED' }
         );
       }
@@ -124,6 +150,7 @@ export const sendFeedbackAction = createAuthenticatedAction(
     rateLimit: {
       limiter: sensitiveActionLimiter,
       keyPrefix: 'feedback',
+      outage: 'fail-closed',
     },
   }
 );

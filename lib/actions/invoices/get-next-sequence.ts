@@ -20,7 +20,6 @@ export const getNextSequenceForDate = createAuthenticatedAction(
       throw new ActionError('Your account is not linked to a business profile.', { code: 'NO_BUSINESS_LINKED' });
     }
 
-    try {
       const businessResult = await db.select({ invoice_number_format: businesses.invoice_number_format }).from(businesses).where(eq(businesses.id, businessId));
       if (businessResult.length === 0) {
         throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
@@ -50,10 +49,7 @@ export const getNextSequenceForDate = createAuthenticatedAction(
 
       const nextSequence = counterResult.length > 0 ? counterResult[0].counter_value + 1 : 1;
       return { nextSequence };
-    } catch (error) {
-      console.error('Error fetching sequence for date:', error);
-      throw new ActionError('Could not fetch next sequence number.', { code: 'FETCH_FAILED' });
-    }
+
   },
   'get-next-sequence'
 );
