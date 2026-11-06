@@ -63,8 +63,14 @@ from_github_deployments() {
 from_pr_comment() {
   local inspector="$1" comment_id body payload preview
   [ -z "$PR_NUMBER" ] && return 1
-  comment_id=$(gh api "repos/:owner/:repo/issues/${PR_NUMBER}/comments" --paginate \
-    --jq '.[] | select(.user.login == "vercel[bot]") | .id' 2>/dev/null | tail -n 1 || true)
+  local ids
+  if ! ids=$(gh api "repos/:owner/:repo/issues/${PR_NUMBER}/comments" --paginate \
+    --jq '.[] | select(.user.login == "vercel[bot]") | .id' 2>&1); then
+    # Most likely missing `pull-requests: read` / `issues: read` on the workflow token.
+    echo "WARNING: cannot read PR #${PR_NUMBER} comments: ${ids}" >&2
+    return 1
+  fi
+  comment_id=$(echo "$ids" | tail -n 1)
   [ -z "$comment_id" ] && return 1
   # The metadata is the first line of the comment body.
   body=$(gh api "repos/:owner/:repo/issues/comments/${comment_id}" --jq '.body // empty' 2>/dev/null | head -n 1 || true)

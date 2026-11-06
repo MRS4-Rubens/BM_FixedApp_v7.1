@@ -17,6 +17,9 @@ permissions:
   contents: read
   deployments: read
   statuses: read
+  # Read the Vercel bot's PR comment (preview address) via the issue-comments API.
+  pull-requests: read
+  issues: read
 
 concurrency:
   # One run at a time: all runs share the single staging database and its trusted-origin list.
