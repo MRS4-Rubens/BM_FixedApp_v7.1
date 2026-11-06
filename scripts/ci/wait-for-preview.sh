@@ -49,7 +49,7 @@ while true; do
       if [ -n "$DEPLOY_ID" ]; then
         LATEST_STATUS=$(gh api "repos/:owner/:repo/deployments/${DEPLOY_ID}/statuses" --jq '.[0]' 2>/dev/null || echo "")
         DEPLOY_STATE=$(echo "$LATEST_STATUS" | jq -r '.state // empty')
-        DEPLOY_URL=$(echo "$LATEST_STATUS" | jq -r '.environment_url // .target_url // empty')
+        DEPLOY_URL=$(echo "$LATEST_STATUS" | jq -r '.environment_url // empty')
       fi
     fi
 

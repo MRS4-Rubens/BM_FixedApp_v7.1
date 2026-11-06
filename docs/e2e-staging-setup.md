@@ -1,97 +1,119 @@
-# Staging Preview Environment Setup Guide (E2E / TEST-003)
+# E2E Staging Setup (TEST-003)
 
-This guide documents how to provision and maintain an isolated staging environment for Bill Matrix's Playwright End-to-End test suite.
+The Playwright suite (`e2e/`) runs in GitHub Actions (`.github/workflows/e2e.yml`) against the **Vercel Preview
+deployment of each pull request's head commit**. Preview deployments talk to an isolated Neon branch, so tests
+never touch development or production data.
 
----
+```
+PR push ──► Vercel builds a Preview (env: Preview variables ──► Neon branch staging-e2e / neondb)
+        └─► GitHub Action: wait for that Preview ──► migrate staging ──► trust the preview origin on Neon Auth
+                           ──► Playwright (bypassing Vercel Authentication) ──► remove the trusted origin
+```
 
-## 1. Neon Staging Database Branch
-
-To guarantee complete isolation from production data and schemas, the E2E suite runs exclusively against a dedicated Neon Postgres branch (e.g., `staging-e2e`).
-
-1. Open the **Neon Console** -> Select your Project.
-2. Click **Branches** -> **New Branch**.
-3. Set **Branch Name**: `staging-e2e`.
-4. Set **Parent Branch**: `main` (or latest stable schema).
-5. Obtain the connection strings from the Connection Details widget:
-   - **Pooled connection string**: Use for `E2E_STAGING_DATABASE_URL`
-   - **Direct / Unpooled connection string**: Use for `E2E_STAGING_DATABASE_URL_UNPOOLED`
-
-> [!IMPORTANT]
-> The database name or host must contain `staging` or `test`, and must never point to the production database or root `main` branch. The E2E runner will abort if pointing to production.
+If the required secrets/variables are absent the workflow **skips with a notice** instead of failing.
 
 ---
 
-## 2. Vercel Preview Deployment Overrides
+## 1. Vercel project
 
-Vercel Preview Deployments should point to the staging infrastructure:
+- Project: `bm-fixed-app-v7-1` (Hobby). **Production Branch = `production`** (Settings → Environments →
+  Production → Branch Tracking). `main` and every PR branch therefore produce **Preview** deployments only.
+  The `production` branch must exist on GitHub before Vercel accepts it.
+- **Deployment Protection → Vercel Authentication**: enabled (Standard Protection), so previews are private.
+- **Protection Bypass for Automation**: one generated secret. Vercel exposes it to deployments as
+  `VERCEL_AUTOMATION_BYPASS_SECRET`; the tests send it as the `x-vercel-protection-bypass` header
+  (`playwright.config.ts`) from the `E2E_VERCEL_BYPASS_SECRET` GitHub secret.
 
-1. In the **Vercel Dashboard**, open the Bill Matrix project -> **Settings** -> **Environment Variables**.
-2. For the **Preview** environment:
-   - `DATABASE_URL`: Set to Neon `staging-e2e` pooled connection string.
-   - `DATABASE_URL_UNPOOLED`: Set to Neon `staging-e2e` unpooled connection string.
-   - `NEON_AUTH_BASE_URL`: Set to the staging Neon Auth URL.
-   - `UPSTASH_REDIS_REST_URL`: Set to the staging Redis instance.
-   - `UPSTASH_REDIS_REST_TOKEN`: Set to the staging Redis token.
-   - `VERCEL_AUTOMATION_BYPASS_SECRET`: Generate a random 32-character string to allow Playwright bypass headers on preview deployments with Deployment Protection enabled.
+### Preview environment variables
 
----
+Added on Settings → Environments → **Preview** → Environment Variables, Preview only:
 
-## 3. Upstash Redis Staging Namespace
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` / `DATABASE_URL_UNPOOLED` | `staging-e2e` branch, database **`neondb`**, pooled / direct |
+| `NEON_AUTH_BASE_URL` | The **staging-e2e branch's** Auth URL (each Neon branch has its own auth) |
+| `NEON_AUTH_COOKIE_SECRET`, `ARCHIVAL_SIGNING_SECRET`, `CRON_SECRET` | Fresh random values (≥ 32 chars), not the dev ones |
+| `PLATFORM_ADMIN_EMAILS` | The E2E admin email (`E2E_ADMIN_EMAIL`) |
+| Email, Upstash, PDF, UPI/bank settings | Dev values (rotated with fresh accounts at launch) |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | Type **Config** (it is public by design); everything else type **Secret** |
 
-To prevent rate limits from interfering with test runs:
-1. Create a dedicated staging database in the **Upstash Console** (or use separate token credentials).
-2. Note the REST URL and REST Token.
-3. The global setup routine cleans rate-limit test keys matching `@upstash/ratelimit:auth*` before each test suite execution.
-
----
-
-## 4. GitHub Secrets & Variables Configuration
-
-Configure the following secrets in **GitHub Repository** -> **Settings** -> **Secrets and variables** -> **Actions**:
-
-### Secrets
-| Secret Name | Description | Example / Note |
-|---|---|---|
-| `E2E_CONFIRM_STAGING` | Mandatory safety confirmation | Must be exact string: `yes-this-is-not-production` |
-| `E2E_STAGING_DATABASE_URL` | Neon staging pooled connection string | `postgresql://user:pass@ep-staging-xyz-pooler.neon.tech/neondb` |
-| `E2E_STAGING_DATABASE_URL_UNPOOLED` | Neon staging unpooled connection string | `postgresql://user:pass@ep-staging-xyz.neon.tech/neondb` |
-| `E2E_ADMIN_EMAIL` | Pre-existing platform admin email | `admin-staging@billmatrix.in` |
-| `E2E_ADMIN_PASSWORD` | Platform admin password | Strong password (min 12 chars) |
-| `E2E_UPSTASH_REDIS_REST_URL` | Staging Redis REST URL | `https://staging-redis.upstash.io` |
-| `E2E_UPSTASH_REDIS_REST_TOKEN` | Staging Redis REST Token | Upstash REST token |
-| `VERCEL_AUTOMATION_BYPASS_SECRET` | Vercel Deployment Protection bypass | 32-character hex/random string |
-| `MAILOSAUR_API_KEY` | Optional: Mailosaur API Key for mailbox project | From Mailosaur dashboard |
-| `MAILOSAUR_SERVER_ID` | Optional: Mailosaur Server ID | From Mailosaur dashboard |
-
-### Variables (Repository Variables)
-| Variable Name | Default Value | Description |
-|---|---|---|
-| `E2E_EXPECT_VERIFICATION_REQUIRED` | `true` | Set to `false` if staging has email verification disabled |
-| `E2E_VERIFY_MODE` | `direct_db` | Verification method: `direct_db` or `mailbox` |
+**Do not set `NEXT_PUBLIC_APP_URL` for Preview.** Every preview has its own address; when the variable is unset
+and `VERCEL_ENV=preview`, `lib/env.ts` uses `https://$VERCEL_URL`. Production never falls back (ARCH-002).
+Do not add `SENTRY_*` to Preview (test runs would flood the error tracker).
 
 ---
 
-## 5. Accessibility Baseline Recording
+## 2. Neon staging branch
 
-The test suite uses a ratchet pattern for accessibility auditing (`05-a11y.spec.ts`).
-When a new view is introduced or baseline violations are updated:
+- Project `invoice_matrix_v2` (`quiet-lab-45633403`), branch **`staging-e2e`** (`br-hidden-sky-atpt4hgy`),
+  created from the default branch with current data. Database: **`neondb`**.
+- Why `neondb`: the `neon_auth` schema lives only in `neondb`. The tests mark sign-up emails verified directly in
+  `neon_auth.user`, so the app and the tests must use the same database as the auth service.
+- On creation the branch's `neondb` was reset (drop and recreate `public` and `drizzle`; `neon_auth` untouched),
+  then all migrations were applied and tax rates seeded. The workflow re-runs `pnpm e2e:migrate-staging` on every
+  run, so new migrations reach staging automatically.
+
+### Trusted origins (Neon Auth)
+
+Neon Auth only accepts a wildcard as the **leftmost** label (`https://*.example.com`). Vercel preview hosts are
+single labels under `vercel.app`, so the only accepted wildcard would be `https://*.vercel.app`, which trusts
+every site on Vercel. **Never add that.** Instead the workflow calls
+`scripts/ci/neon-auth-trusted-origin.ts add <preview origin>` before the tests and `remove` afterwards. The
+script refuses non-`https`, non-`*.vercel.app`, multi-label, forbidden (production) hosts, and the default
+branch. To click around a preview manually, add that **exact** origin in Neon Console → staging-e2e → Settings →
+Better Auth → Domains, and remove it when done.
+
+---
+
+## 3. GitHub secrets and variables
+
+Repository → Settings → Secrets and variables → Actions.
+
+| Secrets | |
+|---|---|
+| `E2E_CONFIRM_STAGING` | Exactly `yes-this-is-not-production` |
+| `E2E_STAGING_DATABASE_URL` | Staging pooled URL (also used as `E2E_DATABASE_URL`) |
+| `E2E_STAGING_DATABASE_URL_UNPOOLED` | Staging direct URL (migrations) |
+| `E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD` | E2E platform admin; created by global setup on first run |
+| `E2E_VERCEL_BYPASS_SECRET` | Vercel Protection Bypass for Automation secret |
+| `E2E_UPSTASH_REST_URL`, `E2E_UPSTASH_REST_TOKEN` | Upstash used by Preview; global setup clears `auth*` rate-limit keys |
+| `NEON_API_KEY` | **Project-scoped** Neon API key (Organization settings → API keys → Project-scoped) |
+| `MAILOSAUR_API_KEY`, `MAILOSAUR_SERVER_ID` | Optional, only for the `mailbox` project |
+
+| Variables | |
+|---|---|
+| `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID` | Identify the staging branch for the trusted-origin script |
+| `E2E_DB_HOST_ALLOWLIST` | Staging pooled + direct hostnames (comma-separated) |
+| `E2E_FORBIDDEN_DB_HOSTS` | Dev/production database hostnames |
+| `E2E_FORBIDDEN_HOSTS` | Production app host(s), e.g. `bm-fixed-app-v7-1.vercel.app` |
+| `E2E_UPSTASH_HOST_ALLOWLIST` | Upstash hostname allowed to be flushed |
+| `E2E_VERIFY_MODE` (optional) | `direct_db` (default) or `mailbox` |
+| `E2E_EXPECT_VERIFICATION_REQUIRED` (optional) | `true` (default) |
+
+---
+
+## 4. Running locally against a preview
+
+Keep the values in git-ignored `.env.e2e.local`, export the same names as the workflow, set `E2E_BASE_URL` to the
+preview origin, trust that origin (section 2), then `pnpm e2e`. Load env files with `node --env-file`, not shell
+`source`: the database URLs contain `&`.
+
+---
+
+## 5. Accessibility baseline
 
 ```bash
 UPDATE_A11Y_BASELINE=1 pnpm e2e --project=quality
 ```
 
-Review the updated diff in `e2e/a11y-baseline.json` and commit it alongside the changes.
+Review the diff in `e2e/a11y-baseline.json` and commit it with the change.
 
 ---
 
-## 6. Staging Database Reset & Recovery
+## 6. Resetting staging
 
-If test data builds up or inconsistent states occur on the staging branch:
-1. In the **Neon Console**, delete the `staging-e2e` branch.
-2. Re-create the `staging-e2e` branch from `main`.
-3. Run the migrations:
-   ```bash
-   pnpm e2e:migrate-staging
-   ```
-4. The global setup routine will automatically recreate the initial admin user during the next E2E run.
-
+1. Neon Console: delete `staging-e2e`, re-create it from the default branch (current data).
+2. Reset `public` + `drizzle` in its `neondb`, run the migrations against its direct URL, seed tax rates.
+3. Update the staging URLs, `NEON_AUTH_BASE_URL` (Vercel Preview) and `NEON_STAGING_BRANCH_ID`, plus the host
+   allowlist variable, because a new branch gets new IDs and hosts.
+4. The E2E admin is re-created by global setup on the next run.
