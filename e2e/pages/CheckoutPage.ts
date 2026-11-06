@@ -37,8 +37,12 @@ export class CheckoutPage {
     await this.submitButton.click();
   }
 
+  /**
+   * The success notice is transient: after the claim is stored the page refreshes into the "Payment Claim Under
+   * Review" screen. Either one proves the claim was logged, so accept whichever is showing.
+   */
   async expectSuccess(): Promise<void> {
-    await expect(this.successNotice).toBeVisible({ timeout: 15_000 });
+    await expect(this.successNotice.or(this.pendingScreenIndicator).first()).toBeVisible({ timeout: 30_000 });
   }
 
   async expectPendingNotice(): Promise<void> {

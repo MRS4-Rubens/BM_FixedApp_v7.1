@@ -58,7 +58,8 @@ test.describe('04 - Mobile Smoke (375x667)', () => {
     expect(noOverflow).toBe(true);
 
     // Assert inputs and action button are accessible
-    await expect(page.locator('#customer-select')).toBeVisible();
+    // Customer is chosen through the billing-name combobox input (same field the journey uses).
+    await expect(page.locator('input[name="billing_name"]')).toBeVisible();
     await expect(page.locator('#draft-preview-btn')).toBeVisible();
 
     expect(consoleErrors).toEqual([]);
