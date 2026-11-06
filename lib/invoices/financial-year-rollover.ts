@@ -1,17 +1,17 @@
-import { eq, and, ne } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { financialYears } from '@/lib/db/schema';
 import { getIndianFinancialYearForDate } from './financial-year';
 import { formatIstDateAsIso } from './ist-date';
 import type { DbTransaction } from '@/lib/db/client';
 
 /**
- * Resolves the financial_years row that `referenceDate` falls into for this business, 
- * creating it if it doesn't exist yet (this is how the app "rolls over" to a new financial 
- * year — lazily, the first time it's needed, rather than via a scheduled job). Also ensures 
- * exactly one row for this business has is_current = true, and that it's this one.
+ * Resolves (creating if missing) the FY row that `referenceDate` falls into; it is
+ * insert-or-select only and NEVER updates any row, so it takes no locks on other FY rows (DB-008).
+ * Which FY is "current" is computed at read time via `getCurrentFinancialYearLabel()`;
+ * `is_current` is deprecated.
  *
- * Must always be called with a transaction (tx), since it can both read and write, and the 
- * caller's larger operation (saving a draft, finalizing an invoice) must not partially commit 
+ * Must always be called with a transaction (tx), since it can both read and write, and the
+ * caller's larger operation (saving a draft, finalizing an invoice) must not partially commit
  * if this fails.
  */
 export async function getOrCreateCurrentFinancialYear(
@@ -31,7 +31,6 @@ export async function getOrCreateCurrentFinancialYear(
     end_date: formatIstDateAsIso(endDate),
     invoice_sequence_counter: 0,
     credit_note_sequence_counter: 0,
-    is_current: true,
   }).onConflictDoNothing({
     target: [financialYears.business_id, financialYears.label]
   }).returning();
@@ -47,20 +46,6 @@ export async function getOrCreateCurrentFinancialYear(
     }
     fy = existing[0];
   }
-
-  if (!fy.is_current) {
-    await tx.update(financialYears).set({ is_current: true }).where(eq(financialYears.id, fy.id));
-    fy = { ...fy, is_current: true };
-  }
-
-  // Ensure no OTHER row for this business is still marked current.
-  await tx.update(financialYears)
-    .set({ is_current: false })
-    .where(and(
-      eq(financialYears.business_id, businessId),
-      ne(financialYears.id, fy.id),
-      eq(financialYears.is_current, true)
-    ));
 
   return fy;
 }
