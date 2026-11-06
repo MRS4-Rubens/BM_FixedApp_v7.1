@@ -383,6 +383,20 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
   4. At least one `owner` must always remain associated with a business (an owner cannot downgrade themselves to staff if they are the sole owner).
   5. All role assignment, invite, and membership changes must be audit-logged in `audit_log` (DB-007).
 
+## Proxy / route protection (AUTH-005)
+
+- **Layering**: `proxy.ts` (Next 16 middleware) redirects unauthenticated requests on the protected prefixes in
+  `config.matcher` to `/login`. Layouts/pages (`getCurrentAppUser()`/`requirePlatformAdmin`) and every action
+  (`createAuthenticatedAction`) enforce the session again; the proxy is defence in depth, never the only check.
+- **Server Action skip**: only requests where `isServerActionRequest()` (`lib/auth/proxy-policy.ts`) is true skip
+  the auth middleware: `POST` + `next-action` header + `text/plain` or `multipart/form-data` body. The header
+  alone is client-controlled and is NOT sufficient.
+- **Matcher = folders**: the matcher lists exactly one `/<folder>/:path*` per top-level folder under `app/(app)`
+  and `app/(admin)`, enforced by `tests/unit/proxy-policy.test.ts`. Adding a new top-level app page folder without
+  adding its prefix fails CI.
+- **Dev-only routes**: `dev-boundary-test` pages 404 in production (`notFound()`); the former `dev-sentry-test`
+  route was removed (AUTH-005).
+
 ## Business identity and statutory locking (AUTH-004)
 
 - **GSTIN Squatting Prevention & Error Mapping**:
