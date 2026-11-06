@@ -57,6 +57,7 @@ All Server Actions in this app share a consistent envelope and error-handling pa
 - **Strict Wrapper Requirement**: All new Server Actions from Phase 5 onward MUST use `createAction` or `createAuthenticatedAction` from `lib/actions/_shared/create-action.ts`. Do not write a new `try/catch`-based action from scratch — if the existing wrapper doesn't fit a new situation, extend the wrapper itself rather than bypassing it.
 - **Business Logic Scope**: This wrapper handles input validation (via Zod), authentication (via `getCurrentAppUser`), and error safety generically. It deliberately does NOT enforce business-specific rules like "the current user's business_id must be set" — each domain action is responsible for its own such checks (e.g., via `ActionError`) since not every action necessarily requires one.
 - **Revalidation**: `revalidatePath()`/`revalidateTag()` calls after a mutation are the responsibility of each individual action, not this shared wrapper, since different actions affect different pages.
+- **`'use server'` export rule (Step-1)**: a file starting with `'use server'` may export ONLY server actions (`createAuthenticatedAction`/`createAction` results or `async` functions) plus type-only exports. Constants, Zod schemas and re-export lists crash every page that loads the module ("A 'use server' file can only export async functions"). Put schemas in `lib/validations/` and constants in a plain module. Enforced in CI by `tests/unit/use-server-exports.test.ts`.
 
 **Example Usage**: (See `lib/actions/_shared/ping.ts` for the complete canonical live example)
 
@@ -750,6 +751,20 @@ Bill Matrix maintains an automated end-to-end regression and compliance suite us
   - `mailbox`: Live email verification via Mailosaur sink when live mailbox credentials are provided.
 - **CI/CD Integration**:
   Automated GitHub Actions workflow (`.github/workflows/e2e.yml`) triggered on pull requests, polling for the Vercel preview deployment (`scripts/ci/wait-for-preview.sh`), executing staging migrations (`pnpm e2e:migrate-staging`), running tests in Chromium, and persisting 7-day trace and report artifacts.
+
+## Dependency security policy (Step-1)
+
+- **Framework pins**: `next` and `eslint-config-next` are pinned to the same exact version (currently 16.4.5)
+  and upgraded together. Security patch releases of Next.js are applied promptly, ahead of feature work.
+- **Sentry**: stays on `@sentry/nextjs` 10.x until a dedicated v11 migration. `withSentryConfig` is imported
+  from `@sentry/nextjs/config` (the v11-compatible entry point).
+- **Build-only tooling**: `shadcn` is a devDependency pinned exactly (4.10.0). Its CSS (`shadcn/tailwind.css`)
+  is compiled into `lib/pdf/print-stylesheet.generated.ts`, so upgrading it can change archived invoice styling:
+  any upgrade must regenerate the stylesheet and be reviewed as a visual change.
+- **Line endings**: `.gitattributes` pins generated, byte-compared files to LF on every OS.
+- **Audit status**: `pnpm audit --prod` has no critical advisories from Next.js, Sentry or shadcn. The remaining
+  critical advisories come from `better-auth` inside `@neondatabase/auth` and are tracked under SEC-007.
+
 
 
 
