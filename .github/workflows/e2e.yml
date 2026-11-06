@@ -101,6 +101,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           # Vercel deploys the PR head commit, not the synthetic merge commit GitHub checks out.
           COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           MANUAL_PREVIEW_URL: ${{ github.event.inputs.preview_url }}
         run: |
           if [ -n "${MANUAL_PREVIEW_URL:-}" ]; then
