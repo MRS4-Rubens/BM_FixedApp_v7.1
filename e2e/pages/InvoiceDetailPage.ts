@@ -73,9 +73,9 @@ export class InvoiceDetailPage {
     await expect(this.paymentAmountInput).toBeVisible();
     await this.paymentAmountInput.fill(rupees.toString());
     await this.recordPaymentButton.click();
-    // The button reads "Recording..." while the server action runs; then the page data revalidates.
-    await expect(this.page.getByRole('button', { name: 'Recording...' })).toHaveCount(0, { timeout: 20_000 });
-    await this.page.waitForLoadState('networkidle');
+    // The button reads "Recording..." while the server action runs. The page data then revalidates; callers
+    // poll the balance/status rather than waiting for "networkidle" (which never settles on this page).
+    await expect(this.page.getByRole('button', { name: 'Recording...' })).toHaveCount(0, { timeout: 30_000 });
   }
 
   async openCreditNote(): Promise<void> {

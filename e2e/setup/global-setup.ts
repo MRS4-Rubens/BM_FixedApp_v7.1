@@ -1,4 +1,4 @@
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 import { assertSafeTarget, loadE2eEnv } from '../support/env';
@@ -63,7 +63,8 @@ export default async function globalSetup(): Promise<void> {
       await page.locator('#signup-confirm').fill(env.E2E_ADMIN_PASSWORD);
       await page.locator('#terms').check();
       await page.locator('form button[type="submit"]').click();
-      await page.waitForLoadState('networkidle');
+      // Wait for the sign-up request to finish (the button shows "Creating account..." meanwhile).
+      await expect(page.getByRole('button', { name: /Creating account/i })).toHaveCount(0, { timeout: 45_000 });
     }
 
     // Platform admin access by e-mail requires a VERIFIED e-mail (lib/auth/admin-policy.ts). Make sure it is

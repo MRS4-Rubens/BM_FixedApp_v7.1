@@ -18,7 +18,8 @@ export class CheckoutPage {
     this.utrInput = page.locator('#payment_reference');
     this.submitButton = page.locator('button[type="submit"]:has-text("Submit Payment Claim")');
     this.successNotice = page.locator('text=Claim Submitted Successfully!');
-    this.pendingScreenIndicator = page.locator('text=Payment Verification Pending');
+    // Shown while a claim awaits admin verification (app/(app)/checkout: "Payment Claim Under Review").
+    this.pendingScreenIndicator = page.getByRole('heading', { name: 'Payment Claim Under Review' });
   }
 
   async goto(): Promise<void> {
