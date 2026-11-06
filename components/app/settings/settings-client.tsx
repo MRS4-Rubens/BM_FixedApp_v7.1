@@ -17,12 +17,12 @@ import { InvoiceSettingsForm } from './invoice-settings-form';
 import { BillingTab, type SubscriptionHistoryItem } from './billing-tab';
 import { LogoUploadCard } from './logo-upload-card';
 import { UserFeedbackForm } from './user-feedback-form';
-import { businesses, financialYears } from '@/lib/db/schema';
+import { businesses } from '@/lib/db/schema';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 
 interface SettingsClientProps {
   business: typeof businesses.$inferSelect | null;
-  currentFy: typeof financialYears.$inferSelect | null;
+  currentFyLabel: string;
   initialTab?: string;
   initialSubscriptions?: SubscriptionHistoryItem[];
   usageStats?: {
@@ -60,7 +60,7 @@ const NAV_ICONS: Record<NavItem, LucideIcon> = {
 
 export function SettingsClient({
   business,
-  currentFy,
+  currentFyLabel,
   initialTab,
   initialSubscriptions,
   usageStats,
@@ -174,14 +174,14 @@ export function SettingsClient({
         <div className="flex-1 min-w-0">
           {/* -- INVOICE SETTINGS TAB ---------------------------------------- */}
           {active === 'Invoice Settings' && (
-            <InvoiceSettingsForm business={business} currentFy={currentFy} />
+            <InvoiceSettingsForm business={business} currentFyLabel={currentFyLabel} />
           )}
 
           {/* -- BUSINESS PROFILE TAB ----------------------------------------- */}
           {active === 'Business Profile' && (
             <BusinessProfileForm
               business={business}
-              currentFy={currentFy}
+              currentFyLabel={currentFyLabel}
               onSwitchTab={(tab) => setActive(tab as NavItem)}
               identityLocked={identityLocked}
             />

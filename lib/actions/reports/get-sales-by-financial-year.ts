@@ -6,6 +6,7 @@ import { db } from '@/lib/db/client';
 import { invoices, financialYears, creditNotes } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { paiseToRupees } from '@/lib/money';
+import { isCurrentFinancialYearLabel } from '@/lib/invoices/financial-year';
 import { z } from 'zod';
 
 export type FinancialYearSalesData = {
@@ -38,7 +39,6 @@ export const getSalesByFinancialYear = createAuthenticatedAction(
           label: financialYears.label,
           startDate: financialYears.start_date,
           endDate: financialYears.end_date,
-          isCurrent: financialYears.is_current,
           subtotal: sql<number>`coalesce(sum(${invoices.subtotal_paise}), 0)::bigint`,
           total_cgst: sql<number>`coalesce(sum(${invoices.total_cgst_paise}), 0)::bigint`,
           total_sgst: sql<number>`coalesce(sum(${invoices.total_sgst_paise}), 0)::bigint`,
@@ -60,8 +60,7 @@ export const getSalesByFinancialYear = createAuthenticatedAction(
           financialYears.id,
           financialYears.label,
           financialYears.start_date,
-          financialYears.end_date,
-          financialYears.is_current
+          financialYears.end_date
         )
         .orderBy(financialYears.start_date),
 
@@ -87,6 +86,7 @@ export const getSalesByFinancialYear = createAuthenticatedAction(
     ]);
 
     const cnMap = new Map(cnRows.map((cn) => [cn.financial_year_id, cn]));
+    const now = new Date();
 
     return rows.map((r) => {
       const cn = cnMap.get(r.id);
@@ -107,7 +107,7 @@ export const getSalesByFinancialYear = createAuthenticatedAction(
         total_tax: paiseToRupees(totalTaxPaise),
         grand_total: paiseToRupees(grandTotalPaise),
         invoice_count: Number(r.invoice_count || 0),
-        is_current: Boolean(r.isCurrent),
+        is_current: isCurrentFinancialYearLabel(r.label, now),
       };
     });
   },

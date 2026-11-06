@@ -1,11 +1,12 @@
 import { getCurrentAppUser } from '@/lib/auth/session';
 import { db } from '@/lib/db/client';
-import { businesses, financialYears, subscriptionRequests, users, invoices, customers, products } from '@/lib/db/schema';
+import { businesses, subscriptionRequests, users, invoices, customers, products } from '@/lib/db/schema';
 import { eq, and, desc, sql, between } from 'drizzle-orm';
 import { SettingsClient } from '@/components/app/settings/settings-client';
 import { redirect } from 'next/navigation';
 import { getCurrentMonthRange } from '@/lib/reports/period';
 import { hasFinalizedInvoices } from '@/lib/business/identity-lock';
+import { getCurrentFinancialYearLabel } from '@/lib/invoices/financial-year';
 
 export default async function SettingsPage({
   searchParams,
@@ -21,7 +22,6 @@ export default async function SettingsPage({
   const initialTab = resolvedParams?.tab;
 
   let business = null;
-  let currentFy = null;
   let subscriptionHistory: Array<{
     id: string;
     planName: string;
@@ -55,7 +55,6 @@ export default async function SettingsPage({
       usageStats.currentMonthLabel = monthRange.label;
 
       const [
-        fyRows,
         historyRows,
         invoicesMonthRes,
         invoicesTotalRes,
@@ -63,12 +62,6 @@ export default async function SettingsPage({
         customersRes,
         productsRes,
       ] = await Promise.all([
-        db.select().from(financialYears).where(
-          and(
-            eq(financialYears.business_id, business.id),
-            eq(financialYears.is_current, true)
-          )
-        ),
         db
           .select({
             id: subscriptionRequests.id,
@@ -115,7 +108,6 @@ export default async function SettingsPage({
           .where(eq(products.business_id, business.id)),
       ]);
 
-      currentFy = fyRows[0] || null;
       subscriptionHistory = historyRows;
 
       usageStats.invoicesThisMonth = Number(invoicesMonthRes[0]?.count || 0);
@@ -127,11 +119,12 @@ export default async function SettingsPage({
   }
 
   const identityLocked = business ? await hasFinalizedInvoices(db, business.id) : false;
+  const currentFyLabel = getCurrentFinancialYearLabel();
 
   return (
     <SettingsClient
       business={business}
-      currentFy={currentFy}
+      currentFyLabel={currentFyLabel}
       initialTab={initialTab}
       initialSubscriptions={subscriptionHistory}
       usageStats={usageStats}

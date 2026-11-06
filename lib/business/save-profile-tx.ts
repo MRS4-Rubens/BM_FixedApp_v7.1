@@ -14,6 +14,7 @@ import type { DbTransaction } from '@/lib/db/client';
 import { businesses, financialYears, users } from '@/lib/db/schema';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
 import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
+import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import { DEFAULT_INVOICE_TEMPLATE_ID } from '@/lib/invoices/template-ids';
 import { checkInvoiceSettingsEntitlement } from '@/lib/subscriptions/invoice-settings-gate';
 import type { businessProfileSchema } from '@/lib/validations/business';
@@ -129,9 +130,8 @@ export async function saveBusinessProfileInTransaction(
     await tx.insert(financialYears).values({
       business_id: newBusiness.id,
       label: currentFY.label,
-      start_date: currentFY.startDate.toISOString(),
-      end_date: currentFY.endDate.toISOString(),
-      is_current: true,
+      start_date: formatIstDateAsIso(currentFY.startDate),
+      end_date: formatIstDateAsIso(currentFY.endDate),
       invoice_sequence_counter: 0,
       credit_note_sequence_counter: 0,
     });

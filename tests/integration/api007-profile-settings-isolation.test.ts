@@ -68,6 +68,8 @@ vi.mock('@/lib/subscriptions/invoice-settings-gate', async (importOriginal) => {
 
 import { saveBusinessProfile } from '@/lib/actions/business/save-business-profile';
 import { saveInvoiceSettings } from '@/lib/actions/invoices/save-invoice-settings';
+import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
+import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 
 const DRIZZLE_DIR = join(process.cwd(), 'drizzle');
 const DEFAULT_INVOICE_TERMS =
@@ -460,7 +462,14 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     expect(fyResult1.rows.length).toBe(1);
     const fyRow1 = fyResult1.rows[0];
     if (!fyRow1) throw new Error('FY row not found');
-    expect(fyRow1.is_current).toBe(true);
+    const expectedFy = getIndianFinancialYearForDate(new Date());
+    const fyDatesRes = await pg.query<{ label: string; start_date: string; end_date: string }>(
+      "SELECT label, to_char(start_date, 'YYYY-MM-DD') AS start_date, to_char(end_date, 'YYYY-MM-DD') AS end_date FROM financial_years WHERE id = $1",
+      [fyRow1.id],
+    );
+    expect(fyDatesRes.rows[0]?.label).toBe(expectedFy.label);
+    expect(fyDatesRes.rows[0]?.start_date).toBe(formatIstDateAsIso(expectedFy.startDate));
+    expect(fyDatesRes.rows[0]?.end_date).toBe(formatIstDateAsIso(expectedFy.endDate));
     expect(fyRow1.invoice_sequence_counter).toBe(0);
     expect(fyRow1.credit_note_sequence_counter).toBe(0);
 

@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
+import {
+  getIndianFinancialYearForDate,
+  getCurrentFinancialYearLabel,
+  isCurrentFinancialYearLabel,
+} from '@/lib/invoices/financial-year';
 import { mulberry32, randomInt } from '../helpers/prng';
 
 describe('Indian Financial Year Engine (TEST-001)', () => {
@@ -124,6 +128,24 @@ describe('Indian Financial Year Engine (TEST-001)', () => {
           expect(res.endDate.toISOString()).toBe(baseline[i].endDate.toISOString());
         }
       }
+    });
+  });
+
+  describe('SPEC DB-008: current FY is computed from IST date', () => {
+    it('computes current FY label at exact boundary milliseconds', () => {
+      expect(getCurrentFinancialYearLabel(new Date('2027-03-31T18:29:59.999Z'))).toBe('2026-27');
+      expect(getCurrentFinancialYearLabel(new Date('2027-03-31T18:30:00.000Z'))).toBe('2027-28');
+    });
+
+    it('matches current FY label with or without FY prefix and rejects prior years', () => {
+      const fixedDate = new Date('2026-11-06T06:00:00Z');
+      expect(isCurrentFinancialYearLabel('2026-27', fixedDate)).toBe(true);
+      expect(isCurrentFinancialYearLabel('FY 2026-27', fixedDate)).toBe(true);
+      expect(isCurrentFinancialYearLabel('2025-26', fixedDate)).toBe(false);
+    });
+
+    it('supports default arguments for runtime system time', () => {
+      expect(isCurrentFinancialYearLabel(getCurrentFinancialYearLabel())).toBe(true);
     });
   });
 });

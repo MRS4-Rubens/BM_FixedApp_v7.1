@@ -13,6 +13,8 @@ export const financialYears = pgTable('financial_years', {
   end_date: date('end_date').notNull(),
   invoice_sequence_counter: integer('invoice_sequence_counter').notNull().default(0),
   credit_note_sequence_counter: integer('credit_note_sequence_counter').notNull().default(0),
+  /** @deprecated DB-008: never read or written by the app. The current FY is computed from today's IST date
+   *  (getCurrentFinancialYearLabel). Column kept only to avoid a migration now; drop in Phase 4 cleanup. */
   is_current: boolean('is_current').notNull().default(false),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()

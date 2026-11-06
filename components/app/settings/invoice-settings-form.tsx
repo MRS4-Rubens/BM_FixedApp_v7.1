@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { invoiceSettingsSchema, InvoiceSettingsInput } from '@/lib/validations/invoice-settings';
 import { saveInvoiceSettings } from '@/lib/actions/invoices/save-invoice-settings';
-import { businesses, financialYears } from '@/lib/db/schema';
+import { businesses } from '@/lib/db/schema';
 import { validateInvoiceNumberFormat, resolveInvoiceNumber, getResetGranularity } from '@/lib/invoices/number-format';
 import { cn } from '@/lib/utils';
 import {
@@ -42,7 +42,7 @@ import { DEFAULT_GST_OPTIONS, type DefaultGstOption } from '@/lib/db/schema/_dis
 
 interface InvoiceSettingsFormProps {
   business: typeof businesses.$inferSelect | null;
-  currentFy: typeof financialYears.$inferSelect | null;
+  currentFyLabel: string;
 }
 
 // -- Styling Constants (Strict Floor-Integer Tailwind Classes) -----------------
@@ -95,7 +95,7 @@ function Toggle({
   );
 }
 
-export function InvoiceSettingsForm({ business, currentFy }: InvoiceSettingsFormProps) {
+export function InvoiceSettingsForm({ business, currentFyLabel }: InvoiceSettingsFormProps) {
   const [success, setSuccess] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isFormatGuideOpen, setIsFormatGuideOpen] = useState(false);
@@ -159,7 +159,7 @@ export function InvoiceSettingsForm({ business, currentFy }: InvoiceSettingsForm
       try {
         const generated = resolveInvoiceNumber(watchedFormat, {
           invoiceDate: new Date(),
-          fyLabel: currentFy?.label || '2026-27',
+          fyLabel: currentFyLabel,
           sequenceValue: 1,
         });
         formatPreview = {
@@ -753,7 +753,7 @@ export function InvoiceSettingsForm({ business, currentFy }: InvoiceSettingsForm
         isOpen={isFormatGuideOpen}
         onClose={() => setIsFormatGuideOpen(false)}
         onSelectPreset={handleSelectFormatPreset}
-        currentFyLabel={currentFy?.label || '2026-27'}
+        currentFyLabel={currentFyLabel}
         canCustomize={canCustomize}
         onUpgradeClick={() => setShowFormatUpgradeModal(true)}
       />

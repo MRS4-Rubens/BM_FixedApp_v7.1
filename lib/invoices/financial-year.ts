@@ -11,3 +11,15 @@ export function getIndianFinancialYearForDate(date: Date): { label: string; star
 }
 
 // This is the single source of truth for Indian financial-year boundaries. Phase 9 (invoice numbering rollover) will import and reuse this exact function rather than redefining it — do not duplicate this logic elsewhere.
+
+/** DB-008: the current FY is a pure function of today's IST date; it is never stored. */
+export function getCurrentFinancialYearLabel(now: Date = new Date()): string {
+  return getIndianFinancialYearForDate(now).label;
+}
+
+/** Accepts stored labels with or without a leading "FY " (e.g. "2026-27" or "FY 2026-27"). */
+export function isCurrentFinancialYearLabel(label: string, now: Date = new Date()): boolean {
+  const normalize = (value: string): string => value.trim().replace(/^FY\s*/i, '');
+  return normalize(label) === normalize(getCurrentFinancialYearLabel(now));
+}
+

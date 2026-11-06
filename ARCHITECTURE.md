@@ -239,6 +239,17 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
    - **Invoice Date Policy (`INVOICE_BACKDATE_WINDOW_DAYS = 30`)**: Invoices cannot be dated in the future in IST. Backdating is restricted to a 30-day window from the latest finalized invoice within the same financial year series. Backdating across financial years requires explicit user confirmation (`confirm_cross_financial_year: true`); without confirmation, `INVOICE_DATE_CROSS_FY` is returned and no changes are committed.
    - **Logo Retention Rule**: S3/storage objects referenced by `logo_storage_key_snapshot` in any finalized invoice or credit note are retained permanently. `deleteLogoObjectIfUnreferenced` verifies whether an old logo key is referenced in document snapshots before deleting from storage. The logo route `/api/business/[id]/logo?k=` serves historical snapshot logo keys only if referenced by a document of that business, returning immutable cache headers. Lifecycle order (Step-0): upload = upload new object → locked DB swap + audit (commit) → `deleteLogoObjectIfUnreferenced(previousKey)`; remove = locked DB clear + audit (commit) → `deleteLogoObjectIfUnreferenced(previousKey)`. Storage is never deleted before the DB commit, and the reference check always runs after commit. A failed swap deletes only the never-committed new object.
 
+## Financial years (DB-008)
+
+- **Current FY is computed, never stored**: `getCurrentFinancialYearLabel(now)` / `isCurrentFinancialYearLabel`
+  in `lib/invoices/financial-year.ts` derive it from today's IST date. Dashboard and Settings use these.
+- **Rollover is insert-or-select only**: `getOrCreateCurrentFinancialYear(tx, businessId, referenceDate)`
+  returns (creating if missing) the FY row for a document's date and never updates any row, so it takes no
+  locks on other FY rows (removes the cross-FY deadlock) and back-dated documents cannot change the current FY.
+- **`financial_years.is_current` is deprecated**: never read or written (CI guard
+  `tests/unit/db008-is-current-deprecated.test.ts`); scheduled to be dropped in Phase 4 cleanup.
+- **FY dates** are always written with `formatIstDateAsIso(...)` (IST calendar dates), never `toISOString()`.
+
 ## Entitlements & quota policy (API-010)
 
 1. **Invoice Quota Rule**: Quota counts only FINALIZED invoices whose `invoice_date` lies within the IST calendar month containing the `invoice_date` of the invoice being finalized (`countFinalizedInvoicesInMonthOf`). Drafts never count toward quota; draft creation is free and uncounted.

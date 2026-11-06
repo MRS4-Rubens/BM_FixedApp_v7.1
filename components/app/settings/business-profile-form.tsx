@@ -31,7 +31,7 @@ import {
   Calendar,
   Sparkles
 } from 'lucide-react';
-import { businesses, financialYears } from '@/lib/db/schema';
+import { businesses } from '@/lib/db/schema';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { ProfileSpotlightTour } from './profile-spotlight-tour';
 
@@ -47,12 +47,12 @@ const errorClass = 'mt-1 text-xs font-semibold text-destructive'
 
 export function BusinessProfileForm({
   business,
-  currentFy,
+  currentFyLabel,
   onSwitchTab,
   identityLocked = false,
 }: {
   business: typeof businesses.$inferSelect | null;
-  currentFy: typeof financialYears.$inferSelect | null;
+  currentFyLabel: string;
   onSwitchTab?: (tab: string) => void;
   identityLocked?: boolean;
 }) {
@@ -185,10 +185,10 @@ export function BusinessProfileForm({
         </div>
       )}
 
-      {currentFy ? (
+      {!isNewBusiness ? (
         <div className="mb-3.5 rounded-lg bg-emerald-50/60 px-3.5 py-2.5 border border-emerald-200/80 flex items-center gap-2.5">
           <Calendar className="size-4 text-emerald-800 shrink-0" />
-          <p className="text-sm sm:text-base font-semibold text-emerald-950">Current Financial Year: {currentFy.label}</p>
+          <p className="text-sm sm:text-base font-semibold text-emerald-950">Current Financial Year: {currentFyLabel}</p>
         </div>
       ) : isNewBusiness ? (
         <div className="mb-3.5 rounded-lg bg-emerald-50/80 px-3.5 py-2.5 border border-emerald-200 flex items-center justify-between gap-2.5">
