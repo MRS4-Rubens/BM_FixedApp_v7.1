@@ -1,3 +1,5 @@
 # Generated files are compared byte-for-byte by tests; keep LF on every OS (core.autocrlf would rewrite them).
 lib/pdf/print-stylesheet.generated.ts text eol=lf
 
+# PERF-002b golden Excel dumps are compared as exact strings by tests.
+tests/unit/__snapshots__/xlsx-golden/*.json text eol=lf

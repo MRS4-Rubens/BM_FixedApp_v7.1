@@ -232,12 +232,14 @@ async function runBenchmark(): Promise<void> {
 
     if (peakRss > 512 * 1024 * 1024) {
       console.warn(`WARNING: Peak RSS exceeded 512 MB (${toMb(peakRss)} MB).`);
+      process.exitCode = 1;
     } else {
       console.log(`PASS: Peak RSS is within 512 MB threshold (${toMb(peakRss)} MB).`);
     }
 
     if (totalMs > 45000) {
       console.warn(`WARNING: Total time exceeded 45 s (${(totalMs / 1000).toFixed(2)} s).`);
+      process.exitCode = 1;
     } else {
       console.log(`PASS: Total duration is within 45 s threshold (${(totalMs / 1000).toFixed(2)} s).`);
     }

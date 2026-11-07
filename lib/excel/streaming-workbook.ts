@@ -13,6 +13,7 @@ export type XlsxWriter = (stream: Writable) => Promise<void>;
  *
  * - `useStyles: true` keeps fonts, fills, borders and number formats (they are part of the
  *   report layout CAs rely on).
+ * - `zip.zlib.level: 6` matches the old writer's compression, so downloads stay the same size.
  * - `useSharedStrings: true` keeps text cells in xl/sharedStrings.xml exactly like the old
  *   in-memory `Workbook.xlsx.write()` did, so the file stays structurally the same for the
  *   GSTN offline utility and Excel.
@@ -25,6 +26,9 @@ export function createStreamingWorkbook(stream: Writable): ExcelJS.stream.xlsx.W
     stream,
     useStyles: true,
     useSharedStrings: true,
+    // Same DEFLATE level the old in-memory writer (JSZip) used. ExcelJS's streaming default is
+    // weaker and made a 100k-line GSTR-1 file ~25% larger for no memory benefit.
+    zip: { zlib: { level: 6 } },
   });
   workbook.creator = 'Bill Matrix';
   workbook.created = new Date();
