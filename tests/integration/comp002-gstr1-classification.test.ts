@@ -34,7 +34,8 @@ vi.mock('@/lib/rate-limit/upstash', () => ({
 vi.mock('@/lib/actions/_shared/logger', () => ({ logError: () => undefined }));
 
 import { getGstr1ExportData, type Gstr1ExportData } from '@/lib/actions/reports/get-gstr1-data';
-import { buildGstr1Workbook } from '@/lib/excel/build-gstr1-report';
+import { writeGstr1Workbook } from '@/lib/excel/build-gstr1-report';
+import { loadWorkbook, writeToBuffer } from '@/tests/helpers/xlsx-dump';
 
 const DRIZZLE_DIR = join(process.cwd(), 'drizzle');
 const REGISTERED_GSTIN = '27AAAAA0000A1Z5';
@@ -324,7 +325,7 @@ describe('COMP-002: GSTR-1 B2CL threshold (effective-dated) and CDNUR', () => {
 
   describe('Excel (offline utility) output', () => {
     it('writes the b2cl and cdnur sheets with the official column headers and the right rows', async () => {
-      const workbook = await buildGstr1Workbook(data);
+      const workbook = await loadWorkbook(await writeToBuffer((stream) => writeGstr1Workbook(data, stream)));
       const b2cl = workbook.getWorksheet('b2cl');
       const cdnur = workbook.getWorksheet('cdnur');
       expect(b2cl).toBeDefined();

@@ -1,13 +1,14 @@
-import ExcelJS from 'exceljs';
+import type { Writable } from 'node:stream';
+import type ExcelJS from 'exceljs';
 import type { ItrExportData } from '@/lib/actions/reports/get-itr-data';
 import { paiseToRupees } from '@/lib/money';
+import { commitDataRow, createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
 
 const currencyFormat = '#,##0.00';
 
-export async function buildItrReportWorkbook(data: ItrExportData): Promise<ExcelJS.Workbook> {
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Bill Matrix';
-  workbook.created = new Date();
+/** Streams the ITR report workbook (rate-wise register; month-wise schedule and 44AD sheet for a full FY) into `stream`. */
+export async function writeItrReportWorkbook(data: ItrExportData, stream: Writable): Promise<void> {
+  const workbook = createStreamingWorkbook(stream);
 
   // Color constants matching the user's screenshot
   const HEADER_FILL: ExcelJS.Fill = {
@@ -76,14 +77,16 @@ export async function buildItrReportWorkbook(data: ItrExportData): Promise<Excel
     cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' }, size: 10.5 };
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
   });
+  headerRow.commit();
 
   // Populate Invoices
   let currentRowNum = 2;
-  for (const inv of invoicesList) {
+  for (let index = 0; index < invoicesList.length; index++) {
+    const inv = invoicesList[index];
     const row = sheet1.getRow(currentRowNum++);
     row.height = 20;
 
-    const rowValues: Record<string, any> = {
+    const rowValues: Record<string, ExcelJS.CellValue> = {
       invoice_number: inv.invoice_number,
       invoice_date: inv.invoice_date || '',
       customer_name: inv.customer_name || 'Cash Customer',
@@ -113,13 +116,14 @@ export async function buildItrReportWorkbook(data: ItrExportData): Promise<Excel
         cell.alignment = { vertical: 'middle', horizontal: 'left' };
       }
     });
+    await commitDataRow(row, index);
   }
 
   // TOTAL Row
   const totalRow = sheet1.getRow(currentRowNum);
   totalRow.height = 22;
 
-  const totalValues: Record<string, any> = {
+  const totalValues: Record<string, ExcelJS.CellValue> = {
     invoice_number: 'TOTAL',
     invoice_date: '',
     customer_name: '',
@@ -146,6 +150,7 @@ export async function buildItrReportWorkbook(data: ItrExportData): Promise<Excel
       cell.alignment = { vertical: 'middle', horizontal: 'left' };
     }
   });
+  totalRow.commit();
 
   // Summary Box (Rows 6-12 style from screenshot)
   currentRowNum += 2; // Add spacer row
@@ -167,6 +172,7 @@ export async function buildItrReportWorkbook(data: ItrExportData): Promise<Excel
     valCell.numFmt = currencyFormat;
     valCell.font = { name: 'Arial', bold: sumPaise > 0, size: 10 };
     valCell.alignment = { vertical: 'middle', horizontal: 'right' };
+    summaryRow.commit();
   }
 
   currentRowNum++; // Spacer row before Grand Total
@@ -197,14 +203,17 @@ export async function buildItrReportWorkbook(data: ItrExportData): Promise<Excel
     bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
     right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
   };
+  sheet1.commit();
 
   // ---------------------------------------------------------
   // ANNUAL SUPPORT: Sheets 2 & 3 if full Financial Year
   // ---------------------------------------------------------
   if (data.isAnnual && data.monthlySummary.length > 0) {
     // Sheet 2: Month-wise ITR Turnover Schedule
-    const sheet2 = workbook.addWorksheet('Month-wise ITR Schedule');
-    sheet2.views = [{ state: 'frozen', ySplit: 2 }];
+    // The streaming writer only accepts views when the sheet is created.
+    const sheet2 = workbook.addWorksheet('Month-wise ITR Schedule', {
+      views: [{ state: 'frozen', ySplit: 2 }]
+    });
 
     sheet2.mergeCells('A1:H1');
     const s2Title = sheet2.getCell('A1');
@@ -236,12 +245,16 @@ export async function buildItrReportWorkbook(data: ItrExportData): Promise<Excel
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
     sheet2.columns = s2Headers;
+    // Rows 1-2 are final once the column definitions are applied: flush them.
+    sheet2.getRow(2).commit();
 
     let s2Row = 3;
-    for (const m of (data.monthlySummary || [])) {
+    const months = data.monthlySummary || [];
+    for (let index = 0; index < months.length; index++) {
+      const m = months[index];
       const row = sheet2.getRow(s2Row++);
       row.height = 20;
-      const values: Record<string, any> = {
+      const values: Record<string, ExcelJS.CellValue> = {
         month: m.monthLabel,
         quarter: m.quarterLabel,
         count: m.invoiceCount,
@@ -258,12 +271,13 @@ export async function buildItrReportWorkbook(data: ItrExportData): Promise<Excel
         cell.font = { name: 'Arial', size: 10 };
         if (colNum >= 4) cell.numFmt = currencyFormat;
       });
+      await commitDataRow(row, index);
     }
 
     // Annual Totals Row on Sheet 2
     const s2TotalRow = sheet2.getRow(s2Row);
     s2TotalRow.height = 22;
-    const s2TotalVals: Record<string, any> = {
+    const s2TotalVals: Record<string, ExcelJS.CellValue> = {
       month: 'ANNUAL TOTAL',
       quarter: '',
       count: (data.invoices || []).length,
@@ -280,6 +294,7 @@ export async function buildItrReportWorkbook(data: ItrExportData): Promise<Excel
       cell.font = { name: 'Arial', bold: true, size: 10.5 };
       if (colNum >= 4) cell.numFmt = currencyFormat;
     });
+    sheet2.commit();
 
     // Sheet 3: Section 44AD Presumptive Tax Calculation
     const sheet3 = workbook.addWorksheet('44AD Presumptive Tax');
@@ -313,7 +328,8 @@ export async function buildItrReportWorkbook(data: ItrExportData): Promise<Excel
     ];
 
     let s3Row = 3;
-    for (const [desc, val] of s3Data) {
+    for (let index = 0; index < s3Data.length; index++) {
+      const [desc, val] = s3Data[index];
       const row = sheet3.getRow(s3Row++);
       row.height = 22;
       row.getCell(1).value = desc;
@@ -324,13 +340,15 @@ export async function buildItrReportWorkbook(data: ItrExportData): Promise<Excel
         row.getCell(2).numFmt = currencyFormat;
         row.getCell(2).alignment = { horizontal: 'right' };
       }
+      // Highlight the last line: the deemed income figure for ITR-4.
+      if (index === s3Data.length - 1) {
+        row.getCell(1).fill = GRAND_TOTAL_FILL;
+        row.getCell(2).fill = GRAND_TOTAL_FILL;
+      }
+      row.commit();
     }
-
-    // Highlight deemed income row
-    const deemedRow = sheet3.getRow(s3Row - 1);
-    deemedRow.getCell(1).fill = GRAND_TOTAL_FILL;
-    deemedRow.getCell(2).fill = GRAND_TOTAL_FILL;
+    sheet3.commit();
   }
 
-  return workbook;
+  await workbook.commit();
 }

@@ -1,0 +1,6984 @@
+[
+ {
+  "name": "GSTR-1 Summary",
+  "views": [],
+  "merges": [
+   "A13:D13",
+   "A1:D1",
+   "A2:D2"
+  ],
+  "columnWidths": [
+   36,
+   18,
+   22,
+   22
+  ],
+  "rowHeights": {
+   "1": 28,
+   "2": 20,
+   "4": 24,
+   "5": 20,
+   "6": 20,
+   "7": 20,
+   "8": 20,
+   "9": 20,
+   "10": 24,
+   "14": 20,
+   "15": 20,
+   "16": 20,
+   "17": 20
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "Fixture Traders Pvt Ltd — GSTR-1 Return Filing Statement",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Fixture Traders Pvt Ltd — GSTR-1 Return Filing Statement",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Fixture Traders Pvt Ltd — GSTR-1 Return Filing Statement",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Fixture Traders Pvt Ltd — GSTR-1 Return Filing Statement",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
+    "value": "GSTIN: 29ABCDE1234F1Z5  |  Period: FY 2026-27 (2026-04-01 to 2027-03-31)",
+    "font": {
+     "color": {
+      "argb": "FF595959"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B2",
+    "value": "GSTIN: 29ABCDE1234F1Z5  |  Period: FY 2026-27 (2026-04-01 to 2027-03-31)",
+    "font": {
+     "color": {
+      "argb": "FF595959"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "C2",
+    "value": "GSTIN: 29ABCDE1234F1Z5  |  Period: FY 2026-27 (2026-04-01 to 2027-03-31)",
+    "font": {
+     "color": {
+      "argb": "FF595959"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D2",
+    "value": "GSTIN: 29ABCDE1234F1Z5  |  Period: FY 2026-27 (2026-04-01 to 2027-03-31)",
+    "font": {
+     "color": {
+      "argb": "FF595959"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A4",
+    "value": "GSTR-1 Table Section",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF2B5797"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B4",
+    "value": "Count",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF2B5797"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C4",
+    "value": "Taxable Value (₹)",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF2B5797"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D4",
+    "value": "Tax Amount (₹)",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF2B5797"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A5",
+    "value": "Table 4: B2B Invoices (Registered)",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "B5",
+    "value": 9,
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "center"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "C5",
+    "value": 250111,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "D5",
+    "value": 34567.89,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "A6",
+    "value": "Table 5: B2CL Invoices (Large Inter-State)",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "B6",
+    "value": 2,
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "center"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "C6",
+    "value": 283368.64,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "D6",
+    "value": 66631.36,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "A7",
+    "value": "Table 7: B2CS Supplies (Small / Retail)",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "B7",
+    "value": 6,
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "center"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "C7",
+    "value": 30000.15,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "D7",
+    "value": 4512.34,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "A8",
+    "value": "Table 9B: Credit / Debit Notes (CDNR)",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "B8",
+    "value": 4,
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "center"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "C8",
+    "value": 8000.06,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "D8",
+    "value": 1440.01,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "A9",
+    "value": "Table 9B: Credit / Debit Notes — Unregistered (CDNUR)",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "B9",
+    "value": 1,
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "center"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "C9",
+    "value": 10000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "D9",
+    "value": 1800,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "A10",
+    "value": "NET OUTWARD SUPPLIES TOTAL",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "border": {}
+   },
+   {
+    "address": "B10",
+    "value": 33,
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "border": {}
+   },
+   {
+    "address": "C10",
+    "value": 545479.73,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "border": {}
+   },
+   {
+    "address": "D10",
+    "value": 104271.58,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "border": {}
+   },
+   {
+    "address": "A13",
+    "value": "Tax Liability Breakdown (For GSTR-3B Payment)",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B13",
+    "value": "Tax Liability Breakdown (For GSTR-3B Payment)",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "C13",
+    "value": "Tax Liability Breakdown (For GSTR-3B Payment)",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D13",
+    "value": "Tax Liability Breakdown (For GSTR-3B Payment)",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A14",
+    "value": "Central Tax (CGST)",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B14",
+    "value": 19600,
+    "numFmt": "#,##0.00",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "right"
+    },
+    "border": {}
+   },
+   {
+    "address": "A15",
+    "value": "State/UT Tax (SGST)",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B15",
+    "value": 19600,
+    "numFmt": "#,##0.00",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "right"
+    },
+    "border": {}
+   },
+   {
+    "address": "A16",
+    "value": "Integrated Tax (IGST)",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B16",
+    "value": 66511.59,
+    "numFmt": "#,##0.00",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "right"
+    },
+    "border": {}
+   },
+   {
+    "address": "A17",
+    "value": "Total Tax Liability",
+    "font": {
+     "bold": true,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "border": {}
+   },
+   {
+    "address": "B17",
+    "value": 105711.59,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "alignment": {
+     "horizontal": "right"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "b2b",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   22,
+   30,
+   20,
+   14,
+   16,
+   24,
+   15,
+   22,
+   16,
+   20,
+   10,
+   16,
+   14
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "GSTIN/UIN of Recipient",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Receiver Name",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Invoice Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Invoice date",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Invoice Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Place Of Supply",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Reverse Charge",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Applicable % of Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "Invoice Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "J1",
+    "value": "E-Commerce GSTIN",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "K1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "L1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "M1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
+    "value": "27ABCDE1000F1Z1"
+   },
+   {
+    "address": "B2",
+    "value": "Buyer 0"
+   },
+   {
+    "address": "C2",
+    "value": "INV-0001"
+   },
+   {
+    "address": "D2",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E2",
+    "value": 1180,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F2",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G2",
+    "value": "N"
+   },
+   {
+    "address": "H2",
+    "value": ""
+   },
+   {
+    "address": "I2",
+    "value": "Regular"
+   },
+   {
+    "address": "J2",
+    "value": ""
+   },
+   {
+    "address": "K2",
+    "value": 5
+   },
+   {
+    "address": "L2",
+    "value": 1000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M2",
+    "value": 1.25,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A3",
+    "value": "27ABCDE1001F1Z2"
+   },
+   {
+    "address": "B3",
+    "value": "Buyer 1"
+   },
+   {
+    "address": "C3",
+    "value": "INV-0001"
+   },
+   {
+    "address": "D3",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E3",
+    "value": 1181.01,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F3",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G3",
+    "value": "N"
+   },
+   {
+    "address": "H3",
+    "value": ""
+   },
+   {
+    "address": "I3",
+    "value": "Regular"
+   },
+   {
+    "address": "J3",
+    "value": ""
+   },
+   {
+    "address": "K3",
+    "value": 12
+   },
+   {
+    "address": "L3",
+    "value": 1000.37,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M3",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A4",
+    "value": "27ABCDE1002F1Z3"
+   },
+   {
+    "address": "B4",
+    "value": "Buyer 2"
+   },
+   {
+    "address": "C4",
+    "value": "INV-0001"
+   },
+   {
+    "address": "D4",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E4",
+    "value": 1182.02,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F4",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G4",
+    "value": "N"
+   },
+   {
+    "address": "H4",
+    "value": ""
+   },
+   {
+    "address": "I4",
+    "value": "Regular"
+   },
+   {
+    "address": "J4",
+    "value": ""
+   },
+   {
+    "address": "K4",
+    "value": 18
+   },
+   {
+    "address": "L4",
+    "value": 1000.74,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M4",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A5",
+    "value": "27ABCDE1003F1Z4"
+   },
+   {
+    "address": "B5",
+    "value": "Buyer 3"
+   },
+   {
+    "address": "C5",
+    "value": "INV-0002"
+   },
+   {
+    "address": "D5",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E5",
+    "value": 1183.03,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F5",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G5",
+    "value": "N"
+   },
+   {
+    "address": "H5",
+    "value": ""
+   },
+   {
+    "address": "I5",
+    "value": "Regular"
+   },
+   {
+    "address": "J5",
+    "value": ""
+   },
+   {
+    "address": "K5",
+    "value": 28
+   },
+   {
+    "address": "L5",
+    "value": 1001.11,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M5",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A6",
+    "value": "27ABCDE1004F1Z5"
+   },
+   {
+    "address": "B6",
+    "value": "Buyer 4"
+   },
+   {
+    "address": "C6",
+    "value": "INV-0002"
+   },
+   {
+    "address": "D6",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E6",
+    "value": 1184.04,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F6",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G6",
+    "value": "N"
+   },
+   {
+    "address": "H6",
+    "value": ""
+   },
+   {
+    "address": "I6",
+    "value": "Regular"
+   },
+   {
+    "address": "J6",
+    "value": ""
+   },
+   {
+    "address": "K6",
+    "value": 5
+   },
+   {
+    "address": "L6",
+    "value": 1001.48,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M6",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A7",
+    "value": "27ABCDE1005F1Z6"
+   },
+   {
+    "address": "B7",
+    "value": "Buyer 5"
+   },
+   {
+    "address": "C7",
+    "value": "INV-0002"
+   },
+   {
+    "address": "D7",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E7",
+    "value": 1185.05,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F7",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G7",
+    "value": "N"
+   },
+   {
+    "address": "H7",
+    "value": ""
+   },
+   {
+    "address": "I7",
+    "value": "Regular"
+   },
+   {
+    "address": "J7",
+    "value": ""
+   },
+   {
+    "address": "K7",
+    "value": 12
+   },
+   {
+    "address": "L7",
+    "value": 1001.85,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M7",
+    "value": 1.25,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A8",
+    "value": "27ABCDE1006F1Z7"
+   },
+   {
+    "address": "B8",
+    "value": "Buyer 6"
+   },
+   {
+    "address": "C8",
+    "value": "INV-0003"
+   },
+   {
+    "address": "D8",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E8",
+    "value": 1186.06,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F8",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G8",
+    "value": "N"
+   },
+   {
+    "address": "H8",
+    "value": ""
+   },
+   {
+    "address": "I8",
+    "value": "Regular"
+   },
+   {
+    "address": "J8",
+    "value": ""
+   },
+   {
+    "address": "K8",
+    "value": 18
+   },
+   {
+    "address": "L8",
+    "value": 1002.22,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M8",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A9",
+    "value": "27ABCDE1007F1Z8"
+   },
+   {
+    "address": "B9",
+    "value": "Buyer 0"
+   },
+   {
+    "address": "C9",
+    "value": "INV-0003"
+   },
+   {
+    "address": "D9",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E9",
+    "value": 1187.07,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F9",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G9",
+    "value": "N"
+   },
+   {
+    "address": "H9",
+    "value": ""
+   },
+   {
+    "address": "I9",
+    "value": "Regular"
+   },
+   {
+    "address": "J9",
+    "value": ""
+   },
+   {
+    "address": "K9",
+    "value": 28
+   },
+   {
+    "address": "L9",
+    "value": 1002.59,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M9",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A10",
+    "value": "27ABCDE1008F1Z9"
+   },
+   {
+    "address": "B10",
+    "value": "Buyer 1"
+   },
+   {
+    "address": "C10",
+    "value": "INV-0003"
+   },
+   {
+    "address": "D10",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E10",
+    "value": 1188.08,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F10",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G10",
+    "value": "N"
+   },
+   {
+    "address": "H10",
+    "value": ""
+   },
+   {
+    "address": "I10",
+    "value": "Regular"
+   },
+   {
+    "address": "J10",
+    "value": ""
+   },
+   {
+    "address": "K10",
+    "value": 5
+   },
+   {
+    "address": "L10",
+    "value": 1002.96,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M10",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A11",
+    "value": "27ABCDE1009F1Z1"
+   },
+   {
+    "address": "B11",
+    "value": "Buyer 2"
+   },
+   {
+    "address": "C11",
+    "value": "INV-0004"
+   },
+   {
+    "address": "D11",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E11",
+    "value": 1189.09,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F11",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G11",
+    "value": "N"
+   },
+   {
+    "address": "H11",
+    "value": ""
+   },
+   {
+    "address": "I11",
+    "value": "Regular"
+   },
+   {
+    "address": "J11",
+    "value": ""
+   },
+   {
+    "address": "K11",
+    "value": 12
+   },
+   {
+    "address": "L11",
+    "value": 1003.33,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M11",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A12",
+    "value": "27ABCDE1010F1Z2"
+   },
+   {
+    "address": "B12",
+    "value": "Buyer 3"
+   },
+   {
+    "address": "C12",
+    "value": "INV-0004"
+   },
+   {
+    "address": "D12",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E12",
+    "value": 1190.1,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F12",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G12",
+    "value": "N"
+   },
+   {
+    "address": "H12",
+    "value": ""
+   },
+   {
+    "address": "I12",
+    "value": "Regular"
+   },
+   {
+    "address": "J12",
+    "value": ""
+   },
+   {
+    "address": "K12",
+    "value": 18
+   },
+   {
+    "address": "L12",
+    "value": 1003.7,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M12",
+    "value": 1.25,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A13",
+    "value": "27ABCDE1011F1Z3"
+   },
+   {
+    "address": "B13",
+    "value": "Buyer 4"
+   },
+   {
+    "address": "C13",
+    "value": "INV-0004"
+   },
+   {
+    "address": "D13",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E13",
+    "value": 1191.11,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F13",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G13",
+    "value": "N"
+   },
+   {
+    "address": "H13",
+    "value": ""
+   },
+   {
+    "address": "I13",
+    "value": "Regular"
+   },
+   {
+    "address": "J13",
+    "value": ""
+   },
+   {
+    "address": "K13",
+    "value": 28
+   },
+   {
+    "address": "L13",
+    "value": 1004.07,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M13",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A14",
+    "value": "27ABCDE1012F1Z4"
+   },
+   {
+    "address": "B14",
+    "value": "Buyer 5"
+   },
+   {
+    "address": "C14",
+    "value": "INV-0005"
+   },
+   {
+    "address": "D14",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E14",
+    "value": 1192.12,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F14",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G14",
+    "value": "N"
+   },
+   {
+    "address": "H14",
+    "value": ""
+   },
+   {
+    "address": "I14",
+    "value": "Regular"
+   },
+   {
+    "address": "J14",
+    "value": ""
+   },
+   {
+    "address": "K14",
+    "value": 5
+   },
+   {
+    "address": "L14",
+    "value": 1004.44,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M14",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A15",
+    "value": "27ABCDE1013F1Z5"
+   },
+   {
+    "address": "B15",
+    "value": "Buyer 6"
+   },
+   {
+    "address": "C15",
+    "value": "INV-0005"
+   },
+   {
+    "address": "D15",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E15",
+    "value": 1193.13,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F15",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G15",
+    "value": "N"
+   },
+   {
+    "address": "H15",
+    "value": ""
+   },
+   {
+    "address": "I15",
+    "value": "Regular"
+   },
+   {
+    "address": "J15",
+    "value": ""
+   },
+   {
+    "address": "K15",
+    "value": 12
+   },
+   {
+    "address": "L15",
+    "value": 1004.81,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M15",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A16",
+    "value": "27ABCDE1014F1Z6"
+   },
+   {
+    "address": "B16",
+    "value": "Buyer 0"
+   },
+   {
+    "address": "C16",
+    "value": "INV-0005"
+   },
+   {
+    "address": "D16",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E16",
+    "value": 1194.14,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F16",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G16",
+    "value": "N"
+   },
+   {
+    "address": "H16",
+    "value": ""
+   },
+   {
+    "address": "I16",
+    "value": "Regular"
+   },
+   {
+    "address": "J16",
+    "value": ""
+   },
+   {
+    "address": "K16",
+    "value": 18
+   },
+   {
+    "address": "L16",
+    "value": 1005.18,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M16",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A17",
+    "value": "27ABCDE1015F1Z7"
+   },
+   {
+    "address": "B17",
+    "value": "Buyer 1"
+   },
+   {
+    "address": "C17",
+    "value": "INV-0006"
+   },
+   {
+    "address": "D17",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E17",
+    "value": 1195.15,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F17",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G17",
+    "value": "N"
+   },
+   {
+    "address": "H17",
+    "value": ""
+   },
+   {
+    "address": "I17",
+    "value": "Regular"
+   },
+   {
+    "address": "J17",
+    "value": ""
+   },
+   {
+    "address": "K17",
+    "value": 28
+   },
+   {
+    "address": "L17",
+    "value": 1005.55,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M17",
+    "value": 1.25,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A18",
+    "value": "27ABCDE1016F1Z8"
+   },
+   {
+    "address": "B18",
+    "value": "Buyer 2"
+   },
+   {
+    "address": "C18",
+    "value": "INV-0006"
+   },
+   {
+    "address": "D18",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E18",
+    "value": 1196.16,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F18",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G18",
+    "value": "N"
+   },
+   {
+    "address": "H18",
+    "value": ""
+   },
+   {
+    "address": "I18",
+    "value": "Regular"
+   },
+   {
+    "address": "J18",
+    "value": ""
+   },
+   {
+    "address": "K18",
+    "value": 5
+   },
+   {
+    "address": "L18",
+    "value": 1005.92,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M18",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A19",
+    "value": "27ABCDE1017F1Z9"
+   },
+   {
+    "address": "B19",
+    "value": "Buyer 3"
+   },
+   {
+    "address": "C19",
+    "value": "INV-0006"
+   },
+   {
+    "address": "D19",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E19",
+    "value": 1197.17,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F19",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G19",
+    "value": "N"
+   },
+   {
+    "address": "H19",
+    "value": ""
+   },
+   {
+    "address": "I19",
+    "value": "Regular"
+   },
+   {
+    "address": "J19",
+    "value": ""
+   },
+   {
+    "address": "K19",
+    "value": 12
+   },
+   {
+    "address": "L19",
+    "value": 1006.29,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M19",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A20",
+    "value": "27ABCDE1018F1Z1"
+   },
+   {
+    "address": "B20",
+    "value": "Buyer 4"
+   },
+   {
+    "address": "C20",
+    "value": "INV-0007"
+   },
+   {
+    "address": "D20",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E20",
+    "value": 1198.18,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F20",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G20",
+    "value": "N"
+   },
+   {
+    "address": "H20",
+    "value": ""
+   },
+   {
+    "address": "I20",
+    "value": "Regular"
+   },
+   {
+    "address": "J20",
+    "value": ""
+   },
+   {
+    "address": "K20",
+    "value": 18
+   },
+   {
+    "address": "L20",
+    "value": 1006.66,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M20",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A21",
+    "value": "27ABCDE1019F1Z2"
+   },
+   {
+    "address": "B21",
+    "value": "Buyer 5"
+   },
+   {
+    "address": "C21",
+    "value": "INV-0007"
+   },
+   {
+    "address": "D21",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E21",
+    "value": 1199.19,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F21",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G21",
+    "value": "N"
+   },
+   {
+    "address": "H21",
+    "value": ""
+   },
+   {
+    "address": "I21",
+    "value": "Regular"
+   },
+   {
+    "address": "J21",
+    "value": ""
+   },
+   {
+    "address": "K21",
+    "value": 28
+   },
+   {
+    "address": "L21",
+    "value": 1007.03,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M21",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A22",
+    "value": "27ABCDE1020F1Z3"
+   },
+   {
+    "address": "B22",
+    "value": "Buyer 6"
+   },
+   {
+    "address": "C22",
+    "value": "INV-0007"
+   },
+   {
+    "address": "D22",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E22",
+    "value": 1200.2,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F22",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G22",
+    "value": "N"
+   },
+   {
+    "address": "H22",
+    "value": ""
+   },
+   {
+    "address": "I22",
+    "value": "Regular"
+   },
+   {
+    "address": "J22",
+    "value": ""
+   },
+   {
+    "address": "K22",
+    "value": 5
+   },
+   {
+    "address": "L22",
+    "value": 1007.4,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M22",
+    "value": 1.25,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A23",
+    "value": "27ABCDE1021F1Z4"
+   },
+   {
+    "address": "B23",
+    "value": "Buyer 0"
+   },
+   {
+    "address": "C23",
+    "value": "INV-0008"
+   },
+   {
+    "address": "D23",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E23",
+    "value": 1201.21,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F23",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G23",
+    "value": "N"
+   },
+   {
+    "address": "H23",
+    "value": ""
+   },
+   {
+    "address": "I23",
+    "value": "Regular"
+   },
+   {
+    "address": "J23",
+    "value": ""
+   },
+   {
+    "address": "K23",
+    "value": 12
+   },
+   {
+    "address": "L23",
+    "value": 1007.77,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M23",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A24",
+    "value": "27ABCDE1022F1Z5"
+   },
+   {
+    "address": "B24",
+    "value": "Buyer 1"
+   },
+   {
+    "address": "C24",
+    "value": "INV-0008"
+   },
+   {
+    "address": "D24",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E24",
+    "value": 1202.22,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F24",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G24",
+    "value": "N"
+   },
+   {
+    "address": "H24",
+    "value": ""
+   },
+   {
+    "address": "I24",
+    "value": "Regular"
+   },
+   {
+    "address": "J24",
+    "value": ""
+   },
+   {
+    "address": "K24",
+    "value": 18
+   },
+   {
+    "address": "L24",
+    "value": 1008.14,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M24",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A25",
+    "value": "27ABCDE1023F1Z6"
+   },
+   {
+    "address": "B25",
+    "value": "Buyer 2"
+   },
+   {
+    "address": "C25",
+    "value": "INV-0008"
+   },
+   {
+    "address": "D25",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E25",
+    "value": 1203.23,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F25",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G25",
+    "value": "N"
+   },
+   {
+    "address": "H25",
+    "value": ""
+   },
+   {
+    "address": "I25",
+    "value": "Regular"
+   },
+   {
+    "address": "J25",
+    "value": ""
+   },
+   {
+    "address": "K25",
+    "value": 28
+   },
+   {
+    "address": "L25",
+    "value": 1008.51,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M25",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A26",
+    "value": "27ABCDE1024F1Z7"
+   },
+   {
+    "address": "B26",
+    "value": "Buyer 3"
+   },
+   {
+    "address": "C26",
+    "value": "INV-0009"
+   },
+   {
+    "address": "D26",
+    "value": "01-Nov-2026"
+   },
+   {
+    "address": "E26",
+    "value": 1204.24,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F26",
+    "value": "27-Maharashtra"
+   },
+   {
+    "address": "G26",
+    "value": "N"
+   },
+   {
+    "address": "H26",
+    "value": ""
+   },
+   {
+    "address": "I26",
+    "value": "Regular"
+   },
+   {
+    "address": "J26",
+    "value": ""
+   },
+   {
+    "address": "K26",
+    "value": 5
+   },
+   {
+    "address": "L26",
+    "value": 1008.88,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M26",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "b2cl",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   20,
+   14,
+   16,
+   24,
+   22,
+   10,
+   16,
+   14,
+   20
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "Invoice Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Invoice date",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Invoice Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Place Of Supply",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Applicable % of Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "E-Commerce GSTIN",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
+    "value": "INV-B2CL-1"
+   },
+   {
+    "address": "B2",
+    "value": "02-Aug-2026"
+   },
+   {
+    "address": "C2",
+    "value": 150000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D2",
+    "value": "33-Tamil Nadu"
+   },
+   {
+    "address": "E2",
+    "value": ""
+   },
+   {
+    "address": "F2",
+    "value": 18
+   },
+   {
+    "address": "G2",
+    "value": 127118.64,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "H2",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "I2",
+    "value": ""
+   },
+   {
+    "address": "A3",
+    "value": "INV-B2CL-2"
+   },
+   {
+    "address": "B3",
+    "value": "15-Sep-2026"
+   },
+   {
+    "address": "C3",
+    "value": 200000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D3",
+    "value": "07-Delhi"
+   },
+   {
+    "address": "E3",
+    "value": ""
+   },
+   {
+    "address": "F3",
+    "value": 28
+   },
+   {
+    "address": "G3",
+    "value": 156250,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "H3",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "I3",
+    "value": ""
+   }
+  ]
+ },
+ {
+  "name": "b2cs",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   12,
+   24,
+   22,
+   10,
+   16,
+   14,
+   20
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Place Of Supply",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Applicable % of Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "E-Commerce GSTIN",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
+    "value": "OE"
+   },
+   {
+    "address": "B2",
+    "value": "29-Karnataka"
+   },
+   {
+    "address": "C2",
+    "value": ""
+   },
+   {
+    "address": "D2",
+    "value": 5
+   },
+   {
+    "address": "E2",
+    "value": 5000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F2",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "G2",
+    "value": ""
+   },
+   {
+    "address": "A3",
+    "value": "OE"
+   },
+   {
+    "address": "B3",
+    "value": "32-Kerala"
+   },
+   {
+    "address": "C3",
+    "value": ""
+   },
+   {
+    "address": "D3",
+    "value": 12
+   },
+   {
+    "address": "E3",
+    "value": 5000.01,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F3",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "G3",
+    "value": ""
+   },
+   {
+    "address": "A4",
+    "value": "OE"
+   },
+   {
+    "address": "B4",
+    "value": "29-Karnataka"
+   },
+   {
+    "address": "C4",
+    "value": ""
+   },
+   {
+    "address": "D4",
+    "value": 18
+   },
+   {
+    "address": "E4",
+    "value": 5000.02,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F4",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "G4",
+    "value": ""
+   },
+   {
+    "address": "A5",
+    "value": "OE"
+   },
+   {
+    "address": "B5",
+    "value": "32-Kerala"
+   },
+   {
+    "address": "C5",
+    "value": ""
+   },
+   {
+    "address": "D5",
+    "value": 28
+   },
+   {
+    "address": "E5",
+    "value": 5000.03,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F5",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "G5",
+    "value": ""
+   },
+   {
+    "address": "A6",
+    "value": "OE"
+   },
+   {
+    "address": "B6",
+    "value": "29-Karnataka"
+   },
+   {
+    "address": "C6",
+    "value": ""
+   },
+   {
+    "address": "D6",
+    "value": 5
+   },
+   {
+    "address": "E6",
+    "value": 5000.04,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F6",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "G6",
+    "value": ""
+   },
+   {
+    "address": "A7",
+    "value": "OE"
+   },
+   {
+    "address": "B7",
+    "value": "32-Kerala"
+   },
+   {
+    "address": "C7",
+    "value": ""
+   },
+   {
+    "address": "D7",
+    "value": 12
+   },
+   {
+    "address": "E7",
+    "value": 5000.05,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F7",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "G7",
+    "value": ""
+   }
+  ]
+ },
+ {
+  "name": "cdnr",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   22,
+   30,
+   20,
+   14,
+   12,
+   24,
+   15,
+   16,
+   16,
+   22,
+   10,
+   16,
+   14
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "GSTIN/UIN of Recipient",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Receiver Name",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Note Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Note Date",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Note Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Place Of Supply",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Reverse Charge",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Note Supply Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "Note Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "J1",
+    "value": "Applicable % of Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "K1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "L1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "M1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
+    "value": "29XYZAB2000C1Z1"
+   },
+   {
+    "address": "B2",
+    "value": "Registered Customer 0"
+   },
+   {
+    "address": "C2",
+    "value": "CN-001"
+   },
+   {
+    "address": "D2",
+    "value": "05-Nov-2026"
+   },
+   {
+    "address": "E2",
+    "value": "C"
+   },
+   {
+    "address": "F2",
+    "value": "29-Karnataka"
+   },
+   {
+    "address": "G2",
+    "value": "N"
+   },
+   {
+    "address": "H2",
+    "value": "Regular"
+   },
+   {
+    "address": "I2",
+    "value": 2360,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "J2",
+    "value": ""
+   },
+   {
+    "address": "K2",
+    "value": 18
+   },
+   {
+    "address": "L2",
+    "value": 2000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M2",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A3",
+    "value": "29XYZAB2001C1Z1"
+   },
+   {
+    "address": "B3",
+    "value": "Registered Customer 1"
+   },
+   {
+    "address": "C3",
+    "value": "CN-002"
+   },
+   {
+    "address": "D3",
+    "value": "05-Nov-2026"
+   },
+   {
+    "address": "E3",
+    "value": "C"
+   },
+   {
+    "address": "F3",
+    "value": "29-Karnataka"
+   },
+   {
+    "address": "G3",
+    "value": "N"
+   },
+   {
+    "address": "H3",
+    "value": "Regular"
+   },
+   {
+    "address": "I3",
+    "value": 2360.01,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "J3",
+    "value": ""
+   },
+   {
+    "address": "K3",
+    "value": 18
+   },
+   {
+    "address": "L3",
+    "value": 2000.01,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M3",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A4",
+    "value": "29XYZAB2002C1Z1"
+   },
+   {
+    "address": "B4",
+    "value": "Registered Customer 2"
+   },
+   {
+    "address": "C4",
+    "value": "CN-003"
+   },
+   {
+    "address": "D4",
+    "value": "05-Nov-2026"
+   },
+   {
+    "address": "E4",
+    "value": "C"
+   },
+   {
+    "address": "F4",
+    "value": "29-Karnataka"
+   },
+   {
+    "address": "G4",
+    "value": "N"
+   },
+   {
+    "address": "H4",
+    "value": "Regular"
+   },
+   {
+    "address": "I4",
+    "value": 2360.02,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "J4",
+    "value": ""
+   },
+   {
+    "address": "K4",
+    "value": 18
+   },
+   {
+    "address": "L4",
+    "value": 2000.02,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M4",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A5",
+    "value": "29XYZAB2003C1Z1"
+   },
+   {
+    "address": "B5",
+    "value": "Registered Customer 3"
+   },
+   {
+    "address": "C5",
+    "value": "CN-004"
+   },
+   {
+    "address": "D5",
+    "value": "05-Nov-2026"
+   },
+   {
+    "address": "E5",
+    "value": "C"
+   },
+   {
+    "address": "F5",
+    "value": "29-Karnataka"
+   },
+   {
+    "address": "G5",
+    "value": "N"
+   },
+   {
+    "address": "H5",
+    "value": "Regular"
+   },
+   {
+    "address": "I5",
+    "value": 2360.03,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "J5",
+    "value": ""
+   },
+   {
+    "address": "K5",
+    "value": 18
+   },
+   {
+    "address": "L5",
+    "value": 2000.03,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "M5",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "cdnur",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   12,
+   26,
+   20,
+   15,
+   28,
+   24,
+   24,
+   22,
+   22,
+   10,
+   16,
+   14
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "UR Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Note/Refund Voucher Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Note/Refund Voucher date",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Document Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Invoice/Advance Receipt Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Invoice/Advance Receipt date",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Place Of Supply",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Note/Refund Voucher Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "Applicable % of Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "J1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "K1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "L1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
+    "value": "B2CL"
+   },
+   {
+    "address": "B2",
+    "value": "CN-UR-1"
+   },
+   {
+    "address": "C2",
+    "value": "20-Aug-2026"
+   },
+   {
+    "address": "D2",
+    "value": "C"
+   },
+   {
+    "address": "E2",
+    "value": "INV-B2CL-1"
+   },
+   {
+    "address": "F2",
+    "value": "02-Aug-2026"
+   },
+   {
+    "address": "G2",
+    "value": "33-Tamil Nadu"
+   },
+   {
+    "address": "H2",
+    "value": 11800,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "I2",
+    "value": ""
+   },
+   {
+    "address": "J2",
+    "value": 18
+   },
+   {
+    "address": "K2",
+    "value": 10000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "L2",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "hsn",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   15,
+   30,
+   10,
+   15,
+   16,
+   10,
+   16,
+   20,
+   18,
+   18,
+   14
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "HSN",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Description",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "UQC",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Total Quantity",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Total Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Integrated Tax Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "Central Tax Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "J1",
+    "value": "State/UT Tax Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "K1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
+    "value": "998313"
+   },
+   {
+    "address": "B2",
+    "value": "IT consulting"
+   },
+   {
+    "address": "C2",
+    "value": "NA"
+   },
+   {
+    "address": "D2",
+    "value": 12
+   },
+   {
+    "address": "E2",
+    "value": 14160,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F2",
+    "value": 18
+   },
+   {
+    "address": "G2",
+    "value": 12000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "H2",
+    "value": 2160,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "I2",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "J2",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "K2",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A3",
+    "value": "8471"
+   },
+   {
+    "address": "B3",
+    "value": "Laptops"
+   },
+   {
+    "address": "C3",
+    "value": "NOS"
+   },
+   {
+    "address": "D3",
+    "value": 3
+   },
+   {
+    "address": "E3",
+    "value": 179200,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F3",
+    "value": 28
+   },
+   {
+    "address": "G3",
+    "value": 140000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "H3",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "I3",
+    "value": 19600,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "J3",
+    "value": 19600,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "K3",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "doc",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   32,
+   20,
+   20,
+   15,
+   15,
+   15
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "Nature of Document",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Sr. No. From",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Sr. No. To",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Total Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Cancelled",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Net Issued",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
+    "value": "Invoices for outward supply"
+   },
+   {
+    "address": "B2",
+    "value": "INV-0001"
+   },
+   {
+    "address": "C2",
+    "value": "INV-0009"
+   },
+   {
+    "address": "D2",
+    "value": 9
+   },
+   {
+    "address": "E2",
+    "value": 1
+   },
+   {
+    "address": "F2",
+    "value": 8
+   },
+   {
+    "address": "A3",
+    "value": "Credit Note"
+   },
+   {
+    "address": "B3",
+    "value": "CN-001"
+   },
+   {
+    "address": "C3",
+    "value": "CN-005"
+   },
+   {
+    "address": "D3",
+    "value": 5
+   },
+   {
+    "address": "E3",
+    "value": 0
+   },
+   {
+    "address": "F3",
+    "value": 5
+   }
+  ]
+ }
+]

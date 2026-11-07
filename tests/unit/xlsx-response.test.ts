@@ -1,16 +1,21 @@
 import { describe, expect, it, vi } from 'vitest';
 import ExcelJS from 'exceljs';
 import { xlsxStreamResponse } from '@/lib/excel/xlsx-response';
+import { createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
 
-describe('xlsxStreamResponse (PERF-002)', () => {
-  it('streams a workbook with status 200, correct headers, and valid PK zip structure', async () => {
-    const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('Summary');
-    sheet.getCell('A1').value = 'Bill Matrix Statutory Export Test';
-    sheet.getCell('B1').value = 42000;
-
+describe('xlsxStreamResponse (PERF-002 / PERF-002b)', () => {
+  it('streams a WorkbookWriter workbook with status 200, correct headers, and valid PK zip structure', async () => {
     const fileName = 'Test-Export-2026.xlsx';
-    const response = xlsxStreamResponse(workbook, fileName);
+    const response = xlsxStreamResponse(async (stream) => {
+      const workbook = createStreamingWorkbook(stream);
+      const sheet = workbook.addWorksheet('Summary');
+      const row = sheet.getRow(1);
+      row.getCell(1).value = 'Bill Matrix Statutory Export Test';
+      row.getCell(2).value = 42000;
+      row.commit();
+      sheet.commit();
+      await workbook.commit();
+    }, fileName);
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Content-Type')).toBe(
@@ -37,18 +42,22 @@ describe('xlsxStreamResponse (PERF-002)', () => {
     expect(loadedSheet?.getCell('B1').value).toBe(42000);
   });
 
-  it('destroys the stream and logs an error when workbook.xlsx.write rejects', async () => {
-    const brokenWorkbook = {
-      xlsx: {
-        write: vi.fn().mockRejectedValue(new Error('Serialization failure')),
-      },
-    } as unknown as ExcelJS.Workbook;
+  it('destroys the stream and logs an error when the writer rejects', async () => {
+    const write = vi.fn().mockRejectedValue(new Error('Serialization failure'));
 
-    const response = xlsxStreamResponse(brokenWorkbook, 'error.xlsx');
+    const response = xlsxStreamResponse(write, 'error.xlsx');
     expect(response.status).toBe(200);
 
     // Reading the response body stream should reject with the error
     await expect(response.arrayBuffer()).rejects.toThrow('Serialization failure');
   });
-});
 
+  it('destroys the stream when the writer throws synchronously', async () => {
+    const write = () => {
+      throw new Error('Bad input');
+    };
+
+    const response = xlsxStreamResponse(write, 'error.xlsx');
+    await expect(response.arrayBuffer()).rejects.toThrow('Bad input');
+  });
+});

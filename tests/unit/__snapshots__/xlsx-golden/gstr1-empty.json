@@ -1,0 +1,3252 @@
+[
+ {
+  "name": "GSTR-1 Summary",
+  "views": [],
+  "merges": [
+   "A13:D13",
+   "A1:D1",
+   "A2:D2"
+  ],
+  "columnWidths": [
+   36,
+   18,
+   22,
+   22
+  ],
+  "rowHeights": {
+   "1": 28,
+   "2": 20,
+   "4": 24,
+   "5": 20,
+   "6": 20,
+   "7": 20,
+   "8": 20,
+   "9": 20,
+   "10": 24,
+   "14": 20,
+   "15": 20,
+   "16": 20,
+   "17": 20
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "Fixture Traders Pvt Ltd — GSTR-1 Return Filing Statement",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Fixture Traders Pvt Ltd — GSTR-1 Return Filing Statement",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Fixture Traders Pvt Ltd — GSTR-1 Return Filing Statement",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Fixture Traders Pvt Ltd — GSTR-1 Return Filing Statement",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
+    "value": "GSTIN: 29ABCDE1234F1Z5  |  Period: FY 2026-27 (2026-04-01 to 2027-03-31)",
+    "font": {
+     "color": {
+      "argb": "FF595959"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B2",
+    "value": "GSTIN: 29ABCDE1234F1Z5  |  Period: FY 2026-27 (2026-04-01 to 2027-03-31)",
+    "font": {
+     "color": {
+      "argb": "FF595959"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "C2",
+    "value": "GSTIN: 29ABCDE1234F1Z5  |  Period: FY 2026-27 (2026-04-01 to 2027-03-31)",
+    "font": {
+     "color": {
+      "argb": "FF595959"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D2",
+    "value": "GSTIN: 29ABCDE1234F1Z5  |  Period: FY 2026-27 (2026-04-01 to 2027-03-31)",
+    "font": {
+     "color": {
+      "argb": "FF595959"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A4",
+    "value": "GSTR-1 Table Section",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF2B5797"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B4",
+    "value": "Count",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF2B5797"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C4",
+    "value": "Taxable Value (₹)",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF2B5797"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D4",
+    "value": "Tax Amount (₹)",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF2B5797"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A5",
+    "value": "Table 4: B2B Invoices (Registered)",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "B5",
+    "value": 9,
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "center"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "C5",
+    "value": 250111,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "D5",
+    "value": 34567.89,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "A6",
+    "value": "Table 5: B2CL Invoices (Large Inter-State)",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "B6",
+    "value": 2,
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "center"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "C6",
+    "value": 283368.64,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "D6",
+    "value": 66631.36,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "A7",
+    "value": "Table 7: B2CS Supplies (Small / Retail)",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "B7",
+    "value": 6,
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "center"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "C7",
+    "value": 30000.15,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "D7",
+    "value": 4512.34,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "A8",
+    "value": "Table 9B: Credit / Debit Notes (CDNR)",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "B8",
+    "value": 4,
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "center"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "C8",
+    "value": 8000.06,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "D8",
+    "value": 1440.01,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "A9",
+    "value": "Table 9B: Credit / Debit Notes — Unregistered (CDNUR)",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "B9",
+    "value": 1,
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "center"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "C9",
+    "value": 10000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "D9",
+    "value": 1800,
+    "numFmt": "#,##0.00",
+    "font": {
+     "color": {
+      "theme": 1
+     },
+     "family": 2,
+     "scheme": "minor",
+     "size": 11,
+     "name": "Calibri"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {
+     "left": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "right": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "top": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     },
+     "bottom": {
+      "style": "thin",
+      "color": {
+       "argb": "FFD9D9D9"
+      }
+     }
+    }
+   },
+   {
+    "address": "A10",
+    "value": "NET OUTWARD SUPPLIES TOTAL",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "border": {}
+   },
+   {
+    "address": "B10",
+    "value": 6,
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "border": {}
+   },
+   {
+    "address": "C10",
+    "value": 545479.73,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "border": {}
+   },
+   {
+    "address": "D10",
+    "value": 104271.58,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "border": {}
+   },
+   {
+    "address": "A13",
+    "value": "Tax Liability Breakdown (For GSTR-3B Payment)",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B13",
+    "value": "Tax Liability Breakdown (For GSTR-3B Payment)",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "C13",
+    "value": "Tax Liability Breakdown (For GSTR-3B Payment)",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D13",
+    "value": "Tax Liability Breakdown (For GSTR-3B Payment)",
+    "font": {
+     "bold": true,
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A14",
+    "value": "Central Tax (CGST)",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B14",
+    "value": 19600,
+    "numFmt": "#,##0.00",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "right"
+    },
+    "border": {}
+   },
+   {
+    "address": "A15",
+    "value": "State/UT Tax (SGST)",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B15",
+    "value": 19600,
+    "numFmt": "#,##0.00",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "right"
+    },
+    "border": {}
+   },
+   {
+    "address": "A16",
+    "value": "Integrated Tax (IGST)",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B16",
+    "value": 66511.59,
+    "numFmt": "#,##0.00",
+    "font": {
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "alignment": {
+     "horizontal": "right"
+    },
+    "border": {}
+   },
+   {
+    "address": "A17",
+    "value": "Total Tax Liability",
+    "font": {
+     "bold": true,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "border": {}
+   },
+   {
+    "address": "B17",
+    "value": 105711.59,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD9E1F2"
+     }
+    },
+    "alignment": {
+     "horizontal": "right"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "b2b",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   22,
+   30,
+   20,
+   14,
+   16,
+   24,
+   15,
+   22,
+   16,
+   20,
+   10,
+   16,
+   14
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "GSTIN/UIN of Recipient",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Receiver Name",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Invoice Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Invoice date",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Invoice Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Place Of Supply",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Reverse Charge",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Applicable % of Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "Invoice Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "J1",
+    "value": "E-Commerce GSTIN",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "K1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "L1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "M1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "b2cl",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   20,
+   14,
+   16,
+   24,
+   22,
+   10,
+   16,
+   14,
+   20
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "Invoice Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Invoice date",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Invoice Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Place Of Supply",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Applicable % of Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "E-Commerce GSTIN",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "b2cs",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   12,
+   24,
+   22,
+   10,
+   16,
+   14,
+   20
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Place Of Supply",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Applicable % of Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "E-Commerce GSTIN",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "cdnr",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   22,
+   30,
+   20,
+   14,
+   12,
+   24,
+   15,
+   16,
+   16,
+   22,
+   10,
+   16,
+   14
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "GSTIN/UIN of Recipient",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Receiver Name",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Note Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Note Date",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Note Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Place Of Supply",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Reverse Charge",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Note Supply Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "Note Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "J1",
+    "value": "Applicable % of Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "K1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "L1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "M1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "cdnur",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   12,
+   26,
+   20,
+   15,
+   28,
+   24,
+   24,
+   22,
+   22,
+   10,
+   16,
+   14
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "UR Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Note/Refund Voucher Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Note/Refund Voucher date",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Document Type",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Invoice/Advance Receipt Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Invoice/Advance Receipt date",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Place Of Supply",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Note/Refund Voucher Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "Applicable % of Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "J1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "K1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "L1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "hsn",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   15,
+   30,
+   10,
+   15,
+   16,
+   10,
+   16,
+   20,
+   18,
+   18,
+   14
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "HSN",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Description",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "UQC",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Total Quantity",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Total Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Integrated Tax Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "Central Tax Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "J1",
+    "value": "State/UT Tax Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "K1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   }
+  ]
+ },
+ {
+  "name": "doc",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   32,
+   20,
+   20,
+   15,
+   15,
+   15
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "Nature of Document",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Sr. No. From",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Sr. No. To",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Total Number",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Cancelled",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Net Issued",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   }
+  ]
+ }
+]
