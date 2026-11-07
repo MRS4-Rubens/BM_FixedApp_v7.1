@@ -12,6 +12,7 @@ import { setLocalLockTimeout, withTransactionRetry } from '@/lib/db/transaction'
 import { businesses } from '@/lib/db/schema';
 import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
 import { deleteLogoObjectIfUnreferenced } from '@/lib/storage/logo';
+import { buildLogoUrl } from '@/lib/storage/logo-url';
 import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -142,7 +143,7 @@ export const uploadBusinessLogo = createAuthenticatedAction(
 
     return {
       storageKey,
-      logoUrl: `/api/business/${businessId}/logo?t=${Date.now()}`,
+      logoUrl: buildLogoUrl(businessId, storageKey),
     };
   },
   'upload-business-logo',

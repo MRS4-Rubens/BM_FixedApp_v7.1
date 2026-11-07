@@ -13,8 +13,12 @@ import { logoMimeFromKey } from '@/lib/storage/logo-url';
  */
 export async function loadLogoDataUri(key: string): Promise<string | null> {
   try {
-    const buffer = await getFileBuffer(key);
     const mime = logoMimeFromKey(key);
+    if (!mime) {
+      logError('logo', new Error('Unsupported logo key extension'), { key });
+      return null;
+    }
+    const buffer = await getFileBuffer(key);
     return `data:${mime};base64,${buffer.toString('base64')}`;
   } catch (error: unknown) {
     logError('logo', error, { key });

@@ -5,6 +5,7 @@ import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { getCreditNoteReasonLabel } from '@/lib/validations/credit-note';
 import { formatIstDate } from '@/lib/invoices/ist-date';
+import { buildLogoUrl } from '@/lib/storage/logo-url';
 
 export interface CreditNotePrintViewProps {
   creditNote: {
@@ -86,7 +87,7 @@ export function CreditNotePrintView({ creditNote, printSize = 'A4' }: CreditNote
   const logoUrl =
     biz.logo_base64 ||
     biz.logo_url ||
-    (biz.id && biz.logo_storage_key ? `/api/business/${biz.id}/logo` : null);
+    (biz.id && biz.logo_storage_key ? buildLogoUrl(biz.id, biz.logo_storage_key) : null);
 
   return (
     <div

@@ -7,6 +7,7 @@ import { isPlatformAdmin } from '@/lib/auth/admin'
 import { db } from '@/lib/db/client'
 import { businesses } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
+import { buildLogoUrl } from '@/lib/storage/logo-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -57,7 +58,7 @@ export default async function AppLayout({
       }
 
       if (biz[0].logoStorageKey) {
-        businessLogoUrl = `/api/business/${user.business_id}/logo`
+        businessLogoUrl = buildLogoUrl(user.business_id, biz[0].logoStorageKey)
       }
     }
   }

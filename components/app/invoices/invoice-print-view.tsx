@@ -4,6 +4,7 @@ import { InvoiceTemplate3 } from './templates/template-3';
 import { InvoiceTemplate4 } from './templates/template-4';
 import { resolveSubscriptionPlan } from '@/lib/subscriptions/entitlements';
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs';
+import { buildLogoUrl } from '@/lib/storage/logo-url';
 
 export interface InvoicePrintViewProps {
   invoice: {
@@ -59,7 +60,7 @@ export function InvoicePrintView({ invoice, businessStateCode, printSize = 'A4',
   const templateId = invoice.invoice_template || 'template_1';
 
   const logoUrl = invoice.logo_url 
-    ?? (invoice.business_id && invoice.logo_storage_key ? `/api/business/${invoice.business_id}/logo` : null);
+    ?? (invoice.business_id && invoice.logo_storage_key ? buildLogoUrl(invoice.business_id, invoice.logo_storage_key) : null);
 
   const effectiveHasWatermark = (() => {
     if (hasWatermark !== undefined) return hasWatermark;
