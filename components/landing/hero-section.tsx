@@ -145,7 +145,7 @@ export function HeroSection() {
             <div className="text-sm text-zinc-500 mt-1 font-medium">Invoiced</div>
           </div>
           <div>
-            <div className="text-4xl font-bold text-emerald-500 heading">
+            <div className="text-4xl font-bold text-emerald-700 heading">
               <Counter target={99.9} suffix="%" />
             </div>
             <div className="text-sm text-zinc-500 mt-1 font-medium">Compliance</div>

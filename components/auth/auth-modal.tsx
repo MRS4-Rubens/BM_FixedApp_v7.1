@@ -208,7 +208,7 @@ export function AuthenticationModal() {
           >
             {mode === 'login' ? 'Welcome back' : 'Create your account'}
           </h2>
-          <p className="mt-1 text-sm sm:text-base text-zinc-500">
+          <p className="mt-1 text-sm sm:text-base text-zinc-600">
             {mode === 'login'
               ? 'Welcome back! Please enter your details.'
               : 'Start your 14-day free trial. No credit card required.'}
@@ -217,7 +217,7 @@ export function AuthenticationModal() {
 
         {/* Error Alert Banner */}
         {activeError && (
-          <div className="w-full mb-3 rounded-xl bg-rose-50 border border-rose-200/80 p-2.5 sm:p-3 flex items-center gap-2.5 text-sm font-medium text-rose-700">
+          <div role="alert" className="w-full mb-3 rounded-xl bg-rose-50 border border-rose-200/80 p-2.5 sm:p-3 flex items-center gap-2.5 text-sm font-medium text-rose-700">
             <AlertCircle className="size-5 shrink-0 text-rose-500" />
             <span>{activeError}</span>
           </div>
@@ -298,8 +298,9 @@ export function AuthenticationModal() {
 
             {/* Remember Me */}
             <div className="flex items-center justify-between pt-0.5">
-              <label className="flex items-center gap-2.5 text-sm text-zinc-600 select-none cursor-pointer">
+              <label htmlFor="login-remember-me" className="flex items-center gap-2.5 text-sm text-zinc-600 select-none cursor-pointer">
                 <input
+                  id="login-remember-me"
                   type="checkbox"
                   name="rememberMe"
                   className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 size-4.5 cursor-pointer"
@@ -339,7 +340,7 @@ export function AuthenticationModal() {
             </button>
 
             {/* Switch to Signup */}
-            <p className="text-center text-sm sm:text-base text-zinc-500 pt-1.5">
+            <p className="text-center text-sm sm:text-base text-zinc-600 pt-1.5">
               Don&apos;t have an account?{' '}
               <button
                 type="button"
@@ -469,7 +470,7 @@ export function AuthenticationModal() {
             {passwordInput && (
               <div className="pt-0.5">
                 <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-zinc-500">Strength</span>
+                  <span className="text-zinc-600">Strength</span>
                   <span className="font-bold uppercase tracking-wider text-zinc-700">
                     {strengthLabel}
                   </span>
@@ -497,7 +498,7 @@ export function AuthenticationModal() {
               />
               <label
                 htmlFor="terms"
-                className="text-xs sm:text-sm text-zinc-500 leading-normal select-none cursor-pointer"
+                className="text-xs sm:text-sm text-zinc-600 leading-normal select-none cursor-pointer"
               >
                 I agree to the{' '}
                 <Link
@@ -549,7 +550,7 @@ export function AuthenticationModal() {
             </button>
 
             {/* Switch to Login */}
-            <p className="text-center text-xs sm:text-sm text-zinc-500 pt-1">
+            <p className="text-center text-xs sm:text-sm text-zinc-600 pt-1">
               Already have an account?{' '}
               <button
                 type="button"

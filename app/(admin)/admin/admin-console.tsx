@@ -8,6 +8,8 @@ import { processSubscriptionClaim } from '@/lib/actions/subscriptions/process-re
 import { updateBusinessSubscription } from '@/lib/actions/subscriptions/update-business-subscription';
 import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-business-subscriptions';
 import { getClaimScreenshotUrl } from '@/lib/actions/subscriptions/get-claim-screenshot-url';
+import { Dialog } from '@base-ui/react/dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useIsClient } from '@/lib/hooks/use-is-client';
 import {
   TrendingUp,
@@ -277,18 +279,6 @@ export function AdminConsole({
     return () => clearTimeout(timer);
   }, [proofViewer]);
 
-  // SEC-003: Escape key handler for dialog accessibility
-  useEffect(() => {
-    if (!proofViewer) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        closeProof();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [proofViewer, closeProof]);
-
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
@@ -361,20 +351,26 @@ export function AdminConsole({
   }, [filteredUsers, safeUserPage]);
 
   // Approve claim handler
+  const [approvingClaimId, setApprovingClaimId] = useState<string | null>(null);
+
   const handleApprove = (requestId: string) => {
-    if (confirm('Approve this manual payment claim and activate the subscription immediately?')) {
-      startTransition(async () => {
-        const result = await processSubscriptionClaim({
-          request_id: requestId,
-          action: 'approve',
-        });
-        if (result.success) {
-          router.refresh();
-        } else {
-          alert(result.error?.message || 'Failed to approve claim.');
-        }
+    setApprovingClaimId(requestId);
+  };
+
+  const handleConfirmApprove = async () => {
+    if (!approvingClaimId) return;
+    const requestId = approvingClaimId;
+    startTransition(async () => {
+      const result = await processSubscriptionClaim({
+        request_id: requestId,
+        action: 'approve',
       });
-    }
+      if (result.success) {
+        router.refresh();
+      } else {
+        alert(result.error?.message || 'Failed to approve claim.');
+      }
+    });
   };
 
   // Reject claim handler
@@ -518,7 +514,7 @@ export function AdminConsole({
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/50 pb-3">
         <div>
           <div className="flex items-center gap-2.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               SYSTEM ACTIVE
             </span>
@@ -556,7 +552,7 @@ export function AdminConsole({
             onClick={handleExportCsv}
             className="h-8.5 gap-1.5 text-sm font-semibold shadow-xs hover:bg-muted"
           >
-            <FileSpreadsheet className="size-4 text-emerald-600" />
+            <FileSpreadsheet className="size-4 text-emerald-700" />
             Export Directory
           </Button>
 
@@ -566,7 +562,7 @@ export function AdminConsole({
             className={cn(
               'h-8.5 gap-1.5 text-sm font-bold transition-all shadow-xs',
               pendingRequests.length > 0
-                ? 'bg-amber-500 hover:bg-amber-600 text-white animate-pulse'
+                ? 'bg-amber-700 hover:bg-amber-800 text-white'
                 : 'bg-indigo-600 hover:bg-indigo-700 text-white'
             )}
           >
@@ -595,7 +591,7 @@ export function AdminConsole({
             </div>
           </div>
           <div className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground whitespace-nowrap">
-            <span className="font-bold text-emerald-600">Reconciled</span>
+            <span className="font-bold text-emerald-700">Reconciled</span>
             <span>from approved subscription claims</span>
           </div>
         </div>
@@ -612,7 +608,7 @@ export function AdminConsole({
                 {stats.activeSubscriptions}
               </h3>
             </div>
-            <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 transition-transform duration-200 group-hover:scale-105">
+            <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 transition-transform duration-200 group-hover:scale-105">
               <ShieldCheck className="size-4.5" />
             </div>
           </div>
@@ -644,7 +640,7 @@ export function AdminConsole({
               <h3 className="mt-1 text-3xl font-extrabold tracking-tight text-foreground font-heading flex items-center gap-2">
                 {stats.pendingRequestsCount}
                 {pendingRequests.length > 0 && (
-                  <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-700">
+                  <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-800">
                     Needs Action
                   </span>
                 )}
@@ -728,7 +724,7 @@ export function AdminConsole({
                       isActive
                         ? 'bg-white/20 text-white'
                         : tab.badgeHighlight
-                          ? 'bg-amber-500 text-white'
+                          ? 'bg-amber-700 text-white'
                           : 'bg-muted text-muted-foreground group-hover:bg-muted/80'
                     )}
                   >
@@ -890,7 +886,7 @@ export function AdminConsole({
                           className="text-muted-foreground hover:text-indigo-600 cursor-pointer"
                           title="Copy UPI ID"
                         >
-                          {copiedKey === 'upi-quick' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                          {copiedKey === 'upi-quick' ? <Check className="size-4 text-emerald-700" /> : <Copy className="size-4" />}
                         </button>
                       </div>
                     </div>
@@ -905,7 +901,7 @@ export function AdminConsole({
                           className="text-muted-foreground hover:text-indigo-600 cursor-pointer"
                           title="Copy IFSC"
                         >
-                          {copiedKey === 'ifsc-quick' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                          {copiedKey === 'ifsc-quick' ? <Check className="size-4 text-emerald-700" /> : <Copy className="size-4" />}
                         </button>
                       </div>
                     </div>
@@ -1086,7 +1082,7 @@ export function AdminConsole({
                         >
                           {copiedKey === `utr-${req.id}` ? (
                             <>
-                              <Check className="size-3.5 text-emerald-600" /> Copied
+                              <Check className="size-3.5 text-emerald-700" /> Copied
                             </>
                           ) : (
                             <>
@@ -1275,7 +1271,7 @@ export function AdminConsole({
                                   title="Copy GSTIN"
                                 >
                                   {copiedKey === `gstin-${biz.id}` ? (
-                                    <Check className="size-3.5 text-emerald-600" />
+                                    <Check className="size-3.5 text-emerald-700" />
                                   ) : (
                                     <Copy className="size-3.5" />
                                   )}
@@ -1515,7 +1511,7 @@ export function AdminConsole({
                             {u.businessName ? (
                               <span className="font-semibold text-foreground text-sm">{u.businessName}</span>
                             ) : (
-                              <span className="text-xs text-muted-foreground/70 italic">Unassigned</span>
+                              <span className="text-xs text-muted-foreground italic">Unassigned</span>
                             )}
                           </td>
 
@@ -1637,7 +1633,7 @@ export function AdminConsole({
                         onClick={() => handleCopy(upiConfig.upiId, 'upi-full')}
                         className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
                       >
-                        {copiedKey === 'upi-full' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                        {copiedKey === 'upi-full' ? <Check className="size-4 text-emerald-700" /> : <Copy className="size-4" />}
                       </button>
                     </div>
                   </div>
@@ -1655,7 +1651,7 @@ export function AdminConsole({
             {/* Direct Bank Account */}
             <div className="rounded-xl border border-border bg-card p-5 shadow-xs space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-600">
+                <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-700">
                   <CreditCard className="size-5" />
                 </div>
                 <div>
@@ -1687,7 +1683,7 @@ export function AdminConsole({
                         onClick={() => handleCopy(upiConfig.accNo, 'acc-no')}
                         className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
                       >
-                        {copiedKey === 'acc-no' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                        {copiedKey === 'acc-no' ? <Check className="size-4 text-emerald-700" /> : <Copy className="size-4" />}
                       </button>
                     </div>
                   </div>
@@ -1700,7 +1696,7 @@ export function AdminConsole({
                         onClick={() => handleCopy(upiConfig.ifsc, 'ifsc-full')}
                         className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
                       >
-                        {copiedKey === 'ifsc-full' ? <Check className="size-4 text-emerald-600" /> : <Copy className="size-4" />}
+                        {copiedKey === 'ifsc-full' ? <Check className="size-4 text-emerald-700" /> : <Copy className="size-4" />}
                       </button>
                     </div>
                   </div>
@@ -1730,7 +1726,7 @@ export function AdminConsole({
             <div className="md:col-span-2 rounded-xl border border-border bg-card p-5 shadow-xs space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-600 dark:text-emerald-400">
+                  <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-700 dark:text-emerald-400">
                     <Mail className="size-5" />
                   </div>
                   <div>
@@ -1743,7 +1739,7 @@ export function AdminConsole({
                   </div>
                 </div>
 
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 self-start sm:self-auto">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 self-start sm:self-auto">
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                   Active In-Memory Delivery (0 Cloud/DB Storage)
                 </div>
@@ -1768,7 +1764,7 @@ export function AdminConsole({
                       className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
                     >
                       {copiedKey === 'feedback-email' ? (
-                        <Check className="size-4 text-emerald-600" />
+                        <Check className="size-4 text-emerald-700" />
                       ) : (
                         <Copy className="size-4" />
                       )}
@@ -1798,98 +1794,142 @@ export function AdminConsole({
       {/* ========================================================================= */}
       {/* MODAL 1: REJECT CLAIM DIALOG */}
       {/* ========================================================================= */}
-      {rejectingClaim && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
-            <h3 className="text-lg font-bold text-foreground font-heading border-b border-border/40 pb-3 flex items-center gap-2">
-              <XCircle className="size-5 text-rose-600" /> Reject Payment Claim
-            </h3>
-            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-              Claim for <b className="text-foreground">{rejectingClaim.businessName}</b> (UTR:{' '}
-              <span className="font-mono text-indigo-600 font-bold">{rejectingClaim.paymentReference}</span>).
-              Please provide a clear rejection reason.
-            </p>
+      <Dialog.Root
+        open={!!rejectingClaim}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRejectingClaim(null);
+            setRejectReason('');
+          }
+        }}
+      >
+        {rejectingClaim && (
+          <Dialog.Portal>
+            <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200" />
+            <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <Dialog.Popup className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
+                <Dialog.Title
+                  render={
+                    <h3 className="text-lg font-bold text-foreground font-heading border-b border-border/40 pb-3 flex items-center gap-2">
+                      <XCircle className="size-5 text-rose-600" /> Reject Payment Claim
+                    </h3>
+                  }
+                />
+                <Dialog.Description
+                  render={
+                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                      Claim for <b className="text-foreground">{rejectingClaim.businessName}</b> (UTR:{' '}
+                      <span className="font-mono text-indigo-600 font-bold">{rejectingClaim.paymentReference}</span>).
+                      Please provide a clear rejection reason.
+                    </p>
+                  }
+                />
 
-            {/* Reason presets */}
-            <div className="mt-3.5 space-y-1.5">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                Quick Reason Presets
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  'UTR not found in bank statement',
-                  'Payment amount does not match plan price',
-                  'Duplicate transaction reference submitted',
-                  'Unreadable payment screenshot proof',
-                ].map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => setRejectReason(chip)}
-                    className="rounded-md bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:bg-indigo-50 hover:text-indigo-600 transition cursor-pointer"
+                {/* Reason presets */}
+                <div className="mt-3.5 space-y-1.5">
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                    Quick Reason Presets
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      'UTR not found in bank statement',
+                      'Payment amount does not match plan price',
+                      'Duplicate transaction reference submitted',
+                      'Unreadable payment screenshot proof',
+                    ].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => setRejectReason(chip)}
+                        className="rounded-md bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:bg-indigo-50 hover:text-indigo-600 transition cursor-pointer"
+                      >
+                        + {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-3.5 flex flex-col gap-1">
+                  <label htmlFor="reject_reason" className="text-sm font-bold text-foreground">
+                    Rejection Note *
+                  </label>
+                  <textarea
+                    id="reject_reason"
+                    rows={3}
+                    placeholder="State why the claim was not approved..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-background p-2.5 text-sm font-medium outline-none transition focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                  />
+                </div>
+
+                <div className="mt-5 flex justify-end gap-2.5">
+                  <Button
+                    variant="ghost"
+                    disabled={isPending}
+                    onClick={() => {
+                      setRejectingClaim(null);
+                      setRejectReason('');
+                    }}
+                    className="text-sm font-bold"
                   >
-                    + {chip}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-3.5 flex flex-col gap-1">
-              <label htmlFor="reject_reason" className="text-sm font-bold text-foreground">
-                Rejection Note *
-              </label>
-              <textarea
-                id="reject_reason"
-                rows={3}
-                placeholder="State why the claim was not approved..."
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background p-2.5 text-sm font-medium outline-none transition focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
-              />
-            </div>
-
-            <div className="mt-5 flex justify-end gap-2.5">
-              <Button
-                variant="ghost"
-                disabled={isPending}
-                onClick={() => {
-                  setRejectingClaim(null);
-                  setRejectReason('');
-                }}
-                className="text-sm font-bold"
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={isPending}
-                onClick={handleRejectSubmit}
-                className="bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold"
-              >
-                {isPending ? <Loader2 className="size-4 animate-spin" /> : 'Confirm Rejection'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={isPending}
+                    onClick={handleRejectSubmit}
+                    className="bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold"
+                  >
+                    {isPending ? <Loader2 className="size-4 animate-spin" /> : 'Confirm Rejection'}
+                  </Button>
+                </div>
+              </Dialog.Popup>
+            </Dialog.Viewport>
+          </Dialog.Portal>
+        )}
+      </Dialog.Root>
 
       {/* ========================================================================= */}
       {/* MODAL 2: MANAGE BUSINESS SUBSCRIPTION & HISTORICAL LEDGER */}
       {/* ========================================================================= */}
-      {selectedBiz && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl rounded-xl border border-border bg-card p-4.5 sm:p-5 shadow-xl relative animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto">
-            <button
-              type="button"
-              onClick={() => setSelectedBiz(null)}
-              className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
-            >
-              <X className="size-5" />
-            </button>
+      <Dialog.Root
+        open={!!selectedBiz}
+        onOpenChange={(open) => {
+          if (!open) setSelectedBiz(null);
+        }}
+      >
+        {selectedBiz && (
+          <Dialog.Portal>
+            <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200" />
+            <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+              <Dialog.Popup className="w-full max-w-2xl rounded-xl border border-border bg-card p-4.5 sm:p-5 shadow-xl relative animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto">
+                <Dialog.Close
+                  render={
+                    <button
+                      type="button"
+                      aria-label="Close modal"
+                      className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
+                    >
+                      <X className="size-5" />
+                    </button>
+                  }
+                />
 
-            <h3 className="text-lg font-bold text-foreground font-heading border-b border-border/40 pb-2 flex items-center gap-2">
-              <Building2 className="size-5 text-indigo-600" />
-              Manage Subscription: {selectedBiz.legalName}
-            </h3>
+                <Dialog.Title
+                  render={
+                    <h3 className="text-lg font-bold text-foreground font-heading border-b border-border/40 pb-2 flex items-center gap-2">
+                      <Building2 className="size-5 text-indigo-600" />
+                      Manage Subscription: {selectedBiz.legalName}
+                    </h3>
+                  }
+                />
+                <Dialog.Description
+                  render={
+                    <p className="sr-only">
+                      Manual subscription override and historical ledger for {selectedBiz.legalName}
+                    </p>
+                  }
+                />
 
             {/* Subscription override inputs */}
             <div className="mt-2.5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3.5 py-3 space-y-2.5">
@@ -2030,9 +2070,9 @@ export function AdminConsole({
                               <td className="px-3 py-2 font-bold capitalize">
                                 <span
                                   className={cn(
-                                    item.status === 'approved' && 'text-emerald-600',
-                                    item.status === 'pending' && 'text-amber-600',
-                                    item.status === 'rejected' && 'text-rose-600'
+                                    item.status === 'approved' && 'text-emerald-700',
+                                    item.status === 'pending' && 'text-amber-800',
+                                    item.status === 'rejected' && 'text-rose-700'
                                   )}
                                 >
                                   {item.status}
@@ -2086,113 +2126,140 @@ export function AdminConsole({
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      )}
+            </Dialog.Popup>
+          </Dialog.Viewport>
+        </Dialog.Portal>
+        )}
+      </Dialog.Root>
 
       {/* ========================================================================= */}
       {/* MODAL 3: SCREENSHOT LIGHTBOX MODAL (SEC-003) */}
       {/* ========================================================================= */}
-      {proofViewer && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={proofViewer.title}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeProof();
-          }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4"
-        >
-          <div className="w-full max-w-3xl rounded-xl border border-border bg-card p-4 shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-3">
-              <div>
-                <h3 className="text-base font-bold text-foreground font-heading">
-                  {proofViewer.title}
-                </h3>
-                <p className="text-xs font-mono text-muted-foreground font-bold">
-                  UTR: {proofViewer.utr}
-                </p>
+      <Dialog.Root
+        open={!!proofViewer}
+        onOpenChange={(open) => {
+          if (!open) closeProof();
+        }}
+      >
+        {proofViewer && (
+          <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200" />
+          <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <Dialog.Popup className="w-full max-w-3xl rounded-xl border border-border bg-card p-4 shadow-2xl relative animate-in fade-in zoom-in duration-200">
+              <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-3">
+                <div>
+                  <Dialog.Title
+                    render={
+                      <h3 className="text-base font-bold text-foreground font-heading">
+                        {proofViewer?.title}
+                      </h3>
+                    }
+                  />
+                  <Dialog.Description
+                    render={
+                      <p className="text-xs font-mono text-muted-foreground font-bold">
+                        UTR: {proofViewer?.utr}
+                      </p>
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {proofViewer?.status === 'ready' && (
+                    <a
+                      href={proofViewer.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-md border border-border px-2.5 py-1 text-sm font-bold text-muted-foreground hover:text-indigo-600 hover:bg-muted transition"
+                    >
+                      Open Original ↗
+                    </a>
+                  )}
+                  <Dialog.Close
+                    render={
+                      <button
+                        type="button"
+                        aria-label="Close proof viewer"
+                        className="text-muted-foreground hover:text-foreground p-1 cursor-pointer"
+                      >
+                        <X className="size-5" />
+                      </button>
+                    }
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {proofViewer.status === 'ready' && (
-                  <a
-                    href={proofViewer.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-md border border-border px-2.5 py-1 text-sm font-bold text-muted-foreground hover:text-indigo-600 hover:bg-muted transition"
+              {proofViewer?.status === 'loading' && (
+                <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 py-12">
+                  <Loader2 className="size-8 animate-spin text-indigo-600" />
+                  <p className="text-sm font-semibold text-muted-foreground">Fetching secure link…</p>
+                </div>
+              )}
+
+              {proofViewer?.status === 'error' && (
+                <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 py-12 text-center px-4">
+                  <div className="rounded-full bg-rose-500/10 p-3 text-rose-600">
+                    <XCircle className="size-8" />
+                  </div>
+                  <div className="max-w-md">
+                    <p className="text-sm font-bold text-foreground">Failed to load payment proof</p>
+                    <p className="text-xs text-muted-foreground mt-1">{proofViewer.message}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      void openProof({
+                        id: proofViewer.requestId,
+                        businessName: proofViewer.businessName,
+                        paymentReference: proofViewer.utr,
+                      })
+                    }
+                    className="font-bold cursor-pointer"
                   >
-                    Open Original ↗
-                  </a>
-                )}
-                <button
-                  type="button"
-                  onClick={closeProof}
-                  aria-label="Close"
-                  className="text-muted-foreground hover:text-foreground p-1 cursor-pointer"
-                >
-                  <X className="size-5" />
-                </button>
-              </div>
-            </div>
-
-            {proofViewer.status === 'loading' && (
-              <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 py-12">
-                <Loader2 className="size-8 animate-spin text-indigo-600" />
-                <p className="text-sm font-semibold text-muted-foreground">Fetching secure link…</p>
-              </div>
-            )}
-
-            {proofViewer.status === 'error' && (
-              <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 py-12 text-center px-4">
-                <div className="rounded-full bg-rose-500/10 p-3 text-rose-600">
-                  <XCircle className="size-8" />
+                    <RefreshCw className="size-3.5 mr-1.5" /> Try again
+                  </Button>
                 </div>
-                <div className="max-w-md">
-                  <p className="text-sm font-bold text-foreground">Failed to load payment proof</p>
-                  <p className="text-xs text-muted-foreground mt-1">{proofViewer.message}</p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    void openProof({
-                      id: proofViewer.requestId,
-                      businessName: proofViewer.businessName,
-                      paymentReference: proofViewer.utr,
-                    })
-                  }
-                  className="font-bold cursor-pointer"
-                >
-                  <RefreshCw className="size-3.5 mr-1.5" /> Try again
-                </Button>
-              </div>
-            )}
+              )}
 
-            {proofViewer.status === 'ready' && (
-              <div className="flex justify-center items-center max-h-[70vh] overflow-hidden rounded-lg bg-black/5 p-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={proofViewer.url}
-                  referrerPolicy="no-referrer"
-                  alt="Payment proof screenshot"
-                  onError={() => {
-                    setProofViewer((current) => {
-                      if (!current || current.status !== 'ready' || current.requestId !== proofViewer.requestId) return current;
-                      return {
-                        ...current,
-                        status: 'error',
-                        message: 'This secure link has expired or could not be loaded. Click Try again to load a fresh one.',
-                      };
-                    });
-                  }}
-                  className="max-h-[65vh] w-auto object-contain rounded-md shadow-sm"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+              {proofViewer?.status === 'ready' && (
+                <div className="flex justify-center items-center max-h-[70vh] overflow-hidden rounded-lg bg-black/5 p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={proofViewer.url}
+                    referrerPolicy="no-referrer"
+                    alt="Payment proof screenshot"
+                    onError={() => {
+                      setProofViewer((current) => {
+                        if (!current || current.status !== 'ready' || current.requestId !== proofViewer.requestId) return current;
+                        return {
+                          ...current,
+                          status: 'error',
+                          message: 'This secure link has expired or could not be loaded. Click Try again to load a fresh one.',
+                        };
+                      });
+                    }}
+                    className="max-h-[65vh] w-auto object-contain rounded-md shadow-sm"
+                  />
+                </div>
+              )}
+            </Dialog.Popup>
+          </Dialog.Viewport>
+        </Dialog.Portal>
+        )}
+      </Dialog.Root>
+
+      {/* Approve Claim Confirmation Dialog */}
+      <ConfirmDialog
+        open={!!approvingClaimId}
+        onOpenChange={(open) => {
+          if (!open) setApprovingClaimId(null);
+        }}
+        title="Approve payment claim?"
+        description="Approve this manual payment claim and activate the subscription immediately?"
+        confirmLabel="Approve claim"
+        onConfirm={handleConfirmApprove}
+      />
     </div>
   );
 }

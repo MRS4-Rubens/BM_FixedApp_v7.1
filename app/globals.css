@@ -30,6 +30,7 @@
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-success-subtle: var(--success-subtle);
+  --color-success-text: var(--success-text);
 
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -96,6 +97,7 @@
   --success: oklch(0.62 0.14 162);
   --success-foreground: oklch(0.99 0.01 160);
   --success-subtle: oklch(0.95 0.04 162);
+  --success-text: oklch(0.47 0.12 162);
 
   --destructive: oklch(0.58 0.22 27);
   --destructive-foreground: oklch(0.99 0.005 250);

@@ -147,7 +147,7 @@ export function AppTopbar() {
               className="w-full bg-transparent text-xs font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none truncate"
             />
           </div>
-          <kbd className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground/70 border border-border/30 shrink-0 ml-2">
+          <kbd className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground border border-border/30 shrink-0 ml-2">
             ⌘K
           </kbd>
         </form>
@@ -192,7 +192,7 @@ export function AppTopbar() {
                     Support &amp; Assistance
                   </p>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <span className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
                       Direct Developer Link
                     </span>
                   </div>

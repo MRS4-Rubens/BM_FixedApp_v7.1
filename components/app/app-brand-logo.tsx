@@ -39,7 +39,7 @@ export function AppBrandLogo({
             Matrix
           </span>
         </div>
-        <span className="text-[9px] font-extrabold text-muted-foreground/80 uppercase tracking-[0.16em] mt-0.5">
+        <span className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-[0.16em] mt-0.5">
           GST Invoicing Suite
         </span>
       </div>

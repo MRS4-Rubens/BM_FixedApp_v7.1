@@ -237,7 +237,7 @@ export function InvoiceSettingsForm({ business, currentFyLabel }: InvoiceSetting
       </p>
 
       {globalError && (
-        <div className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm font-semibold text-destructive flex items-center gap-2">
+        <div role="alert" className="mb-4 rounded-lg bg-destructive/10 p-3 text-sm font-semibold text-destructive flex items-center gap-2">
           <AlertCircle className="size-4 shrink-0" />
           <span>{globalError}</span>
         </div>
@@ -474,10 +474,10 @@ export function InvoiceSettingsForm({ business, currentFyLabel }: InvoiceSetting
 
           {/* Row 2: Full-Width Interactive Card Selectors for GST Calculation Scheme */}
           <div className="mt-4 pt-3 border-t border-border/40">
-            <label className={labelClass}>
+            <div className={labelClass}>
               <Calculator className="size-3.5 text-teal-900 shrink-0" />
               <span>Tax Calculation Scheme (Default Mode)</span>
-            </label>
+            </div>
             <input type="hidden" {...register('default_gst_rate_type')} />
             <div className="grid gap-3 sm:grid-cols-2 mt-1.5">
               {/* GST Exclusive Option Card selector */}
@@ -732,7 +732,7 @@ export function InvoiceSettingsForm({ business, currentFyLabel }: InvoiceSetting
         <div className="flex items-center justify-between pt-2">
           <div>
             {success && (
-              <span className="flex items-center text-sm font-bold text-emerald-800 whitespace-nowrap">
+              <span role="status" className="flex items-center text-sm font-bold text-emerald-800 whitespace-nowrap">
                 <Check className="mr-1.5 size-4 shrink-0" /> Invoice settings saved successfully
               </span>
             )}

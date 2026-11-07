@@ -220,6 +220,7 @@ export function InvoicesClient({
             {activeTab === 'invoices' && (
               <div className="relative">
                 <select
+                  aria-label="Filter by invoice status"
                   value={currentParams.status}
                   onChange={(e) => handleStatusChange(e.target.value as InvoiceListStatus)}
                   className="w-full appearance-none rounded-lg border border-border bg-background pl-3 pr-8 h-9 text-[13px] sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer min-w-[110px] shadow-sm font-semibold hover:bg-accent/40 transition-colors"
@@ -231,12 +232,13 @@ export function InvoicesClient({
                   <option value="overdue">Overdue</option>
                   <option value="draft">Draft</option>
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground/80" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
               </div>
             )}
 
             <div className="relative">
               <select
+                aria-label="Filter by month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
                 className="w-full appearance-none rounded-lg border border-border bg-background pl-3 pr-8 h-9 text-[13px] sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer min-w-[96px] shadow-sm font-semibold hover:bg-accent/40 transition-colors"
@@ -245,11 +247,12 @@ export function InvoicesClient({
                   <option key={m} value={i}>{m}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground/80" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
             </div>
 
             <div className="relative">
               <select
+                aria-label="Filter by year"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 className="w-full appearance-none rounded-lg border border-border bg-background pl-3 pr-8 h-9 text-[13px] sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer min-w-[86px] shadow-sm font-semibold hover:bg-accent/40 transition-colors"
@@ -258,7 +261,7 @@ export function InvoicesClient({
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground/80" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
             </div>
 
             <Button
@@ -678,7 +681,7 @@ export function InvoicesClient({
                               </td>
                               <td className={cn(
                                 "px-3.5 py-1 text-right font-mono text-[13px] sm:text-[14px] font-bold",
-                                isVoided ? "line-through text-muted-foreground/60" : "text-red-600 dark:text-red-400"
+                                isVoided ? "line-through text-muted-foreground" : "text-red-700 dark:text-red-400"
                               )}>
                                 -{formatINR(note.grand_total_paise)}
                               </td>

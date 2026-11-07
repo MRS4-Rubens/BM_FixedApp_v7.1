@@ -19,6 +19,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { CreditNotePrintView, CreditNotePrintViewProps } from './credit-note-print-view';
 import { VoidCreditNoteDialog } from './void-credit-note-dialog';
 import { finalizeCreditNote } from '@/lib/actions/credit-notes/finalize-credit-note';
@@ -93,10 +94,14 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
     }
   };
 
+  const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
   const handleFinalize = () => {
-    if (!window.confirm('Are you sure you want to finalize this Credit Note? Once finalized, it cannot be edited or deleted.')) {
-      return;
-    }
+    setFinalizeConfirmOpen(true);
+  };
+
+  const onConfirmFinalize = async () => {
     setMessage(null);
     startTransition(async () => {
       const res = await finalizeCreditNote({ id: creditNote.id });
@@ -110,9 +115,10 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
   };
 
   const handleDelete = () => {
-    if (!window.confirm('Are you sure you want to delete this draft credit note?')) {
-      return;
-    }
+    setDeleteConfirmOpen(true);
+  };
+
+  const onConfirmDelete = async () => {
     setMessage(null);
     startTransition(async () => {
       const res = await deleteCreditNoteDraft({ id: creditNote.id });
@@ -332,7 +338,7 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
                 <strong className="text-foreground">Audit Explanation:</strong> {creditNote.void_notes}
               </p>
             )}
-            <p className="text-[11px] text-muted-foreground/80 italic">
+            <p className="text-[11px] text-muted-foreground italic">
               Notice: Under CGST Rule 53, this document number remains preserved in your system sequence and is registered as a Cancelled Document in GSTR-1 Table 13. ₹{formatPaiseAsInr(creditNote.grand_total_paise)} has been restored to Invoice {creditNote.originalInvoice.invoice_number}.
             </p>
           </div>
@@ -449,7 +455,7 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
                   Net Bill
                 </span>
-                <span className="font-mono text-[13px] sm:text-[14px] font-bold text-emerald-600 mt-0.5 block">
+                <span className="font-mono text-[13px] sm:text-[14px] font-bold text-emerald-700 mt-0.5 block">
                   {formatPaiseAsInr(netAdjustedBillPaise)}
                 </span>
               </div>
@@ -534,6 +540,25 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
           setVoidDialogOpen(false);
           router.refresh();
         }}
+      />
+
+      <ConfirmDialog
+        open={finalizeConfirmOpen}
+        onOpenChange={setFinalizeConfirmOpen}
+        title="Finalize Credit Note?"
+        description="Are you sure you want to finalize this Credit Note? Once finalized, it cannot be edited or deleted."
+        confirmLabel="Finalize Credit Note"
+        onConfirm={onConfirmFinalize}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete draft credit note?"
+        description="Are you sure you want to delete this draft credit note? This cannot be undone."
+        confirmLabel="Delete Draft"
+        tone="destructive"
+        onConfirm={onConfirmDelete}
       />
     </div>
   );

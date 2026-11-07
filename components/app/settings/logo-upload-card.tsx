@@ -21,6 +21,7 @@ import { canUploadBusinessLogo } from '@/lib/subscriptions/entitlements';
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface LogoUploadCardProps {
   business: {
@@ -148,11 +149,13 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
     }
   };
 
-  const handleRemove = () => {
-    if (!confirm('Are you sure you want to remove your business logo? Invoices will no longer display a logo.')) {
-      return;
-    }
+  const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
 
+  const handleRemove = () => {
+    setRemoveConfirmOpen(true);
+  };
+
+  const onConfirmRemove = async () => {
     startTransition(async () => {
       try {
         setErrorMessage(null);
@@ -193,12 +196,12 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
         </div>
 
         {!isLogoAllowed ? (
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-black border border-amber-500/25 shadow-2xs self-start sm:self-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-800 dark:text-amber-400 text-xs font-black border border-amber-500/25 shadow-2xs self-start sm:self-auto">
             <Crown className="size-3.5 text-amber-500" />
             Essentials Pro &amp; Enterprise
           </div>
         ) : hasSavedLogo && !selectedFile ? (
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 self-start sm:self-auto">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-500/20 self-start sm:self-auto">
             <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
             Active on Invoices
           </div>
@@ -207,14 +210,14 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
 
       {/* Alerts */}
       {errorMessage && (
-        <div className="mt-4 mb-4 flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-xs sm:text-sm font-semibold text-destructive">
+        <div role="alert" className="mt-4 mb-4 flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-xs sm:text-sm font-semibold text-red-700">
           <AlertCircle className="size-4 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
       {successMessage && (
-        <div className="mt-4 mb-4 flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+        <div role="status" aria-live="polite" className="mt-4 mb-4 flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs sm:text-sm font-semibold text-emerald-700 dark:text-emerald-400">
           <CheckCircle2 className="size-4 shrink-0" />
           <span>{successMessage}</span>
         </div>
@@ -420,7 +423,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
               </div>
             ) : hasSavedLogo ? (
               <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
                   <span className="size-1.5 rounded-full bg-emerald-500" />
                   <span>Active on Invoices</span>
                 </div>
@@ -469,7 +472,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
               <span className="font-semibold text-foreground">
                 Pro-Tip: Transparent PNG Recommended
               </span>
-              <span className="text-muted-foreground/60 hidden sm:inline">-</span>
+              <span className="text-muted-foreground hidden sm:inline">-</span>
               <a
                 href="https://www.iloveimg.com/remove-background"
                 target="_blank"
@@ -495,6 +498,16 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
         description="Showcase your business branding on all printed invoices, GST estimates, and WhatsApp PDFs with automatic responsive scaling."
         recommendedPlan="essentials"
         ctaText="Upgrade to Essentials Pro (₹399/mo)"
+      />
+
+      <ConfirmDialog
+        open={removeConfirmOpen}
+        onOpenChange={setRemoveConfirmOpen}
+        title="Remove business logo?"
+        description="Are you sure you want to remove your business logo? Invoices will no longer display a logo."
+        confirmLabel="Remove logo"
+        tone="destructive"
+        onConfirm={onConfirmRemove}
       />
     </div>
   );

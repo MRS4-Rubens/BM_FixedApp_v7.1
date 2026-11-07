@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useState, useTransition, useEffect } from 'react'
 import { formatPaiseAsInr } from '@/lib/money'
 import { emailInvoice } from '@/lib/actions/invoices/email-invoice'
@@ -193,8 +194,14 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
     setIsDownloading(false)
   }
 
+  const [emailConfirmOpen, setEmailConfirmOpen] = useState(false);
+  const [reminderConfirmOpen, setReminderConfirmOpen] = useState(false);
+
   function handleEmailInvoice() {
-    if (!window.confirm('Send this invoice to the customer?')) return
+    setEmailConfirmOpen(true);
+  }
+
+  function onConfirmEmail() {
     setActionMessage(null)
     startTransition(async () => {
       const res = await emailInvoice({ invoiceId: invoice.id })
@@ -207,7 +214,10 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
   }
 
   function handleSendReminder() {
-    if (!window.confirm('Send a payment reminder to the customer?')) return
+    setReminderConfirmOpen(true);
+  }
+
+  function onConfirmReminder() {
     setActionMessage(null)
     startTransition(async () => {
       const res = await sendPaymentReminder({ invoiceId: invoice.id })
@@ -275,6 +285,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
           <div className="flex items-center gap-3">
             <Link 
               href="/invoices" 
+              aria-label="Back to invoices"
               className="flex size-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-xs cursor-pointer shrink-0"
             >
               <ArrowLeft className="size-4" />
@@ -306,7 +317,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                   </span>
                 )}
                 {invoice.archival_status === 'failed' && (
-                  <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded border border-destructive/20 whitespace-nowrap shrink-0">
+                  <span className="text-[9px] bg-destructive/10 text-red-700 px-1.5 py-0.5 rounded border border-destructive/20 whitespace-nowrap shrink-0">
                     Archival retry pending
                   </span>
                 )}
@@ -326,7 +337,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
 
           <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
             {actionMessage && (
-              <span className={cn('text-xs font-bold', actionMessage.type === 'error' ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400')}>
+              <span className={cn('text-xs font-bold', actionMessage.type === 'error' ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-400')}>
                 {actionMessage.text}
               </span>
             )}
@@ -403,7 +414,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                     type="button" 
                     size="sm" 
                     variant="outline" 
-                    className="h-8 px-3 text-[14px] shadow-xs font-semibold text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 bg-red-500/5 hover:bg-red-500/10 cursor-pointer whitespace-nowrap shrink-0"
+                    className="h-8 px-3 text-[14px] shadow-xs font-semibold text-red-700 dark:text-red-400 border-red-200 dark:border-red-900 bg-red-500/5 hover:bg-red-500/10 cursor-pointer whitespace-nowrap shrink-0"
                   >
                     <FileText className="size-4 shrink-0" /> <span className="whitespace-nowrap">Issue Credit Note</span>
                   </Button>
@@ -533,7 +544,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                             {formatIstDate(step.date as string | Date, { day: '2-digit', month: 'short' })}
                           </p>
                         ) : (
-                          <p className="text-[10px] text-muted-foreground/60 font-medium mt-0.5 whitespace-nowrap truncate">
+                          <p className="text-[10px] text-muted-foreground font-medium mt-0.5 whitespace-nowrap truncate">
                             Pending
                           </p>
                         )}
@@ -553,7 +564,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                     {formatPaiseAsInr(netBillPaise)}
                   </span>
                   {totalCreditedPaise > 0 && (
-                    <span className="block text-[10px] text-red-600 dark:text-red-400 font-semibold whitespace-nowrap">
+                    <span className="block text-[10px] text-red-700 dark:text-red-400 font-semibold whitespace-nowrap">
                       (-{formatPaiseAsInr(totalCreditedPaise)} CN)
                     </span>
                   )}
@@ -562,7 +573,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                   <span className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                     Settled
                   </span>
-                  <span className={cn("text-[13px] sm:text-[15px] font-bold whitespace-nowrap", existingSum > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>
+                  <span className={cn("text-[13px] sm:text-[15px] font-bold whitespace-nowrap", existingSum > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground")}>
                     {formatPaiseAsInr(existingSum)}
                   </span>
                 </div>
@@ -572,7 +583,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                   </span>
                   <span className={cn(
                     "text-[13px] sm:text-[15px] font-black whitespace-nowrap",
-                    balanceDue > 0 ? "text-destructive" : (balanceDue < 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")
+                    balanceDue > 0 ? "text-destructive" : (balanceDue < 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400")
                   )}>
                     {formatPaiseAsInr(Math.abs(balanceDue))}
                   </span>
@@ -587,13 +598,13 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
             <div className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm space-y-1.5">
               <div className="flex items-center justify-between pb-1 border-b border-border">
                 <div className="flex items-center gap-2">
-                  <FileText className="size-[18px] text-red-600 dark:text-red-400" />
+                  <FileText className="size-[18px] text-red-700 dark:text-red-400" />
                   <h3 className="text-[13px] font-bold text-foreground uppercase tracking-wider">
                     Credit Notes &amp; Returns
                   </h3>
                 </div>
                 {creditNotes.length > 0 && (
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-700 dark:text-red-400">
                     {creditNotes.filter(n => (n.status || 'active') === 'active').length} Active
                     {creditNotes.some(n => n.status === 'voided') && ` • ${creditNotes.filter(n => n.status === 'voided').length} Voided`}
                   </span>
@@ -605,7 +616,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                   <p>No credit notes issued for this invoice.</p>
                   {invoice.lifecycle_status === 'finalized' && (
                     <Link href={`/invoices/${invoice.id}/credit-note/new`}>
-                      <Button size="sm" variant="outline" className="text-[13px] font-semibold text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/20">
+                      <Button size="sm" variant="outline" className="text-[13px] font-semibold text-red-700 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/20">
                         Issue Credit Note
                       </Button>
                     </Link>
@@ -678,7 +689,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                           </p>
                         </div>
                         <div className="text-right flex items-center gap-2 shrink-0">
-                          <span className={cn("font-mono font-bold whitespace-nowrap", isVoided ? "line-through text-muted-foreground/60" : "text-red-600 dark:text-red-400")}>
+                          <span className={cn("font-mono font-bold whitespace-nowrap", isVoided ? "line-through text-muted-foreground" : "text-red-700 dark:text-red-400")}>
                             -{formatPaiseAsInr(note.grand_total_paise)}
                           </span>
                           <Link href={`/credit-notes/${note.id}`} className="shrink-0">
@@ -693,7 +704,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                   {invoice.lifecycle_status === 'finalized' && (
                     <div className="pt-1 text-right">
                       <Link href={`/invoices/${invoice.id}/credit-note/new`}>
-                        <Button size="sm" variant="outline" className="w-full text-[13px] font-semibold text-red-600 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/20 whitespace-nowrap">
+                        <Button size="sm" variant="outline" className="w-full text-[13px] font-semibold text-red-700 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/20 whitespace-nowrap">
                           + Issue Another Credit Note
                         </Button>
                       </Link>
@@ -725,6 +736,24 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
         description="Upgrade to Essentials Pro (₹399/mo) to send formatted invoice summaries directly to your customer's WhatsApp with dynamic UPI payment links and instant digital bills."
         recommendedPlan="essentials"
         ctaText="Upgrade to Essentials Pro (₹399/mo)"
+      />
+
+      <ConfirmDialog
+        open={emailConfirmOpen}
+        onOpenChange={setEmailConfirmOpen}
+        title="Send invoice to customer?"
+        description="Send this invoice to the customer via email?"
+        confirmLabel="Send invoice"
+        onConfirm={onConfirmEmail}
+      />
+
+      <ConfirmDialog
+        open={reminderConfirmOpen}
+        onOpenChange={setReminderConfirmOpen}
+        title="Send payment reminder?"
+        description="Send a payment reminder to the customer via email?"
+        confirmLabel="Send reminder"
+        onConfirm={onConfirmReminder}
       />
     </div>
   )

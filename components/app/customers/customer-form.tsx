@@ -402,7 +402,7 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
 
             <div className="flex items-center gap-3">
               {success && (
-                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                <span className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                   <Check className="size-4 shrink-0" />
                   {isEdit ? 'Customer updated!' : 'Customer added successfully!'}
                 </span>
@@ -456,7 +456,7 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
                   {watchedName || 'Client Name Preview'}
                 </h4>
                 <p className="mt-0.5 text-sm font-mono text-muted-foreground truncate">
-                  {watchedGstin || <span className="italic font-sans text-muted-foreground/75 text-xs">Unregistered Retail Account</span>}
+                  {watchedGstin || <span className="italic font-sans text-muted-foreground text-xs">Unregistered Retail Account</span>}
                 </p>
               </div>
             </div>
@@ -465,7 +465,7 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
               className={cn(
                 'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold shrink-0 border',
                 isB2B
-                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                  ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
                   : 'bg-slate-500/10 text-slate-600 border-slate-500/20'
               )}
             >
@@ -487,7 +487,7 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
                 className={cn(
                   'font-bold px-2 py-0.5 rounded text-xs',
                   isIntrastate
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
                     : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                 )}
               >
@@ -515,8 +515,8 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
             </div>
 
             {watchedEmail && (
-              <div className="flex items-center gap-1.5 truncate text-xs text-muted-foreground/80">
-                <Mail className="size-3 text-muted-foreground/80 shrink-0" />
+              <div className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                <Mail className="size-3 text-muted-foreground shrink-0" />
                 <span className="truncate">{watchedEmail}</span>
               </div>
             )}
@@ -534,13 +534,13 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
               <span className="text-muted-foreground font-medium">Structure Validation:</span>
               <span className="font-bold text-foreground">
                 {!watchedGstin ? (
-                  <span className="text-muted-foreground/80 font-normal">Optional (Retail)</span>
+                  <span className="text-muted-foreground font-normal">Optional (Retail)</span>
                 ) : isGstinValid ? (
-                  <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                  <span className="text-emerald-700 font-semibold flex items-center gap-1">
                     <Check className="size-3.5" /> Valid 15-char Format
                   </span>
                 ) : (
-                  <span className="text-amber-600 font-semibold">15 Characters Required</span>
+                  <span className="text-amber-800 font-semibold">15 Characters Required</span>
                 )}
               </span>
             </div>

@@ -238,7 +238,7 @@ export function DashboardChart({
                 ? 'Twelve-month sales performance'
                 : 'All-Time Financial Year performance (YoY)'}
             {totalInvoices > 0 && (
-              <span className="ml-1 text-muted-foreground/80">
+              <span className="ml-1 text-muted-foreground">
                 • {totalInvoices} invoice{totalInvoices === 1 ? '' : 's'}
               </span>
             )}

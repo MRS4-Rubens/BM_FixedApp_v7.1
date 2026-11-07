@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { businessProfileSchema, BusinessProfileInput } from '@/lib/validations/business';
 import { saveBusinessProfile } from '@/lib/actions/business/save-business-profile';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { cn } from '@/lib/utils';
 import { 
@@ -57,6 +57,7 @@ export function BusinessProfileForm({
   identityLocked?: boolean;
 }) {
   const isNewBusiness = !business || !business.id;
+  const id = useId();
   const [success, setSuccess] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isTourOpen, setIsTourOpen] = useState(isNewBusiness);
@@ -179,7 +180,7 @@ export function BusinessProfileForm({
       <p className="mb-3.5 text-sm sm:text-base text-muted-foreground font-medium">Manage your business information and tax details.</p>
 
       {globalError && (
-        <div className="mb-3.5 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive flex items-center gap-2">
+        <div role="alert" className="mb-3.5 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive flex items-center gap-2">
           <AlertCircle className="size-4" />
           {globalError}
         </div>
@@ -227,20 +228,20 @@ export function BusinessProfileForm({
             <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2">
               {/* TOUR STEP 1: Legal Business Name */}
               <div data-tour-step="1" className="relative scroll-mt-28">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-legal-name`} className={labelClass}>
                   <Building2 className="size-3.5 text-emerald-800 shrink-0" />
                   <span>Legal Business Name <span className="text-destructive">*</span></span>
                 </label>
-                <input type="text" className={cn(inputGreenClass, errors.legal_name && 'border-destructive focus:ring-destructive/20')} {...register('legal_name')} />
+                <input id={`${id}-legal-name`} type="text" className={cn(inputGreenClass, errors.legal_name && 'border-destructive focus:ring-destructive/20')} {...register('legal_name')} />
                 {errors.legal_name && <p className={errorClass}>{errors.legal_name.message}</p>}
               </div>
 
               <div>
-                <label className={labelClass}>
+                <label htmlFor={`${id}-trade-name`} className={labelClass}>
                   <Store className="size-3.5 text-emerald-800 shrink-0" />
                   <span>Trade Name (Optional)</span>
                 </label>
-                <input type="text" className={cn(inputGreenClass, errors.trade_name && 'border-destructive focus:ring-destructive/20')} {...register('trade_name')} />
+                <input id={`${id}-trade-name`} type="text" className={cn(inputGreenClass, errors.trade_name && 'border-destructive focus:ring-destructive/20')} {...register('trade_name')} />
                 {errors.trade_name && <p className={errorClass}>{errors.trade_name.message}</p>}
               </div>
             </div>
@@ -249,11 +250,12 @@ export function BusinessProfileForm({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
               {/* TOUR STEP 2: GSTIN */}
               <div data-tour-step="2" className="min-w-0 relative scroll-mt-28">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-gstin`} className={labelClass}>
                   <FileSpreadsheet className="size-3.5 text-emerald-800 shrink-0" />
                   <span>GSTIN <span className="text-destructive">*</span></span>
                 </label>
                 <input
+                  id={`${id}-gstin`}
                   type="text"
                   maxLength={15}
                   readOnly={identityLocked}
@@ -275,21 +277,21 @@ export function BusinessProfileForm({
 
               {/* 2. PAN */}
               <div className="min-w-0">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-pan`} className={labelClass}>
                   <CreditCard className="size-3.5 text-emerald-800 shrink-0" />
                   <span>PAN</span>
                 </label>
-                <input type="text" maxLength={10} className={cn(inputGreenClass, "font-mono uppercase tracking-wider", errors.pan && 'border-destructive focus:ring-destructive/20')} {...register('pan')} />
+                <input id={`${id}-pan`} type="text" maxLength={10} className={cn(inputGreenClass, "font-mono uppercase tracking-wider", errors.pan && 'border-destructive focus:ring-destructive/20')} {...register('pan')} />
                 {errors.pan && <p className={errorClass}>{errors.pan.message}</p>}
               </div>
 
               {/* TOUR STEP 3: Registration Type */}
               <div data-tour-step="3" className="min-w-0 relative scroll-mt-28">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-registration-type`} className={labelClass}>
                   <ShieldCheck className="size-3.5 text-emerald-800 shrink-0" />
                   <span>Registration Type</span>
                 </label>
-                <select className={cn(inputGreenClass, errors.registration_type && 'border-destructive focus:ring-destructive/20')} {...register('registration_type')}>
+                <select id={`${id}-registration-type`} className={cn(inputGreenClass, errors.registration_type && 'border-destructive focus:ring-destructive/20')} {...register('registration_type')}>
                   <option value="regular">Regular</option>
                   <option value="composition">Composition</option>
                 </select>
@@ -298,11 +300,11 @@ export function BusinessProfileForm({
 
               {/* 4. Nature of Business */}
               <div className="min-w-0">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-nature-of-business`} className={labelClass}>
                   <Briefcase className="size-3.5 text-emerald-800 shrink-0" />
                   <span>Nature of Business</span>
                 </label>
-                <input type="text" placeholder="e.g. Wholesale & Retail" className={cn(inputGreenClass, errors.nature_of_business && 'border-destructive focus:ring-destructive/20')} {...register('nature_of_business')} />
+                <input id={`${id}-nature-of-business`} type="text" placeholder="e.g. Wholesale & Retail" className={cn(inputGreenClass, errors.nature_of_business && 'border-destructive focus:ring-destructive/20')} {...register('nature_of_business')} />
                 {errors.nature_of_business && <p className={errorClass}>{errors.nature_of_business.message}</p>}
               </div>
             </div>
@@ -311,31 +313,31 @@ export function BusinessProfileForm({
             <div className="grid gap-2.5 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               {/* TOUR STEP 4: Email */}
               <div data-tour-step="4" className="min-w-0 sm:col-span-2 lg:col-span-2 relative scroll-mt-28">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-email`} className={labelClass}>
                   <Mail className="size-3.5 text-emerald-800 shrink-0" />
                   <span>Email (Optional)</span>
                 </label>
-                <input type="email" placeholder="billing@yourbusiness.com" className={cn(inputGreenClass, errors.email && 'border-destructive focus:ring-destructive/20')} {...register('email')} />
+                <input id={`${id}-email`} type="email" placeholder="billing@yourbusiness.com" className={cn(inputGreenClass, errors.email && 'border-destructive focus:ring-destructive/20')} {...register('email')} />
                 {errors.email && <p className={errorClass}>{errors.email.message}</p>}
               </div>
 
               {/* TOUR STEP 5: Phone */}
               <div data-tour-step="5" className="min-w-0 sm:col-span-1 lg:col-span-1 relative scroll-mt-28">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-phone`} className={labelClass}>
                   <Phone className="size-3.5 text-emerald-800 shrink-0" />
                   <span>Phone (Optional)</span>
                 </label>
-                <input type="tel" placeholder="e.g. 9848069599" className={cn(inputGreenClass, errors.phone && 'border-destructive focus:ring-destructive/20')} {...register('phone')} />
+                <input id={`${id}-phone`} type="tel" placeholder="e.g. 9848069599" className={cn(inputGreenClass, errors.phone && 'border-destructive focus:ring-destructive/20')} {...register('phone')} />
                 {errors.phone && <p className={errorClass}>{errors.phone.message}</p>}
               </div>
 
               {/* 3. Alt Phone */}
               <div className="min-w-0 sm:col-span-1 lg:col-span-1">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-alternate-phone`} className={labelClass}>
                   <PhoneCall className="size-3.5 text-emerald-800 shrink-0" />
                   <span>Alt Phone (Optional)</span>
                 </label>
-                <input type="tel" placeholder="e.g. 9848537068" className={cn(inputGreenClass, errors.alternate_phone && 'border-destructive focus:ring-destructive/20')} {...register('alternate_phone')} />
+                <input id={`${id}-alternate-phone`} type="tel" placeholder="e.g. 9848537068" className={cn(inputGreenClass, errors.alternate_phone && 'border-destructive focus:ring-destructive/20')} {...register('alternate_phone')} />
                 {errors.alternate_phone && <p className={errorClass}>{errors.alternate_phone.message}</p>}
               </div>
             </div>
@@ -360,20 +362,20 @@ export function BusinessProfileForm({
             <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2">
               {/* TOUR STEP 6: Address Line 1 */}
               <div data-tour-step="6" className="relative scroll-mt-28">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-address-line1`} className={labelClass}>
                   <MapPin className="size-3.5 text-amber-800 shrink-0" />
                   <span>Address Line 1 <span className="text-destructive">*</span></span>
                 </label>
-                <input type="text" className={cn(inputAmberClass, errors.address_line1 && 'border-destructive focus:ring-destructive/20')} {...register('address_line1')} />
+                <input id={`${id}-address-line1`} type="text" className={cn(inputAmberClass, errors.address_line1 && 'border-destructive focus:ring-destructive/20')} {...register('address_line1')} />
                 {errors.address_line1 && <p className={errorClass}>{errors.address_line1.message}</p>}
               </div>
 
               <div>
-                <label className={labelClass}>
+                <label htmlFor={`${id}-address-line2`} className={labelClass}>
                   <MapPin className="size-3.5 text-amber-800 shrink-0" />
                   <span>Address Line 2 (Optional)</span>
                 </label>
-                <input type="text" className={cn(inputAmberClass, errors.address_line2 && 'border-destructive focus:ring-destructive/20')} {...register('address_line2')} />
+                <input id={`${id}-address-line2`} type="text" className={cn(inputAmberClass, errors.address_line2 && 'border-destructive focus:ring-destructive/20')} {...register('address_line2')} />
                 {errors.address_line2 && <p className={errorClass}>{errors.address_line2.message}</p>}
               </div>
             </div>
@@ -382,21 +384,22 @@ export function BusinessProfileForm({
             <div className="grid gap-2.5 sm:gap-3 grid-cols-1 sm:grid-cols-12">
               {/* TOUR STEP 7: City */}
               <div data-tour-step="7" className="sm:col-span-5 relative scroll-mt-28">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-city`} className={labelClass}>
                   <Navigation className="size-3.5 text-amber-800 shrink-0" />
                   <span>City <span className="text-destructive">*</span></span>
                 </label>
-                <input type="text" className={cn(inputAmberClass, errors.city && 'border-destructive focus:ring-destructive/20')} {...register('city')} />
+                <input id={`${id}-city`} type="text" className={cn(inputAmberClass, errors.city && 'border-destructive focus:ring-destructive/20')} {...register('city')} />
                 {errors.city && <p className={errorClass}>{errors.city.message}</p>}
               </div>
 
               {/* TOUR STEP 8: State */}
               <div data-tour-step="8" className="sm:col-span-4 relative scroll-mt-28">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-state-code`} className={labelClass}>
                   <Globe className="size-3.5 text-amber-800 shrink-0" />
                   <span>State <span className="text-destructive">*</span></span>
                 </label>
                 <select
+                  id={`${id}-state-code`}
                   tabIndex={identityLocked ? -1 : undefined}
                   aria-readonly={identityLocked ? "true" : undefined}
                   className={cn(
@@ -416,11 +419,11 @@ export function BusinessProfileForm({
 
               {/* TOUR STEP 9: Pincode */}
               <div data-tour-step="9" className="sm:col-span-3 relative scroll-mt-28">
-                <label className={labelClass}>
+                <label htmlFor={`${id}-pincode`} className={labelClass}>
                   <Hash className="size-3.5 text-amber-800 shrink-0" />
                   <span>Pincode <span className="text-destructive">*</span></span>
                 </label>
-                <input type="text" maxLength={6} className={cn(inputAmberClass, "font-mono", errors.pincode && 'border-destructive focus:ring-destructive/20')} {...register('pincode')} />
+                <input id={`${id}-pincode`} type="text" maxLength={6} className={cn(inputAmberClass, "font-mono", errors.pincode && 'border-destructive focus:ring-destructive/20')} {...register('pincode')} />
                 {errors.pincode && <p className={errorClass}>{errors.pincode.message}</p>}
               </div>
             </div>
@@ -442,35 +445,35 @@ export function BusinessProfileForm({
 
           <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2">
             <div>
-              <label className={labelClass}>
+              <label htmlFor={`${id}-bank-name`} className={labelClass}>
                 <Landmark className="size-3.5 text-rose-900 shrink-0" />
                 <span>Bank Name</span>
               </label>
-              <input type="text" className={cn(inputRoseClass, errors.bank_name && 'border-destructive focus:ring-destructive/20')} {...register('bank_name')} />
+              <input id={`${id}-bank-name`} type="text" className={cn(inputRoseClass, errors.bank_name && 'border-destructive focus:ring-destructive/20')} {...register('bank_name')} />
               {errors.bank_name && <p className={errorClass}>{errors.bank_name.message}</p>}
             </div>
             <div>
-              <label className={labelClass}>
+              <label htmlFor={`${id}-bank-account-name`} className={labelClass}>
                 <UserCheck className="size-3.5 text-rose-900 shrink-0" />
                 <span>Account Name</span>
               </label>
-              <input type="text" className={cn(inputRoseClass, errors.bank_account_name && 'border-destructive focus:ring-destructive/20')} {...register('bank_account_name')} />
+              <input id={`${id}-bank-account-name`} type="text" className={cn(inputRoseClass, errors.bank_account_name && 'border-destructive focus:ring-destructive/20')} {...register('bank_account_name')} />
               {errors.bank_account_name && <p className={errorClass}>{errors.bank_account_name.message}</p>}
             </div>
             <div>
-              <label className={labelClass}>
+              <label htmlFor={`${id}-bank-account-number`} className={labelClass}>
                 <CreditCard className="size-3.5 text-rose-900 shrink-0" />
                 <span>Account Number</span>
               </label>
-              <input type="text" className={cn(inputRoseClass, "font-mono", errors.bank_account_number && 'border-destructive focus:ring-destructive/20')} {...register('bank_account_number')} />
+              <input id={`${id}-bank-account-number`} type="text" className={cn(inputRoseClass, "font-mono", errors.bank_account_number && 'border-destructive focus:ring-destructive/20')} {...register('bank_account_number')} />
               {errors.bank_account_number && <p className={errorClass}>{errors.bank_account_number.message}</p>}
             </div>
             <div>
-              <label className={labelClass}>
+              <label htmlFor={`${id}-bank-ifsc`} className={labelClass}>
                 <QrCode className="size-3.5 text-rose-900 shrink-0" />
                 <span>IFSC Code</span>
               </label>
-              <input type="text" maxLength={11} className={cn(inputRoseClass, "font-mono uppercase tracking-wider", errors.bank_ifsc && 'border-destructive focus:ring-destructive/20')} {...register('bank_ifsc')} />
+              <input id={`${id}-bank-ifsc`} type="text" maxLength={11} className={cn(inputRoseClass, "font-mono uppercase tracking-wider", errors.bank_ifsc && 'border-destructive focus:ring-destructive/20')} {...register('bank_ifsc')} />
               {errors.bank_ifsc && <p className={errorClass}>{errors.bank_ifsc.message}</p>}
             </div>
           </div>
@@ -507,7 +510,7 @@ export function BusinessProfileForm({
         <div className="flex items-center justify-between pt-1 gap-2">
           <div>
             {success && (
-              <span className="flex items-center text-sm font-bold text-emerald-800 whitespace-nowrap">
+              <span role="status" className="flex items-center text-sm font-bold text-emerald-800 whitespace-nowrap">
                 <Check className="mr-1.5 size-4 shrink-0" /> Profile saved successfully
               </span>
             )}

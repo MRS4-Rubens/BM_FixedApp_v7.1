@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 export type InvoiceStatus = 'Paid' | 'Sent' | 'Overdue' | 'Draft' | 'Partial'
 
 const statusStyles: Record<InvoiceStatus, string> = {
-  Paid: 'bg-success-subtle text-success',
+  Paid: 'bg-success-subtle text-success-text',
   Sent: 'bg-blue-100 text-blue-700',
   Overdue: 'bg-red-100 text-red-700',
   Draft: 'bg-muted text-muted-foreground',

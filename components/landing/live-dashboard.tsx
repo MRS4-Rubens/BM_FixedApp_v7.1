@@ -224,7 +224,7 @@ export function LiveDashboard() {
             <div className="flex items-center gap-4">
               <div>
                 <div className="font-bold text-xl heading">Business Snapshot</div>
-                <div className="text-xs text-zinc-400 flex items-center gap-2 mt-0.5">
+                <div className="text-xs text-zinc-600 flex items-center gap-2 mt-0.5">
                   <svg className="w-3.5 h-3.5">
                     <use href="#clock" />
                   </svg>
@@ -247,7 +247,7 @@ export function LiveDashboard() {
                   <use href="#refresh" />
                 </svg>
               </button>
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-full">
+              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-4 py-2 rounded-full">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live
               </div>
             </div>
@@ -285,7 +285,7 @@ export function LiveDashboard() {
               <svg className="w-5 h-5 text-emerald-500 mx-auto mb-1">
                 <use href="#shield" />
               </svg>
-              <div className="text-2xl md:text-3xl font-bold heading text-emerald-600">99.9%</div>
+              <div className="text-2xl md:text-3xl font-bold heading text-emerald-700">99.9%</div>
               <div className="text-xs text-zinc-500 mt-1.5 font-medium">Compliance</div>
             </div>
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 text-center hover:border-amber-400 transition-all group">
@@ -293,7 +293,7 @@ export function LiveDashboard() {
                 <use href="#bell" />
               </svg>
               <div
-                className={`text-2xl md:text-3xl font-bold heading text-amber-600 ${
+                className={`text-2xl md:text-3xl font-bold heading text-amber-800 ${
                   pulseFollowups ? 'scale-105 opacity-80' : 'live-value'
                 } transition-all duration-300`}
               >
@@ -320,7 +320,7 @@ export function LiveDashboard() {
           <div className="bg-gradient-to-r from-indigo-50 via-violet-50 to-pink-50 rounded-2xl p-5 mb-6">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-semibold text-zinc-600 heading">Revenue Trend (Today)</span>
-              <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+              <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
                 <svg className="w-4 h-4">
                   <use href="#trending-up" />
                 </svg>{' '}
@@ -362,7 +362,7 @@ export function LiveDashboard() {
                 </linearGradient>
               </defs>
             </svg>
-            <div className="flex justify-between text-xs text-zinc-400 mt-1">
+            <div className="flex justify-between text-xs text-zinc-600 mt-1">
               <span>8 AM</span>
               <span>10 AM</span>
               <span>12 PM</span>
@@ -392,11 +392,11 @@ export function LiveDashboard() {
                     <div
                       className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
                         activity.color === 'emerald'
-                          ? 'bg-emerald-100 text-emerald-600'
+                          ? 'bg-emerald-100 text-emerald-700'
                           : activity.color === 'indigo'
                           ? 'bg-indigo-100 text-indigo-600'
                           : activity.color === 'amber'
-                          ? 'bg-amber-100 text-amber-600'
+                          ? 'bg-amber-100 text-amber-800'
                           : 'bg-violet-100 text-violet-600'
                       }`}
                     >
@@ -406,7 +406,7 @@ export function LiveDashboard() {
                     </div>
                     <div>
                       <p className="text-zinc-700" dangerouslySetInnerHTML={{ __html: activity.text }} />
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-xs text-zinc-600">
                         {activity.desc} · {activity.time}
                       </p>
                     </div>

@@ -50,7 +50,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               className={`px-6 py-2 rounded-full text-sm font-semibold transition ${
                 billingCycle === 'monthly'
                   ? 'bg-white text-zinc-900 shadow'
-                  : 'text-zinc-500 hover:text-zinc-900'
+                  : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
               Monthly
@@ -60,7 +60,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               className={`px-6 py-2 rounded-full text-sm font-semibold transition flex items-center gap-1.5 ${
                 billingCycle === 'annual'
                   ? 'bg-white text-zinc-900 shadow'
-                  : 'text-zinc-500 hover:text-zinc-900'
+                  : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
               Annual
@@ -78,7 +78,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               <div className="font-semibold text-zinc-500 text-xs uppercase tracking-wide">Free Plan</div>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-5xl font-bold heading text-zinc-900">₹0</span>
-                <span className="text-zinc-400 text-sm">/mo</span>
+                <span className="text-zinc-600 text-sm">/mo</span>
               </div>
               <p className="text-zinc-500 text-sm mt-3">Perfect for micro-businesses starting out.</p>
               <div className="border-t border-zinc-100 my-6"></div>
@@ -130,7 +130,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
                 <span className="text-5xl font-bold heading text-zinc-900">
                   {billingCycle === 'monthly' ? '₹399' : '₹291'}
                 </span>
-                <span className="text-zinc-400 text-sm">/mo</span>
+                <span className="text-zinc-600 text-sm">/mo</span>
               </div>
               <p className="text-zinc-500 text-sm mt-3">
                 {billingCycle === 'monthly'
@@ -201,7 +201,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
                 <span className="text-5xl font-bold heading text-zinc-900">
                   {billingCycle === 'monthly' ? '₹599' : '₹416'}
                 </span>
-                <span className="text-zinc-400 text-sm">/mo</span>
+                <span className="text-zinc-600 text-sm">/mo</span>
               </div>
               <p className="text-zinc-500 text-sm mt-3">
                 {billingCycle === 'monthly'

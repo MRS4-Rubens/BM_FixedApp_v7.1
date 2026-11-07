@@ -114,15 +114,16 @@ export class InvoiceFormPage {
   async finalize(): Promise<void> {
     await this.openPreviewAndVerify();
 
-    // Finalize triggers a native confirm() dialog: "Once finalized, this invoice cannot be edited..."
-    this.page.once('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-
     await this.finalizeButton.click();
+    const dialog = this.page.getByRole('alertdialog');
+    await dialog.getByRole('button', { name: 'Finalize invoice', exact: true }).click();
 
-    // On success the app navigates to the same /invoices/<id> URL, so a URL wait alone returns immediately and
-    // a follow-up navigation could abort the in-flight finalize. Wait for the draft editor to go away instead.
+    // The confirm dialog stays open (pending) until the save + finalize server actions finish, so wait for it to
+    // close first. While it is open the page behind it is aria-hidden, which would make a heading check pass early
+    // and let a follow-up navigation abort the in-flight finalize.
+    await expect(dialog).toBeHidden({ timeout: 45_000 });
+    // On success the app navigates to the same /invoices/<id> URL, so a URL wait alone returns immediately.
+    // Wait for the draft editor to go away instead.
     await expect(this.page.getByRole('heading', { name: 'Edit Draft Invoice' })).toBeHidden({ timeout: 30_000 });
   }
 }

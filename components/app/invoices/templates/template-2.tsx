@@ -283,7 +283,7 @@ export function InvoiceTemplate2({ invoice, businessStateCode, printSize, hasWat
                     )}
                   </>
                 ) : (
-                  <div className="text-slate-500 italic font-normal py-0.5">
+                  <div className="text-slate-600 italic font-normal py-0.5">
                     Bank details not configured
                   </div>
                 )}

@@ -458,7 +458,7 @@ export function InvoiceTemplate4({ invoice, businessStateCode, printSize, hasWat
                       </div>
                     </>
                   ) : (
-                    <div className="text-slate-500 italic font-normal py-1">
+                    <div className="text-slate-600 italic font-normal py-1">
                       Bank details not configured
                     </div>
                   )}
