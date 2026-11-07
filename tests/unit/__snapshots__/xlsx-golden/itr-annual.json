@@ -3109,7 +3109,7 @@
   "cells": [
    {
     "address": "A1",
-    "value": "28% Sales",
+    "value": "Fixture Traders Pvt Ltd — Month-wise Turnover Schedule (FY 2026-27)",
     "font": {
      "bold": true,
      "size": 13,
@@ -3126,7 +3126,7 @@
    },
    {
     "address": "B1",
-    "value": "28% Sales",
+    "value": "Fixture Traders Pvt Ltd — Month-wise Turnover Schedule (FY 2026-27)",
     "font": {
      "bold": true,
      "size": 13,
@@ -3143,7 +3143,7 @@
    },
    {
     "address": "C1",
-    "value": "28% Sales",
+    "value": "Fixture Traders Pvt Ltd — Month-wise Turnover Schedule (FY 2026-27)",
     "font": {
      "bold": true,
      "size": 13,
@@ -3160,7 +3160,7 @@
    },
    {
     "address": "D1",
-    "value": "28% Sales",
+    "value": "Fixture Traders Pvt Ltd — Month-wise Turnover Schedule (FY 2026-27)",
     "font": {
      "bold": true,
      "size": 13,
@@ -3177,7 +3177,7 @@
    },
    {
     "address": "E1",
-    "value": "28% Sales",
+    "value": "Fixture Traders Pvt Ltd — Month-wise Turnover Schedule (FY 2026-27)",
     "font": {
      "bold": true,
      "size": 13,
@@ -3194,7 +3194,7 @@
    },
    {
     "address": "F1",
-    "value": "28% Sales",
+    "value": "Fixture Traders Pvt Ltd — Month-wise Turnover Schedule (FY 2026-27)",
     "font": {
      "bold": true,
      "size": 13,
@@ -3211,7 +3211,7 @@
    },
    {
     "address": "G1",
-    "value": "28% Sales",
+    "value": "Fixture Traders Pvt Ltd — Month-wise Turnover Schedule (FY 2026-27)",
     "font": {
      "bold": true,
      "size": 13,
@@ -3228,7 +3228,7 @@
    },
    {
     "address": "H1",
-    "value": "28% Sales",
+    "value": "Fixture Traders Pvt Ltd — Month-wise Turnover Schedule (FY 2026-27)",
     "font": {
      "bold": true,
      "size": 13,
@@ -3240,63 +3240,6 @@
     },
     "alignment": {
      "vertical": "middle"
-    },
-    "border": {}
-   },
-   {
-    "address": "I1",
-    "value": "Taxable Turnover",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "J1",
-    "value": "Total GST",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "K1",
-    "value": "Gross Value",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
     },
     "border": {}
    },

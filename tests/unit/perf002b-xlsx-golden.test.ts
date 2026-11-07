@@ -71,6 +71,25 @@ describe('PERF-002b streamed Excel exports match the recorded pre-streaming outp
     await expectGolden('sales-register-empty', (s) => writeSalesRegisterWorkbook(emptyRegister, s));
   });
 
+  it('keeps the title block in row 1 when the column header row is further down', async () => {
+    const name = gstr1Fixture.business.legal_name;
+    const hsn = await loadWorkbook(await writeToBuffer((s) => writeHsnWorkbook(gstr1Fixture, s)));
+    expect(hsn.getWorksheet('HSN Summary')?.getCell('A1').value).toBe(name);
+    expect(hsn.getWorksheet('HSN Summary')?.getCell('G1').value).toBeNull();
+
+    const register = await loadWorkbook(await writeToBuffer((s) => writeSalesRegisterWorkbook(salesRegisterFixture, s)));
+    for (const sheetName of ['Sales Register', 'HSN Summary', 'Credit Notes']) {
+      const sheet = register.getWorksheet(sheetName);
+      expect(sheet?.getCell('A1').value, sheetName).toBe(salesRegisterFixture.business.legal_name);
+      expect(sheet?.getCell('A6').value, sheetName).toBe(sheetName === 'HSN Summary' ? 'HSN/SAC Code' : 'S.No');
+    }
+
+    const itr = await loadWorkbook(await writeToBuffer((s) => writeItrReportWorkbook(itrAnnualFixture, s)));
+    const schedule = itr.getWorksheet('Month-wise ITR Schedule');
+    expect(String(schedule?.getCell('A1').value)).toContain(itrAnnualFixture.business.legal_name);
+    expect(schedule?.getCell('A2').value).toBe('Month');
+  });
+
   it('streams a 2,000+ row sheet (crosses a yield boundary) without losing or reordering rows', async () => {
     const many = {
       ...gstr1Fixture,

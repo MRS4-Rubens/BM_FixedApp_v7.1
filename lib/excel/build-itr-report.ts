@@ -2,7 +2,7 @@ import type { Writable } from 'node:stream';
 import type ExcelJS from 'exceljs';
 import type { ItrExportData } from '@/lib/actions/reports/get-itr-data';
 import { paiseToRupees } from '@/lib/money';
-import { commitDataRow, createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
+import { columnsWithoutHeaders, commitDataRow, createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
 
 const currencyFormat = '#,##0.00';
 
@@ -244,7 +244,8 @@ export async function writeItrReportWorkbook(data: ItrExportData, stream: Writab
       cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
     });
-    sheet2.columns = s2Headers;
+    // Header text is already in row 2; keep it out of row 1 (the title).
+    sheet2.columns = columnsWithoutHeaders(s2Headers);
     // Rows 1-2 are final once the column definitions are applied: flush them.
     sheet2.getRow(2).commit();
 

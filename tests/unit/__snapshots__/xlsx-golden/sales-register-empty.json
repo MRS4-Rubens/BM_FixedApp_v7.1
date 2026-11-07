@@ -34,7 +34,7 @@
   "cells": [
    {
     "address": "A1",
-    "value": "Customer Name",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
@@ -47,7 +47,7 @@
    },
    {
     "address": "B1",
-    "value": "Customer Name",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
@@ -60,7 +60,7 @@
    },
    {
     "address": "C1",
-    "value": "Customer Name",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
@@ -73,7 +73,7 @@
    },
    {
     "address": "D1",
-    "value": "Customer Name",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
@@ -83,136 +83,6 @@
      "pattern": "none"
     },
     "border": {}
-   },
-   {
-    "address": "E1",
-    "value": "Customer GSTIN"
-   },
-   {
-    "address": "F1",
-    "value": "Place of Supply"
-   },
-   {
-    "address": "G1",
-    "value": "Supply Type"
-   },
-   {
-    "address": "H1",
-    "value": "Taxable Value",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "I1",
-    "value": "CGST",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "J1",
-    "value": "SGST",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "K1",
-    "value": "IGST",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "L1",
-    "value": "Total Tax",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "M1",
-    "value": "Invoice Total",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "N1",
-    "value": "Payment Status"
    },
    {
     "address": "A2",
@@ -595,7 +465,7 @@
   "cells": [
    {
     "address": "A1",
-    "value": "Total Quantity",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
@@ -608,7 +478,7 @@
    },
    {
     "address": "B1",
-    "value": "Total Quantity",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
@@ -621,7 +491,7 @@
    },
    {
     "address": "C1",
-    "value": "Total Quantity",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
@@ -634,124 +504,10 @@
    },
    {
     "address": "D1",
-    "value": "Total Quantity",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "E1",
-    "value": "Taxable Value",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "F1",
-    "value": "CGST",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "G1",
-    "value": "SGST",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "H1",
-    "value": "IGST",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "I1",
-    "value": "Total Tax",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "J1",
-    "value": "Total Value",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
     },
     "fill": {
      "type": "pattern",
@@ -1080,7 +836,7 @@
   "cells": [
    {
     "address": "A1",
-    "value": "Supply Type",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
@@ -1093,7 +849,7 @@
    },
    {
     "address": "B1",
-    "value": "Supply Type",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
@@ -1106,7 +862,7 @@
    },
    {
     "address": "C1",
-    "value": "Supply Type",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
@@ -1119,124 +875,10 @@
    },
    {
     "address": "D1",
-    "value": "Supply Type",
+    "value": "Fixture Traders Pvt Ltd",
     "font": {
      "bold": true,
      "size": 14
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "E1",
-    "value": "Taxable Value",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "F1",
-    "value": "CGST",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "G1",
-    "value": "SGST",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "H1",
-    "value": "IGST",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "I1",
-    "value": "Total Tax",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
-    },
-    "fill": {
-     "type": "pattern",
-     "pattern": "none"
-    },
-    "border": {}
-   },
-   {
-    "address": "J1",
-    "value": "Total Value",
-    "numFmt": "#,##0.00",
-    "font": {
-     "color": {
-      "theme": 1
-     },
-     "family": 2,
-     "scheme": "minor",
-     "size": 11,
-     "name": "Calibri"
     },
     "fill": {
      "type": "pattern",
