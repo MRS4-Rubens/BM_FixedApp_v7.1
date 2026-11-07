@@ -378,3 +378,27 @@ $ git grep -nE "(window\.)?confirm\(" -- app components
    - Verify success messages announce via `role="status"` without interrupting current speech.
    - Trigger an intentional validation error and verify it is announced immediately via `role="alert"`.
 
+
+## Reviewer verification and adjustments (Claude Code)
+
+**Bug fixed (statutory data loss):** `executeFinalize` cached the first saved draft id and skipped saving on later
+attempts. After cancelling the back-dated (cross-FY) dialog, editing the form and finalizing again would have finalized
+the OLD saved version. Finalize now always saves the current form data, reusing the cached id
+(`id: data.id ?? pendingSavedInvoiceId`) so a new invoice is updated in place, never duplicated.
+
+**Other adjustments:** finalize dialog date shown in IST (`07 Nov 2026`, via `formatIstDate`); removed the proof
+viewer's duplicate window Escape handler (the base-ui Dialog handles Escape); E2E `InvoiceFormPage.finalize()` and
+`AdminPage.approveClaimByUtr()` now wait for the alertdialog to close (while it is open the page behind it is
+aria-hidden, so the old "draft heading hidden" check passed early and the next navigation aborted the finalize).
+
+**Axe scan on the live preview** (same tags as `e2e/specs/05-a11y.spec.ts`, real sessions, all 11 pages):
+before FE-004 124 violations (92 color-contrast, 32 label/select-name/link-name); after Antigravity's commit 27
+(landing-page greys, dashboard "Paid" badge, "Archival retry pending", admin "Needs Action"); after the reviewer's
+colour fixes **0 on all 11 pages**. `e2e/a11y-baseline.json` lowered to zero for every page, so any new
+violation now fails CI.
+
+**Verified:** E2E 22 passed / 1 skipped (mailbox) locally and in CI; hydration probe 0 errors on 8 pages; sidebar
+tablet behaviour unchanged; unit 1,279 passed; typecheck, build clean; lint warnings 39 -> 38 (baseline lowered);
+print stylesheet regenerated (adds `.bg-amber-700`, `.text-success-text`; removes `.bg-amber-600`, `.bg-emerald-600`).
+Note: one local E2E run that overlapped with the CI run on the same staging database stalled on "Recording..."; the
+non-overlapping re-run passed 22/22.
