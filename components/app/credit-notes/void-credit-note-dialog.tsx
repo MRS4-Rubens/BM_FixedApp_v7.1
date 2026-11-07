@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   ShieldAlert, 
@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { formatPaiseAsInr } from '@/lib/money';
 import { VOID_CREDIT_NOTE_REASONS } from '@/lib/validations/credit-note';
 import { voidCreditNote } from '@/lib/actions/credit-notes/void-credit-note';
+import { useIsClient } from '@/lib/hooks/use-is-client';
 
 export interface VoidableCreditNote {
   id: string;
@@ -29,8 +30,6 @@ interface VoidCreditNoteDialogProps {
   creditNote: VoidableCreditNote | null;
   onSuccess?: () => void;
 }
-
-const emptySubscribe = () => () => {};
 
 function VoidCreditNoteDialogModal({
   onClose,
@@ -289,11 +288,7 @@ function VoidCreditNoteDialogModal({
 }
 
 export function VoidCreditNoteDialog(props: VoidCreditNoteDialogProps) {
-  const isHydrated = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false
-  );
+  const isHydrated = useIsClient();
 
   if (!isHydrated || !props.isOpen || !props.creditNote) {
     return null;

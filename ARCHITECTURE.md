@@ -640,6 +640,25 @@ When a new database constraint requires user-friendly UI mapping:
   For businesses with legacy display settings previously saved in browser `localStorage`, the settings page displays `<LegacyDisplayPrefsImport />` (subscribed via `useSyncExternalStore`). Users can import them with one click via the `importLegacyDisplayPrefs` Server Action (restricted to owners with active subscriptions), which safely clears browser storage on completion.
 
 
+## React render purity & hydration (FE-002)
+
+- **Hydration Gate Pattern (`useIsClient`)**:
+  - `lib/hooks/use-is-client.ts` exports `useIsClient()`, backed by `useSyncExternalStore(emptySubscribe, () => true, () => false)`.
+  - Returns `false` on the server and during client hydration render, and `true` immediately afterwards.
+  - Replaces all legacy `const [mounted, setMounted] = useState(false); useEffect(() => setMounted(true), [])` patterns across portals, chart containers, and modal mount gates, eliminating cascading re-renders and hydration mismatch warnings without disabling React Compiler memoization.
+- **Request-Time Prop Pattern (`lib/time/request-time.ts`)**:
+  - For components displaying dynamic time calculations (e.g. subscription days remaining, lifecycle progress bars), Server Components capture render time once via `getRequestTimeMs()` and forward it as a typed `nowMs` prop.
+  - Prevents impure `Date.now()` calls during client component rendering and preserves deterministic parity between SSR HTML and browser hydration.
+- **Previous Value in State Pattern (No Effect Syncing)**:
+  - Synchronizing state to route changes or props (e.g. mobile navigation drawer auto-close on `pathname` change, modal plan resets on `isOpen` transition) uses React's canonical "previous value in state" pattern during render:
+    `const [prevProp, setPrevProp] = useState(prop); if (prop !== prevProp) { setPrevProp(prop); setState(...); }`.
+  - Eliminates `react-hooks/set-state-in-effect` violations and prevents redundant render passes.
+- **Tri-State Responsive Sidebar Preference**:
+  - `sidebar:collapsed` cookie preference is tri-state: `true` (explicitly collapsed), `false` (explicitly expanded), or `null` (no user choice recorded).
+  - When unset (`null`), tablet portrait viewports (`768px <= width < 1024px`) automatically show the 68px icon rail via `useSyncExternalStore` listening to `window.matchMedia('(min-width: 768px) and (max-width: 1023px)')`.
+  - User toggles always override viewport defaults and persist explicitly to the cookie.
+
+
 ## Route-level boundaries (FE-003)
 
 - **Boundary Hierarchy & Resilience Architecture**:

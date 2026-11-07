@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useSyncExternalStore } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   BarChart,
@@ -29,11 +29,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
 import { cn } from '@/lib/utils'
+import { useIsClient } from '@/lib/hooks/use-is-client'
 import type { MonthlySalesData } from '@/lib/actions/reports/get-sales-by-period'
 import type { getTopCustomers } from '@/lib/actions/reports/get-top-customers'
 import type { getTopProducts } from '@/lib/actions/reports/get-top-products'
-
-const emptySubscribe = () => () => {}
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -250,7 +249,7 @@ export function ReportsClient({
   const [customStart, setCustomStart] = useState<string>(startDate)
   const [customEnd, setCustomEnd] = useState<string>(endDate)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const isMounted = useSyncExternalStore(emptySubscribe, () => true, () => false)
+  const isMounted = useIsClient()
   const [chartMode, setChartMode] = useState<'turnover_tax' | 'tax_split'>('turnover_tax')
 
   const totalTurnover = salesData.reduce((acc, curr) => acc + curr.subtotal, 0)

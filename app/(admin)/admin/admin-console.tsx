@@ -8,6 +8,7 @@ import { processSubscriptionClaim } from '@/lib/actions/subscriptions/process-re
 import { updateBusinessSubscription } from '@/lib/actions/subscriptions/update-business-subscription';
 import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-business-subscriptions';
 import { getClaimScreenshotUrl } from '@/lib/actions/subscriptions/get-claim-screenshot-url';
+import { useIsClient } from '@/lib/hooks/use-is-client';
 import {
   TrendingUp,
   Building2,
@@ -162,7 +163,7 @@ export function AdminConsole({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<'overview' | 'pending' | 'businesses' | 'users' | 'settings'>('overview');
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useIsClient();
 
   // Clipboard copy state for quick visual feedback
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -185,6 +186,36 @@ export function AdminConsole({
   // Pagination state (7 rows per page)
   const [bizPage, setBizPage] = useState(1);
   const [userPage, setUserPage] = useState(1);
+
+  const changeBizSearch = (value: string) => {
+    setBizSearch(value);
+    setBizPage(1);
+  };
+
+  const changeBizStatusFilter = (status: 'all' | 'active' | 'trial' | 'expired' | 'suspended') => {
+    setBizStatusFilter(status);
+    setBizPage(1);
+  };
+
+  const toggleBizSort = (field: 'name' | 'expiry' | 'invoices') => {
+    if (bizSortField === field) {
+      setBizSortOrder(bizSortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setBizSortField(field);
+      setBizSortOrder(field === 'invoices' ? 'desc' : 'asc');
+    }
+    setBizPage(1);
+  };
+
+  const changeUserSearch = (value: string) => {
+    setUserSearch(value);
+    setUserPage(1);
+  };
+
+  const changeUserRoleFilter = (role: 'all' | 'owner' | 'staff') => {
+    setUserRoleFilter(role);
+    setUserPage(1);
+  };
 
   // Claim rejection modal
   const [rejectingClaim, setRejectingClaim] = useState<typeof pendingRequests[0] | null>(null);
@@ -257,10 +288,6 @@ export function AdminConsole({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [proofViewer, closeProof]);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
@@ -271,7 +298,7 @@ export function AdminConsole({
 
   // Filtered and sorted businesses
   const filteredBusinesses = useMemo(() => {
-    let result = businesses.filter((b) => {
+    const result = businesses.filter((b) => {
       const matchSearch =
         b.legalName.toLowerCase().includes(bizSearch.toLowerCase()) ||
         (b.tradeName && b.tradeName.toLowerCase().includes(bizSearch.toLowerCase())) ||
@@ -315,15 +342,6 @@ export function AdminConsole({
       return matchSearch && matchRole;
     });
   }, [users, userSearch, effectiveRoleFilter]);
-
-  // Reset pagination to first page whenever search, filters, or sorting change
-  useEffect(() => {
-    setBizPage(1);
-  }, [bizSearch, bizStatusFilter, bizSortField, bizSortOrder]);
-
-  useEffect(() => {
-    setUserPage(1);
-  }, [userSearch, effectiveRoleFilter]);
 
   // Businesses pagination calculations
   const totalBizPages = Math.max(1, Math.ceil(filteredBusinesses.length / ROWS_PER_PAGE));
@@ -1153,13 +1171,13 @@ export function AdminConsole({
                 type="text"
                 placeholder="Search by legal name, trade name, GSTIN, or email..."
                 value={bizSearch}
-                onChange={(e) => setBizSearch(e.target.value)}
+                onChange={(e) => changeBizSearch(e.target.value)}
                 className="h-9.5 w-full rounded-lg border border-border bg-background pl-9.5 pr-8 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
               {bizSearch && (
                 <button
                   type="button"
-                  onClick={() => setBizSearch('')}
+                  onClick={() => changeBizSearch('')}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   <X className="size-4" />
@@ -1173,7 +1191,7 @@ export function AdminConsole({
                 <button
                   key={st}
                   type="button"
-                  onClick={() => setBizStatusFilter(st)}
+                  onClick={() => changeBizStatusFilter(st)}
                   className={cn(
                     'rounded-lg px-2.5 py-1 text-sm font-bold capitalize transition cursor-pointer',
                     bizStatusFilter === st
@@ -1196,14 +1214,7 @@ export function AdminConsole({
                     <th className="px-4 py-3">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (bizSortField === 'name') {
-                            setBizSortOrder(bizSortOrder === 'asc' ? 'desc' : 'asc');
-                          } else {
-                            setBizSortField('name');
-                            setBizSortOrder('asc');
-                          }
-                        }}
+                        onClick={() => toggleBizSort('name')}
                         className="flex items-center gap-1 hover:text-foreground cursor-pointer"
                       >
                         Business & GSTIN
@@ -1214,14 +1225,7 @@ export function AdminConsole({
                     <th className="px-4 py-3">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (bizSortField === 'expiry') {
-                            setBizSortOrder(bizSortOrder === 'asc' ? 'desc' : 'asc');
-                          } else {
-                            setBizSortField('expiry');
-                            setBizSortOrder('asc');
-                          }
-                        }}
+                        onClick={() => toggleBizSort('expiry')}
                         className="flex items-center gap-1 hover:text-foreground cursor-pointer"
                       >
                         Expires At
@@ -1231,14 +1235,7 @@ export function AdminConsole({
                     <th className="px-4 py-3">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (bizSortField === 'invoices') {
-                            setBizSortOrder(bizSortOrder === 'asc' ? 'desc' : 'asc');
-                          } else {
-                            setBizSortField('invoices');
-                            setBizSortOrder('desc');
-                          }
-                        }}
+                        onClick={() => toggleBizSort('invoices')}
                         className="flex items-center gap-1 hover:text-foreground cursor-pointer"
                       >
                         Invoices
@@ -1436,7 +1433,7 @@ export function AdminConsole({
                 type="text"
                 placeholder="Search users by name or business affiliation..."
                 value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
+                onChange={(e) => changeUserSearch(e.target.value)}
                 className="h-9.5 w-full rounded-lg border border-border bg-background pl-9.5 pr-8 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
@@ -1446,7 +1443,7 @@ export function AdminConsole({
                 <button
                   key={r}
                   type="button"
-                  onClick={() => setUserRoleFilter(r)}
+                  onClick={() => changeUserRoleFilter(r)}
                   className={cn(
                     'rounded-lg px-2.5 py-1 text-sm font-bold capitalize transition cursor-pointer',
                     effectiveRoleFilter === r

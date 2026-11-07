@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useIsClient } from '@/lib/hooks/use-is-client';
 
 export interface UpgradePromptModalProps {
   isOpen: boolean;
@@ -53,18 +54,21 @@ export function UpgradePromptModal({
   highlights,
   ctaText,
 }: UpgradePromptModalProps) {
-  const [mounted, setMounted] = useState(false);
+  const isClient = useIsClient();
   const [selectedPlan, setSelectedPlan] = useState<'essentials' | 'professional'>(
     recommendedPlan === 'professional' ? 'professional' : 'essentials'
   );
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (isOpen) {
+      setSelectedPlan(recommendedPlan === 'professional' ? 'professional' : 'essentials');
+    }
+  }
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedPlan(recommendedPlan === 'professional' ? 'professional' : 'essentials');
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -81,9 +85,9 @@ export function UpgradePromptModal({
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, recommendedPlan, onClose]);
+  }, [isOpen, onClose]);
 
-  if (!mounted || !isOpen) return null;
+  if (!isClient || !isOpen) return null;
 
   // Active highlights depend on user-selected plan
   const activeHighlights =

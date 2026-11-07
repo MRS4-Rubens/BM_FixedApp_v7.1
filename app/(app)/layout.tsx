@@ -19,7 +19,8 @@ export default async function AppLayout({
   const isAdminUser = await isPlatformAdmin()
 
   const cookieStore = await cookies()
-  const defaultCollapsed = cookieStore.get('sidebar:collapsed')?.value === 'true'
+  const cookieVal = cookieStore.get('sidebar:collapsed')?.value
+  const collapsedPreference = cookieVal === 'true' ? true : cookieVal === 'false' ? false : null
 
   const userProp = user ? {
     name: user.display_name || 'User',
@@ -66,7 +67,7 @@ export default async function AppLayout({
       <div className="print:hidden">
         <AppSidebar
           user={userProp}
-          defaultCollapsed={defaultCollapsed}
+          collapsedPreference={collapsedPreference}
           isAdminUser={isAdminUser}
           subscription={subscriptionProp}
           businessLogoUrl={businessLogoUrl}

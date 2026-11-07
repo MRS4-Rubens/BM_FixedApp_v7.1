@@ -88,6 +88,8 @@ interface BillingTabProps {
   business: typeof businesses.$inferSelect | null
   initialSubscriptions?: SubscriptionHistoryItem[]
   usageStats?: UsageStats
+  /** Request render time from the server (lib/time/request-time.ts); keeps server and client output identical. */
+  nowMs: number
 }
 
 interface PlanDefinition {
@@ -180,6 +182,7 @@ export function BillingTab({
     productsCount: 0,
     currentMonthLabel: 'Current Month',
   },
+  nowMs,
 }: BillingTabProps) {
   const [subscriptions, setSubscriptions] = useState<SubscriptionHistoryItem[]>(initialSubscriptions)
   const [copiedUtr, setCopiedUtr] = useState<string | null>(null)
@@ -200,7 +203,7 @@ export function BillingTab({
   // Expiration and Days Calculation
   const targetExpiry = business?.subscription_ends_at || business?.trial_ends_at
   const daysRemaining = targetExpiry
-    ? Math.ceil((new Date(targetExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(targetExpiry).getTime() - nowMs) / (1000 * 60 * 60 * 24))
     : null
 
   const isExpired = daysRemaining !== null && daysRemaining <= 0
@@ -208,16 +211,15 @@ export function BillingTab({
   const isActive = status === 'active' && !isExpired
 
   // Subscription Lifecycle progress
-  const lifecycleProgress = useMemo(() => {
+  const lifecycleProgress = (() => {
     const start = business?.subscription_activated_at ? new Date(business.subscription_activated_at).getTime() : null
     const end = targetExpiry ? new Date(targetExpiry).getTime() : null
-    const now = Date.now()
 
     if (!start || !end || end <= start) return null
     const total = end - start
-    const elapsed = Math.max(0, Math.min(total, now - start))
+    const elapsed = Math.max(0, Math.min(total, nowMs - start))
     return Math.round((elapsed / total) * 100)
-  }, [business?.subscription_activated_at, targetExpiry])
+  })()
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text)

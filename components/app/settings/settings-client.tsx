@@ -34,6 +34,8 @@ interface SettingsClientProps {
     currentMonthLabel: string;
   };
   identityLocked?: boolean;
+  /** Request render time from the server page, forwarded to BillingTab. */
+  nowMs: number;
 }
 
 const navItems = [
@@ -65,6 +67,7 @@ export function SettingsClient({
   initialSubscriptions,
   usageStats,
   identityLocked = false,
+  nowMs,
 }: SettingsClientProps) {
   const resolveInitialTab = (): NavItem => {
     if (initialTab) {
@@ -239,6 +242,7 @@ export function SettingsClient({
               business={business}
               initialSubscriptions={initialSubscriptions}
               usageStats={usageStats}
+              nowMs={nowMs}
             />
           )}
 

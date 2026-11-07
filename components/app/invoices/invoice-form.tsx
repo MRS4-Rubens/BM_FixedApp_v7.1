@@ -33,6 +33,7 @@ import { DeleteDraftButton } from '@/components/app/invoices/delete-draft-button
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
 import { TemplateSelector } from './template-selector'
 import { buildPreviewTaxLineInput } from '@/lib/invoices/line-math'
+import { useIsClient } from '@/lib/hooks/use-is-client'
 
 import { searchCustomerOptions } from '@/lib/actions/customers/search-customer-options'
 import { searchProductOptions } from '@/lib/actions/products/search-product-options'
@@ -160,7 +161,7 @@ export function InvoiceForm({
   const [isProdSuggestionsOpen, setIsProdSuggestionsOpen] = useState(false)
   const [activeInputRect, setActiveInputRect] = useState<{ top: number, left: number, width: number, height: number } | null>(null)
   const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | null>(null)
-  const [mounted, setMounted] = useState(false)
+  const mounted = useIsClient()
   const [productOptions, setProductOptions] = useState<ProductOption[]>([])
   const [isSearchingProducts, setIsSearchingProducts] = useState(false)
   const productReqIdRef = useRef(0)
@@ -189,10 +190,6 @@ export function InvoiceForm({
     }, 250)
     return () => clearTimeout(timer)
   }, [suggestIdx, activeRowDesc])
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const updateInputRect = (el: HTMLInputElement | null) => {
     if (el) {

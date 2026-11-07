@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -202,15 +202,37 @@ function NavLink({
   return linkContent
 }
 
+const TABLET_PORTRAIT_MEDIA = '(min-width: 768px) and (max-width: 1023px)'
+
+function subscribeTabletMedia(callback: () => void) {
+  if (typeof window === 'undefined' || !window.matchMedia) {
+    return () => {}
+  }
+  const mql = window.matchMedia(TABLET_PORTRAIT_MEDIA)
+  mql.addEventListener('change', callback)
+  return () => {
+    mql.removeEventListener('change', callback)
+  }
+}
+
+function getTabletSnapshot(): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) return false
+  return window.matchMedia(TABLET_PORTRAIT_MEDIA).matches
+}
+
+function getTabletServerSnapshot(): boolean {
+  return false
+}
+
 export function AppSidebar({
   user,
-  defaultCollapsed = false,
+  collapsedPreference = null,
   isAdminUser = false,
   subscription,
   businessLogoUrl,
 }: {
   user?: { name: string; role: string; initials: string }
-  defaultCollapsed?: boolean
+  collapsedPreference?: boolean | null
   isAdminUser?: boolean
   subscription?: {
     plan: string
@@ -221,34 +243,32 @@ export function AppSidebar({
 }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
+  const [userCollapsed, setUserCollapsed] = useState<boolean | null>(collapsedPreference)
+  const isTabletPortrait = useSyncExternalStore(
+    subscribeTabletMedia,
+    getTabletSnapshot,
+    getTabletServerSnapshot,
+  )
+  const isCollapsed = userCollapsed ?? isTabletPortrait
+
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mobileUserMenuOpen, setMobileUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const mobileUserMenuRef = useRef<HTMLDivElement>(null)
 
+  const [lastPathname, setLastPathname] = useState(pathname)
+  if (pathname !== lastPathname) {
+    setLastPathname(pathname)
+    setMobileOpen(false)
+    setMobileUserMenuOpen(false)
+  }
+
   const [daysRemaining] = useState<number | null>(() => {
     if (!subscription?.endsAt) return null
     const diff = new Date(subscription.endsAt).getTime() - Date.now()
     return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
   })
-
-  // Auto-close mobile drawer on route change
-  useEffect(() => {
-    setMobileOpen(false)
-    setMobileUserMenuOpen(false)
-  }, [pathname])
-
-  // Tablet Portrait (768px - 1023px) Intelligent Auto-Collapse
-  // If the user hasn't explicitly set a cookie, default to the 68px icon rail on tablet portrait
-  // so the wide content (invoices, reports, dashboard) has full breathing room.
-  useEffect(() => {
-    const hasCookie = document.cookie.includes('sidebar:collapsed=')
-    if (!hasCookie && window.innerWidth >= 768 && window.innerWidth < 1024) {
-      setIsCollapsed(true)
-    }
-  }, [])
 
   // Listen for custom topbar mobile navigation toggle event
   useEffect(() => {
@@ -295,7 +315,7 @@ export function AppSidebar({
 
   const handleToggle = () => {
     const nextCollapsed = !isCollapsed
-    setIsCollapsed(nextCollapsed)
+    setUserCollapsed(nextCollapsed)
     document.cookie = `sidebar:collapsed=${nextCollapsed}; path=/; max-age=31536000`
   }
 
