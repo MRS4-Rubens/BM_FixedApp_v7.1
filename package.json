@@ -33,6 +33,7 @@
     "e2e:list": "playwright test --list",
     "e2e:report": "playwright show-report",
     "e2e:migrate-staging": "tsx scripts/ci/migrate-staging.ts",
+    "perf:export-benchmark": "tsx scripts/perf/export-benchmark.ts",
     "verify": "pnpm typecheck && pnpm lint:ratchet && pnpm db:check && pnpm test"
   },
   "dependencies": {
