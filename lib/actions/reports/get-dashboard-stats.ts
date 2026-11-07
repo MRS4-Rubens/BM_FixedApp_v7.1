@@ -1,6 +1,6 @@
 'use server';
 
-import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
@@ -56,7 +56,7 @@ export const getDashboardStats = createAuthenticatedAction(
       [fyInvRevRow],
       [fyCnRevRow],
       [countsRow],
-      unpaidInvoices,
+      outstandingOverdueResult,
     ] = await Promise.all([
       // 1a. Revenue this month (finalized invoices)
       db
@@ -129,62 +129,48 @@ export const getDashboardStats = createAuthenticatedAction(
         .from(invoices)
         .where(eq(invoices.business_id, businessId)),
 
-      // 4. Unpaid / partially_paid / overdue finalized invoices with active payments & active finalized credit notes
-      db
-        .select({
-          id: invoices.id,
-          grand_total_paise: invoices.grand_total_paise,
-          due_date: invoices.due_date,
-          payment_status: invoices.payment_status,
-          paid_paise: sql<number>`coalesce((
-            select sum(p.amount_paise)
-            from payments p
-            where p.invoice_id = ${invoices.id}
-              and p.status = 'active'
-          ), 0)::bigint`,
-          credited_paise: sql<number>`coalesce((
-            select sum(cn.grand_total_paise)
-            from credit_notes cn
-            where cn.original_invoice_id = ${invoices.id}
-              and cn.lifecycle_status = 'finalized'
-              and cn.status = 'active'
-          ), 0)::bigint`,
-        })
-        .from(invoices)
-        .where(
-          and(
-            eq(invoices.business_id, businessId),
-            eq(invoices.lifecycle_status, 'finalized'),
-            inArray(invoices.payment_status, ['unpaid', 'partially_paid', 'overdue'])
-          )
-        ),
+      // 4. One aggregate query using pre-grouped LEFT JOINs (PERF-002)
+      db.execute<{
+        outstanding: string | number;
+        overdue_count: number;
+        overdue_amount: string | number;
+      }>(sql`
+        SELECT
+          coalesce(sum(t.remaining), 0)::bigint AS outstanding,
+          count(*) filter (where t.is_overdue)::int AS overdue_count,
+          coalesce(sum(t.remaining) filter (where t.is_overdue), 0)::bigint AS overdue_amount
+        FROM (
+          SELECT
+            greatest(0, i.grand_total_paise - coalesce(p.paid, 0) - coalesce(c.credited, 0)) AS remaining,
+            (i.payment_status = 'overdue' OR (i.due_date IS NOT NULL AND i.due_date < ${todayIso}::date)) AS is_overdue
+          FROM invoices i
+          LEFT JOIN (
+            SELECT invoice_id, sum(amount_paise) AS paid
+            FROM payments
+            WHERE business_id = ${businessId}
+              AND status = 'active'
+            GROUP BY invoice_id
+          ) p ON p.invoice_id = i.id
+          LEFT JOIN (
+            SELECT original_invoice_id, sum(grand_total_paise) AS credited
+            FROM credit_notes
+            WHERE business_id = ${businessId}
+              AND lifecycle_status = 'finalized'
+              AND status = 'active'
+            GROUP BY original_invoice_id
+          ) c ON c.original_invoice_id = i.id
+          WHERE i.business_id = ${businessId}
+            AND i.lifecycle_status = 'finalized'
+            AND i.payment_status IN ('unpaid', 'partially_paid', 'overdue')
+        ) t
+        WHERE t.remaining > 0
+      `),
     ]);
 
-    let outstandingAmountPaise = 0;
-    let overdueCount = 0;
-    let overdueAmountPaise = 0;
-
-    for (const inv of unpaidInvoices) {
-      const remainingPaise = Math.max(
-        0,
-        Number(inv.grand_total_paise) -
-          Number(inv.paid_paise) -
-          Number(inv.credited_paise)
-      );
-
-      if (remainingPaise <= 0) continue;
-
-      outstandingAmountPaise += remainingPaise;
-
-      const isOverdue =
-        inv.payment_status === 'overdue' ||
-        (inv.due_date !== null && inv.due_date < todayIso);
-
-      if (isOverdue) {
-        overdueCount += 1;
-        overdueAmountPaise += remainingPaise;
-      }
-    }
+    const statsRow = outstandingOverdueResult.rows[0];
+    const outstandingAmountPaise = Number(statsRow?.outstanding ?? 0);
+    const overdueCount = Number(statsRow?.overdue_count ?? 0);
+    const overdueAmountPaise = Number(statsRow?.overdue_amount ?? 0);
 
     return {
       revenueThisMonthPaise:

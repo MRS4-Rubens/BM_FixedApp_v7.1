@@ -14,6 +14,9 @@ import { buildGstr1Workbook } from '@/lib/excel/build-gstr1-report';
 import { buildHsnWorkbook } from '@/lib/excel/build-hsn-report';
 import { canExportStatutoryReport, checkAccountNotSuspended } from '@/lib/subscriptions/entitlements';
 import { exportQuerySchema } from '@/lib/validations/export';
+import { xlsxStreamResponse } from '@/lib/excel/xlsx-response';
+
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   // 1. Session Check (return 401 if unauthorized, no redirect)
@@ -107,15 +110,7 @@ export async function GET(request: NextRequest) {
     }
 
     const workbook = await buildGstr1Workbook(gstr1DataRes.data);
-    const buffer = await workbook.xlsx.writeBuffer();
-
-    return new Response(new Uint8Array(buffer), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="GSTR1-${sanitizedLabel}.xlsx"`
-      }
-    });
+    return xlsxStreamResponse(workbook, `GSTR1-${sanitizedLabel}.xlsx`);
   }
 
   if (type === 'itr_report') {
@@ -125,15 +120,7 @@ export async function GET(request: NextRequest) {
     }
 
     const workbook = await buildItrReportWorkbook(itrDataRes.data);
-    const buffer = await workbook.xlsx.writeBuffer();
-
-    return new Response(new Uint8Array(buffer), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="ITR-Report-${sanitizedLabel}.xlsx"`
-      }
-    });
+    return xlsxStreamResponse(workbook, `ITR-Report-${sanitizedLabel}.xlsx`);
   }
 
   if (type === 'hsn_summary') {
@@ -143,15 +130,7 @@ export async function GET(request: NextRequest) {
     }
 
     const workbook = await buildHsnWorkbook(gstr1DataRes.data);
-    const buffer = await workbook.xlsx.writeBuffer();
-
-    return new Response(new Uint8Array(buffer), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="HSN-Summary-${sanitizedLabel}.xlsx"`
-      }
-    });
+    return xlsxStreamResponse(workbook, `HSN-Summary-${sanitizedLabel}.xlsx`);
   }
 
   // Default / Legacy fallback: Sales Register
@@ -161,13 +140,5 @@ export async function GET(request: NextRequest) {
   }
 
   const workbook = await buildSalesRegisterWorkbook(exportDataRes.data);
-  const buffer = await workbook.xlsx.writeBuffer();
-
-  return new Response(new Uint8Array(buffer), {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="Sales-Register-${sanitizedLabel}.xlsx"`
-    }
-  });
+  return xlsxStreamResponse(workbook, `Sales-Register-${sanitizedLabel}.xlsx`);
 }

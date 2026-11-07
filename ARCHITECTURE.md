@@ -869,3 +869,41 @@ To prevent leaking customer payment amounts, subscription plans, business identi
 - **Transaction Note (`tn`)**: Capped at 50 characters to prevent rejection by bank UPI switches.
 - **Single Source of Pricing Truth**: Checkout options derive amounts exclusively from `PLAN_PRICING` in `lib/subscriptions/entitlements.ts`. Client components receive the pre-calculated `upiPayments` map keyed by `${plan}:${cycle}`.
 
+## Report & dashboard performance (PERF-002)
+
+To maintain high responsiveness and strict bounded memory consumption under large tenant transaction volumes (thousands of invoices and credit notes):
+
+### 1. Aggregate Queries with Grouped Joins Rule
+- Summary cards and reporting aggregates (such as `getDashboardStats` in `lib/actions/reports/get-dashboard-stats.ts`) must **never** compute per-row remaining balances or overdue statuses via correlated scalar subqueries (`SELECT ... WHERE invoice_id = ...`) or post-query in-memory JavaScript loops.
+- Correlated subqueries in Drizzle/Postgres lead to $O(N)$ execution subplans, table scans, and risk column shadowing bugs where unqualified column names (e.g. `id`) resolve to the subquery table instead of the outer query.
+- Aggregates must use a single set-based SQL query joining pre-grouped derived tables on `payments` and `credit_notes`:
+  - Payments subquery groups by `invoice_id` filtering `WHERE business_id = ${businessId} AND status = 'active'`.
+  - Credit notes subquery groups by `original_invoice_id` filtering `WHERE business_id = ${businessId} AND lifecycle_status = 'finalized' AND status = 'active'`.
+  - Outer query computes `remaining = greatest(0, i.grand_total_paise - coalesce(p.paid, 0) - coalesce(c.credited, 0))` and `is_overdue = (i.payment_status = 'overdue' OR (i.due_date IS NOT NULL AND i.due_date < ${todayIso}::date))`.
+  - Final aggregation computes `outstanding`, `overdue_count`, and `overdue_amount` using `filter (where ...)` clauses in a single round-trip with zero Postgres `SubPlan`s.
+
+### 2. Streamed Excel Exports (`xlsxStreamResponse`)
+- Report downloads (`app/api/reports/export/route.ts`) must never buffer the entire compressed `.xlsx` file into a Node.js `Buffer` or `ArrayBuffer` in memory prior to sending HTTP response headers. Materializing multi-megabyte buffers causes heap spikes and delays Time-to-First-Byte (TTFB).
+- All export formats (GSTR-1, ITR, HSN Summary, Sales Register) stream directly to the client via `xlsxStreamResponse(workbook, fileName)` in `lib/excel/xlsx-response.ts`.
+- Implemented using Node `stream.PassThrough` piped into Web Streams via `Readable.toWeb(passThrough)`, initiating HTTP 200 headers immediately with appropriate `Content-Disposition`, `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, and `Cache-Control: no-store`.
+- If workbook serialization fails during streaming, the stream is cleanly destroyed via `.destroy(err)` and logged via `logError`.
+
+### 3. Route Timeout & Range Caps
+- `app/api/reports/export/route.ts` specifies `export const maxDuration = 60;` to ensure serverless runtimes do not terminate valid large export jobs prematurely.
+- Export date ranges are strictly validated and capped at 366 days (`EXPORT_MAX_RANGE_DAYS` in `lib/validations/export.ts` from API-006) to prevent denial-of-service via unbounded temporal queries.
+
+### 4. Synthetic Stress Benchmark & Future Scalability
+- A synthetic load benchmark script is maintained at `scripts/perf/export-benchmark.ts` (`pnpm perf:export-benchmark`), synthesizing 100,000 line items (10,000 B2B invoices + 5,000 B2CS + 5,000 CDNR credit notes).
+- **Benchmark Results (100k items, reviewer run, same machine and data for both rows)**:
+  - Before PERF-002 (`writeBuffer()` + `new Uint8Array` copy): 6.4 s total, **peak RSS 1,959 MB** (at the 2 GB function memory limit).
+  - After PERF-002 (streamed `xlsx.write`): 6.5 s total (build 0.7 s, write 5.8 s), 3.95 MB file, **peak RSS 1,469 MB** (about 25% lower).
+- **Architecture Recommendation**: While execution time is exceptional (< 7 s for 100,000 lines), ExcelJS in-memory DOM structures retain all worksheet cells simultaneously, leading to ~1.2 GB peak heap (~1.5 GB RSS) at 100k scale. The 512 MB target needs the follow-up: migrate builders from `new ExcelJS.Workbook()` to `ExcelJS.stream.xlsx.WorkbookWriter` to achieve $O(1)$ constant memory usage across arbitrary row counts.
+
+### 5. Admin business directory counts
+- `lib/subscriptions/business-directory.ts` (`listBusinessesWithCounts`, called by the platform-admin action `get-all-businesses.ts`) counts invoices and users per business with pre-grouped derived tables joined on business id. It is deliberately not in a `'use server'` module because it has no authorization of its own.
+
+### 6. Guard: no column interpolation inside raw SQL subqueries
+- Drizzle renders a column in a select WITHOUT its table name (`"id"`, `"business_id"`). Inside a raw `(select ... where x = ${table.col})` the bare name binds to the INNER table, silently breaking the correlation. Before PERF-002 this made the dashboard ignore every payment and credit note (outstanding/overdue overstated) and the admin directory show 0 invoices and 0 users for every business.
+- `tests/unit/perf002-sql-guards.test.ts` fails on any `sql` template containing `(select` plus a `${table.column}` interpolation. Use grouped derived tables (`db.select(...).groupBy(...).as('alias')` + `leftJoin`) or explicit SQL aliases.
+
+
