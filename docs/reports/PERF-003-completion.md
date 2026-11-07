@@ -274,4 +274,23 @@ Verified on branch `fix/perf-003-logo-caching` against `main` `acb7378`; the rep
 - **Out-of-spec change accepted:** `eslint.config.mjs` ignores `.claude/**` (git-ignored local reviewer worktrees were being linted locally; CI never sees that folder, so the baseline is unaffected).
 - **Design notes:** browser cache 1 year `immutable` (safe: every upload gets a new random key); Vercel edge cache 1 day via `Vercel-CDN-Cache-Control` (bounded so a removed logo leaves the edge within a day; every deploy purges it too); the legacy unversioned URL 307-redirects with `no-store`, so it can never show a stale logo.
 - **Checks (local):** `pnpm typecheck` clean; `pnpm lint:ratchet` 18 errors / 38 warnings = baseline; `pnpm exec vitest run` 157 files passed, 4 skipped (1331 tests passed before the reviewer tests were added; logo route + upload guard 24/24 after); `pnpm build` OK; `pnpm print-css:build` -> no `lib/pdf/` diff.
-- **Preview checks:** see the PR description / follow-up comment (E2E suite, logo headers, 304 and edge cache on the Vercel preview).
+- **Preview checks:** see "Preview verification" below.
+
+### Preview verification (Vercel preview of PR #15, 2026-11-08)
+
+- **CI:** all 6 checks green on `0199e3b` and again on `ccf9c26` (empty commit to redeploy after the Preview storage variables were added).
+- **Local E2E against the preview:** 22 passed, 1 skipped (mailbox). One earlier run hit a single `page.goto` timeout at journey step 6 (CI passed the same step on the same preview); the immediate re-run was fully green.
+- **Hydration probe:** 0 errors on all 8 pages; sidebar 68 / 220 / 68 px at 800 px.
+- **Real logo probe** (E2E owner uploads logo A, then logo B, via Settings -> General):
+  | Check | Result |
+  |---|---|
+  | Sidebar `src` | `?k=<storage key>` versioned URL |
+  | GET logo | 200 `image/png`, `public, max-age=31536000, immutable`, strong ETag, `nosniff` |
+  | Repeat GETs | `x-vercel-cache: HIT` (served by the edge, no function run) |
+  | `If-None-Match: <etag>` | 304 |
+  | Legacy `/api/business/<id>/logo` | 307 `no-store` -> current versioned URL |
+  | Over-long key / unknown key | 400 / 404, both `no-store` |
+  | Replace with logo B | sidebar `src` changed on the very next page load; legacy URL now redirects to B |
+  | Old URL A after replace | still 200 from the edge cache (expected, bounded to 1 day by `Vercel-CDN-Cache-Control`; no page links to it any more) |
+- Notes: Vercel consumes `Vercel-CDN-Cache-Control` at the edge and does not forward it, and the edge serves the body without `Content-Length` (both set by the origin and covered by unit tests).
+- **Found while verifying (not caused by PERF-003):** the Vercel Preview environment had no `IDRIVE_E2_*` storage variables, so every upload on previews failed ("Failed to upload image to cloud storage"); the E2E suite never uploads a file, so this had gone unnoticed. The owner added the five variables to Preview on 2026-11-08 (temporary accounts; fresh storage accounts and values at launch).
