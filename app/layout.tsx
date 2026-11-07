@@ -44,11 +44,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
+      suppressHydrationWarning // Browser extensions can still inject attributes into <html>
       data-scroll-behavior="smooth"
       className={`${lora.variable} ${geistMono.variable} bg-background`}
     >
-      <body suppressHydrationWarning className="font-sans antialiased">
+      <body className="font-sans antialiased">
         <SentryInit />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

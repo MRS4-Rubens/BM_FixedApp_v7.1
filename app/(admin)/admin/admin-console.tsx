@@ -8,6 +8,7 @@ import { processSubscriptionClaim } from '@/lib/actions/subscriptions/process-re
 import { updateBusinessSubscription } from '@/lib/actions/subscriptions/update-business-subscription';
 import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-business-subscriptions';
 import { getClaimScreenshotUrl } from '@/lib/actions/subscriptions/get-claim-screenshot-url';
+import { useIsClient } from '@/lib/hooks/use-is-client';
 import {
   TrendingUp,
   Building2,
@@ -44,6 +45,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FEEDBACK_RECIPIENT_EMAIL } from '@/lib/config/contact';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 type ProofViewer =
   | { readonly requestId: string; readonly businessName: string; readonly title: string; readonly utr: string; readonly status: 'loading' }
@@ -162,7 +164,7 @@ export function AdminConsole({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [activeTab, setActiveTab] = useState<'overview' | 'pending' | 'businesses' | 'users' | 'settings'>('overview');
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useIsClient();
 
   // Clipboard copy state for quick visual feedback
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -185,6 +187,36 @@ export function AdminConsole({
   // Pagination state (7 rows per page)
   const [bizPage, setBizPage] = useState(1);
   const [userPage, setUserPage] = useState(1);
+
+  const changeBizSearch = (value: string) => {
+    setBizSearch(value);
+    setBizPage(1);
+  };
+
+  const changeBizStatusFilter = (status: 'all' | 'active' | 'trial' | 'expired' | 'suspended') => {
+    setBizStatusFilter(status);
+    setBizPage(1);
+  };
+
+  const toggleBizSort = (field: 'name' | 'expiry' | 'invoices') => {
+    if (bizSortField === field) {
+      setBizSortOrder(bizSortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setBizSortField(field);
+      setBizSortOrder(field === 'invoices' ? 'desc' : 'asc');
+    }
+    setBizPage(1);
+  };
+
+  const changeUserSearch = (value: string) => {
+    setUserSearch(value);
+    setUserPage(1);
+  };
+
+  const changeUserRoleFilter = (role: 'all' | 'owner' | 'staff') => {
+    setUserRoleFilter(role);
+    setUserPage(1);
+  };
 
   // Claim rejection modal
   const [rejectingClaim, setRejectingClaim] = useState<typeof pendingRequests[0] | null>(null);
@@ -257,10 +289,6 @@ export function AdminConsole({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [proofViewer, closeProof]);
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
@@ -271,7 +299,7 @@ export function AdminConsole({
 
   // Filtered and sorted businesses
   const filteredBusinesses = useMemo(() => {
-    let result = businesses.filter((b) => {
+    const result = businesses.filter((b) => {
       const matchSearch =
         b.legalName.toLowerCase().includes(bizSearch.toLowerCase()) ||
         (b.tradeName && b.tradeName.toLowerCase().includes(bizSearch.toLowerCase())) ||
@@ -315,15 +343,6 @@ export function AdminConsole({
       return matchSearch && matchRole;
     });
   }, [users, userSearch, effectiveRoleFilter]);
-
-  // Reset pagination to first page whenever search, filters, or sorting change
-  useEffect(() => {
-    setBizPage(1);
-  }, [bizSearch, bizStatusFilter, bizSortField, bizSortOrder]);
-
-  useEffect(() => {
-    setUserPage(1);
-  }, [userSearch, effectiveRoleFilter]);
 
   // Businesses pagination calculations
   const totalBizPages = Math.max(1, Math.ceil(filteredBusinesses.length / ROWS_PER_PAGE));
@@ -459,10 +478,10 @@ export function AdminConsole({
       `"${b.phone || ''}"`,
       `"${b.subscriptionPlan}"`,
       `"${b.subscriptionStatus}"`,
-      `"${b.subscriptionEndsAt ? new Date(b.subscriptionEndsAt).toLocaleDateString('en-IN') : 'N/A'}"`,
+      `"${b.subscriptionEndsAt ? formatIstDate(b.subscriptionEndsAt) : 'N/A'}"`,
       b.invoiceCount,
       b.userCount,
-      `"${new Date(b.createdAt).toLocaleDateString('en-IN')}"`,
+      `"${formatIstDate(b.createdAt)}"`,
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -949,7 +968,7 @@ export function AdminConsole({
                         <span>•</span>
                         <span>Amount: <b className="text-foreground">{formatPaiseAsInr(req.amountPaise)}</b></span>
                         <span>•</span>
-                        <span>{new Date(req.createdAt).toLocaleDateString('en-IN')}</span>
+                        <span>{formatIstDate(req.createdAt)}</span>
                       </div>
                     </div>
 
@@ -1153,13 +1172,13 @@ export function AdminConsole({
                 type="text"
                 placeholder="Search by legal name, trade name, GSTIN, or email..."
                 value={bizSearch}
-                onChange={(e) => setBizSearch(e.target.value)}
+                onChange={(e) => changeBizSearch(e.target.value)}
                 className="h-9.5 w-full rounded-lg border border-border bg-background pl-9.5 pr-8 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
               {bizSearch && (
                 <button
                   type="button"
-                  onClick={() => setBizSearch('')}
+                  onClick={() => changeBizSearch('')}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   <X className="size-4" />
@@ -1173,7 +1192,7 @@ export function AdminConsole({
                 <button
                   key={st}
                   type="button"
-                  onClick={() => setBizStatusFilter(st)}
+                  onClick={() => changeBizStatusFilter(st)}
                   className={cn(
                     'rounded-lg px-2.5 py-1 text-sm font-bold capitalize transition cursor-pointer',
                     bizStatusFilter === st
@@ -1196,14 +1215,7 @@ export function AdminConsole({
                     <th className="px-4 py-3">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (bizSortField === 'name') {
-                            setBizSortOrder(bizSortOrder === 'asc' ? 'desc' : 'asc');
-                          } else {
-                            setBizSortField('name');
-                            setBizSortOrder('asc');
-                          }
-                        }}
+                        onClick={() => toggleBizSort('name')}
                         className="flex items-center gap-1 hover:text-foreground cursor-pointer"
                       >
                         Business & GSTIN
@@ -1214,14 +1226,7 @@ export function AdminConsole({
                     <th className="px-4 py-3">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (bizSortField === 'expiry') {
-                            setBizSortOrder(bizSortOrder === 'asc' ? 'desc' : 'asc');
-                          } else {
-                            setBizSortField('expiry');
-                            setBizSortOrder('asc');
-                          }
-                        }}
+                        onClick={() => toggleBizSort('expiry')}
                         className="flex items-center gap-1 hover:text-foreground cursor-pointer"
                       >
                         Expires At
@@ -1231,14 +1236,7 @@ export function AdminConsole({
                     <th className="px-4 py-3">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (bizSortField === 'invoices') {
-                            setBizSortOrder(bizSortOrder === 'asc' ? 'desc' : 'asc');
-                          } else {
-                            setBizSortField('invoices');
-                            setBizSortOrder('desc');
-                          }
-                        }}
+                        onClick={() => toggleBizSort('invoices')}
                         className="flex items-center gap-1 hover:text-foreground cursor-pointer"
                       >
                         Invoices
@@ -1316,7 +1314,7 @@ export function AdminConsole({
 
                           <td className="px-4 py-3 text-xs font-semibold">
                             {biz.subscriptionEndsAt ? (
-                              <span>{new Date(biz.subscriptionEndsAt).toLocaleDateString('en-IN')}</span>
+                              <span>{formatIstDate(biz.subscriptionEndsAt)}</span>
                             ) : (
                               <span className="text-muted-foreground italic">Lifetime / Unset</span>
                             )}
@@ -1436,7 +1434,7 @@ export function AdminConsole({
                 type="text"
                 placeholder="Search users by name or business affiliation..."
                 value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
+                onChange={(e) => changeUserSearch(e.target.value)}
                 className="h-9.5 w-full rounded-lg border border-border bg-background pl-9.5 pr-8 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
               />
             </div>
@@ -1446,7 +1444,7 @@ export function AdminConsole({
                 <button
                   key={r}
                   type="button"
-                  onClick={() => setUserRoleFilter(r)}
+                  onClick={() => changeUserRoleFilter(r)}
                   className={cn(
                     'rounded-lg px-2.5 py-1 text-sm font-bold capitalize transition cursor-pointer',
                     effectiveRoleFilter === r
@@ -1522,7 +1520,7 @@ export function AdminConsole({
                           </td>
 
                           <td className="px-4 py-3 text-xs text-muted-foreground font-semibold">
-                            {new Date(u.createdAt).toLocaleDateString('en-IN')}
+                            {formatIstDate(u.createdAt)}
                           </td>
                         </tr>
                       );
@@ -2020,7 +2018,7 @@ export function AdminConsole({
                           .map((item) => (
                             <tr key={item.id} className="hover:bg-muted/10">
                               <td className="px-3 py-2 font-semibold">
-                                {new Date(item.createdAt).toLocaleDateString('en-IN')}
+                                {formatIstDate(item.createdAt)}
                               </td>
                               <td className="px-3 py-2 font-mono text-xs font-bold text-indigo-600">
                                 {item.paymentReference}

@@ -20,6 +20,7 @@ import {
 } from '@/lib/credit-notes/derivation';
 import { formatPaiseAsInr } from '@/lib/money';
 import { CREDIT_NOTE_REASONS, type CreditNoteReasonCode } from '@/lib/validations/credit-note';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 export interface OriginalInvoiceInfo {
   id: string;
@@ -288,7 +289,7 @@ export function CreditNoteForm({
             <span className="text-muted-foreground font-medium">Invoice Date: </span>
             <span className="font-medium text-foreground">
               {originalInvoice.invoice_date
-                ? new Date(originalInvoice.invoice_date).toLocaleDateString('en-IN', {
+                ? formatIstDate(originalInvoice.invoice_date, {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',

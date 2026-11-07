@@ -20,7 +20,8 @@ export default async function AdminLayout({
   // Fetch app user profile details for sidebar initialization
   const user = await getCurrentAppUser();
   const cookieStore = await cookies();
-  const defaultCollapsed = cookieStore.get('sidebar:collapsed')?.value === 'true';
+  const cookieVal = cookieStore.get('sidebar:collapsed')?.value;
+  const collapsedPreference = cookieVal === 'true' ? true : cookieVal === 'false' ? false : null;
 
   const userProp = user
     ? {
@@ -34,7 +35,7 @@ export default async function AdminLayout({
     <div className="flex h-screen overflow-hidden bg-background print:overflow-visible print:h-auto">
       <div className="print:hidden">
         {/* Pass down the user profile with the Platform Admin role override */}
-        <AppSidebar user={userProp} defaultCollapsed={defaultCollapsed} isAdminUser={true} />
+        <AppSidebar user={userProp} collapsedPreference={collapsedPreference} isAdminUser={true} />
       </div>
       <div className="flex flex-1 flex-col overflow-hidden print:overflow-visible">
         <AppTopbar />

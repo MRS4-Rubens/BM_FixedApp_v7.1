@@ -17,11 +17,12 @@ import { useAuthModal } from './auth-modal-context'
 import { loginAction } from '@/app/(auth)/login/actions'
 import { signupAction } from '@/app/(auth)/signup/actions'
 import { SUPPORT_EMAIL } from '@/lib/config/contact'
+import { useIsClient } from '@/lib/hooks/use-is-client'
 
 export function AuthenticationModal() {
   const { isOpen, mode, openLogin, openSignup, closeModal } = useAuthModal()
 
-  const [mounted, setMounted] = useState(false)
+  const mounted = useIsClient()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [passwordInput, setPasswordInput] = useState('')
@@ -34,15 +35,6 @@ export function AuthenticationModal() {
 
   const modalRef = useRef<HTMLDivElement>(null)
   const lastActiveElementRef = useRef<HTMLElement | null>(null)
-
-  // Handle mounting on client side for Portals
-  useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 0)
-    return () => {
-      clearTimeout(timer)
-      setMounted(false)
-    }
-  }, [])
 
   // Restore focus to trigger button when closed
   useEffect(() => {

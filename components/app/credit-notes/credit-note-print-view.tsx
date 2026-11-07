@@ -4,6 +4,7 @@ import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { getCreditNoteReasonLabel } from '@/lib/validations/credit-note';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 export interface CreditNotePrintViewProps {
   creditNote: {
@@ -75,11 +76,11 @@ export function CreditNotePrintView({ creditNote, printSize = 'A4' }: CreditNote
   const reasonLabel = getCreditNoteReasonLabel(creditNote.reason);
 
   const formattedDate = creditNote.issue_date
-    ? new Date(creditNote.issue_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? formatIstDate(creditNote.issue_date, { day: '2-digit', month: 'short', year: 'numeric' })
     : 'N/A';
 
   const origInvoiceDate = origInv.invoice_date
-    ? new Date(origInv.invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? formatIstDate(origInv.invoice_date, { day: '2-digit', month: 'short', year: 'numeric' })
     : 'N/A';
 
   const logoUrl =

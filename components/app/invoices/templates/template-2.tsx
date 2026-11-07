@@ -4,6 +4,7 @@ import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES, getStateAbbrByCode } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 // ============================================================================
 // CONFIGURABLE DESIGN SYSTEM VARIABLES FOR TEMPLATE 2 (BOOK DEPOT)
@@ -102,7 +103,7 @@ export function InvoiceTemplate2({ invoice, businessStateCode, printSize, hasWat
         {/* Top Right Invoice Meta (Borderless, 0px padding, Right-Justified, 12px) */}
         <div className="absolute top-0 right-0 p-0 text-[12px] font-bold text-slate-800 text-right space-y-[2.5px] leading-tight">
           <div>Invoice No : <span className="font-bold font-mono text-slate-950 uppercase">{invoice.invoice_number}</span></div>
-          <div>Date : <span className="font-black text-slate-950">{invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-IN') : '—'}</span></div>
+          <div>Date : <span className="font-black text-slate-950">{invoice.invoice_date ? formatIstDate(invoice.invoice_date) : '—'}</span></div>
         </div>
 
         {/* Centered 5-Line Info Block (Shifted 1cm to the left) */}

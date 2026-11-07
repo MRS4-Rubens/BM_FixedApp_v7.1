@@ -7,6 +7,7 @@ import { formatPaiseAsInr } from '@/lib/money'
 import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-business-subscriptions'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { formatIstDate } from '@/lib/invoices/ist-date'
 import {
   Crown,
   Sparkles,
@@ -88,6 +89,8 @@ interface BillingTabProps {
   business: typeof businesses.$inferSelect | null
   initialSubscriptions?: SubscriptionHistoryItem[]
   usageStats?: UsageStats
+  /** Request render time from the server (lib/time/request-time.ts); keeps server and client output identical. */
+  nowMs: number
 }
 
 interface PlanDefinition {
@@ -180,6 +183,7 @@ export function BillingTab({
     productsCount: 0,
     currentMonthLabel: 'Current Month',
   },
+  nowMs,
 }: BillingTabProps) {
   const [subscriptions, setSubscriptions] = useState<SubscriptionHistoryItem[]>(initialSubscriptions)
   const [copiedUtr, setCopiedUtr] = useState<string | null>(null)
@@ -200,7 +204,7 @@ export function BillingTab({
   // Expiration and Days Calculation
   const targetExpiry = business?.subscription_ends_at || business?.trial_ends_at
   const daysRemaining = targetExpiry
-    ? Math.ceil((new Date(targetExpiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(targetExpiry).getTime() - nowMs) / (1000 * 60 * 60 * 24))
     : null
 
   const isExpired = daysRemaining !== null && daysRemaining <= 0
@@ -208,16 +212,15 @@ export function BillingTab({
   const isActive = status === 'active' && !isExpired
 
   // Subscription Lifecycle progress
-  const lifecycleProgress = useMemo(() => {
+  const lifecycleProgress = (() => {
     const start = business?.subscription_activated_at ? new Date(business.subscription_activated_at).getTime() : null
     const end = targetExpiry ? new Date(targetExpiry).getTime() : null
-    const now = Date.now()
 
     if (!start || !end || end <= start) return null
     const total = end - start
-    const elapsed = Math.max(0, Math.min(total, now - start))
+    const elapsed = Math.max(0, Math.min(total, nowMs - start))
     return Math.round((elapsed / total) * 100)
-  }, [business?.subscription_activated_at, targetExpiry])
+  })()
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text)
@@ -365,7 +368,7 @@ export function BillingTab({
                   <span className="text-xs font-medium text-slate-500">
                     ({isActive ? 'Renews' : 'Valid until'}{' '}
                     <strong className="text-slate-700">
-                      {new Date(targetExpiry).toLocaleDateString('en-IN', {
+                      {formatIstDate(targetExpiry, {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
@@ -387,7 +390,7 @@ export function BillingTab({
                         <>
                           Activated{' '}
                           <strong className="text-slate-700">
-                            {new Date(business.subscription_activated_at).toLocaleDateString('en-IN', {
+                            {formatIstDate(business.subscription_activated_at, {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric',
@@ -906,7 +909,7 @@ export function BillingTab({
                   {paginatedSubscriptions.map((sub) => (
                     <tr key={sub.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-3.5 py-2 whitespace-nowrap font-medium text-slate-800">
-                        {new Date(sub.createdAt).toLocaleDateString('en-IN', {
+                        {formatIstDate(sub.createdAt, {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
@@ -1068,7 +1071,7 @@ export function BillingTab({
                 <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
                   <span className="text-slate-500">Claimed Date:</span>
                   <span className="font-semibold text-slate-900">
-                    {new Date(selectedReceipt.createdAt).toLocaleDateString('en-IN', {
+                    {formatIstDate(selectedReceipt.createdAt, {
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',

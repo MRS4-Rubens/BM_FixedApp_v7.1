@@ -29,6 +29,7 @@ import { formatPaiseAsInr } from '@/lib/money';
 import { getCreditNoteReasonLabel, VOID_CREDIT_NOTE_REASONS } from '@/lib/validations/credit-note';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { cn } from '@/lib/utils';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 interface CreditNoteDetailProps {
   creditNote: CreditNotePrintViewProps['creditNote'] & {
@@ -124,11 +125,11 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
   };
 
   const formattedDate = creditNote.issue_date
-    ? new Date(creditNote.issue_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? formatIstDate(creditNote.issue_date, { day: '2-digit', month: 'short', year: 'numeric' })
     : 'Draft';
 
   const origInvoiceDate = creditNote.originalInvoice.invoice_date
-    ? new Date(creditNote.originalInvoice.invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? formatIstDate(creditNote.originalInvoice.invoice_date, { day: '2-digit', month: 'short', year: 'numeric' })
     : 'N/A';
 
   const reasonLabel = getCreditNoteReasonLabel(creditNote.reason);

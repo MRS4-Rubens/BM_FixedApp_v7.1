@@ -4,6 +4,7 @@ import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 export interface InvoiceLineItem {
   id: string;
@@ -156,7 +157,7 @@ export function InvoiceTemplate1({ invoice, businessStateCode, printSize, hasWat
           </div>
           <div className="text-right text-[12px] space-y-[1.5px] pt-[2px] leading-tight">
             <p className="leading-tight"><span className="text-slate-700 font-bold">Invoice No:</span> <strong className="font-mono font-black text-slate-950 uppercase">{invoice.invoice_number}</strong></p>
-            <p className="leading-tight"><span className="text-slate-700 font-bold">Date:</span> <strong className="text-slate-950 font-bold">{invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-IN') : '—'}</strong></p>
+            <p className="leading-tight"><span className="text-slate-700 font-bold">Date:</span> <strong className="text-slate-950 font-bold">{invoice.invoice_date ? formatIstDate(invoice.invoice_date) : '—'}</strong></p>
             <p className="leading-tight"><span className="text-slate-700 font-bold">Supply:</span> <span className="font-black text-slate-900 bg-slate-200 border border-slate-300 px-2 py-0.2 rounded text-[11px] uppercase">{supplyLabel}</span></p>
           </div>
         </div>

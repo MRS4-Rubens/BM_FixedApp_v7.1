@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentMonthRange } from '@/lib/reports/period';
 import { hasFinalizedInvoices } from '@/lib/business/identity-lock';
 import { getCurrentFinancialYearLabel } from '@/lib/invoices/financial-year';
+import { getRequestTimeMs } from '@/lib/time/request-time';
 
 export default async function SettingsPage({
   searchParams,
@@ -37,7 +38,7 @@ export default async function SettingsPage({
     userName: string | null;
   }> = [];
 
-  let usageStats = {
+  const usageStats = {
     invoicesThisMonth: 0,
     invoicesTotal: 0,
     teamMembersCount: 1,
@@ -120,6 +121,7 @@ export default async function SettingsPage({
 
   const identityLocked = business ? await hasFinalizedInvoices(db, business.id) : false;
   const currentFyLabel = getCurrentFinancialYearLabel();
+  const nowMs = getRequestTimeMs();
 
   return (
     <SettingsClient
@@ -129,6 +131,7 @@ export default async function SettingsPage({
       initialSubscriptions={subscriptionHistory}
       usageStats={usageStats}
       identityLocked={identityLocked}
+      nowMs={nowMs}
     />
   );
 }

@@ -47,14 +47,14 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
-  // Currently saved logo URL (with cache-busting timestamp state)
-  const [savedLogoTimestamp, setSavedLogoTimestamp] = useState<number>(Date.now());
+  // Currently saved logo URL (with cache-busting version string)
+  const [logoVersion, setLogoVersion] = useState<string>(business?.logo_storage_key ?? '');
   const [hasSavedLogo, setHasSavedLogo] = useState<boolean>(Boolean(business?.logo_storage_key));
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const currentLogoUrl = business?.id && hasSavedLogo 
-    ? `/api/business/${business.id}/logo?t=${savedLogoTimestamp}` 
+    ? `/api/business/${business.id}/logo?t=${encodeURIComponent(logoVersion)}` 
     : null;
 
   const activeDisplayUrl = previewDataUrl || currentLogoUrl;
@@ -124,7 +124,8 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
 
         if (result.success) {
           setHasSavedLogo(true);
-          setSavedLogoTimestamp(Date.now());
+          // Each upload gets a new storage key, so it is a stable, unique cache-buster.
+          setLogoVersion(result.data.storageKey);
           setPreviewDataUrl(null);
           setSelectedFile(null);
           setSuccessMessage('Business logo uploaded and saved successfully!');

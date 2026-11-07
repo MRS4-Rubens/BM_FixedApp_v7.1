@@ -33,6 +33,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatIstDate, formatIstTime } from '@/lib/invoices/ist-date';
 
 // Plan pricing definitions
 const PLANS = [
@@ -166,7 +167,7 @@ export function CheckoutForm({
     } else {
       futureDate.setMonth(futureDate.getMonth() + 1);
     }
-    return futureDate.toLocaleDateString('en-IN', {
+    return formatIstDate(futureDate, {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -320,7 +321,7 @@ export function CheckoutForm({
                 </span>
                 <span className="font-bold text-xs sm:text-sm text-slate-900 whitespace-nowrap">Claim Logged</span>
                 <span className="text-[11px] text-slate-500 whitespace-nowrap">
-                  {new Date(pendingRequest.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatIstTime(pendingRequest.created_at, { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
 
@@ -434,7 +435,7 @@ export function CheckoutForm({
               <b className="text-sm font-bold block">Your Subscription Has Expired</b>
               <span className="text-xs mt-0.5 block text-rose-700">
                 Your previous plan expired on{' '}
-                {targetExpiry ? new Date(targetExpiry).toLocaleDateString('en-IN') : 'recently'}. Please select a plan and submit your payment claim to restore services.
+                {targetExpiry ? formatIstDate(targetExpiry) : 'recently'}. Please select a plan and submit your payment claim to restore services.
               </span>
             </div>
           </div>

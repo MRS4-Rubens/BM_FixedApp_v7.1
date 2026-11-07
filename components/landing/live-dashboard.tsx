@@ -65,7 +65,7 @@ export function LiveDashboard() {
   }, [])
 
   // Last updated timestamp state
-  const [lastRefresh, setLastRefresh] = useState<number>(Date.now())
+  const [lastRefresh, setLastRefresh] = useState<number>(() => Date.now())
   const [relativeTime, setRelativeTime] = useState('Just now')
   const [refreshSpin, setRefreshSpin] = useState(false)
 
