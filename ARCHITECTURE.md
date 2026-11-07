@@ -847,7 +847,25 @@ Bill Matrix strictly adheres to the WCAG 2.1 AA standard across all public and a
 - Asynchronous status updates and success notifications must be announced to assistive tech via `role="status"` (`aria-live="polite"`).
 - Dynamic server and client error banners must carry `role="alert"` (`aria-live="assertive"`). Static validation text must not use live regions.
 
+## UPI payment QR (FE-005)
 
+To prevent leaking customer payment amounts, subscription plans, business identity, and administrative Virtual Payment Addresses (VPA) to third-party endpoints, all UPI QR codes and payment URIs are generated locally on the server.
 
+### 1. Zero External QR Providers
+- Under no circumstances may payment payloads, UPI URIs, or payee parameters be dispatched to third-party image generation services (e.g. `api.qrserver.com`, `chart.googleapis.com`, `quickchart.io`).
+- CI guard tests in `tests/unit/fe005-guards.test.ts` statically scan `app/`, `components/`, and `lib/` to enforce zero references to external QR generation domains.
 
+### 2. Dependency Isolation & Server-Only Generation
+- The `qrcode` package is pinned as a server dependency (`qrcode@1.5.4` and devDependency `@types/qrcode@1.5.6`).
+- `qrcode` must never be imported into client components (`'use client'`). All QR rasterization/vectorization happens on the server during Server Component rendering or Server Actions.
+- QR codes are generated as SVG data URLs (`data:image/svg+xml;charset=utf-8,...`) via `QRCode.toString(uri, { type: 'svg', errorCorrectionLevel: 'M', margin: 1 })` in `lib/payments/upi-qr.ts`. SVG format is preferred over base64 raster PNGs for performance, scalability, and smaller payload footprints.
+
+### 3. Canonical UPI Intent URI Formulation (NPCI Compliant)
+- Defined in `lib/payments/upi-intent.ts` via `buildUpiPaymentUri(options)`.
+- Follows the NPCI UPI Linking Specifications: `upi://pay?pa=<vpa>&pn=<payee>&am=<amount>&cu=INR&tn=<note>`.
+- **Query Parameter Encoding**: Encoded using standard `encodeURIComponent`, converting spaces to `%20` (never `+`), ensuring compatibility across Indian UPI apps (Google Pay, PhonePe, Paytm, BHIM, CRED).
+- **Payee Name (`pn`)**: Uses `ADMIN_UPI_NAME` (`upiConfig.upiName`, e.g. "Bill Matrix"), NOT bank account holder name (`accName`).
+- **Amount Formatting (`am`)**: Converted from integer paise to rupees with exactly 2 decimal places (`paise / 100`, fixed to 2 decimals, e.g. `399.00`, `3499.00`).
+- **Transaction Note (`tn`)**: Capped at 50 characters to prevent rejection by bank UPI switches.
+- **Single Source of Pricing Truth**: Checkout options derive amounts exclusively from `PLAN_PRICING` in `lib/subscriptions/entitlements.ts`. Client components receive the pre-calculated `upiPayments` map keyed by `${plan}:${cycle}`.
 

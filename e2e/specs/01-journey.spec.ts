@@ -256,13 +256,36 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
 
     // ── Step 9: Submit Payment Claim ────────────────────────────────────────
     await test.step('Step 9: Submit payment claim', async () => {
-      await checkoutPage.goto();
-      await checkoutPage.submitClaim(identity.utr);
-      await checkoutPage.expectSuccess();
+      // FE-005: record every request made while on checkout; assert afterwards (an expect() thrown inside an
+      // event listener does not reliably fail the test).
+      const checkoutRequestUrls: string[] = [];
+      const onCheckoutRequest = (request: { url: () => string }) => {
+        checkoutRequestUrls.push(request.url());
+      };
+      page.on('request', onCheckoutRequest);
 
-      // Reload to ensure single pending claim is enforced
-      await checkoutPage.goto();
-      await checkoutPage.expectPendingNotice();
+      try {
+        await checkoutPage.goto();
+
+        // FE-005: the business is new here (no pending claim yet), so the UPI QR must be shown, generated
+        // locally as an SVG data: URL.
+        await expect(checkoutPage.qrImage).toBeVisible({ timeout: 10_000 });
+        expect(await checkoutPage.qrImage.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
+
+        await checkoutPage.submitClaim(identity.utr);
+        await checkoutPage.expectSuccess();
+
+        // Reload to ensure single pending claim is enforced
+        await checkoutPage.goto();
+        await checkoutPage.expectPendingNotice();
+      } finally {
+        page.off('request', onCheckoutRequest);
+      }
+
+      const thirdPartyQrRequests = checkoutRequestUrls.filter((url) =>
+        /qrserver\.com|chart\.googleapis\.com|quickchart\.io/i.test(url),
+      );
+      expect(thirdPartyQrRequests).toEqual([]);
     });
 
     // ── Step 10: Admin Approval ─────────────────────────────────────────────

@@ -34,6 +34,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatIstDate, formatIstTime } from '@/lib/invoices/ist-date';
+import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
+import type { UpiPaymentsMap } from '@/lib/payments/types';
 
 // Plan pricing definitions
 const PLANS = [
@@ -41,8 +43,8 @@ const PLANS = [
     id: 'essentials' as const,
     name: 'Essentials Pro Plan',
     tagline: 'Ideal for retailers, wholesalers & growing trade accounts',
-    monthlyPricePaise: 39900,
-    yearlyPricePaise: 349900,
+    monthlyPricePaise: PLAN_PRICING.essentials.monthlyPaise,
+    yearlyPricePaise: PLAN_PRICING.essentials.yearlyPaise,
     features: [
       'Unlimited GST Invoices & Credit Notes',
       'All 4 Traditional & Book Depot Templates',
@@ -58,8 +60,8 @@ const PLANS = [
     id: 'professional' as const,
     name: 'Enterprise / CA Max',
     tagline: 'For high-volume traders & chartered accountant collaboration',
-    monthlyPricePaise: 59900,
-    yearlyPricePaise: 499900,
+    monthlyPricePaise: PLAN_PRICING.professional.monthlyPaise,
+    yearlyPricePaise: PLAN_PRICING.professional.yearlyPaise,
     features: [
       'Everything in Essentials Pro',
       'Unlimited Invoices & Unlimited Users',
@@ -100,6 +102,7 @@ interface CheckoutFormProps {
     accNo: string;
     ifsc: string;
   };
+  upiPayments: UpiPaymentsMap;
   initialPlan?: string;
   initialCycle?: string;
   initialAction?: string;
@@ -109,6 +112,7 @@ export function CheckoutForm({
   business,
   pendingRequest,
   upiConfig,
+  upiPayments,
   initialPlan,
   initialCycle,
 }: CheckoutFormProps) {
@@ -150,7 +154,6 @@ export function CheckoutForm({
   const planDetails = PLANS.find((p) => p.id === selectedPlan)!;
   const activePricePaise =
     billingCycle === 'monthly' ? planDetails.monthlyPricePaise : planDetails.yearlyPricePaise;
-  const activePriceRupees = activePricePaise / 100;
 
   // Calculate annual savings
   const annualSavingsPaise = planDetails.monthlyPricePaise * 12 - planDetails.yearlyPricePaise;
@@ -279,15 +282,8 @@ export function CheckoutForm({
     });
   };
 
-  // UPI URL construction
-  const upiUrl = `upi://pay?pa=${upiConfig.upiId}&pn=${encodeURIComponent(
-    upiConfig.accName || 'Bill Matrix'
-  )}&am=${activePriceRupees}&cu=INR&tn=${encodeURIComponent(
-    `BM Sub ${planDetails.name} ${billingCycle}`
-  )}`;
-
-  // Google QR Code service link
-  const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiUrl)}`;
+  // Active localized UPI payment option generated server-side
+  const activeUpiPayment = upiPayments[`${selectedPlan}:${billingCycle}`];
 
   // ── Pending Verification Screen ──────────────────────────────────────────
   if (pendingRequest) {
@@ -662,24 +658,28 @@ export function CheckoutForm({
                 {/* QR Container */}
                 <div className="mt-2.5 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrImageUrl} alt="UPI QR Code" className="size-40" />
+                  <img
+                    src={activeUpiPayment.qrDataUrl}
+                    alt={`UPI QR code to pay ${formatPaiseAsInr(activeUpiPayment.amountPaise)} to ${upiConfig.upiName}`}
+                    className="size-40"
+                  />
                 </div>
 
                 <div className="mt-2.5 flex flex-col items-center gap-1">
                   <div className="text-sm font-bold text-slate-900">
                     Pay Amount:{' '}
                     <span className="text-indigo-600 font-extrabold text-base font-heading">
-                      {formatPaiseAsInr(activePricePaise)}
+                      {formatPaiseAsInr(activeUpiPayment.amountPaise)}
                     </span>
                   </div>
                   <span className="text-xs text-slate-500 font-medium">
-                    Payee: <strong>{upiConfig.accName}</strong>
+                    Payee: <strong>{upiConfig.upiName}</strong>
                   </span>
                 </div>
 
                 {/* Mobile Intent Direct Link - Exact Image 3 Styling */}
                 <a
-                  href={upiUrl}
+                  href={activeUpiPayment.uri}
                   className="mt-2.5 inline-flex items-center gap-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 font-bold px-3.5 py-2 text-sm shadow-xs transition-all hover:shadow-sm"
                 >
                   <Smartphone className="size-4" />
@@ -693,7 +693,7 @@ export function CheckoutForm({
               <div className="w-full max-w-md space-y-3">
                 <div className="flex justify-between items-center text-sm pb-1 border-b border-slate-200">
                   <span className="font-semibold text-slate-500">Payee Name:</span>
-                  <span className="font-bold text-slate-900">{upiConfig.accName || 'Bill Matrix'}</span>
+                  <span className="font-bold text-slate-900">{upiConfig.upiName || 'Bill Matrix'}</span>
                 </div>
 
                 <div className="flex justify-between items-center bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-xs">
