@@ -50,8 +50,11 @@ export class InvoiceDetailPage {
 
   /** Balance due in paise; 0 once the invoice is settled (the payment form is replaced by a "settled" card). */
   async getBalancePaise(): Promise<number> {
-    const isSettled = await this.page.getByText(/Zero balance remaining/).isVisible().catch(() => false);
-    if (isSettled) return 0;
+    // Wait for EITHER state: right after the final payment the balance line unmounts and the settled card
+    // mounts a moment later. Checking "settled" once and then waiting only for the balance line raced (CI flake).
+    const settledCard = this.page.getByText(/Zero balance remaining/);
+    await expect(settledCard.or(this.balanceDisplay).first()).toBeVisible();
+    if (await settledCard.isVisible().catch(() => false)) return 0;
 
     await expect(this.balanceDisplay).toBeVisible();
     const text = await this.balanceDisplay.innerText();

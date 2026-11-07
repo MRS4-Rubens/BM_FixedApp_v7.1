@@ -1,28 +1,50 @@
+/**
+ * Business logo retrieval endpoint (PERF-003, SEC-005, COMP-001).
+ * Versioned ?k= URLs are immutable because every upload gets a new random key.
+ * The legacy unversioned URL redirects without caching to the current versioned key.
+ * Vercel edge caches immutable assets for 1 day via Vercel-CDN-Cache-Control.
+ */
+
+import { createHash } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 import { getFileBuffer } from '@/lib/storage/idrive';
 import { isLogoKeyReferenced } from '@/lib/storage/logo';
+import { buildLogoUrl, logoMimeFromKey, MAX_LOGO_KEY_LENGTH } from '@/lib/storage/logo-url';
 import { getClientIp } from '@/lib/rate-limit/upstash';
 import { enforceRateLimit } from '@/lib/rate-limit/enforce';
 import { publicAssetLimiter } from '@/lib/rate-limit/limiters';
 import { logError } from '@/lib/actions/_shared/logger';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const IMMUTABLE_CACHE = 'public, max-age=31536000, immutable';
+const CDN_CACHE = 'public, max-age=86400';
+const NO_STORE = { 'Cache-Control': 'no-store' } as const;
 
-function resolveLogoContentType(key: string): string | null {
-  const lowerKey = key.toLowerCase();
-  if (lowerKey.endsWith('.png')) {
-    return 'image/png';
+function logoEtag(key: string): string {
+  return '"' + createHash('sha256').update(key).digest('hex').slice(0, 32) + '"';
+}
+
+function stripWeak(tag: string): string {
+  const trimmed = tag.trim();
+  return trimmed.startsWith('W/') ? trimmed.slice(2).trim() : trimmed;
+}
+
+function ifNoneMatchHits(header: string | null, etag: string): boolean {
+  if (!header || !header.trim()) {
+    return false;
   }
-  if (lowerKey.endsWith('.jpg') || lowerKey.endsWith('.jpeg')) {
-    return 'image/jpeg';
+  const trimmedHeader = header.trim();
+  if (trimmedHeader === '*') {
+    return true;
   }
-  if (lowerKey.endsWith('.webp')) {
-    return 'image/webp';
-  }
-  return null;
+  const cleanEtag = stripWeak(etag);
+  return trimmedHeader
+    .split(',')
+    .map(stripWeak)
+    .some((t) => t === cleanEtag);
 }
 
 export async function GET(
@@ -32,7 +54,15 @@ export async function GET(
   try {
     const { id } = await params;
     if (!id || !UUID_REGEX.test(id)) {
-      return new NextResponse('Invalid Business ID', { status: 400 });
+      return new NextResponse('Invalid Business ID', { status: 400, headers: NO_STORE });
+    }
+
+    const k = request.nextUrl.searchParams.get('k');
+    if (k !== null && (k.length === 0 || k.length > MAX_LOGO_KEY_LENGTH)) {
+      return new NextResponse('Invalid logo key', {
+        status: 400,
+        headers: { 'Cache-Control': 'no-store' },
+      });
     }
 
     const ip = getClientIp(request.headers);
@@ -52,7 +82,7 @@ export async function GET(
               'Retry-After': String(outcome.retryAfterSeconds),
               'Cache-Control': 'no-store',
             },
-          }
+          },
         );
       }
     }
@@ -64,54 +94,64 @@ export async function GET(
       .limit(1);
 
     if (businessRows.length === 0) {
-      return new NextResponse('Business not found', { status: 404 });
+      return new NextResponse('Business not found', { status: 404, headers: NO_STORE });
     }
 
     const currentKey = businessRows[0].logo_storage_key;
-    const k = request.nextUrl.searchParams.get('k');
 
-    let storageKey: string | null = null;
-    let isImmutable = false;
-
-    if (!k) {
-      storageKey = currentKey;
-    } else if (k === currentKey) {
-      storageKey = k;
-      isImmutable = true;
-    } else {
-      const referenced = await isLogoKeyReferenced(db, id, k);
-      if (!referenced) {
-        return new NextResponse('Logo not found', { status: 404 });
+    if (k === null) {
+      if (!currentKey) {
+        return new NextResponse('Logo not found', {
+          status: 404,
+          headers: { 'Cache-Control': 'no-store' },
+        });
       }
-      storageKey = k;
-      isImmutable = true;
+      const redirectUrl = new URL(buildLogoUrl(id, currentKey), request.nextUrl.origin);
+      const redirectResponse = NextResponse.redirect(redirectUrl, 307);
+      redirectResponse.headers.set('Cache-Control', 'no-store');
+      return redirectResponse;
     }
 
-    if (!storageKey) {
-      return new NextResponse('Logo not found', { status: 404 });
+    const isAuthorized = k === currentKey || (await isLogoKeyReferenced(db, id, k));
+    if (!isAuthorized) {
+      return new NextResponse('Logo not found', {
+        status: 404,
+        headers: { 'Cache-Control': 'no-store' },
+      });
     }
 
-    const contentType = resolveLogoContentType(storageKey);
+    const contentType = logoMimeFromKey(k);
     if (!contentType) {
-      return new NextResponse('Logo not found', { status: 404 });
+      return new NextResponse('Logo not found', {
+        status: 404,
+        headers: { 'Cache-Control': 'no-store' },
+      });
     }
 
-    const buffer = await getFileBuffer(storageKey);
-    const cacheControl = isImmutable
-      ? 'public, max-age=31536000, immutable'
-      : 'public, max-age=3600, stale-while-revalidate=86400';
+    const etag = logoEtag(k);
+    const sharedHeaders: Record<string, string> = {
+      'Cache-Control': IMMUTABLE_CACHE,
+      'Vercel-CDN-Cache-Control': CDN_CACHE,
+      ETag: etag,
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
+    };
 
+    if (ifNoneMatchHits(request.headers.get('if-none-match'), etag)) {
+      return new NextResponse(null, { status: 304, headers: sharedHeaders });
+    }
+
+    const buffer = await getFileBuffer(k);
     return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
+        ...sharedHeaders,
         'Content-Type': contentType,
-        'Cache-Control': cacheControl,
-        'X-Content-Type-Options': 'nosniff',
-        'Content-Security-Policy': "default-src 'none'; sandbox",
+        'Content-Length': String(buffer.byteLength),
       },
     });
   } catch (error: unknown) {
     logError('logo-route', error);
-    return new NextResponse('Failed to load logo', { status: 500 });
+    return new NextResponse('Failed to load logo', { status: 500, headers: NO_STORE });
   }
 }

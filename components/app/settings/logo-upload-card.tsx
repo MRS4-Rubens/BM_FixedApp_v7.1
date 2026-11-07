@@ -22,6 +22,7 @@ import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { buildLogoUrl } from '@/lib/storage/logo-url';
 
 interface LogoUploadCardProps {
   business: {
@@ -48,14 +49,14 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
-  // Currently saved logo URL (with cache-busting version string)
-  const [logoVersion, setLogoVersion] = useState<string>(business?.logo_storage_key ?? '');
+  // Currently saved logo storage key (unique version per upload)
+  const [savedLogoKey, setSavedLogoKey] = useState<string>(business?.logo_storage_key ?? '');
   const [hasSavedLogo, setHasSavedLogo] = useState<boolean>(Boolean(business?.logo_storage_key));
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentLogoUrl = business?.id && hasSavedLogo 
-    ? `/api/business/${business.id}/logo?t=${encodeURIComponent(logoVersion)}` 
+  const currentLogoUrl = business?.id && hasSavedLogo && savedLogoKey
+    ? buildLogoUrl(business.id, savedLogoKey)
     : null;
 
   const activeDisplayUrl = previewDataUrl || currentLogoUrl;
@@ -125,8 +126,8 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
 
         if (result.success) {
           setHasSavedLogo(true);
-          // Each upload gets a new storage key, so it is a stable, unique cache-buster.
-          setLogoVersion(result.data.storageKey);
+          // Each upload gets a new storage key, so it produces a versioned immutable URL.
+          setSavedLogoKey(result.data.storageKey);
           setPreviewDataUrl(null);
           setSelectedFile(null);
           setSuccessMessage('Business logo uploaded and saved successfully!');
@@ -164,6 +165,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
         const result = await removeBusinessLogo({});
         if (result.success) {
           setHasSavedLogo(false);
+          setSavedLogoKey('');
           setPreviewDataUrl(null);
           setSelectedFile(null);
           setSuccessMessage('Business logo removed successfully.');
