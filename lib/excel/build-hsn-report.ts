@@ -1,13 +1,14 @@
-import ExcelJS from 'exceljs';
+import type { Writable } from 'node:stream';
+import type ExcelJS from 'exceljs';
 import type { Gstr1ExportData } from '@/lib/actions/reports/get-gstr1-data';
 import { paiseToRupees } from '@/lib/money';
+import { commitDataRow, createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
 
 const currencyFormat = '#,##0.00';
 
-export async function buildHsnWorkbook(data: Gstr1ExportData): Promise<ExcelJS.Workbook> {
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'Bill Matrix';
-  workbook.created = new Date();
+/** Streams the HSN / SAC summary (GSTR-1 Table 12) workbook into `stream`. */
+export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable): Promise<void> {
+  const workbook = createStreamingWorkbook(stream);
 
   const HEADER_FILL: ExcelJS.Fill = {
     type: 'pattern',
@@ -80,6 +81,8 @@ export async function buildHsnWorkbook(data: Gstr1ExportData): Promise<ExcelJS.W
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
   });
   sheet.columns = columns;
+  // Rows 1-6 are final once the column definitions are applied: flush them.
+  sheet.getRow(6).commit();
 
   let rowCount = 7;
   let tQty = 0;
@@ -90,7 +93,8 @@ export async function buildHsnWorkbook(data: Gstr1ExportData): Promise<ExcelJS.W
   let tTax = 0;
   let tTotal = 0;
 
-  data.hsn.forEach((item, index) => {
+  for (let index = 0; index < data.hsn.length; index++) {
+    const item = data.hsn[index];
     const taxable = paiseToRupees(item.taxableValuePaise);
     const cgst = paiseToRupees(item.centralTaxPaise);
     const sgst = paiseToRupees(item.stateUtTaxPaise);
@@ -137,7 +141,8 @@ export async function buildHsnWorkbook(data: Gstr1ExportData): Promise<ExcelJS.W
         cell.alignment = { vertical: 'middle', horizontal: 'left' };
       }
     });
-  });
+    await commitDataRow(row, index);
+  }
 
   // TOTAL Row
   const totalRow = sheet.getRow(rowCount);
@@ -172,5 +177,6 @@ export async function buildHsnWorkbook(data: Gstr1ExportData): Promise<ExcelJS.W
     }
   });
 
-  return workbook;
+  sheet.commit();
+  await workbook.commit();
 }

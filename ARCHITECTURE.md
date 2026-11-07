@@ -882,22 +882,27 @@ To maintain high responsiveness and strict bounded memory consumption under larg
   - Outer query computes `remaining = greatest(0, i.grand_total_paise - coalesce(p.paid, 0) - coalesce(c.credited, 0))` and `is_overdue = (i.payment_status = 'overdue' OR (i.due_date IS NOT NULL AND i.due_date < ${todayIso}::date))`.
   - Final aggregation computes `outstanding`, `overdue_count`, and `overdue_amount` using `filter (where ...)` clauses in a single round-trip with zero Postgres `SubPlan`s.
 
-### 2. Streamed Excel Exports (`xlsxStreamResponse`)
-- Report downloads (`app/api/reports/export/route.ts`) must never buffer the entire compressed `.xlsx` file into a Node.js `Buffer` or `ArrayBuffer` in memory prior to sending HTTP response headers. Materializing multi-megabyte buffers causes heap spikes and delays Time-to-First-Byte (TTFB).
-- All export formats (GSTR-1, ITR, HSN Summary, Sales Register) stream directly to the client via `xlsxStreamResponse(workbook, fileName)` in `lib/excel/xlsx-response.ts`.
-- Implemented using Node `stream.PassThrough` piped into Web Streams via `Readable.toWeb(passThrough)`, initiating HTTP 200 headers immediately with appropriate `Content-Disposition`, `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, and `Cache-Control: no-store`.
-- If workbook serialization fails during streaming, the stream is cleanly destroyed via `.destroy(err)` and logged via `logError`.
+### 2. Streamed Excel Exports (`xlsxStreamResponse` + `WorkbookWriter`, PERF-002b)
+- Report downloads (`app/api/reports/export/route.ts`) must never buffer the entire compressed `.xlsx` file into a Node.js `Buffer` or `ArrayBuffer` in memory prior to sending HTTP response headers, and must never hold the whole workbook model in memory either.
+- Every builder in `lib/excel/` (`writeGstr1Workbook`, `writeHsnWorkbook`, `writeSalesRegisterWorkbook`, `writeItrReportWorkbook`) is an `XlsxWriter`: `(data, stream) => Promise<void>`. Each one uses `createStreamingWorkbook(stream)` from `lib/excel/streaming-workbook.ts`, which wraps `ExcelJS.stream.xlsx.WorkbookWriter` with `useStyles: true`, `useSharedStrings: true` and DEFLATE level 6 (same file structure and size as the old in-memory writer).
+- Rules for writing a builder:
+  - Write rows **top-down**. Compute totals first (or accumulate them while writing data rows) and write the totals row after the data. Never go back to an earlier row: once committed it is gone from memory.
+  - Set `sheet.columns` (and freeze panes, via `addWorksheet(name, { views })` - the streaming sheet has no `views` setter) before committing the first row.
+  - Commit each data row with `commitDataRow(row, index)`; every 2,000 rows it yields to the event loop so archiver can compress and flush output to the client. Finish each sheet with `sheet.commit()` and the file with `await workbook.commit()`.
+- `xlsxStreamResponse(write, fileName)` in `lib/excel/xlsx-response.ts` runs the writer into a Node `stream.PassThrough` exposed as a Web stream (`Readable.toWeb`), so HTTP 200 headers (`Content-Disposition`, `Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `Cache-Control: no-store`) go out immediately and bytes flow while later rows are still being produced.
+- If writing fails part-way (including a synchronous throw), the stream is destroyed via `.destroy(err)` and logged via `logError`, so the browser sees a failed download rather than a truncated file.
+- Regression guard: `tests/unit/perf002b-xlsx-golden.test.ts` builds every report from `tests/fixtures/excel-report-fixtures.ts` and compares a full dump (sheet names, frozen panes, merges, column widths, row heights, cell values, number formats, styles) against `tests/unit/__snapshots__/xlsx-golden/*.json`. Those files were recorded from the old in-memory builders after a cell-by-cell parity test between old and new builders passed; a changed snapshot means the report a CA receives has changed.
 
 ### 3. Route Timeout & Range Caps
 - `app/api/reports/export/route.ts` specifies `export const maxDuration = 60;` to ensure serverless runtimes do not terminate valid large export jobs prematurely.
 - Export date ranges are strictly validated and capped at 366 days (`EXPORT_MAX_RANGE_DAYS` in `lib/validations/export.ts` from API-006) to prevent denial-of-service via unbounded temporal queries.
 
-### 4. Synthetic Stress Benchmark & Future Scalability
-- A synthetic load benchmark script is maintained at `scripts/perf/export-benchmark.ts` (`pnpm perf:export-benchmark`), synthesizing 100,000 line items (10,000 B2B invoices + 5,000 B2CS + 5,000 CDNR credit notes).
-- **Benchmark Results (100k items, reviewer run, same machine and data for both rows)**:
+### 4. Synthetic Stress Benchmark
+- A synthetic load benchmark script is maintained at `scripts/perf/export-benchmark.ts` (`pnpm perf:export-benchmark`), synthesizing 100,000 line items (10,000 B2B invoices + 5,000 B2CS + 5,000 CDNR credit notes) and streaming the GSTR-1 workbook through `writeGstr1Workbook` into a byte-counting sink. It exits non-zero if peak RSS exceeds 512 MB or total time exceeds 45 s.
+- **Benchmark Results (100k items, GSTR-1)**:
   - Before PERF-002 (`writeBuffer()` + `new Uint8Array` copy): 6.4 s total, **peak RSS 1,959 MB** (at the 2 GB function memory limit).
-  - After PERF-002 (streamed `xlsx.write`): 6.5 s total (build 0.7 s, write 5.8 s), 3.95 MB file, **peak RSS 1,469 MB** (about 25% lower).
-- **Architecture Recommendation**: While execution time is exceptional (< 7 s for 100,000 lines), ExcelJS in-memory DOM structures retain all worksheet cells simultaneously, leading to ~1.2 GB peak heap (~1.5 GB RSS) at 100k scale. The 512 MB target needs the follow-up: migrate builders from `new ExcelJS.Workbook()` to `ExcelJS.stream.xlsx.WorkbookWriter` to achieve $O(1)$ constant memory usage across arbitrary row counts.
+  - After PERF-002 (streamed `xlsx.write` of the in-memory workbook): 6.5 s total (build 0.7 s, write 5.8 s), 3.95 MB file, **peak RSS 1,469 MB**.
+  - After PERF-002b (`WorkbookWriter`, rows committed as written): **5.2 s total, 3.94 MB file, peak RSS ~250-262 MB** (Windows dev machine, Node 22, several runs). About 89 MB of that is the synthetic 100k-row dataset itself, which is in memory before writing starts; peak JS heap is ~96 MB. Memory now grows with the input data only, not with the size of the generated workbook.
 
 ### 5. Admin business directory counts
 - `lib/subscriptions/business-directory.ts` (`listBusinessesWithCounts`, called by the platform-admin action `get-all-businesses.ts`) counts invoices and users per business with pre-grouped derived tables joined on business id. It is deliberately not in a `'use server'` module because it has no authorization of its own.

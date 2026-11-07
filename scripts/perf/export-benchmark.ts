@@ -1,7 +1,7 @@
 import { Writable } from 'node:stream';
 import { performance } from 'node:perf_hooks';
 import type { Gstr1ExportData, Gstr1B2bRow, Gstr1B2csRow, Gstr1CdnrRow, Gstr1HsnRow } from '@/lib/actions/reports/get-gstr1-data';
-import { buildGstr1Workbook } from '@/lib/excel/build-gstr1-report';
+import { writeGstr1Workbook } from '@/lib/excel/build-gstr1-report';
 
 class ByteCountingWritable extends Writable {
   bytesWritten = 0;
@@ -205,31 +205,25 @@ async function runBenchmark(): Promise<void> {
   const timer = setInterval(sampleMemory, 50);
 
   try {
-    console.log('Phase 1: Building GSTR-1 Workbook...');
+    // PERF-002b: one phase - the streaming WorkbookWriter builds and writes rows in a single
+    // pass, committing each row into the output stream as soon as it is written.
+    console.log('Streaming GSTR-1 workbook through ExcelJS WorkbookWriter...');
+    const baselineRss = process.memoryUsage().rss;
     const t0 = performance.now();
-    const workbook = await buildGstr1Workbook(syntheticData);
-    const t1 = performance.now();
-    const buildMs = Math.round(t1 - t0);
-    console.log(`Phase 1 complete in ${buildMs} ms.`);
-
-    console.log('Phase 2: Streaming workbook.xlsx.write to Writable...');
     const byteCounter = new ByteCountingWritable();
-    await workbook.xlsx.write(byteCounter);
-    const t2 = performance.now();
-    const writeMs = Math.round(t2 - t1);
-    const totalMs = Math.round(t2 - t0);
-    console.log(`Phase 2 complete in ${writeMs} ms.`);
+    await writeGstr1Workbook(syntheticData, byteCounter);
+    const totalMs = Math.round(performance.now() - t0);
+    console.log(`Stream complete in ${totalMs} ms.`);
 
     clearInterval(timer);
     sampleMemory();
 
     const toMb = (bytes: number) => (bytes / (1024 * 1024)).toFixed(2);
 
-    console.log('\n================ PERF-002 BENCHMARK RESULTS ================');
+    console.log('\n================ PERF-002b BENCHMARK RESULTS (streaming WorkbookWriter) ================');
     console.log(`Line items:       ${totalLines.toLocaleString()}`);
     console.log(`B2B invoices:     ${invoiceCount.toLocaleString()}`);
-    console.log(`Build elapsed:    ${buildMs.toLocaleString()} ms`);
-    console.log(`Write elapsed:    ${writeMs.toLocaleString()} ms`);
+    console.log(`RSS before write: ${toMb(baselineRss)} MB (synthetic dataset already in memory)`);
     console.log(`Total elapsed:    ${totalMs.toLocaleString()} ms (${(totalMs / 1000).toFixed(2)} s)`);
     console.log(`Output size:      ${byteCounter.bytesWritten.toLocaleString()} bytes (${toMb(byteCounter.bytesWritten)} MB)`);
     console.log(`Peak RSS:         ${toMb(peakRss)} MB`);
@@ -237,13 +231,15 @@ async function runBenchmark(): Promise<void> {
     console.log('============================================================\n');
 
     if (peakRss > 512 * 1024 * 1024) {
-      console.warn(`WARNING: Peak RSS exceeded 512 MB (${toMb(peakRss)} MB). Follow-up WorkbookWriter recommended.`);
+      console.warn(`WARNING: Peak RSS exceeded 512 MB (${toMb(peakRss)} MB).`);
+      process.exitCode = 1;
     } else {
       console.log(`PASS: Peak RSS is within 512 MB threshold (${toMb(peakRss)} MB).`);
     }
 
     if (totalMs > 45000) {
-      console.warn(`WARNING: Total time exceeded 45 s (${(totalMs / 1000).toFixed(2)} s). Follow-up WorkbookWriter recommended.`);
+      console.warn(`WARNING: Total time exceeded 45 s (${(totalMs / 1000).toFixed(2)} s).`);
+      process.exitCode = 1;
     } else {
       console.log(`PASS: Total duration is within 45 s threshold (${(totalMs / 1000).toFixed(2)} s).`);
     }

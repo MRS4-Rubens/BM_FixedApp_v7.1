@@ -6,12 +6,12 @@ import { users, businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { exportLimiter, checkRateLimit } from '@/lib/rate-limit/upstash';
 import { getExportData } from '@/lib/actions/reports/get-export-data';
-import { buildSalesRegisterWorkbook } from '@/lib/excel/build-sales-register';
+import { writeSalesRegisterWorkbook } from '@/lib/excel/build-sales-register';
 import { getItrExportData } from '@/lib/actions/reports/get-itr-data';
-import { buildItrReportWorkbook } from '@/lib/excel/build-itr-report';
+import { writeItrReportWorkbook } from '@/lib/excel/build-itr-report';
 import { getGstr1ExportData } from '@/lib/actions/reports/get-gstr1-data';
-import { buildGstr1Workbook } from '@/lib/excel/build-gstr1-report';
-import { buildHsnWorkbook } from '@/lib/excel/build-hsn-report';
+import { writeGstr1Workbook } from '@/lib/excel/build-gstr1-report';
+import { writeHsnWorkbook } from '@/lib/excel/build-hsn-report';
 import { canExportStatutoryReport, checkAccountNotSuspended } from '@/lib/subscriptions/entitlements';
 import { exportQuerySchema } from '@/lib/validations/export';
 import { xlsxStreamResponse } from '@/lib/excel/xlsx-response';
@@ -109,8 +109,8 @@ export async function GET(request: NextRequest) {
       return new Response(gstr1DataRes.error.message, { status: 500 });
     }
 
-    const workbook = await buildGstr1Workbook(gstr1DataRes.data);
-    return xlsxStreamResponse(workbook, `GSTR1-${sanitizedLabel}.xlsx`);
+    const gstr1Data = gstr1DataRes.data;
+    return xlsxStreamResponse((stream) => writeGstr1Workbook(gstr1Data, stream), `GSTR1-${sanitizedLabel}.xlsx`);
   }
 
   if (type === 'itr_report') {
@@ -119,8 +119,8 @@ export async function GET(request: NextRequest) {
       return new Response(itrDataRes.error.message, { status: 500 });
     }
 
-    const workbook = await buildItrReportWorkbook(itrDataRes.data);
-    return xlsxStreamResponse(workbook, `ITR-Report-${sanitizedLabel}.xlsx`);
+    const itrData = itrDataRes.data;
+    return xlsxStreamResponse((stream) => writeItrReportWorkbook(itrData, stream), `ITR-Report-${sanitizedLabel}.xlsx`);
   }
 
   if (type === 'hsn_summary') {
@@ -129,8 +129,8 @@ export async function GET(request: NextRequest) {
       return new Response(gstr1DataRes.error.message, { status: 500 });
     }
 
-    const workbook = await buildHsnWorkbook(gstr1DataRes.data);
-    return xlsxStreamResponse(workbook, `HSN-Summary-${sanitizedLabel}.xlsx`);
+    const hsnData = gstr1DataRes.data;
+    return xlsxStreamResponse((stream) => writeHsnWorkbook(hsnData, stream), `HSN-Summary-${sanitizedLabel}.xlsx`);
   }
 
   // Default / Legacy fallback: Sales Register
@@ -139,6 +139,6 @@ export async function GET(request: NextRequest) {
     return new Response(exportDataRes.error.message, { status: 500 });
   }
 
-  const workbook = await buildSalesRegisterWorkbook(exportDataRes.data);
-  return xlsxStreamResponse(workbook, `Sales-Register-${sanitizedLabel}.xlsx`);
+  const exportData = exportDataRes.data;
+  return xlsxStreamResponse((stream) => writeSalesRegisterWorkbook(exportData, stream), `Sales-Register-${sanitizedLabel}.xlsx`);
 }
