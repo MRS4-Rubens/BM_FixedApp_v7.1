@@ -10,6 +10,10 @@ import { businesses, subscriptionRequests } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { loadPayeeConfig, describePayeeProblems } from '@/lib/config/payee';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
+import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
+import { buildUpiPaymentUri } from '@/lib/payments/upi-intent';
+import { buildUpiQrDataUrl } from '@/lib/payments/upi-qr';
+import type { UpiPaymentsMap } from '@/lib/payments/types';
 
 export const metadata: Metadata = {
   title: 'Upgrade Subscription',
@@ -55,6 +59,36 @@ export default async function CheckoutPage({
     );
     return <PaymentsUnavailable supportEmail={SUPPORT_EMAIL} />;
   }
+
+  // 3b. Build localized UPI payment options and SVG QR data URLs for all plan/cycle combinations
+  const PLAN_DISPLAY_NAMES = {
+    essentials: 'Essentials Pro Plan',
+    professional: 'Enterprise / CA Max',
+  } as const;
+
+  const plans = ['essentials', 'professional'] as const;
+  const cycles = ['monthly', 'yearly'] as const;
+
+  const paymentEntries = await Promise.all(
+    plans.flatMap((plan) =>
+      cycles.map(async (cycle) => {
+        const amountPaise =
+          cycle === 'monthly' ? PLAN_PRICING[plan].monthlyPaise : PLAN_PRICING[plan].yearlyPaise;
+        const note = `BM Sub ${PLAN_DISPLAY_NAMES[plan]} ${cycle}`;
+        const uri = buildUpiPaymentUri({
+          payeeVpa: payee.config.upiId,
+          payeeName: payee.config.upiName,
+          amountPaise,
+          note,
+        });
+        const qrDataUrl = await buildUpiQrDataUrl(uri);
+        const key = `${plan}:${cycle}` as const;
+        return [key, { amountPaise, uri, qrDataUrl }] as const;
+      })
+    )
+  );
+
+  const upiPayments = Object.fromEntries(paymentEntries) as UpiPaymentsMap;
 
   // 4. Fetch any existing pending claim requests
   const pendingRequests = await db
@@ -115,6 +149,7 @@ export default async function CheckoutPage({
         business={businessProp}
         pendingRequest={pending}
         upiConfig={payee.config}
+        upiPayments={upiPayments}
         initialPlan={initialPlan}
         initialCycle={initialCycle}
         initialAction={initialAction}

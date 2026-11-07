@@ -9,6 +9,7 @@ export class CheckoutPage {
   readonly submitButton: Locator;
   readonly successNotice: Locator;
   readonly pendingScreenIndicator: Locator;
+  readonly qrImage: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -20,6 +21,7 @@ export class CheckoutPage {
     this.successNotice = page.locator('text=Claim Submitted Successfully!');
     // Shown while a claim awaits admin verification (app/(app)/checkout: "Payment Claim Under Review").
     this.pendingScreenIndicator = page.getByRole('heading', { name: 'Payment Claim Under Review' });
+    this.qrImage = page.locator('img[alt^="UPI QR code"]');
   }
 
   async goto(): Promise<void> {
