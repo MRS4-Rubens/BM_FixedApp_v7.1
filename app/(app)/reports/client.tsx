@@ -204,9 +204,9 @@ const statutoryCards = [
   {
     type: 'sales_register',
     badge: 'CORE ACCOUNTING',
-    badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    badgeClass: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
     icon: FileText,
-    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    iconColor: 'text-emerald-700 dark:text-emerald-400',
     iconBg: 'bg-emerald-500/10',
     title: 'Sales Register (Detailed)',
     description: 'Line-by-line breakdown including customer GSTIN, Place of Supply, taxable amounts, and CGST/SGST/IGST.',
@@ -214,9 +214,9 @@ const statutoryCards = [
   {
     type: 'hsn_summary',
     badge: 'HSN FILING',
-    badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    badgeClass: 'bg-amber-500/10 text-amber-800 dark:text-amber-400 border-amber-500/20',
     icon: Layers,
-    iconColor: 'text-amber-600 dark:text-amber-400',
+    iconColor: 'text-amber-800 dark:text-amber-400',
     iconBg: 'bg-amber-500/10',
     title: 'HSN / SAC Wise Summary',
     description: 'Aggregated product quantities, units of measurement, taxable values, and tax rates for statutory filing.',
@@ -293,19 +293,19 @@ export function ReportsClient({
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-heading">
               Reports &amp; Financial Intelligence
             </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 shadow-xs">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 shadow-xs">
               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Live Ledger Data
             </span>
           </div>
           <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground font-medium">
-            <Calendar className="size-3.5 sm:size-4 text-muted-foreground/80 shrink-0" />
+            <Calendar className="size-3.5 sm:size-4 text-muted-foreground shrink-0" />
             <span>
               Reporting Window:{' '}
               <strong className="text-foreground font-semibold">
                 {periodLabel.startsWith('Custom') ? 'Custom' : periodLabel}
               </strong>{' '}
-              <span className="text-muted-foreground/80 font-mono text-xs sm:text-sm whitespace-nowrap">
+              <span className="text-muted-foreground font-mono text-xs sm:text-sm whitespace-nowrap">
                 ({startDate} → {endDate})
               </span>
             </span>
@@ -316,6 +316,7 @@ export function ReportsClient({
         <div className="rounded-xl border border-border bg-card px-3 py-2 shadow-xs flex flex-wrap sm:flex-nowrap items-center gap-2 self-start xl:self-auto max-w-full overflow-x-auto">
           <div className="relative w-[196px] shrink-0">
             <select
+              aria-label="Filter report by period"
               value={selectedPreset}
               onChange={handlePresetChange}
               className="w-full appearance-none rounded-lg border border-border/80 bg-background pl-3 pr-8 py-1.5 h-9 text-sm text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer shadow-2xs hover:bg-accent/40 transition-colors whitespace-nowrap"
@@ -326,13 +327,14 @@ export function ReportsClient({
               <option value="prev_fy">Previous Financial Year</option>
               <option value="custom">Custom Date Range</option>
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground/80" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
           </div>
 
           {selectedPreset === 'custom' && (
             <div className="flex items-center gap-2 flex-nowrap shrink-0">
               <input
                 type="date"
+                aria-label="Start date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
                 className="w-[130px] rounded-lg border border-border/80 bg-background px-2.5 py-1.5 h-9 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 shrink-0"
@@ -340,6 +342,7 @@ export function ReportsClient({
               <span className="text-sm text-muted-foreground font-medium px-0.5 whitespace-nowrap">to</span>
               <input
                 type="date"
+                aria-label="End date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
                 className="w-[130px] rounded-lg border border-border/80 bg-background px-2.5 py-1.5 h-9 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 shrink-0"
@@ -471,7 +474,7 @@ export function ReportsClient({
               <p className="text-xs font-semibold text-muted-foreground mt-0.5">
                 {periodLabel} • {salesData.length} interval{salesData.length === 1 ? '' : 's'}
                 {totalInvoices > 0 && (
-                  <span className="ml-1 text-muted-foreground/80">
+                  <span className="ml-1 text-muted-foreground">
                     • {totalInvoices} invoice{totalInvoices === 1 ? '' : 's'}
                   </span>
                 )}
@@ -652,7 +655,7 @@ export function ReportsClient({
                     Output GST: <strong className="text-foreground font-mono">{formatCurrency(totalTax)}</strong>
                   </span>
                 </div>
-                <span className="text-[10px] text-muted-foreground/80 italic font-sans hidden sm:inline">
+                <span className="text-[10px] text-muted-foreground italic font-sans hidden sm:inline">
                   Stacked Bar = Gross Invoiced Total
                 </span>
               </>
@@ -694,7 +697,7 @@ export function ReportsClient({
             {displayedCustomers.length === 0 ? (
               /* Empty State */
               <div className="py-6 px-4 flex flex-col items-center justify-center text-center">
-                <div className="size-10 rounded-full bg-muted/70 flex items-center justify-center mb-2 text-muted-foreground/80">
+                <div className="size-10 rounded-full bg-muted/70 flex items-center justify-center mb-2 text-muted-foreground">
                   <Users className="size-5" strokeWidth={1.75} />
                 </div>
                 <h4 className="text-sm font-bold text-foreground">No customer revenue recorded</h4>
@@ -720,7 +723,7 @@ export function ReportsClient({
                             GSTIN: <span className="font-mono font-semibold">{c.customer_gstin}</span>
                           </span>
                         ) : (
-                          <span className="italic font-serif text-muted-foreground/80">Retail Customer</span>
+                          <span className="italic font-serif text-muted-foreground">Retail Customer</span>
                         )})
                       </span>
                     </div>
@@ -739,7 +742,7 @@ export function ReportsClient({
           <div className="rounded-xl border border-border bg-card px-3.5 py-2.5 shadow-xs">
             <div className="flex items-center justify-between pb-1.5 border-b border-border/50">
               <div className="flex items-center gap-2">
-                <Package className="size-4 text-emerald-600 dark:text-emerald-400" />
+                <Package className="size-4 text-emerald-700 dark:text-emerald-400" />
                 <h3 className="text-base font-bold text-foreground font-heading tracking-tight">
                   Top Products &amp; Services by Volume
                 </h3>
@@ -752,7 +755,7 @@ export function ReportsClient({
             {displayedProducts.length === 0 ? (
               /* Empty State */
               <div className="py-6 px-4 flex flex-col items-center justify-center text-center">
-                <div className="size-10 rounded-full bg-muted/70 flex items-center justify-center mb-2 text-muted-foreground/80">
+                <div className="size-10 rounded-full bg-muted/70 flex items-center justify-center mb-2 text-muted-foreground">
                   <Package className="size-5" strokeWidth={1.75} />
                 </div>
                 <h4 className="text-sm font-bold text-foreground">No product sales recorded</h4>

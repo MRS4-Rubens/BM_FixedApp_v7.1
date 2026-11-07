@@ -328,21 +328,21 @@ export function CheckoutForm({
               <div className="h-0.5 flex-1 bg-amber-300 mx-3 sm:mx-6" />
 
               <div className="flex flex-col items-center gap-1 text-center shrink-0">
-                <span className="size-6 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs animate-pulse shadow-2xs">
+                <span className="size-6 rounded-full bg-amber-700 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                   2
                 </span>
                 <span className="font-bold text-xs sm:text-sm text-amber-800 whitespace-nowrap">Bank Reconciliation</span>
-                <span className="text-[11px] text-slate-500 whitespace-nowrap">In progress</span>
+                <span className="text-[11px] text-slate-600 whitespace-nowrap">In progress</span>
               </div>
 
               <div className="h-0.5 flex-1 bg-slate-200 mx-3 sm:mx-6" />
 
               <div className="flex flex-col items-center gap-1 text-center shrink-0">
-                <span className="size-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-xs">
+                <span className="size-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs">
                   3
                 </span>
-                <span className="font-bold text-xs sm:text-sm text-slate-400 whitespace-nowrap">Activation</span>
-                <span className="text-[11px] text-slate-400 whitespace-nowrap">Instant</span>
+                <span className="font-bold text-xs sm:text-sm text-slate-600 whitespace-nowrap">Activation</span>
+                <span className="text-[11px] text-slate-600 whitespace-nowrap">Instant</span>
               </div>
             </div>
           </div>
@@ -458,7 +458,7 @@ export function CheckoutForm({
 
         {/* Form Alerts */}
         {formSuccess && (
-          <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 px-3.5 text-emerald-800 shadow-xs">
+          <div role="status" className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 px-3.5 text-emerald-800 shadow-xs">
             <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
             <div>
               <b className="text-base font-bold block">Claim Submitted Successfully!</b>
@@ -470,7 +470,7 @@ export function CheckoutForm({
         )}
 
         {formError && (
-          <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 py-2.5 px-3.5 text-rose-800 shadow-xs animate-shake">
+          <div role="alert" className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 py-2.5 px-3.5 text-rose-800 shadow-xs animate-shake">
             <AlertTriangle className="size-5 shrink-0 text-rose-500" />
             <div>
               <b className="text-base font-bold block">Submission Failed</b>
@@ -505,7 +505,7 @@ export function CheckoutForm({
                   'px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer',
                   billingCycle === 'monthly'
                     ? 'bg-white text-slate-900 shadow-xs font-bold'
-                    : 'text-slate-500 hover:text-slate-900'
+                    : 'text-slate-600 hover:text-slate-900'
                 )}
               >
                 Monthly
@@ -517,7 +517,7 @@ export function CheckoutForm({
                   'px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer flex items-center gap-1.5',
                   billingCycle === 'yearly'
                     ? 'bg-white text-slate-900 shadow-xs font-bold'
-                    : 'text-slate-500 hover:text-slate-900'
+                    : 'text-slate-600 hover:text-slate-900'
                 )}
               >
                 <span>Yearly</span>
@@ -638,12 +638,12 @@ export function CheckoutForm({
                     'flex flex-col items-center text-center py-2 px-2 rounded-xl border font-bold text-sm tracking-wide transition-all cursor-pointer',
                     isSelected
                       ? 'border-indigo-600 bg-indigo-50 text-indigo-700 shadow-xs'
-                      : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50'
+                      : 'border-slate-200 text-slate-600 bg-white hover:bg-slate-50'
                   )}
                 >
                   <Icon className="size-4 shrink-0 mb-1" />
                   <span className="font-extrabold">{m.label}</span>
-                  <span className="text-xs font-normal text-slate-400 mt-0.5">
+                  <span className="text-xs font-normal text-slate-600 mt-0.5">
                     {m.desc}
                   </span>
                 </button>
@@ -698,7 +698,7 @@ export function CheckoutForm({
 
                 <div className="flex justify-between items-center bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-xs">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                       UPI ID Address
                     </span>
                     <span className="text-sm font-mono font-bold text-indigo-700 select-all">
@@ -713,7 +713,7 @@ export function CheckoutForm({
                     className="h-8 gap-1 text-sm font-semibold cursor-pointer text-slate-600 hover:text-slate-900"
                   >
                     {copiedField === 'upi' ? (
-                      <span className="text-emerald-600 flex items-center gap-1 font-bold">
+                      <span className="text-emerald-700 flex items-center gap-1 font-bold">
                         <Check className="size-4" /> Copied
                       </span>
                     ) : (
@@ -737,13 +737,13 @@ export function CheckoutForm({
               <div className="w-full max-w-md space-y-2.5">
                 <div className="grid grid-cols-2 gap-3 pb-2 border-b border-slate-200 text-sm">
                   <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
                       Bank Name
                     </span>
                     <span className="font-bold text-slate-900">{upiConfig.bankName}</span>
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
                       Beneficiary Name
                     </span>
                     <span className="font-bold text-slate-900">{upiConfig.accName}</span>
@@ -753,7 +753,7 @@ export function CheckoutForm({
                 {/* Account Number */}
                 <div className="flex justify-between items-center bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-xs">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                       Account Number
                     </span>
                     <span className="text-sm font-mono font-bold text-slate-900 select-all">
@@ -768,7 +768,7 @@ export function CheckoutForm({
                     className="h-8 text-sm font-semibold cursor-pointer text-slate-600 hover:text-slate-900"
                   >
                     {copiedField === 'acc' ? (
-                      <span className="text-emerald-600 flex items-center gap-1 font-bold">
+                      <span className="text-emerald-700 flex items-center gap-1 font-bold">
                         <Check className="size-4" /> Copied
                       </span>
                     ) : (
@@ -782,7 +782,7 @@ export function CheckoutForm({
                 {/* IFSC Code */}
                 <div className="flex justify-between items-center bg-white border border-slate-200 rounded-xl px-4 py-2 shadow-xs">
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                       IFSC Code
                     </span>
                     <span className="text-sm font-mono font-bold text-slate-900 select-all">
@@ -797,7 +797,7 @@ export function CheckoutForm({
                     className="h-8 text-sm font-semibold cursor-pointer text-slate-600 hover:text-slate-900"
                   >
                     {copiedField === 'ifsc' ? (
-                      <span className="text-emerald-600 flex items-center gap-1 font-bold">
+                      <span className="text-emerald-700 flex items-center gap-1 font-bold">
                         <Check className="size-4" /> Copied
                       </span>
                     ) : (
@@ -883,13 +883,15 @@ export function CheckoutForm({
 
               {/* File Uploader */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-bold text-slate-900">
+                <label htmlFor="payment_screenshot" className="text-sm font-bold text-slate-900">
                   Upload Payment Screenshot (Optional but speeds up approval)
                 </label>
 
                 {!fileName ? (
                   <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/40 py-3.5 px-4 hover:bg-slate-50 hover:border-indigo-400 transition relative cursor-pointer group">
                     <input
+                      id="payment_screenshot"
+                      aria-label="Upload payment screenshot"
                       type="file"
                       accept="image/*"
                       onChange={handleScreenshotChange}

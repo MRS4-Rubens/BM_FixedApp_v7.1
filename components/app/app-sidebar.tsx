@@ -67,7 +67,7 @@ const mainNav: NavItem[] = [
     color: {
       activeGradient: 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30',
       inactiveBg: 'bg-emerald-500/10',
-      inactiveText: 'text-emerald-600 dark:text-emerald-400',
+      inactiveText: 'text-emerald-700 dark:text-emerald-400',
       inactiveBorder: 'border-emerald-500/20',
     },
   },
@@ -78,7 +78,7 @@ const mainNav: NavItem[] = [
     color: {
       activeGradient: 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/30',
       inactiveBg: 'bg-amber-500/10',
-      inactiveText: 'text-amber-600 dark:text-amber-400',
+      inactiveText: 'text-amber-800 dark:text-amber-400',
       inactiveBorder: 'border-amber-500/20',
     },
   },
@@ -331,7 +331,7 @@ export function AppSidebar({
       >
         <div className="absolute -top-6 -right-6 size-16 bg-emerald-500/15 rounded-full blur-xl pointer-events-none transition-all duration-300 group-hover/upgrade:scale-150" />
         <div className="flex items-center justify-between mb-1.5">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
             <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
             Active Plan
           </span>
@@ -468,7 +468,7 @@ export function AppSidebar({
                 Matrix
               </span>
             </div>
-            <span className="text-[9px] font-extrabold text-muted-foreground/80 uppercase tracking-[0.16em] mt-0.5">
+            <span className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-[0.16em] mt-0.5">
               GST Invoicing Suite
             </span>
           </div>
@@ -484,7 +484,7 @@ export function AppSidebar({
           {/* MENU Section Header */}
           {!isCollapsed ? (
             <div className="flex items-center gap-2 px-1 pt-3 pb-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground/60 select-none">
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground select-none">
                 Menu
               </span>
               <div className="h-px flex-1 bg-border/40" />
@@ -507,7 +507,7 @@ export function AppSidebar({
           {/* ACCOUNT Section Header */}
           {!isCollapsed ? (
             <div className="flex items-center gap-2 px-1 pt-3.5 pb-1">
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground/60 select-none">
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground select-none">
                 Account
               </span>
               <div className="h-px flex-1 bg-border/40" />
@@ -701,7 +701,7 @@ export function AppSidebar({
                       Matrix
                     </span>
                   </div>
-                  <span className="text-[9px] font-extrabold text-muted-foreground/80 uppercase tracking-[0.16em] mt-0.5">
+                  <span className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-[0.16em] mt-0.5">
                     GST Invoicing Suite
                   </span>
                 </div>
@@ -720,7 +720,7 @@ export function AppSidebar({
             {/* Mobile Navigation List */}
             <nav className="flex-1 overflow-y-auto px-3 pb-3 space-y-0.5 relative z-10">
               <div className="flex items-center gap-2 px-1 pt-3 pb-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground/60 select-none">
+                <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground select-none">
                   Menu
                 </span>
                 <div className="h-px flex-1 bg-border/40" />
@@ -739,7 +739,7 @@ export function AppSidebar({
               </div>
 
               <div className="flex items-center gap-2 px-1 pt-3.5 pb-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground/60 select-none">
+                <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground select-none">
                   Account
                 </span>
                 <div className="h-px flex-1 bg-border/40" />

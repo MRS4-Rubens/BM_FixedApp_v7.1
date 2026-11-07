@@ -22,7 +22,7 @@ export function TestimonialsSection() {
       outcome: 'Zero CA filing discrepancies',
       text: 'Our Chartered Accountant used to spend 4 full days reconciling our HSN codes and interstate IGST invoices every month. With Bill Matrix 1-click GSTR-1 export, filing returns takes under 5 minutes without a single discrepancy.',
       initials: 'AM',
-      color: 'bg-emerald-600',
+      color: 'bg-emerald-700',
     },
     {
       name: 'Vikramaditya Singh',
@@ -32,7 +32,7 @@ export function TestimonialsSection() {
       outcome: '3,000+ Invoices Processed monthly',
       text: 'The master catalog feature allowed us to import 2,500 inventory items and customer GSTIN records in one go. Uptime has been 100% reliable, and creating an invoice takes our team less than 45 seconds on mobile.',
       initials: 'VS',
-      color: 'bg-amber-600',
+      color: 'bg-amber-700',
     },
   ]
 

@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { resolveDraftDisplayPrefs } from '@/lib/invoices/display-prefs'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
-import { ArrowLeft, Plus, Trash2, Send, ChevronDown, User, Receipt, ListTodo, ClipboardEdit, AlertCircle, Calendar, Percent, Eye, Printer, GripVertical, ArrowUpDown } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Send, ChevronDown, ChevronUp, User, Receipt, ListTodo, ClipboardEdit, AlertCircle, Calendar, Percent, Eye, Printer, GripVertical, ArrowUpDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { cn } from '@/lib/utils'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -22,7 +23,7 @@ import {
 } from '@/lib/gst/types'
 import { UNIT_OF_MEASUREMENT_OPTIONS } from '@/lib/gst/units'
 import { useRouter } from 'next/navigation'
-import { formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date'
+import { formatIstDate, formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date'
 import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year'
 import { resolveInvoiceNumber } from '@/lib/invoices/number-format'
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states'
@@ -72,6 +73,13 @@ export function InvoiceForm({
   const [isPreviewVerified, setIsPreviewVerified] = useState(false)
   const [showPreviewWarning, setShowPreviewWarning] = useState(false)
   const [previewPrintSize, setPreviewPrintSize] = useState<'A4' | 'A5'>('A5')
+
+  // Accessible confirmation dialog states
+  const [showFinalizeDialog, setShowFinalizeDialog] = useState(false)
+  const [showCrossFyDialog, setShowCrossFyDialog] = useState(false)
+  const [crossFyErrorMessage, setCrossFyErrorMessage] = useState('')
+  const [pendingFinalizeData, setPendingFinalizeData] = useState<InvoiceDraftInput | null>(null)
+  const [pendingSavedInvoiceId, setPendingSavedInvoiceId] = useState<string | null>(null)
 
   const displayPrefs = useMemo(() => resolveDraftDisplayPrefs(business?.invoice_display_prefs), [business?.invoice_display_prefs]);
 
@@ -314,6 +322,21 @@ export function InvoiceForm({
     setDraggedIdx(null)
     setDropTargetIdx(null)
     setDropPosition(null)
+  }
+
+  // Accessible keyboard line item reordering with focus persistence
+  const handleMoveLine = (from: number, to: number, direction: 'up' | 'down') => {
+    if (to < 0 || to >= fields.length) return
+    move(from, to)
+    const targetLineNum = to + 1
+    requestAnimationFrame(() => {
+      let el = document.getElementById(`move-line-${direction}-${targetLineNum}`) as HTMLButtonElement | null
+      if (!el || el.disabled) {
+        const altDirection = direction === 'up' ? 'down' : 'up'
+        el = document.getElementById(`move-line-${altDirection}-${targetLineNum}`) as HTMLButtonElement | null
+      }
+      el?.focus()
+    })
   }
 
   // Mobile & Tablet Touch Drag Handlers (re-using the exact same insertion drop-line feedback)
@@ -774,7 +797,7 @@ export function InvoiceForm({
     }
   }
 
-  const onFinalize = async (data: InvoiceDraftInput) => {
+  const onFinalizeClick = (data: InvoiceDraftInput) => {
     if (!isPreviewVerified) {
       setShowPreviewWarning(true)
       setGlobalError("Please open the Invoice Preview and verify the layout before finalization.")
@@ -783,33 +806,60 @@ export function InvoiceForm({
       return
     }
 
-    if (!confirm("Once finalized, this invoice cannot be edited — only corrected via a credit note. Continue?")) return
+    setPendingFinalizeData(data)
+    setShowFinalizeDialog(true)
+  }
+
+  const executeFinalize = async (crossFy = false) => {
+    if (!pendingFinalizeData) return
     setIsFinalizing(true)
     setGlobalError(null)
     try {
-      const draftRes = await saveInvoiceDraft(data)
+      // Always save the CURRENT form data before finalizing, so edits made after a cancelled attempt (e.g. a
+      // back-dated warning) are never lost. Reuse the id of a draft created by an earlier attempt so a new
+      // invoice is updated in place instead of creating a duplicate draft.
+      const draftRes = await saveInvoiceDraft({
+        ...pendingFinalizeData,
+        id: pendingFinalizeData.id ?? pendingSavedInvoiceId ?? undefined,
+      })
       if (!draftRes.success) {
         setGlobalError(draftRes.error.message)
         if (draftRes.error.code === 'INVOICE_QUOTA_EXCEEDED' || draftRes.error.code === 'QUOTA_EXCEEDED') {
           setShowQuotaUpgradeModal(true)
         }
         setIsFinalizing(false)
+        setShowFinalizeDialog(false)
+        setShowCrossFyDialog(false)
         return
       }
-      const invoiceId = draftRes.data?.invoiceId
+      const invoiceId = draftRes.data?.invoiceId ?? null
+      setPendingSavedInvoiceId(invoiceId)
+
       if (!invoiceId) {
         setIsFinalizing(false)
+        setShowFinalizeDialog(false)
         return
       }
-      let finRes = await finalizeInvoice({ id: invoiceId })
+
+      const finRes = await finalizeInvoice({
+        id: invoiceId,
+        ...(crossFy ? { confirm_cross_financial_year: true } : {})
+      })
+
       if (!finRes.success && finRes.error.code === 'INVOICE_DATE_CROSS_FY') {
-        if (confirm(`${finRes.error.message}\n\nProceed with this back-dated invoice?`)) {
-          finRes = await finalizeInvoice({ id: invoiceId, confirm_cross_financial_year: true })
-        }
+        setShowFinalizeDialog(false)
+        setCrossFyErrorMessage(finRes.error.message)
+        setShowCrossFyDialog(true)
+        return
       }
+
       if (finRes.success) {
+        setShowFinalizeDialog(false)
+        setShowCrossFyDialog(false)
         router.push(`/invoices/${finRes.data?.invoiceId}`)
       } else {
+        setShowFinalizeDialog(false)
+        setShowCrossFyDialog(false)
         setGlobalError(finRes.error.message)
         if (finRes.error.code === 'INVOICE_QUOTA_EXCEEDED' || finRes.error.code === 'QUOTA_EXCEEDED') {
           setShowQuotaUpgradeModal(true)
@@ -826,7 +876,7 @@ export function InvoiceForm({
   const sectionTitleCls = "flex items-center gap-2 mb-2 pb-1.5 border-b border-border"
 
   const colStyles = {
-    drag: { width: '28px', minWidth: '28px', textAlign: 'left' } as const,
+    drag: { width: '56px', minWidth: '56px', textAlign: 'left' } as const,
     sNo: { width: '42px', minWidth: '42px', textAlign: 'left' } as const,
     // Slightly reduced from 340px to give other columns header wrapping clearance
     description: { width: '100%', minWidth: '250px' } as const,
@@ -845,7 +895,7 @@ export function InvoiceForm({
     <div className="space-y-4">
       <div className="space-y-3.5 print:hidden">
         <div className="flex items-center gap-3">
-          <Link href="/invoices" className="flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-sm shrink-0">
+          <Link href="/invoices" aria-label="Back to invoices" className="flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-sm shrink-0">
             <ArrowLeft className="size-4" />
           </Link>
           <h1 className="text-2xl font-bold tracking-tight font-heading text-foreground whitespace-nowrap">{isDraft ? 'Edit Draft Invoice' : 'New Invoice'}</h1>
@@ -857,13 +907,13 @@ export function InvoiceForm({
         </div>
 
         {globalError && (
-          <div className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium animate-shake">
+          <div role="alert" className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium animate-shake">
             <AlertCircle className="size-5 shrink-0 mt-0.5" />
             <div>{globalError}</div>
           </div>
         )}
         {validationErrors.length > 0 && (
-          <div className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium animate-shake">
+          <div role="alert" className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium animate-shake">
             <AlertCircle className="size-5 shrink-0 mt-0.5" />
             <div className="space-y-1.5 flex-1">
               <div className="font-bold text-xs uppercase tracking-wider">Please resolve the following validation issues:</div>
@@ -888,17 +938,19 @@ export function InvoiceForm({
               </div>
               <div className="grid gap-3 sm:grid-cols-3 items-end">
                 <div>
-                  <label className={labelCls}>Invoice Number</label>
+                  <label htmlFor="invoice-number-input" className={labelCls}>Invoice Number</label>
                   <div className="relative">
-                    <input type="text" readOnly value={invoiceNumberFormatPreview} className={cn(inputCls, 'pr-16 font-mono text-xs text-muted-foreground bg-muted/50 border-dashed')} />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-success-subtle px-1.5 py-0.5 text-[10px] font-bold text-success border border-success/20 whitespace-nowrap">AUTO</span>
+                    <input id="invoice-number-input" aria-label="Invoice number (assigned on finalize)" type="text" readOnly value={invoiceNumberFormatPreview} className={cn(inputCls, 'pr-16 font-mono text-xs text-muted-foreground bg-muted/50 border-dashed')} />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-success-subtle px-1.5 py-0.5 text-[10px] font-bold text-success-text border border-success/20 whitespace-nowrap">AUTO</span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground whitespace-nowrap truncate">Will lock to a formal series on finalize</p>
                 </div>
                 <div>
-                  <label className={labelCls}>Invoice Date</label>
+                  <label htmlFor="invoice-date-input" className={labelCls}>Invoice Date</label>
                   <div className="relative">
                     <input
+                      id="invoice-date-input"
+                      aria-label="Invoice date"
                       type="date"
                       className={cn(inputCls, 'pr-10', errors.invoice_date && 'border-destructive focus:ring-destructive/30 animate-shake')}
                       {...register('invoice_date')}
@@ -942,8 +994,9 @@ export function InvoiceForm({
               </div>
               <div className="flex flex-col gap-3">
                 <div className="relative">
-                  <label className={labelCls}>Customer Name</label>
+                  <label htmlFor="customer-name-input" className={labelCls}>Customer Name</label>
                   <input
+                    id="customer-name-input"
                     type="text"
                     placeholder="Type to search or enter ad-hoc name..."
                     className={cn(inputCls, errors.billing_name && 'border-destructive focus:ring-destructive/30 animate-shake')}
@@ -974,8 +1027,9 @@ export function InvoiceForm({
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <label className={labelCls}>GSTIN (Optional)</label>
+                    <label htmlFor="billing-gstin-input" className={labelCls}>GSTIN (Optional)</label>
                     <input
+                      id="billing-gstin-input"
                       type="text"
                       placeholder="e.g. 29ABCDE1234F1Z5"
                       className={cn(inputCls, 'font-mono text-xs uppercase', errors.billing_gstin && 'border-destructive focus:ring-destructive/30 animate-shake')}
@@ -984,9 +1038,11 @@ export function InvoiceForm({
                     {errors.billing_gstin && <p className="mt-1 text-xs text-destructive font-medium">{errors.billing_gstin.message}</p>}
                   </div>
                   <div>
-                    <label className={labelCls}>Place of Supply State</label>
+                    <label htmlFor="place-of-supply-input" className={labelCls}>Place of Supply State</label>
                     <div className="relative">
                       <select
+                        id="place-of-supply-input"
+                        aria-label="Place of supply state"
                         className={cn(inputCls, 'appearance-none pr-9', errors.place_of_supply_state_code && 'border-destructive focus:ring-destructive/30 animate-shake')}
                         {...register('place_of_supply_state_code')}
                       >
@@ -1129,27 +1185,51 @@ export function InvoiceForm({
                           isDropBottom && "bg-slate-200/75 dark:bg-slate-800/80 [box-shadow:inset_0_-3px_0_0_#334155] dark:[box-shadow:inset_0_-3px_0_0_#94a3b8]"
                         )}
                       >
-                        {/* Drag Handle: Mouse Drag (Desktop) + Touch Drag (Mobile/Tablet) */}
+                        {/* Drag Handle & Keyboard Reorder */}
                         <td className="pl-2 pr-0 py-1.5 align-middle" style={colStyles.drag}>
-                          <div
-                            draggable={fields.length > 1}
-                            onDragStart={(e) => handleDragStart(e, idx)}
-                            onDragEnd={handleDragEnd}
-                            onTouchStart={(e) => handleTouchStart(e, idx)}
-                            onTouchMove={handleTouchMove}
-                            onTouchEnd={handleTouchEnd}
-                            onTouchCancel={handleTouchEnd}
-                            className={cn(
-                              "flex items-center justify-center w-[20px] h-6 rounded transition-all select-none touch-none",
-                              fields.length > 1
-                                ? "cursor-grab active:cursor-grabbing text-muted-foreground/35 hover:text-foreground hover:bg-muted/80 active:scale-95"
-                                : "opacity-20 cursor-default",
-                              touchDraggingIdx === idx && "bg-indigo-500/20 text-indigo-600 scale-110 shadow-xs"
-                            )}
-                            title={fields.length > 1 ? "Drag to reorder row" : undefined}
-                            aria-label={fields.length > 1 ? `Reorder line item ${idx + 1}` : undefined}
-                          >
-                            <GripVertical className="size-3.5" />
+                          <div className="flex items-center gap-0.5">
+                            <div
+                              draggable={fields.length > 1}
+                              onDragStart={(e) => handleDragStart(e, idx)}
+                              onDragEnd={handleDragEnd}
+                              onTouchStart={(e) => handleTouchStart(e, idx)}
+                              onTouchMove={handleTouchMove}
+                              onTouchEnd={handleTouchEnd}
+                              onTouchCancel={handleTouchEnd}
+                              className={cn(
+                                "flex items-center justify-center w-4 h-6 rounded transition-all select-none touch-none",
+                                fields.length > 1
+                                  ? "cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-muted/80 active:scale-95"
+                                  : "opacity-20 cursor-default",
+                                touchDraggingIdx === idx && "bg-indigo-500/20 text-indigo-600 scale-110 shadow-xs"
+                              )}
+                              title={fields.length > 1 ? "Drag to reorder row" : undefined}
+                              aria-label={fields.length > 1 ? `Reorder line item ${idx + 1}` : undefined}
+                            >
+                              <GripVertical className="size-3.5" />
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <button
+                                type="button"
+                                id={`move-line-up-${idx + 1}`}
+                                disabled={idx === 0}
+                                aria-label={`Move line ${idx + 1} up`}
+                                onClick={() => handleMoveLine(idx, idx - 1, 'up')}
+                                className="flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
+                              >
+                                <ChevronUp className="size-3" />
+                              </button>
+                              <button
+                                type="button"
+                                id={`move-line-down-${idx + 1}`}
+                                disabled={idx === fields.length - 1}
+                                aria-label={`Move line ${idx + 1} down`}
+                                onClick={() => handleMoveLine(idx, idx + 1, 'down')}
+                                className="flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
+                              >
+                                <ChevronDown className="size-3" />
+                              </button>
+                            </div>
                           </div>
                         </td>
 
@@ -1163,6 +1243,7 @@ export function InvoiceForm({
                           <input
                             type="text"
                             placeholder="Description"
+                            aria-label={`Description, line ${idx + 1}`}
                             className={cn(tableInputCls, errors.line_items?.[idx]?.description && 'border-destructive focus:ring-destructive/30 animate-shake')}
                             style={colStyles.description}
                             {...register(`line_items.${idx}.description`)}
@@ -1220,6 +1301,7 @@ export function InvoiceForm({
                             <input
                               type="text"
                               placeholder="HSN"
+                              aria-label={`HSN or SAC, line ${idx + 1}`}
                               className={cn(tableInputCls, 'font-mono text-center', errors.line_items?.[idx]?.hsn_sac_code && 'border-destructive focus:ring-destructive/30 animate-shake')}
                               style={colStyles.hsn}
                               {...register(`line_items.${idx}.hsn_sac_code`)}
@@ -1233,6 +1315,7 @@ export function InvoiceForm({
                             type="number"
                             min="0"
                             step="0.001"
+                            aria-label={`Quantity, line ${idx + 1}`}
                             className={cn(tableInputCls, 'text-center font-semibold', errors.line_items?.[idx]?.quantity && 'border-destructive focus:ring-destructive/30 animate-shake')}
                             style={colStyles.qty}
                             {...register(`line_items.${idx}.quantity`)}
@@ -1243,6 +1326,7 @@ export function InvoiceForm({
                         <td className="px-2 py-1.5" style={colStyles.uqc}>
                           <div className="relative" style={colStyles.uqc}>
                             <select
+                              aria-label={`Unit, line ${idx + 1}`}
                               className="w-full appearance-none rounded-md border border-border bg-background pl-2.5 pr-6 py-1 text-sm font-medium text-foreground text-center focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer hover:border-muted-foreground/20 shadow-sm transition-all"
                               style={colStyles.uqc}
                               {...register(`line_items.${idx}.unit_of_measurement`)}
@@ -1263,6 +1347,7 @@ export function InvoiceForm({
                             type="number"
                             min="0"
                             step="0.01"
+                            aria-label={`Rate, line ${idx + 1}`}
                             className={cn(tableInputCls, 'text-right', errors.line_items?.[idx]?.unit_price && 'border-destructive focus:ring-destructive/30 animate-shake')}
                             style={colStyles.rate}
                             {...register(`line_items.${idx}.unit_price`)}
@@ -1277,6 +1362,7 @@ export function InvoiceForm({
                               min="0"
                               max="100"
                               step="1"
+                              aria-label={`Discount percent, line ${idx + 1}`}
                               className={cn(tableInputCls, 'text-right', errors.line_items?.[idx]?.discount && 'border-destructive focus:ring-destructive/30 animate-shake')}
                               style={colStyles.disc}
                               {...register(`line_items.${idx}.discount`)}
@@ -1288,6 +1374,7 @@ export function InvoiceForm({
                         <td className="px-2 py-1.5" style={colStyles.gst}>
                           <div className="relative" style={colStyles.gst}>
                             <select
+                              aria-label={`Tax rate, line ${idx + 1}`}
                               className={cn("w-full appearance-none rounded-md border border-border bg-background pl-2.5 pr-6 py-1 text-xs text-foreground text-center focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer hover:border-muted-foreground/20 shadow-sm transition-all", errors.line_items?.[idx]?.tax_rate_id && 'border-destructive focus:ring-destructive/30 animate-shake')}
                               style={colStyles.gst}
                               title={taxRates.find(tr => tr.id === trId)?.label || 'Select GST Rate'}
@@ -1310,6 +1397,7 @@ export function InvoiceForm({
                             type="number"
                             min="0"
                             step="0.01"
+                            aria-label={`Net amount, line ${idx + 1}`}
                             className={cn(tableInputCls, 'text-right font-semibold text-primary focus:ring-primary/20')}
                             style={colStyles.netAmt}
                             value={displayNetAmt}
@@ -1420,27 +1508,27 @@ export function InvoiceForm({
                 <span className="text-sm font-bold text-foreground uppercase tracking-wider whitespace-nowrap">Summary &amp; GST Breakdown</span>
               </div>
               <div className="mb-1">
-                <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider border whitespace-nowrap', supplyType === 'intra_state' ? 'bg-success-subtle text-success border-success/20' : 'bg-blue-100/60 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 border-blue-200 dark:border-blue-900')}>
+                <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider border whitespace-nowrap', supplyType === 'intra_state' ? 'bg-success-subtle text-success-text border-success/20' : 'bg-blue-100/60 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 border-blue-200 dark:border-blue-900')}>
                   {supplyType === 'intra_state' ? 'Intra-state Supply (CGST + SGST)' : 'Inter-state Supply (IGST)'}
                 </span>
               </div>
               <div className="flex flex-col flex-1 justify-between mt-1">
                 <div className="divide-y divide-zinc-150 dark:divide-zinc-800/40 text-sm border-b border-zinc-150 dark:border-zinc-800/40 mb-2.5">
                   <div className="flex justify-between py-0.5">
-                    <span className="text-muted-foreground/90 font-semibold whitespace-nowrap">Taxable Value</span>
+                    <span className="text-muted-foreground font-semibold whitespace-nowrap">Taxable Value</span>
                     <span className="font-bold text-foreground whitespace-nowrap">{formatINR(totalTaxable)}</span>
                   </div>
                   {supplyType === 'intra_state' ? (
                     <>
                       <div className="flex justify-between py-0.5">
-                        <span className="text-muted-foreground/90 font-semibold flex items-center gap-1.5 whitespace-nowrap">
+                        <span className="text-muted-foreground font-semibold flex items-center gap-1.5 whitespace-nowrap">
                           <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />
                           CGST
                         </span>
                         <span className="font-bold text-foreground whitespace-nowrap">{formatINR(totalCGST)}</span>
                       </div>
                       <div className="flex justify-between py-0.5">
-                        <span className="text-muted-foreground/90 font-semibold flex items-center gap-1.5 whitespace-nowrap">
+                        <span className="text-muted-foreground font-semibold flex items-center gap-1.5 whitespace-nowrap">
                           <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)] shrink-0" />
                           SGST
                         </span>
@@ -1449,7 +1537,7 @@ export function InvoiceForm({
                     </>
                   ) : (
                     <div className="flex justify-between py-0.5">
-                      <span className="text-muted-foreground/90 font-semibold flex items-center gap-1.5 whitespace-nowrap">
+                      <span className="text-muted-foreground font-semibold flex items-center gap-1.5 whitespace-nowrap">
                         <span className="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.6)] shrink-0" />
                         IGST
                       </span>
@@ -1458,7 +1546,7 @@ export function InvoiceForm({
                   )}
 
                   {/* Rounded Off Row */}
-                  <div className="flex justify-between py-0.5 italic text-muted-foreground/90">
+                  <div className="flex justify-between py-0.5 italic text-muted-foreground">
                     <span className="font-semibold whitespace-nowrap">Rounded Off</span>
                     <span className="font-bold whitespace-nowrap">
                       {roundOff >= 0 ? `+₹${roundOff.toFixed(2)}` : `-₹${Math.abs(roundOff).toFixed(2)}`}
@@ -1468,7 +1556,7 @@ export function InvoiceForm({
 
                 <div>
                   <div className="rounded-xl bg-gradient-to-r from-primary/[0.05] to-primary/[0.015] dark:from-primary/[0.04] dark:to-transparent border-2 border-primary/30 dark:border-primary/20 px-3.5 py-2 flex justify-between items-center shadow-[0_0_20px_rgba(59,130,246,0.14),inset_0_1px_0_rgba(255,255,255,0.05)] dark:shadow-[0_0_25px_rgba(59,130,246,0.09),inset_0_1px_0_rgba(255,255,255,0.05)] hover:border-primary/50 hover:shadow-[0_0_28px_rgba(59,130,246,0.22),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all duration-300">
-                    <span className="text-base font-bold text-foreground/90 whitespace-nowrap">Grand Total</span>
+                    <span className="text-base font-bold text-foreground whitespace-nowrap">Grand Total</span>
                     <span className="text-xl font-black text-primary font-heading whitespace-nowrap">{formatINR(grandTotal)}</span>
                   </div>
 
@@ -1476,7 +1564,7 @@ export function InvoiceForm({
                     <Button variant="outline" size="sm" type="button" className="flex-1 shadow-sm font-bold text-sm whitespace-nowrap" disabled={isSubmitting || isFinalizing} onClick={handleSubmit(onSaveDraft)}>
                       Save Draft
                     </Button>
-                    <Button type="button" size="sm" className="flex-1 shadow-sm font-bold text-sm hover:glow-btn whitespace-nowrap" disabled={isSubmitting || isFinalizing} onClick={handleSubmit(onFinalize)}>
+                    <Button type="button" size="sm" className="flex-1 shadow-sm font-bold text-sm hover:glow-btn whitespace-nowrap" disabled={isSubmitting || isFinalizing} onClick={handleSubmit(onFinalizeClick)}>
                       <Send className="size-4 shrink-0" /> <span className="whitespace-nowrap">{isFinalizing ? 'Finalizing...' : 'Finalize Invoice'}</span>
                     </Button>
                   </div>
@@ -1577,7 +1665,7 @@ export function InvoiceForm({
                       <span className={cn(
                         "transition-colors whitespace-nowrap",
                         isPreviewVerified
-                          ? "text-success font-bold"
+                          ? "text-success-text font-bold"
                           : "text-muted-foreground font-semibold"
                       )}>
                         Preview Verified
@@ -1587,6 +1675,7 @@ export function InvoiceForm({
                     {/* 1. Close Button */}
                     <button
                       type="button"
+                      aria-label="Close dialog"
                       onClick={() => setIsPreviewOpen(false)}
                       className="rounded-lg p-1.5 text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all border border-red-500/25 shadow-[0_0_8px_rgba(239,68,68,0.12)] hover:border-red-500/45 cursor-pointer"
                     >
@@ -1652,6 +1741,57 @@ export function InvoiceForm({
         description="You have reached your Free plan limit of 30 invoices this calendar month. Upgrade to Essentials Pro (₹399/mo) for unlimited invoices and full statutory compliance."
         recommendedPlan="essentials"
         ctaText="Upgrade to Essentials Pro (₹399/mo)"
+      />
+
+      {/* Accessible statutory finalize confirmation dialog */}
+      <ConfirmDialog
+        open={showFinalizeDialog}
+        onOpenChange={setShowFinalizeDialog}
+        title="Finalize invoice?"
+        confirmLabel="Finalize invoice"
+        description={
+          <div className="space-y-3 text-sm">
+            <p>
+              Once finalized, this invoice cannot be edited — only corrected via a credit note.
+            </p>
+            <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Invoice Number:</span>
+                <span className="font-semibold text-foreground">{invoiceNumberFormatPreview}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Invoice Date:</span>
+                <span className="font-semibold text-foreground">{invoiceDateVal ? formatIstDate(invoiceDateVal, { day: '2-digit', month: 'short', year: 'numeric' }) : 'Today'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Customer:</span>
+                <span className="font-semibold text-foreground">{billingNameVal || '—'}</span>
+              </div>
+              <div className="flex justify-between border-t border-border/60 pt-1.5 mt-1">
+                <span className="text-muted-foreground font-medium">Grand Total:</span>
+                <span className="font-bold text-foreground">{formatINR(grandTotal)}</span>
+              </div>
+            </div>
+          </div>
+        }
+        onConfirm={() => executeFinalize(false)}
+      />
+
+      {/* Accessible cross-financial-year confirmation dialog */}
+      <ConfirmDialog
+        open={showCrossFyDialog}
+        onOpenChange={setShowCrossFyDialog}
+        title="Finalize back-dated invoice?"
+        confirmLabel="Finalize back-dated invoice"
+        description={
+          <div className="space-y-2 text-sm">
+            <p>{crossFyErrorMessage}</p>
+            <p className="text-xs text-muted-foreground">
+              Proceed with this back-dated invoice?
+            </p>
+          </div>
+        }
+        onConfirm={() => executeFinalize(true)}
       />
     </div>
   )

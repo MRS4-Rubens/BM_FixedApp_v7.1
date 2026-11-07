@@ -46,6 +46,7 @@ export function CalculatorSection() {
               </div>
               <input
                 type="range"
+                aria-label="Monthly Invoices Created"
                 min="20"
                 max="1500"
                 step="10"
@@ -71,6 +72,7 @@ export function CalculatorSection() {
               </div>
               <input
                 type="range"
+                aria-label="Current Manual Time Spent Per Invoice"
                 min="5"
                 max="30"
                 step="1"

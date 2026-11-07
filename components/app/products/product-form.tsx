@@ -229,7 +229,7 @@ export function ProductForm({
                     'text-[11px] font-bold px-2 py-0.5 rounded border',
                     isService
                       ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
-                      : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                      : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20'
                   )}
                 >
                   {isService ? 'SAC (Service)' : 'HSN (Physical Good)'}
@@ -242,7 +242,7 @@ export function ProductForm({
         </div>
 
         {product && !product.is_active && (
-          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-sm text-amber-600 dark:text-amber-400">
+          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-sm text-amber-800 dark:text-amber-400">
             This product is currently inactive and will not appear in dropdowns when creating invoices.
           </div>
         )}
@@ -539,7 +539,7 @@ export function ProductForm({
 
                 <div className="flex items-center gap-3">
                   {success && (
-                    <span className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                       <Check className="size-4 shrink-0" />
                       {isEdit ? 'Product updated!' : 'Product added successfully!'}
                     </span>
@@ -591,11 +591,11 @@ export function ProductForm({
 
             <div className="shrink-0 flex items-center gap-1.5">
               {selectedTaxRate ? (
-                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                   {selectedTaxRate.label} GST
                 </span>
               ) : (
-                <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-400 border border-amber-500/20">
                   No rate
                 </span>
               )}
@@ -608,7 +608,7 @@ export function ProductForm({
               <span className="text-lg sm:text-xl font-extrabold text-foreground font-heading">
                 {formatPaiseAsInr(priceInPaise)}
               </span>
-              <span className="text-sm font-semibold text-muted-foreground/80">
+              <span className="text-sm font-semibold text-muted-foreground">
                 / {watchedUnit}
               </span>
               <span className="text-sm font-mono font-medium text-muted-foreground">
@@ -625,7 +625,7 @@ export function ProductForm({
 
           {/* Optional description preview */}
           {watchedDescription && (
-            <p className="text-xs text-muted-foreground/80 line-clamp-2 italic pt-1.5 border-t border-border/30">
+            <p className="text-xs text-muted-foreground line-clamp-2 italic pt-1.5 border-t border-border/30">
               &quot;{watchedDescription}&quot;
             </p>
           )}
@@ -682,7 +682,7 @@ export function ProductForm({
                 <span className="font-bold text-foreground block">Customer MRP / Unit</span>
                 <span className="text-xs text-muted-foreground">Inclusive of estimated GST</span>
               </div>
-              <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono font-heading">
+              <span className="text-lg font-black text-emerald-700 dark:text-emerald-400 font-mono font-heading">
                 ₹{totalAmountPerUnit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>

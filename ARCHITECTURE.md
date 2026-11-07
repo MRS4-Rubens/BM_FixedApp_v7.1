@@ -812,6 +812,42 @@ Bill Matrix maintains an automated end-to-end regression and compliance suite us
 - **Audit status**: `pnpm audit --prod` has no critical advisories from Next.js, Sentry or shadcn. The remaining
   critical advisories come from `better-auth` inside `@neondatabase/auth` and are tracked under SEC-007.
 
+## Accessibility (FE-004)
+
+Bill Matrix strictly adheres to the WCAG 2.1 AA standard across all public and authenticated application routes. Automated accessibility audits run in CI using axe-core (`@axe-core/playwright`), and violations must never increase (`e2e/a11y-baseline.json` must only ratchet downwards towards zero).
+
+### 1. Contrast Rules (Normal text ≥ 4.5:1, Large text ≥ 3:1)
+- **Zero Text Opacity**: Never reduce readable text color using Tailwind alpha modifiers (e.g. `text-muted-foreground/50`, `text-muted-foreground/60`, `text-muted-foreground/80`, `text-muted-foreground/90`). Use solid `text-muted-foreground` directly (5.51:1 on white `#ffffff`, 4.90:1 on `bg-muted` `#f1f5f9`). Opacity modifiers remain permissible only on non-text SVG icon glyphs and input placeholders.
+- **Green Text (`--success-text`)**: Defined in `app/globals.css` as `--success-text: oklch(0.47 0.12 162);` and mapped via `@theme { --color-success-text: var(--success-text); }`. Replaces `text-success` whenever rendered as text on light or tinted backgrounds (6.28:1 on white, 5.50:1 on `bg-success-subtle`).
+- **Standardized Shade Ratios**:
+  - `emerald-700` (≥ 4.87:1 on light/tinted surfaces) replaces `emerald-600` (3.65:1) across monetary sums, "Reconciled" status badges, active indicators, and landing metrics.
+  - White text on green backgrounds must use `bg-emerald-700` (5.36:1) instead of `bg-emerald-600`.
+  - Amber text on light backgrounds or badge tints (`bg-amber-500/10` or `bg-amber-50`) must use `text-amber-800` (5.66:1) instead of `text-amber-600` or `text-amber-700`.
+  - Amber buttons and badges with white text must use `bg-amber-700` (5.03:1) instead of `bg-amber-500`. Text-bearing elements must never apply `animate-pulse` as pulsing opacity drops contrast below statutory thresholds.
+  - Small red text on destructive/alert tints must use `text-red-700` (≥ 5.33:1) instead of `text-destructive` or `text-red-600`.
+  - Neutral text on light marketing surfaces must use `text-zinc-600` or `text-slate-600` (≥ 5.0:1) instead of `text-zinc-400` or `text-slate-400`.
+
+### 2. Form Labelling & Programmatic Associations
+- Visible form labels must be explicitly tied to their input or control using React `useId()` and matching `<label htmlFor={id}>` / `<input id={id}>`.
+- Label-styled headings above complex groups, star rating groups, or button selectors must be rendered as semantic `<div>` elements rather than unassociated `<label>` tags to prevent axe-core `label` violations.
+- Form controls without visible labels (e.g. line-item grid inputs per row, search bars, preset filters) must carry explicit, localized `aria-label` attributes (e.g. `Quantity, line ${idx + 1}`, `Rate, line ${idx + 1}`, `Filter by invoice status`).
+
+### 3. Accessible Dialogs & Modals (`ConfirmDialog`)
+- **Zero Native Browser Prompts**: All destructive, statutory, or stateful actions strictly prohibit `window.confirm()` or `confirm()`. Replaced everywhere with `ConfirmDialog` (`components/ui/confirm-dialog.tsx`).
+- **Base UI Architecture**: `ConfirmDialog` is built on `@base-ui/react/alert-dialog` (`AlertDialog.Root`, `Portal`, `Backdrop`, `Viewport`, `Popup`, `Title`, `Description`), enforcing accessible `role="alertdialog"`, programmatic focus restoration, and Escape handling.
+- **Tone & Default Focus**: Destructive dialogs (`tone="destructive"`) default initial focus to the "Cancel" action button to prevent accidental invocation via Enter.
+- **Custom Modals**: All bespoke modal popups (subscription upgrade prompts, voiding dialogs, admin verification consoles) are migrated to `@base-ui/react/dialog` to ensure compliant focus trapping, screen reader announcing, and portal rendering.
+
+### 4. Keyboard Navigation & Line Item Reordering
+- In invoice and credit note editors (`components/app/invoices/invoice-form.tsx`), every line item table row provides accessible keyboard reordering buttons (`Move line N up` / `Move line N down`) positioned adjacent to drag handles.
+- Boundary states are programmatically disabled (first row cannot move up; last row cannot move down).
+- Focus persistence is preserved after reordering via `requestAnimationFrame` and `element.focus()`.
+
+### 5. Live Regions & Asynchronous Feedback
+- Asynchronous status updates and success notifications must be announced to assistive tech via `role="status"` (`aria-live="polite"`).
+- Dynamic server and client error banners must carry `role="alert"` (`aria-live="assertive"`). Static validation text must not use live regions.
+
+
 
 
 

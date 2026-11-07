@@ -166,13 +166,13 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
       {balanceDue <= 0 ? (
         <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 via-card to-emerald-500/10 px-3 py-2 shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700">
               <ShieldCheck className="size-[26px]" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <h3 className="text-[15px] font-bold text-foreground">Invoice Settled in Full</h3>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-600">
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
                   <CheckCircle2 className="size-3.5" /> Reconciled
                 </span>
               </div>
@@ -203,7 +203,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
           </div>
 
           {error && (
-            <div className="mb-2.5 flex items-center gap-2 text-[13px] text-destructive font-semibold bg-destructive/10 p-2 rounded-lg border border-destructive/20">
+            <div role="alert" className="mb-2.5 flex items-center gap-2 text-[13px] text-destructive font-semibold bg-destructive/10 p-2 rounded-lg border border-destructive/20">
               <AlertCircle className="size-[18px] shrink-0" />
               <span>{error}</span>
             </div>
@@ -390,7 +390,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
               <Wallet2 className="size-[18px]" />
             </div>
             <p className="text-[13px] font-semibold text-muted-foreground">No payments recorded yet</p>
-            <p className="text-[11px] text-muted-foreground/70 mt-0.5">Use the form above to record incoming settlements.</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Use the form above to record incoming settlements.</p>
           </div>
         ) : (
           <TooltipProvider>
@@ -431,7 +431,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                       >
                         {/* 1. Date (DD/MM/YY) */}
                         <td className="py-1 pr-1 whitespace-nowrap text-xs font-medium w-[62px]">
-                          <span className={cn(isVoided ? "line-through text-muted-foreground/70" : "text-muted-foreground")}>
+                          <span className={cn(isVoided ? "line-through text-muted-foreground" : "text-muted-foreground")}>
                             {formattedDate}
                           </span>
                         </td>
@@ -526,7 +526,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                               {formatPaiseAsInr(p.amount_paise)}
                             </span>
                           ) : (
-                            <span className="font-bold text-emerald-600 whitespace-nowrap">
+                            <span className="font-bold text-emerald-700 whitespace-nowrap">
                               {formatPaiseAsInr(p.amount_paise)}
                             </span>
                           )}

@@ -19,6 +19,7 @@ import { LogoUploadCard } from './logo-upload-card';
 import { UserFeedbackForm } from './user-feedback-form';
 import { businesses } from '@/lib/db/schema';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 interface SettingsClientProps {
   business: typeof businesses.$inferSelect | null;
@@ -101,6 +102,17 @@ export function SettingsClient({
   };
 
   const [active, setActive] = useState<NavItem>(resolveInitialTab);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const handleConfirmDelete = () => {
+    const subject = encodeURIComponent(
+      `Account Deletion Request - ${business?.legal_name || 'Bill Matrix Workspace'}`
+    );
+    const body = encodeURIComponent(
+      `Please initiate permanent deletion for my business account (${business?.legal_name || 'N/A'}, ID: ${business?.id || 'N/A'}).`
+    );
+    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -142,7 +154,7 @@ export function SettingsClient({
                   <Icon
                     className={cn(
                       'size-3.5 shrink-0',
-                      isActive ? 'text-emerald-800 dark:text-emerald-400' : 'text-muted-foreground/70'
+                      isActive ? 'text-emerald-800 dark:text-emerald-400' : 'text-muted-foreground'
                     )}
                   />
                   <span>{item}</span>
@@ -212,21 +224,8 @@ export function SettingsClient({
                     </p>
                     <button
                       type="button"
-                      onClick={() => {
-                        const confirmed = window.confirm(
-                          'To protect statutory GST records against accidental loss, business account deletion requests are verified by support. Proceed to send a deletion request?'
-                        );
-                        if (confirmed) {
-                          const subject = encodeURIComponent(
-                            `Account Deletion Request - ${business?.legal_name || 'Bill Matrix Workspace'}`
-                          );
-                          const body = encodeURIComponent(
-                            `Please initiate permanent deletion for my business account (${business?.legal_name || 'N/A'}, ID: ${business?.id || 'N/A'}).`
-                          );
-                          window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
-                        }
-                      }}
-                      className="mt-3 rounded-lg border border-destructive/50 px-4 py-2 text-sm font-bold text-destructive transition-colors hover:bg-destructive/10 cursor-pointer shadow-xs"
+                      onClick={() => setDeleteConfirmOpen(true)}
+                      className="mt-3 rounded-lg border border-destructive/50 px-4 py-2 text-sm font-bold text-red-700 transition-colors hover:bg-destructive/10 cursor-pointer shadow-xs"
                     >
                       Delete Business Account
                     </button>
@@ -266,6 +265,16 @@ export function SettingsClient({
             )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title="Delete Business Account?"
+        description="To protect statutory GST records against accidental loss, business account deletion requests are verified by support. Proceed to send a deletion request?"
+        confirmLabel="Send deletion request"
+        tone="destructive"
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }

@@ -200,16 +200,16 @@ export function ProductsClient({
 
                   <div className="shrink-0 flex items-center gap-1.5">
                     {taxRate ? (
-                      <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                         {taxRate.label} GST
                       </span>
                     ) : (
-                      <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-400 border border-amber-500/20">
                         No rate
                       </span>
                     )}
                     {!product.is_active && (
-                      <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-bold text-destructive border border-destructive/20">
+                      <span className="inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-bold text-red-700 border border-destructive/20">
                         Inactive
                       </span>
                     )}
@@ -222,7 +222,7 @@ export function ProductsClient({
                     <span className="text-base sm:text-lg font-extrabold text-foreground font-heading shrink-0">
                       {formatPaiseAsInr(product.default_sale_price_paise)}
                     </span>
-                    <span className="text-xs font-semibold text-muted-foreground/80 shrink-0">
+                    <span className="text-xs font-semibold text-muted-foreground shrink-0">
                       / {product.unit_of_measurement}
                     </span>
                     <span className="text-xs font-mono font-medium text-muted-foreground shrink-0">

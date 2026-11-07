@@ -16,14 +16,14 @@ export function SecurityBand() {
       title: '100% Indian Data Residency',
       desc: 'All database records and backups reside strictly in MeitY-empaneled tier-4 data centers within Indian borders.',
       badge: 'MeitY & RBI Compliant',
-      color: 'text-amber-600 bg-amber-50 border-amber-100',
+      color: 'text-amber-800 bg-amber-50 border-amber-100',
     },
     {
       icon: Server,
       title: '99.99% Cloud SLA & Uptime',
       desc: 'High-availability infrastructure with automatic geo-redundancy ensuring uninterrupted billing at peak business hours.',
       badge: 'Zero Downtime',
-      color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+      color: 'text-emerald-700 bg-emerald-50 border-emerald-100',
     },
     {
       icon: Headphones,
@@ -38,7 +38,7 @@ export function SecurityBand() {
     <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <div className="text-center max-w-2xl mx-auto mb-14">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider mb-3">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
           Enterprise Security & Trust
         </div>
         <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight heading">

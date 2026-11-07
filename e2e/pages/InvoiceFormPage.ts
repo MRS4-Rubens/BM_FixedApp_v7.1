@@ -114,12 +114,8 @@ export class InvoiceFormPage {
   async finalize(): Promise<void> {
     await this.openPreviewAndVerify();
 
-    // Finalize triggers a native confirm() dialog: "Once finalized, this invoice cannot be edited..."
-    this.page.once('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-
     await this.finalizeButton.click();
+    await this.page.getByRole('alertdialog').getByRole('button', { name: 'Finalize invoice', exact: true }).click();
 
     // On success the app navigates to the same /invoices/<id> URL, so a URL wait alone returns immediately and
     // a follow-up navigation could abort the in-flight finalize. Wait for the draft editor to go away instead.

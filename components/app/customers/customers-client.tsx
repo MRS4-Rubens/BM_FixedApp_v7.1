@@ -173,7 +173,7 @@ export function CustomersClient({
                           {c.gstin ? (
                             <span>{c.gstin}</span>
                           ) : (
-                            <span className="text-muted-foreground/70 font-sans italic text-xs">Unregistered</span>
+                            <span className="text-muted-foreground font-sans italic text-xs">Unregistered</span>
                           )}
                         </p>
                       </div>
@@ -186,7 +186,7 @@ export function CustomersClient({
                           Inactive
                         </span>
                       ) : c.gstin ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
                           <ShieldCheck className="size-3.5 shrink-0" />
                           B2B
                         </span>
@@ -201,18 +201,18 @@ export function CustomersClient({
                   {/* Bottom Row: State Name on Left, Mobile Number on Right */}
                   <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between text-sm text-muted-foreground font-medium gap-2">
                     <div className="flex items-center gap-1.5 min-w-0 truncate">
-                      <MapPin className="size-4 shrink-0 text-muted-foreground/80" />
+                      <MapPin className="size-4 shrink-0 text-muted-foreground" />
                       <span className="truncate">{stateDisplay}</span>
                     </div>
 
                     <div className="shrink-0 flex items-center gap-1.5 text-right font-medium">
                       {c.phone ? (
                         <>
-                          <Phone className="size-3.5 text-muted-foreground/80 shrink-0" />
+                          <Phone className="size-3.5 text-muted-foreground shrink-0" />
                           <span className="font-mono text-sm text-foreground font-bold">{c.phone}</span>
                         </>
                       ) : (
-                        <span className="text-muted-foreground/50 text-xs">No phone</span>
+                        <span className="text-muted-foreground text-xs">No phone</span>
                       )}
                     </div>
                   </div>

@@ -353,7 +353,7 @@ export function BillingTab({
                       <span
                         className={cn(
                           'font-black font-heading normal-case text-sm',
-                          isExpiringSoon ? 'text-amber-600' : 'text-emerald-600'
+                          isExpiringSoon ? 'text-amber-800' : 'text-emerald-700'
                         )}
                       >
                         {daysRemaining} {daysRemaining === 1 ? 'Day Remaining' : 'Days Remaining'}
@@ -455,8 +455,8 @@ export function BillingTab({
                       title="Copy UTR Reference"
                     >
                       {copiedUtr === business.active_utr_no ? (
-                        <span className="flex items-center gap-1 text-[11px] text-emerald-600 font-bold font-sans">
-                          <Check className="size-3 text-emerald-600" /> Copied
+                        <span className="flex items-center gap-1 text-[11px] text-emerald-700 font-bold font-sans">
+                          <Check className="size-3 text-emerald-700" /> Copied
                         </span>
                       ) : (
                         <Copy className="size-3.5" />

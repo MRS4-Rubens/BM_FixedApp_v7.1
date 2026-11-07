@@ -78,7 +78,7 @@ const CATEGORIES: Array<{
     label: 'General Feedback',
     icon: MessageSquare,
     description: 'Share your thoughts, review, or compliments',
-    colorClass: 'text-emerald-600 bg-emerald-500/10',
+    colorClass: 'text-emerald-700 bg-emerald-500/10',
     activeBorder: 'border-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20 ring-1 ring-emerald-500',
   },
 ];
@@ -348,8 +348,8 @@ export function UserFeedbackForm() {
   // Celebratory Success Card
   if (submittedSuccess) {
     return (
-      <div className="rounded-2xl border border-emerald-500/30 bg-card p-6 sm:p-8 shadow-xs text-center animate-in fade-in zoom-in-95 duration-200">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-4 border border-emerald-500/20">
+      <div role="status" className="rounded-2xl border border-emerald-500/30 bg-card p-6 sm:p-8 shadow-xs text-center animate-in fade-in zoom-in-95 duration-200">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 mb-4 border border-emerald-500/20">
           <CheckCircle2 className="size-8" />
         </div>
         <h3 className="text-xl sm:text-2xl font-extrabold text-foreground font-heading tracking-tight">
@@ -410,7 +410,7 @@ export function UserFeedbackForm() {
       </div>
 
       {globalError && (
-        <div className="my-3 rounded-lg bg-destructive/10 border border-destructive/20 p-2.5 text-sm text-destructive flex items-center gap-2 font-medium">
+        <div role="alert" className="my-3 rounded-lg bg-destructive/10 border border-destructive/20 p-2.5 text-sm text-destructive flex items-center gap-2 font-medium">
           <AlertCircle className="size-4.5 shrink-0" />
           <span>{globalError}</span>
         </div>
@@ -419,9 +419,9 @@ export function UserFeedbackForm() {
       <form onSubmit={handleSubmit} className="mt-3 space-y-3">
         {/* 1. Category Selection Cards */}
         <div>
-          <label className="block text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
+          <div className="block text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-1.5">
             1. Select Category <span className="text-destructive">*</span>
-          </label>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
             {CATEGORIES.map((cat) => {
               const Icon = cat.icon;
@@ -466,9 +466,9 @@ export function UserFeedbackForm() {
         {/* 2. Category-Specific Fields */}
         {category === 'bug' && (
           <div className="rounded-xl border border-rose-500/20 bg-rose-50/20 dark:bg-rose-950/10 px-3 py-2 sm:px-3.5 sm:py-2.5 space-y-1.5">
-            <label className="block text-[12.5px] font-bold uppercase tracking-wide text-rose-700 dark:text-rose-400">
+            <div className="block text-[12.5px] font-bold uppercase tracking-wide text-rose-700 dark:text-rose-400">
               Bug Severity Level
-            </label>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {SEVERITIES.map((sev) => (
                 <button
@@ -484,7 +484,7 @@ export function UserFeedbackForm() {
                 >
                   <div className="flex items-center gap-1.5 truncate">
                     <span className="text-xs sm:text-sm font-bold shrink-0">{sev.label}</span>
-                    <span className={cn('text-xs sm:text-sm', severity === sev.id ? 'text-rose-200' : 'text-muted-foreground/60')}>-</span>
+                    <span className={cn('text-xs sm:text-sm', severity === sev.id ? 'text-rose-200' : 'text-muted-foreground')}>-</span>
                     <span
                       className={cn(
                         'text-xs truncate font-medium',
@@ -503,9 +503,9 @@ export function UserFeedbackForm() {
         {category === 'general' && (
           <div className="rounded-xl border border-amber-500/20 bg-amber-50/20 dark:bg-amber-950/10 px-3 py-2 sm:px-3.5 sm:py-2.5 space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="block text-[13px] font-bold uppercase tracking-wide text-amber-800 dark:text-amber-400">
+              <div className="block text-[13px] font-bold uppercase tracking-wide text-amber-800 dark:text-amber-400">
                 Your Overall Rating
-              </label>
+              </div>
               <span className="text-sm font-extrabold text-amber-700 dark:text-amber-300">
                 {RATING_LABELS[(hoveredRating || rating) - 1]}
               </span>
@@ -534,10 +534,11 @@ export function UserFeedbackForm() {
 
         {/* 3. Title & Summary */}
         <div>
-          <label className="block text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
+          <label htmlFor="feedback-title" className="block text-[13px] font-bold uppercase tracking-wide text-muted-foreground mb-1">
             2. Title / Summary <span className="text-destructive">*</span>
           </label>
           <input
+            id="feedback-title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -559,12 +560,13 @@ export function UserFeedbackForm() {
         {/* 4. Description */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-[13px] font-bold uppercase tracking-wide text-muted-foreground">
+            <label htmlFor="feedback-description" className="block text-[13px] font-bold uppercase tracking-wide text-muted-foreground">
               3. Detailed Description <span className="text-destructive">*</span>
             </label>
             <span className="text-xs font-medium text-muted-foreground">{description.length}/4000</span>
           </div>
           <textarea
+            id="feedback-description"
             value={description}
             onChange={(e) => setDescription(e.target.value.slice(0, 4000))}
             placeholder={getDescriptionPlaceholder()}
@@ -577,10 +579,10 @@ export function UserFeedbackForm() {
         {/* 5. Screenshot / File Attachments (Zero DB / S3 Storage) */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="block text-[13px] font-bold uppercase tracking-wide text-muted-foreground">
+            <div className="block text-[13px] font-bold uppercase tracking-wide text-muted-foreground">
               4. Screenshots / Attachments{' '}
               <span className="text-xs text-muted-foreground font-normal lowercase">(optional • max 4 files, 2.5 mb each)</span>
-            </label>
+            </div>
             <span className="text-xs font-bold text-muted-foreground">
               {attachments.length} / {MAX_ATTACHMENT_COUNT} files
             </span>
