@@ -3,7 +3,7 @@ import type ExcelJS from 'exceljs';
 import type { ExportData, ExportInvoice, ExportCreditNote } from '@/lib/actions/reports/get-export-data';
 import { paiseToRupees } from '@/lib/money';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
-import { commitDataRow, createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
+import { columnsWithoutHeaders, commitDataRow, createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
 
 const getStateNameByCode = (code: string | null) => {
   if (!code) return '';
@@ -60,7 +60,8 @@ export async function writeSalesRegisterWorkbook(data: ExportData, stream: Writa
   sheet1.getRow(6).values = sheet1Columns.map(c => c.header);
   sheet1.getRow(6).font = { bold: true };
   sheet1.getRow(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
-  sheet1.columns = sheet1Columns; // Set widths and keys
+  // Widths, keys and formats only: header text is already in row 6, and must not overwrite the title block in row 1.
+  sheet1.columns = columnsWithoutHeaders(sheet1Columns);
   // Rows 1-6 are final once the column definitions are applied: flush them.
   sheet1.getRow(6).commit();
 
@@ -139,7 +140,7 @@ export async function writeSalesRegisterWorkbook(data: ExportData, stream: Writa
   sheet2.getRow(6).values = sheet2Columns.map(c => c.header);
   sheet2.getRow(6).font = { bold: true };
   sheet2.getRow(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
-  sheet2.columns = sheet2Columns;
+  sheet2.columns = columnsWithoutHeaders(sheet2Columns);
   // Rows 1-6 are final once the column definitions are applied: flush them.
   sheet2.getRow(6).commit();
 
@@ -213,7 +214,7 @@ export async function writeSalesRegisterWorkbook(data: ExportData, stream: Writa
   sheet3.getRow(6).values = sheet3Columns.map(c => c.header);
   sheet3.getRow(6).font = { bold: true };
   sheet3.getRow(6).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
-  sheet3.columns = sheet3Columns;
+  sheet3.columns = columnsWithoutHeaders(sheet3Columns);
   // Rows 1-6 are final once the column definitions are applied: flush them.
   sheet3.getRow(6).commit();
 

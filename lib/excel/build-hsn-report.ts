@@ -2,7 +2,7 @@ import type { Writable } from 'node:stream';
 import type ExcelJS from 'exceljs';
 import type { Gstr1ExportData } from '@/lib/actions/reports/get-gstr1-data';
 import { paiseToRupees } from '@/lib/money';
-import { commitDataRow, createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
+import { columnsWithoutHeaders, commitDataRow, createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
 
 const currencyFormat = '#,##0.00';
 
@@ -80,7 +80,8 @@ export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable):
     cell.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' }, size: 10 };
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
   });
-  sheet.columns = columns;
+  // Header text is already in row 6; keep it out of row 1 (the title block).
+  sheet.columns = columnsWithoutHeaders(columns);
   // Rows 1-6 are final once the column definitions are applied: flush them.
   sheet.getRow(6).commit();
 

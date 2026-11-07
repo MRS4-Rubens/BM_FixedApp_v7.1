@@ -57,3 +57,19 @@ export async function commitDataRow(row: ExcelJS.Row, index: number): Promise<vo
     await yieldToEventLoop();
   }
 }
+
+/**
+ * Column definitions without their `header` text, for sheets whose header row is NOT row 1.
+ * ExcelJS writes every column `header` into row 1 when `sheet.columns` is set, which would
+ * overwrite a title block (business name, GSTIN) that sits above the real header row.
+ * Use this when the header row is written explicitly further down the sheet.
+ */
+export function columnsWithoutHeaders(
+  columns: readonly Partial<ExcelJS.Column>[],
+): Partial<ExcelJS.Column>[] {
+  return columns.map((column) => {
+    const definition = { ...column };
+    delete definition.header;
+    return definition;
+  });
+}
