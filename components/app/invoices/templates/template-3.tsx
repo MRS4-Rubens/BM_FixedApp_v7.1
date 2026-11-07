@@ -4,6 +4,7 @@ import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES, getStateAbbrByCode } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 // ============================================================================
 // CONFIGURABLE DESIGN SYSTEM VARIABLES FOR TEMPLATE 3 (MANUAL PAD STYLE)
@@ -205,7 +206,7 @@ export function InvoiceTemplate3({ invoice, businessStateCode, printSize, hasWat
             <span className="shrink-0 pr-1">DATE :</span>
             <div className="flex-1 border-b border-dotted border-[#0e3f94] px-1 min-h-5 text-center">
               <span className={PAD_STYLES.dataTextColor}>
-                {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-IN') : '—'}
+                {invoice.invoice_date ? formatIstDate(invoice.invoice_date) : '—'}
               </span>
             </div>
           </div>

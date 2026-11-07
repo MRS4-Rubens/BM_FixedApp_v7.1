@@ -4,6 +4,7 @@ import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES, getStateAbbrByCode } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 // ============================================================================
 // CONFIGURABLE DESIGN SYSTEM VARIABLES FOR TEMPLATE 4 (EXECUTIVE PREMIUM)
@@ -170,7 +171,7 @@ export function InvoiceTemplate4({ invoice, businessStateCode, printSize, hasWat
           <div className="flex justify-between items-center border-b border-slate-200 pb-[2px] gap-2">
             <span className="text-slate-700 font-extrabold uppercase text-[10px] whitespace-nowrap">Date</span>
             <span className="font-bold text-slate-900 text-[11px] whitespace-nowrap">
-              {invoice.invoice_date ? new Date(invoice.invoice_date).toLocaleDateString('en-IN') : '—'}
+              {invoice.invoice_date ? formatIstDate(invoice.invoice_date) : '—'}
             </span>
           </div>
           <div className="flex justify-between items-center gap-2">

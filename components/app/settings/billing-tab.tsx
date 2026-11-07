@@ -7,6 +7,7 @@ import { formatPaiseAsInr } from '@/lib/money'
 import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-business-subscriptions'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { formatIstDate } from '@/lib/invoices/ist-date'
 import {
   Crown,
   Sparkles,
@@ -367,7 +368,7 @@ export function BillingTab({
                   <span className="text-xs font-medium text-slate-500">
                     ({isActive ? 'Renews' : 'Valid until'}{' '}
                     <strong className="text-slate-700">
-                      {new Date(targetExpiry).toLocaleDateString('en-IN', {
+                      {formatIstDate(targetExpiry, {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
@@ -389,7 +390,7 @@ export function BillingTab({
                         <>
                           Activated{' '}
                           <strong className="text-slate-700">
-                            {new Date(business.subscription_activated_at).toLocaleDateString('en-IN', {
+                            {formatIstDate(business.subscription_activated_at, {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric',
@@ -908,7 +909,7 @@ export function BillingTab({
                   {paginatedSubscriptions.map((sub) => (
                     <tr key={sub.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-3.5 py-2 whitespace-nowrap font-medium text-slate-800">
-                        {new Date(sub.createdAt).toLocaleDateString('en-IN', {
+                        {formatIstDate(sub.createdAt, {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
@@ -1070,7 +1071,7 @@ export function BillingTab({
                 <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
                   <span className="text-slate-500">Claimed Date:</span>
                   <span className="font-semibold text-slate-900">
-                    {new Date(selectedReceipt.createdAt).toLocaleDateString('en-IN', {
+                    {formatIstDate(selectedReceipt.createdAt, {
                       day: 'numeric',
                       month: 'long',
                       year: 'numeric',

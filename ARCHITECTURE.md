@@ -657,6 +657,9 @@ When a new database constraint requires user-friendly UI mapping:
   - `sidebar:collapsed` cookie preference is tri-state: `true` (explicitly collapsed), `false` (explicitly expanded), or `null` (no user choice recorded).
   - When unset (`null`), tablet portrait viewports (`768px <= width < 1024px`) automatically show the 68px icon rail via `useSyncExternalStore` listening to `window.matchMedia('(min-width: 768px) and (max-width: 1023px)')`.
   - User toggles always override viewport defaults and persist explicitly to the cookie.
+- **Display dates are always India time (`formatIstDate` / `formatIstTime`, `lib/invoices/ist-date.ts`)**:
+  - Never call `toLocaleDateString` / `toLocaleTimeString` in rendered code: the server renders in UTC and the browser in the user's zone, so a timestamp near midnight prints different days on each side (React hydration error #418, first seen on the admin claims queue) and briefly shows the wrong date.
+  - The formatters pin `timeZone: 'Asia/Kolkata'` with the `en-IN` locale, so server and browser output is identical and GST documents (including server-rendered archival PDFs) always show the Indian date. Enforced by `tests/unit/ist-date-display.test.ts`.
 
 
 ## Route-level boundaries (FE-003)

@@ -31,6 +31,7 @@ import { generateWhatsAppInvoiceUrl } from '@/lib/subscriptions/whatsapp'
 import { resolveSubscriptionPlan } from '@/lib/subscriptions/entitlements'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs'
+import { formatIstDate } from '@/lib/invoices/ist-date'
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -316,7 +317,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                 )}
                 {invoice.last_reminder_at && (
                   <span className="text-[9px] bg-amber-50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900 font-semibold whitespace-nowrap shrink-0">
-                    Reminder sent ({invoice.reminder_count ?? 1}x) · {new Date(invoice.last_reminder_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                    Reminder sent ({invoice.reminder_count ?? 1}x) · {formatIstDate(invoice.last_reminder_at, { day: '2-digit', month: 'short' })}
                   </span>
                 )}
               </div>
@@ -529,7 +530,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                         </p>
                         {step.date ? (
                           <p className="text-[10px] text-muted-foreground font-medium mt-0.5 whitespace-nowrap truncate">
-                            {new Date(step.date as string | Date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                            {formatIstDate(step.date as string | Date, { day: '2-digit', month: 'short' })}
                           </p>
                         ) : (
                           <p className="text-[10px] text-muted-foreground/60 font-medium mt-0.5 whitespace-nowrap truncate">
@@ -668,7 +669,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                            {note.issue_date ? new Date(note.issue_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Draft'} • {note.reason}
+                            {note.issue_date ? formatIstDate(note.issue_date, { day: '2-digit', month: 'short' }) : 'Draft'} • {note.reason}
                             {isVoided && (
                               <span className="text-rose-600 dark:text-rose-400 font-semibold ml-1.5 inline-flex items-center gap-0.5 whitespace-nowrap">
                                 • Cancelled (Restored to balance)

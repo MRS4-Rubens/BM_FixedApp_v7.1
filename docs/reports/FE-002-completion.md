@@ -236,3 +236,13 @@ so the §5.7 guard (`no setMounted/setIsMounted`) holds. Accepted: same pattern,
 `pnpm lint:ratchet` PASS at the new baseline (22/39); no new unused-var warnings in changed files; `pnpm typecheck`
 clean; `vitest run` 1,269 passed / 12 skipped / 7 todo; `pnpm build` OK; print stylesheet unchanged.
 Browser hydration check and the full Playwright E2E suite are run against the PR's Vercel preview.
+
+**Hydration finding on the live preview (fixed in this PR):** a browser probe with the E2E-created sessions on
+`/`, `/dashboard`, `/invoices/new`, `/settings`, `/settings?tab=billing`, `/reports`, `/checkout` showed 0 errors, but
+`/admin` logged React error #418 (text mismatch). Cause: `new Date(ts).toLocaleDateString('en-IN')` with no time zone,
+so the server (UTC) and browser (IST) printed different days for a claim created at 01:36 IST. 25 such calls in 12
+files were replaced with `formatIstDate` / `formatIstTime` (`lib/invoices/ist-date.ts`, `timeZone: 'Asia/Kolkata'`,
+identical en-IN output). Tests: `tests/unit/ist-date-display.test.ts` (IST day at the UTC boundary, formats, and a guard
+forbidding `toLocaleDateString` / `toLocaleTimeString` in `app/` and `components/`), passing under TZ=UTC, IST and
+America/Los_Angeles. Sidebar at 800px verified on the preview: no cookie 68px rail, cookie=false 220px, cookie=true 68px.
+Re-verified: unit 1,274 passed; typecheck, lint ratchet (22/39), build clean; print stylesheet unchanged.

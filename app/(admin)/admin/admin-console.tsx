@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { FEEDBACK_RECIPIENT_EMAIL } from '@/lib/config/contact';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 type ProofViewer =
   | { readonly requestId: string; readonly businessName: string; readonly title: string; readonly utr: string; readonly status: 'loading' }
@@ -477,10 +478,10 @@ export function AdminConsole({
       `"${b.phone || ''}"`,
       `"${b.subscriptionPlan}"`,
       `"${b.subscriptionStatus}"`,
-      `"${b.subscriptionEndsAt ? new Date(b.subscriptionEndsAt).toLocaleDateString('en-IN') : 'N/A'}"`,
+      `"${b.subscriptionEndsAt ? formatIstDate(b.subscriptionEndsAt) : 'N/A'}"`,
       b.invoiceCount,
       b.userCount,
-      `"${new Date(b.createdAt).toLocaleDateString('en-IN')}"`,
+      `"${formatIstDate(b.createdAt)}"`,
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -967,7 +968,7 @@ export function AdminConsole({
                         <span>•</span>
                         <span>Amount: <b className="text-foreground">{formatPaiseAsInr(req.amountPaise)}</b></span>
                         <span>•</span>
-                        <span>{new Date(req.createdAt).toLocaleDateString('en-IN')}</span>
+                        <span>{formatIstDate(req.createdAt)}</span>
                       </div>
                     </div>
 
@@ -1313,7 +1314,7 @@ export function AdminConsole({
 
                           <td className="px-4 py-3 text-xs font-semibold">
                             {biz.subscriptionEndsAt ? (
-                              <span>{new Date(biz.subscriptionEndsAt).toLocaleDateString('en-IN')}</span>
+                              <span>{formatIstDate(biz.subscriptionEndsAt)}</span>
                             ) : (
                               <span className="text-muted-foreground italic">Lifetime / Unset</span>
                             )}
@@ -1519,7 +1520,7 @@ export function AdminConsole({
                           </td>
 
                           <td className="px-4 py-3 text-xs text-muted-foreground font-semibold">
-                            {new Date(u.createdAt).toLocaleDateString('en-IN')}
+                            {formatIstDate(u.createdAt)}
                           </td>
                         </tr>
                       );
@@ -2017,7 +2018,7 @@ export function AdminConsole({
                           .map((item) => (
                             <tr key={item.id} className="hover:bg-muted/10">
                               <td className="px-3 py-2 font-semibold">
-                                {new Date(item.createdAt).toLocaleDateString('en-IN')}
+                                {formatIstDate(item.createdAt)}
                               </td>
                               <td className="px-3 py-2 font-mono text-xs font-bold text-indigo-600">
                                 {item.paymentReference}

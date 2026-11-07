@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { formatPaiseAsInr } from '@/lib/money';
 import { VOID_PAYMENT_REASONS, VoidPaymentReasonCode } from '@/lib/validations/payment';
 import { voidPayment } from '@/lib/actions/payments/void-payment';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 export interface VoidablePayment {
   id: string;
@@ -107,7 +108,7 @@ function VoidPaymentDialogModal({
   };
 
   const formattedDate = payment.payment_date
-    ? new Date(payment.payment_date).toLocaleDateString('en-IN', {
+    ? formatIstDate(payment.payment_date, {
         day: '2-digit',
         month: 'short',
         year: 'numeric',

@@ -17,6 +17,28 @@ export function getIstDateParts(date: Date): IstDateParts {
   };
 }
 
+export const IST_TIME_ZONE = 'Asia/Kolkata';
+
+/**
+ * Human-readable date in India time, e.g. "7/11/2026" (en-IN default) or with `options`
+ * ({ day: '2-digit', month: 'short', year: 'numeric' } -> "07 Nov 2026").
+ *
+ * Use this instead of `toLocaleDateString` in anything that renders: the server runs in UTC and the browser
+ * in the user's zone, so an unzoned format can print different days on each side (React hydration error #418)
+ * and briefly show the wrong date. Fixing the zone to IST makes server and browser output identical.
+ */
+export function formatIstDate(value: Date | string | number, options: Intl.DateTimeFormatOptions = {}): string {
+  return new Intl.DateTimeFormat('en-IN', { timeZone: IST_TIME_ZONE, ...options }).format(new Date(value));
+}
+
+/** Time of day in India time, e.g. "01:36 am". Same hydration rationale as {@link formatIstDate}. */
+export function formatIstTime(
+  value: Date | string | number,
+  options: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' },
+): string {
+  return new Intl.DateTimeFormat('en-IN', { timeZone: IST_TIME_ZONE, ...options }).format(new Date(value));
+}
+
 export function formatIstDateAsIso(date: Date): string {
   const { year, month, day } = getIstDateParts(date);
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
