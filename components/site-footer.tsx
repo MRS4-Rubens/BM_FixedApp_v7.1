@@ -90,17 +90,17 @@ export function SiteFooter() {
                 <a href="mailto:support@billmatrix.in" className="hover:text-white transition">support@billmatrix.in</a>
               </li>
               <li>
-                <span className="text-slate-500">Mon–Sat 9AM–7PM IST</span>
+                <span className="text-slate-400">Mon–Sat 9AM–7PM IST</span>
               </li>
               <li>
-                <span className="text-slate-500">Bengaluru, Karnataka, India</span>
+                <span className="text-slate-400">Bengaluru, Karnataka, India</span>
               </li>
             </ul>
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500">
+        <div className="pt-8 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
           <div>
             © {new Date().getFullYear()} Bill Matrix Technologies Private Limited. All rights reserved.
           </div>

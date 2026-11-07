@@ -640,7 +640,7 @@ export function AdminConsole({
               <h3 className="mt-1 text-3xl font-extrabold tracking-tight text-foreground font-heading flex items-center gap-2">
                 {stats.pendingRequestsCount}
                 {pendingRequests.length > 0 && (
-                  <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-700">
+                  <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-800">
                     Needs Action
                   </span>
                 )}

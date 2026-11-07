@@ -317,7 +317,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                   </span>
                 )}
                 {invoice.archival_status === 'failed' && (
-                  <span className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded border border-destructive/20 whitespace-nowrap shrink-0">
+                  <span className="text-[9px] bg-destructive/10 text-red-700 px-1.5 py-0.5 rounded border border-destructive/20 whitespace-nowrap shrink-0">
                     Archival retry pending
                   </span>
                 )}

@@ -87,7 +87,7 @@ export function TestimonialsSection() {
                   <p className="text-xs text-slate-500 font-medium">
                     {t.role}, {t.company}
                   </p>
-                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">{t.location}</p>
+                  <p className="text-[11px] text-slate-600 font-mono mt-0.5">{t.location}</p>
                 </div>
               </div>
             </div>

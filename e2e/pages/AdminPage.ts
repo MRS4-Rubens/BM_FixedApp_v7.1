@@ -32,7 +32,9 @@ export class AdminPage {
     await expect(approveBtn).toHaveCount(1);
 
     await approveBtn.click();
-    await this.page.getByRole('alertdialog').getByRole('button', { name: 'Approve claim', exact: true }).click();
+    const dialog = this.page.getByRole('alertdialog');
+    await dialog.getByRole('button', { name: 'Approve claim', exact: true }).click();
+    await expect(dialog).toBeHidden({ timeout: 30_000 });
 
     // The approval commits within seconds, but the console's post-approval router.refresh() re-fetches the whole
     // admin dataset and can keep the buttons disabled for a while. Wait for that transition to settle (row gone or

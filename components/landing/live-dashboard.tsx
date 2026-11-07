@@ -224,7 +224,7 @@ export function LiveDashboard() {
             <div className="flex items-center gap-4">
               <div>
                 <div className="font-bold text-xl heading">Business Snapshot</div>
-                <div className="text-xs text-zinc-400 flex items-center gap-2 mt-0.5">
+                <div className="text-xs text-zinc-600 flex items-center gap-2 mt-0.5">
                   <svg className="w-3.5 h-3.5">
                     <use href="#clock" />
                   </svg>
@@ -406,7 +406,7 @@ export function LiveDashboard() {
                     </div>
                     <div>
                       <p className="text-zinc-700" dangerouslySetInnerHTML={{ __html: activity.text }} />
-                      <p className="text-xs text-zinc-400">
+                      <p className="text-xs text-zinc-600">
                         {activity.desc} · {activity.time}
                       </p>
                     </div>

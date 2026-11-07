@@ -54,7 +54,7 @@ export function CalculatorSection() {
                 onChange={(e) => setInvoicesCount(Number(e.target.value))}
                 className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
               />
-              <div className="flex justify-between text-xs text-slate-500 font-mono">
+              <div className="flex justify-between text-xs text-slate-400 font-mono">
                 <span>20</span>
                 <span>500</span>
                 <span>1,000</span>
@@ -80,7 +80,7 @@ export function CalculatorSection() {
                 onChange={(e) => setMinutesPerInvoice(Number(e.target.value))}
                 className="w-full h-2.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
               />
-              <div className="flex justify-between text-xs text-slate-500 font-mono">
+              <div className="flex justify-between text-xs text-slate-400 font-mono">
                 <span>5 min (Templates)</span>
                 <span>15 min (Excel/Word)</span>
                 <span>30 min (Complex Math)</span>
