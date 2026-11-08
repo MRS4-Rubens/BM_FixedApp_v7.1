@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
+import { readComponentSources } from '../helpers/component-sources';
 
 describe('FE-004: Accessibility (WCAG 2.1 AA) guards', () => {
   const rootDir = process.cwd();
@@ -119,7 +120,7 @@ describe('FE-004: Accessibility (WCAG 2.1 AA) guards', () => {
     const formPath = resolve(rootDir, 'components/app/invoices/invoice-form.tsx');
     expect(existsSync(formPath)).toBe(true);
 
-    const content = readFileSync(formPath, 'utf8');
+    const content = readComponentSources('components/app/invoices/invoice-form.tsx');
     expect(content).toContain('Move line ${idx + 1} up');
     expect(content).toContain('Move line ${idx + 1} down');
     expect(content).toContain('handleMoveLine');

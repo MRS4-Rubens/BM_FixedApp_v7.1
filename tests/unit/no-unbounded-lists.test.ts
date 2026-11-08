@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readComponentSources } from '../helpers/component-sources';
 
 describe('no unbounded lists guard (PERF-001 static analysis)', () => {
   const root = path.resolve(__dirname, '../..');
@@ -56,8 +57,7 @@ describe('no unbounded lists guard (PERF-001 static analysis)', () => {
   });
 
   it('verifies components/app/invoices/invoice-form.tsx does not do in-memory customer or product array filtering', () => {
-    const formPath = path.join(root, 'components/app/invoices/invoice-form.tsx');
-    const content = fs.readFileSync(formPath, 'utf-8');
+    const content = readComponentSources('components/app/invoices/invoice-form.tsx');
 
     expect(content.includes('customers.find')).toBe(false);
     expect(content.includes('products.filter')).toBe(false);

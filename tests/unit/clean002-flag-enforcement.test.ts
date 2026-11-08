@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
+import { readComponentSources } from '../helpers/component-sources';
 
 function getAllSourceFiles(dir: string, fileList: string[] = []): string[] {
   const files = fs.readdirSync(dir);
@@ -126,15 +127,19 @@ describe('CLEAN-002: Flag Enforcement & Plan Hygiene', () => {
       'components/app/subscription/upgrade-prompt-modal.tsx',
       'app/(app)/checkout/checkout-form.tsx',
       'components/app/app-sidebar.tsx',
-    ].map((f) => path.resolve(rootDir, f));
+    ];
 
-    for (const filePath of targetFiles) {
+    for (const relPath of targetFiles) {
+      const filePath = path.resolve(rootDir, relPath);
       if (!fs.existsSync(filePath)) continue;
-      const content = fs.readFileSync(filePath, 'utf8').toLowerCase();
+      const content = (relPath === 'app/(app)/checkout/checkout-form.tsx'
+        ? readComponentSources(relPath)
+        : fs.readFileSync(filePath, 'utf8')
+      ).toLowerCase();
       for (const banned of bannedClaims) {
         expect(
           content.includes(banned.toLowerCase()),
-          `Found banned claim "${banned}" in ${path.relative(rootDir, filePath)}`
+          `Found banned claim "${banned}" in ${relPath}`
         ).toBe(false);
       }
     }
