@@ -325,3 +325,14 @@ Verified on branch `chore/clean-sweep` against `main` `9598ec3`; every changed f
 5. **Print stylesheet** regenerated after the new admin button (2 classes added, none removed; no invoice/credit-note template class touched).
 - **Checked and correct as delivered:** dead files removed with history (`git rm`/`git mv`); 8 stale `vi.mock` blocks removed; `upload-guard` now asserts on `archival-core.ts` + `schedule-archival.ts`; `getS3` removed; `stateCode` added to the business directory; billing labels are plan-aware (`canShareInvoiceOnWhatsApp` / `canExportStatutoryReport`), "Live Database Sync" gone; e2e.yml split into a `config` job + `needs`/`if` on "Playwright E2E Suite" with every other step unchanged; docs/.gitignore/.env.example edits.
 - **Checks (local):** `pnpm install --frozen-lockfile` clean; `pnpm typecheck` clean; `pnpm lint:ratchet` = baseline; `pnpm exec vitest run` 169 files passed, 4 skipped (1408 tests); `pnpm build` OK; audit gate exit 0.
+
+### Preview verification (Vercel preview of PR #22, 2026-11-08)
+
+- **CI:** all 7 checks green on `f42c429`. First run of the split `e2e.yml`: "E2E staging configuration" succeeded and "Playwright E2E Suite" **really ran** (steps "Run Playwright E2E suite" and "Upload Playwright report" = success). Dependabot/fork PRs will now show the suite as *skipped*.
+- **Local E2E against the preview:** 22 passed, 1 skipped (mailbox).
+- **Hydration probe:** 0 errors on all 8 pages; sidebar 68 / 220 / 68 px at 800 px.
+- **Admin GSTIN/state correction (safe, no data changed)** as the E2E platform admin, on the E2E journey business:
+  - "Correct GSTIN / state" opens a nested dialog over Manage Subscription, prefilled with the business's real GSTIN and state (`27…`, "27 — Maharashtra").
+  - A 5-character reason is blocked by the browser (`required` + `minLength`); no request sent.
+  - Submitting the **unchanged** GSTIN/state with a valid reason returns the server's `NO_CHANGE` message "Nothing to change: the GSTIN and state already have these values." in a `role="alert"` box (end-to-end proof the action is wired; nothing was written).
+  - Cancel closes only the correction dialog; Manage Subscription stays open.
