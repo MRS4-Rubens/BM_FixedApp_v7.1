@@ -1,12 +1,13 @@
 import { Buffer } from 'node:buffer';
 import { getPdfEnv } from '@/lib/env';
-import { redactArchivalTokens } from '@/lib/security/archival-token';
+import { scrubString } from '@/lib/observability/sentry-redaction';
 
 export const PDF_RENDER_TIMEOUT_MS = 25_000;
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
+const MAX_HTML_BYTES = 8 * 1024 * 1024;
 const MAX_ERROR_TEXT_CHARS = 200;
 
-export type PdfRenderFailureKind = 'timeout' | 'network' | 'http' | 'invalid_response';
+export type PdfRenderFailureKind = 'timeout' | 'network' | 'http' | 'invalid_response' | 'invalid_input';
 
 export class PdfRenderError extends Error {
   readonly kind: PdfRenderFailureKind;
@@ -28,20 +29,34 @@ export interface RenderOptions {
   readonly fetchImpl?: typeof fetch;
 }
 
-export async function renderUrlToPdfBuffer(url: string, options: RenderOptions = {}): Promise<Buffer> {
+export async function renderHtmlToPdfBuffer(html: string, options: RenderOptions = {}): Promise<Buffer> {
+  const htmlBytes = Buffer.byteLength(html, 'utf8');
+  if (htmlBytes > MAX_HTML_BYTES) {
+    throw new PdfRenderError('invalid_input', `Archival HTML is too large (${htmlBytes} bytes).`);
+  }
+
   const { HTML_TO_PDF_API_KEY } = getPdfEnv(); // EnvConfigError propagates (callers refund the attempt)
   const doFetch = options.fetchImpl ?? fetch;
   let bytes: Buffer;
   try {
     const response = await doFetch('https://e.customjs.io/html2pdf', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': HTML_TO_PDF_API_KEY },
-      body: JSON.stringify({ input: { url }, config: { pdfWidthMm: 210, pdfHeightMm: 297 } }),
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/pdf',
+        'x-api-key': HTML_TO_PDF_API_KEY,
+      },
+      body: JSON.stringify({
+        input: {
+          html,
+          config: { pdfWidthMm: 210, pdfHeightMm: 297 },
+        },
+      }),
       signal: AbortSignal.timeout(options.timeoutMs ?? PDF_RENDER_TIMEOUT_MS),
     });
     if (!response.ok) {
       const rawText = (await response.text()).replace(/[\u0000-\u001f]+/g, ' ');
-      const text = redactArchivalTokens(rawText).slice(0, MAX_ERROR_TEXT_CHARS);
+      const text = scrubString(rawText).slice(0, MAX_ERROR_TEXT_CHARS);
       throw new PdfRenderError('http', `PDF rendering failed (${response.status}): ${text}`, response.status);
     }
     bytes = Buffer.from(await response.arrayBuffer()); // body read is covered by the same timeout signal

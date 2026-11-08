@@ -175,6 +175,7 @@ describe('e2e support helpers', () => {
       E2E_ADMIN_PASSWORD: 'Password12345!',
       E2E_UPSTASH_ALLOW_FLUSH: false,
       E2E_UPDATE_A11Y_BASELINE: false,
+      E2E_EXPECT_ARCHIVAL: false,
     };
 
     it('passes for a valid staging configuration', () => {

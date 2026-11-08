@@ -63,7 +63,7 @@ export const sensitiveActionLimiter: RateLimiter = lazyLimiter(
   () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(20, '60 s'), prefix: '@upstash/ratelimit:sensitive', timeout: 2000 }),
 );
 
-// exportLimiter: 10 requests per 300 seconds (for Excel export and the archival-render route — heavier operations)
+// exportLimiter: 10 requests per 300 seconds (for Excel export — heavier operations)
 export const exportLimiter: RateLimiter = lazyLimiter(
   () => new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(10, '300 s'), prefix: '@upstash/ratelimit:export', timeout: 2000 }),
 );

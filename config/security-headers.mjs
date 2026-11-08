@@ -7,9 +7,6 @@
 /** Flip to 'enforce' in a dedicated PR after Sentry shows no unexpected violations (see ARCHITECTURE.md). */
 export const CSP_MODE = 'report-only';
 
-/** Regex SOURCE (no anchors) of the PDF-vendor-fetched routes; shared by both header rules and the tests. */
-export const ARCHIVAL_RENDER_PATH_PATTERN = 'api/(?:invoices|credit-notes)/[^/]+/archival-render';
-
 const HSTS_VALUE = 'max-age=63072000; includeSubDomains; preload';
 const PERMISSIONS_POLICY_VALUE = 'camera=(), microphone=(), geolocation=()';
 
@@ -111,23 +108,6 @@ export function buildAppCspPolicy(options) {
   return serialize(directives);
 }
 
-/** Policy for the PDF-vendor-fetched archival pages: static HTML, no scripts, inline styles + Google Fonts, data: images. No frame-ancestors (not framed). @param {SecurityHeaderOptions} options */
-export function buildArchivalCspPolicy(options) {
-  const reportUri = options.isProduction ? buildSentryCspReportUri(options.sentryDsn, 'production') : null;
-  /** @type {(readonly [string, readonly string[]])[]} */
-  const directives = [
-    ['default-src', ["'none'"]],
-    ['style-src', ["'unsafe-inline'", 'https://fonts.googleapis.com']],
-    ['font-src', ['https://fonts.gstatic.com', 'data:']],
-    ['img-src', ['data:']],
-    ['script-src', ["'none'"]],
-    ['base-uri', ["'none'"]],
-    ['form-action', ["'none'"]],
-  ];
-  if (reportUri !== null) directives.push(['report-uri', [reportUri]]);
-  return serialize(directives);
-}
-
 /** @param {SecurityHeaderOptions} options @returns {HeaderEntry[]} */
 function baseHeaders(options) {
   return [
@@ -148,25 +128,21 @@ function cspHeaders(fullPolicy, mode, includeBaseline) {
 }
 
 /**
- * Header rules for next.config.mjs. The global rule EXCLUDES the archival-render routes via a negative lookahead,
- * so the two rule sets never overlap.
+ * Header rules for next.config.mjs.
  * @param {SecurityHeaderOptions} options
  * @param {'report-only' | 'enforce'} [mode]
  * @returns {HeaderRule[]}
  */
 export function buildSecurityHeaderRules(options, mode = CSP_MODE) {
-  const archivalHeaders = [...baseHeaders(options), ...cspHeaders(buildArchivalCspPolicy(options), mode, false)];
   return [
     {
-      source: `/((?!${ARCHIVAL_RENDER_PATH_PATTERN}).*)`,
+      source: '/:path*',
       headers: [
         ...baseHeaders(options),
         { key: 'X-Frame-Options', value: 'DENY' },
         ...cspHeaders(buildAppCspPolicy(options), mode, true),
       ],
     },
-    { source: '/api/invoices/:id/archival-render', headers: archivalHeaders },
-    { source: '/api/credit-notes/:id/archival-render', headers: archivalHeaders },
   ];
 }
 

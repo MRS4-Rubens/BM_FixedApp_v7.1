@@ -152,7 +152,6 @@ describe('Admin Environment Validation (AUTH-001)', () => {
       DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
       NEON_AUTH_BASE_URL: 'https://example.neonauth.tech/neondb/auth',
       NEON_AUTH_COOKIE_SECRET: '01234567890123456789012345678901',
-      ARCHIVAL_SIGNING_SECRET: '01234567890123456789012345678901',
       CRON_SECRET: '01234567890123456789012345678901',
       PLATFORM_ADMIN_USER_IDS: 'usr_admin_001',
     };

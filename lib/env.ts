@@ -153,7 +153,6 @@ export function isEnvValidationSkipped(source: EnvSource = process.env): boolean
 export type AppEnv = Readonly<{ NEXT_PUBLIC_APP_URL: string }>;
 export type DatabaseEnv = Readonly<{ DATABASE_URL: string }>;
 export type AuthEnv = Readonly<{ NEON_AUTH_BASE_URL: string; NEON_AUTH_COOKIE_SECRET: string }>;
-export type ArchivalEnv = Readonly<{ ARCHIVAL_SIGNING_SECRET: string }>;
 export type CronEnv = Readonly<{ CRON_SECRET: string }>;
 export type AdminEnv = Readonly<{
   PLATFORM_ADMIN_EMAILS: readonly string[];
@@ -278,11 +277,6 @@ export const authEnv: EnvGroup<AuthEnv> = defineGroup(
   ),
 );
 
-export const archivalEnv: EnvGroup<ArchivalEnv> = defineGroup(
-  'archival',
-  fromSchema('archival', z.object({ ARCHIVAL_SIGNING_SECRET: secret() }), (data): ArchivalEnv => data),
-);
-
 export const cronEnv: EnvGroup<CronEnv> = defineGroup(
   'cron',
   fromSchema('cron', z.object({ CRON_SECRET: secret() }), (data): CronEnv => data),
@@ -357,7 +351,6 @@ export const rateLimitEnv: EnvGroup<RateLimitEnv> = defineGroup(
 export function getAppEnv(): AppEnv { return appEnv.get(); }
 export function getDatabaseEnv(): DatabaseEnv { return databaseEnv.get(); }
 export function getAuthEnv(): AuthEnv { return authEnv.get(); }
-export function getArchivalEnv(): ArchivalEnv { return archivalEnv.get(); }
 export function getCronEnv(): CronEnv { return cronEnv.get(); }
 export function getAdminEnv(): AdminEnv { return adminEnv.get(); }
 export function getStorageEnv(): StorageEnv { return storageEnv.get(); }
@@ -369,7 +362,7 @@ export function getRateLimitEnv(): RateLimitEnv { return rateLimitEnv.get(); }
 /* Boot-time checks                                                     */
 /* ------------------------------------------------------------------ */
 
-const CORE_GROUPS: readonly EnvGroup<unknown>[] = [appEnv, databaseEnv, authEnv, archivalEnv, cronEnv, adminEnv];
+const CORE_GROUPS: readonly EnvGroup<unknown>[] = [appEnv, databaseEnv, authEnv, cronEnv, adminEnv];
 const FEATURE_GROUPS: readonly EnvGroup<unknown>[] = [storageEnv, pdfEnv, emailEnv, rateLimitEnv];
 
 function collectIssues(groups: readonly EnvGroup<unknown>[], source: EnvSource): readonly EnvIssue[] {

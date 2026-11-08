@@ -57,7 +57,6 @@ vi.mock('@/lib/env', () => ({
     PLATFORM_ADMIN_EMAILS: ['admin@test.app'],
     PLATFORM_ADMIN_USER_IDS: ['00000000-0000-4000-8000-000000000099'],
   }),
-  getArchivalEnv: () => ({ ARCHIVAL_SIGNING_SECRET: 'mock-archival-secret-mock-archival-secret' }),
 }));
 
 vi.mock('next/headers', () => ({
