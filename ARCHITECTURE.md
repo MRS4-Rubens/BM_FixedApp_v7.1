@@ -13,7 +13,7 @@ This app uses Next.js Server Actions as the default way pages talk to the backen
 | `app/(marketing)`, `app/(auth)`, `app/(app)`, `app/(admin)` | Page routes, grouped by access level. Not modified by backend phases except to wire in real data. | Existing (v0) |
 | `app/api/` | Route Handlers for true external HTTP endpoints only (webhooks, health checks). Rare — most things are Server Actions instead. | Phase 1 (empty), used starting Phase 16+ |
 | `lib/db/` | Drizzle ORM schema (`lib/db/schema/`) and the database client. The single source of truth for the data model. | Phase 2 |
-| `lib/db/scripts/` | One-off diagnostic or migration scripts (e.g. data correction scripts). These MUST be idempotent, safe to re-run, have clear console output, and be deleted once their one-time job is fully confirmed in production. They should not accumulate. | Phase 8 |
+| `scripts/` | CI, staging and benchmark scripts (scripts/ci, scripts/perf). One-off data scripts go in scripts/ops/ when needed; they must be idempotent and deleted after use. | Phase 8 |
 | `lib/auth/` | Neon Auth / Better Auth setup and session helpers. | Phase 3 |
 | `lib/actions/` | Server Actions, grouped into one subfolder per business domain (`customers/`, `products/`, `invoices/`, `credit-notes/`, `payments/`, `reports/`, `business/`). Each domain folder contains the create/read/update actions for that domain. `_shared/` holds the common wrapper every action uses for validation and error handling — see Phase 4. | Phase 4 (`_shared`), then per domain in later phases |
 | `lib/validations/` | Zod schemas that validate input before it reaches a Server Action. One file per domain, matching `lib/actions/`. | Phase 5 onward |
@@ -46,7 +46,7 @@ This app uses Next.js Server Actions as the default way pages talk to the backen
 
 ## Domain Modules Implemented
 
-Customer Management (Phase 6) and Product/HSN Catalog (Phase 7) follow the Server Action and Form Conventions established in Phases 4-5 exactly — see `lib/actions/customers/*.ts` and `lib/actions/products/*.ts` as additional reference examples alongside `ping.ts`.
+Customer Management (Phase 6) and Product/HSN Catalog (Phase 7) follow the Server Action and Form Conventions established in Phases 4-5 exactly — see `lib/actions/customers/*.ts` and `lib/actions/products/*.ts` as additional reference examples alongside `lib/actions/customers/create-customer.ts`.
 
 ## Server Action Convention (established Phase 4)
 
@@ -59,7 +59,7 @@ All Server Actions in this app share a consistent envelope and error-handling pa
 - **Revalidation**: `revalidatePath()`/`revalidateTag()` calls after a mutation are the responsibility of each individual action, not this shared wrapper, since different actions affect different pages.
 - **`'use server'` export rule (Step-1)**: a file starting with `'use server'` may export ONLY server actions (`createAuthenticatedAction`/`createAction` results or `async` functions) plus type-only exports. Constants, Zod schemas and re-export lists crash every page that loads the module ("A 'use server' file can only export async functions"). Put schemas in `lib/validations/` and constants in a plain module. Enforced in CI by `tests/unit/use-server-exports.test.ts`.
 
-**Example Usage**: (See `lib/actions/_shared/ping.ts` for the complete canonical live example)
+**Example Usage**: (See `lib/actions/customers/create-customer.ts` for the complete canonical live example)
 
 ```typescript
 import { z } from 'zod';
@@ -114,7 +114,7 @@ Archival of finalized invoices and credit notes executes reliably on serverless 
 
 ## Why this structure
 
-Every folder above maps to exactly one future phase in `BillMatrix_Backend_Roadmap_v1.md`. Nothing here is speculative — each folder exists because a specific, already-planned phase needs it. This means the project never needs a restructuring pass later: as each phase is implemented, its code goes into a folder that was already waiting for it.
+Every folder above maps to an architectural domain tracked in `docs/BM_FinApp_v1.1_Production-Readiness Audit.md` and related milestone reports in `docs/reports/`. Nothing here is speculative — each folder exists because a specific, already-planned domain needs it. This means the project never needs a restructuring pass later: as each domain is implemented, its code goes into a folder that was already waiting for it.
 
 ## Rate Limiting Policy (established Phase 17, hardened SEC-005)
 
@@ -671,13 +671,13 @@ When a new database constraint requires user-friendly UI mapping:
 - **Layout Error Scope Limitation (Next.js App Router Invariant)**:
   - A segment's `error.tsx` catches errors thrown by that segment's *children* (page components and nested route subtrees). It does NOT catch errors thrown inside the same segment's `layout.tsx`. Any unhandled failure in `(app)/layout.tsx` or `(admin)/layout.tsx` bubbles up to the root `global-error.tsx`.
 - **Zero Information Leakage in Error UI**:
-  - Error views ([components/app/route-error-view.tsx](file:///e:/BM_Edits_Cld1.1/BM_FixApp_v1.1/components/app/route-error-view.tsx)) NEVER display raw `error.message` or `error.stack` to users. Only user-safe, static copy is rendered alongside the opaque `error.digest` reference hash.
+  - Error views ([components/app/route-error-view.tsx](components/app/route-error-view.tsx)) NEVER display raw `error.message` or `error.stack` to users. Only user-safe, static copy is rendered alongside the opaque `error.digest` reference hash.
   - Sentry reporting executes automatically via `Sentry.captureException(error, { tags: { error_boundary: scope, digest: error.digest } })` in a `useEffect` hook without causing re-render loops.
   - Server Component retry uses `startTransition(() => { router.refresh(); reset(); })` to trigger a server-side data re-fetch rather than merely unmounting the client boundary.
 - **Loading Skeleton Inheritance Rule**:
   - In Next.js App Router, `loading.tsx` wraps its route segment AND all nested descendant routes in a Suspense boundary.
   - *Mandatory Nested Overrides*: Any new nested route created under list segments (`invoices/`, `customers/`, `products/`) that renders a form or detail view MUST supply its own shape-correct `loading.tsx` (e.g. `invoices/new/loading.tsx` with `FormPageSkeleton`, `invoices/[id]/loading.tsx` with `DetailPageSkeleton`). Without this, the parent's table list skeleton will flash during navigation to forms and detail screens.
-- **Deterministic Accessible Skeletons ([components/app/skeletons/page-skeletons.tsx](file:///e:/BM_Edits_Cld1.1/BM_FixApp_v1.1/components/app/skeletons/page-skeletons.tsx))**:
+- **Deterministic Accessible Skeletons ([components/app/skeletons/page-skeletons.tsx](components/app/skeletons/page-skeletons.tsx))**:
   - Skeletons are pure Server Components with zero database, authentication, or server action dependencies.
   - Strictly deterministic static arrays (no `Math.random`, `Date.now`, or `new Date()`) to eliminate hydration mismatches.
   - Built to WCAG 2.2 AA accessibility standards: wrapping shells use `role="status"`, `aria-busy="true"`, `aria-live="polite"`, and `<span className="sr-only">` announcements.
@@ -765,7 +765,7 @@ When a new database constraint requires user-friendly UI mapping:
 - **Statutory Change Guard**:
   Rule: no change to tax or rounding logic may land without an accompanying `SPEC` test.
 - **Discrepancy Registry**:
-  See `docs/TEST-001-findings.md` for registered statutory ambiguities, defects, and edge-case behaviors.
+  See `docs/reports/TEST-001-findings.md` for registered statutory ambiguities, defects, and edge-case behaviors.
 
 
 ## Testing strategy (TEST-002)

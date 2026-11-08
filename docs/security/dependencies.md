@@ -51,6 +51,9 @@ When evaluating a new release of `@neondatabase/auth`:
 
 ---
 
+### Direct dependencies our own code never imports (keep them)
+- **`@tanstack/react-query`**: no file in `app/`, `components/` or `lib/` imports it, but `@daveyplate/better-auth-tanstack` and `@daveyplate/better-auth-ui` (pulled in by `@neondatabase/auth` / `@neondatabase/auth-ui`) declare it as a **required peer dependency**. Keeping it as a direct dependency makes the peer explicit instead of relying on pnpm auto-installing peers. Remove it only together with the Neon Auth UI stack. (CLEAN-SWEEP reviewer decision; guarded by `tests/unit/clean-sweep-guards.test.ts`.)
+
 ## 3. Transitive Dependency Overrides (`pnpm-workspace.yaml`)
 
 ### Policy: Never Cross a Major in Overrides

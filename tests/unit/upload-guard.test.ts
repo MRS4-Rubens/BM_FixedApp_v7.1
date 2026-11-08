@@ -13,8 +13,8 @@ describe('Upload Security Architectural Guards (SEC-002)', () => {
   const idriveSource = readSource('lib/storage/idrive.ts');
   const logoRouteSource = readSource('app/api/business/[id]/logo/route.ts');
   const claimScreenshotUrlSource = readSource('lib/actions/subscriptions/get-claim-screenshot-url.ts');
-  const archiveInvoiceSource = readSource('lib/storage/archive-invoice.ts');
-  const archiveCreditNoteSource = readSource('lib/storage/archive-credit-note.ts');
+  const archivalCoreSource = readSource('lib/storage/archival-core.ts');
+  const scheduleArchivalSource = readSource('lib/storage/schedule-archival.ts');
   const invoicePdfUrlSource = readSource('lib/actions/invoices/get-archived-pdf-url.ts');
   const creditNotePdfUrlSource = readSource('lib/actions/credit-notes/get-archived-credit-note-pdf-url.ts');
 
@@ -67,8 +67,8 @@ describe('Upload Security Architectural Guards (SEC-002)', () => {
   });
 
   it('verifies archive modules and invoice/credit-note PDF signed URLs do NOT contain forceDownload', () => {
-    expect(archiveInvoiceSource).not.toContain('forceDownload');
-    expect(archiveCreditNoteSource).not.toContain('forceDownload');
+    expect(archivalCoreSource).not.toContain('forceDownload');
+    expect(scheduleArchivalSource).not.toContain('forceDownload');
     expect(invoicePdfUrlSource).not.toContain('forceDownload');
     expect(creditNotePdfUrlSource).not.toContain('forceDownload');
   });

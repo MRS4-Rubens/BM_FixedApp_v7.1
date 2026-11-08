@@ -10,7 +10,7 @@ PR push ──► Vercel builds a Preview (env: Preview variables ──► Neon
                            ──► Playwright (bypassing Vercel Authentication) ──► remove the trusted origin
 ```
 
-If the required secrets/variables are absent the workflow **skips with a notice** instead of failing.
+If the required secrets/variables are absent the workflow **skips with a notice** instead of failing. Dependabot and fork PRs do not receive repository secrets, so the E2E check shows as "skipped" (grey); such PRs must be verified locally against their Vercel preview with `.claude/reviewer-tools` without pasting secrets.
 
 ---
 

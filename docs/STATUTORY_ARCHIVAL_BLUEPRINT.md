@@ -1,3 +1,5 @@
+> **Status: planned — not implemented.** This is a future design (first run 1 April 2035). File paths below that do not exist yet (e.g. `lib/actions/archival/…`) are proposals.
+
 # Bill Matrix — Statutory Record Retention & Financial Year Archival Blueprint
 **Document Version:** 2.0 (Master Architecture, Legal Compliance & Technical Execution Manual)  
 **Applicability:** Indian GST (CGST Act), Income Tax Act, Companies Act, and Information Technology Act  

@@ -9,7 +9,13 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { formatIstDate } from '@/lib/invoices/ist-date'
 import { PLAN_CATALOG, formatPlanPrice, formatPlanPriceSummary, type PlanFeature } from '@/lib/subscriptions/plan-catalog'
-import { FREE_TIER_LIMITS, PLAN_PRICING, TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements'
+import {
+  FREE_TIER_LIMITS,
+  PLAN_PRICING,
+  TRIAL_DURATION_DAYS,
+  canShareInvoiceOnWhatsApp,
+  canExportStatutoryReport,
+} from '@/lib/subscriptions/entitlements'
 import {
   Crown,
   Sparkles,
@@ -169,6 +175,9 @@ export function BillingTab({
   const currentPlanKey = (business?.subscription_plan || 'free').toLowerCase()
   const status = (business?.subscription_status || 'free').toLowerCase()
   const planConfig = PLAN_CONFIGS[currentPlanKey] || PLAN_CONFIGS.essentials
+
+  const whatsapp = canShareInvoiceOnWhatsApp(business).allowed
+  const excel = canExportStatutoryReport(business).allowed
 
   // Expiration and Days Calculation
   const targetExpiry = business?.subscription_ends_at || business?.trial_ends_at
@@ -458,13 +467,9 @@ export function BillingTab({
               Live Resource Consumption & Quotas
             </h3>
             <p className="text-sm text-slate-500 mt-0.5">
-              Real-time monitoring of your monthly invoicing throughput and catalog volumes.
+              Your usage this month and your catalogue size.
             </p>
           </div>
-          <span className="inline-flex items-center gap-1 self-start sm:self-auto rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-xs font-bold text-emerald-700 shadow-2xs">
-            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Live Database Sync
-          </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-3">
@@ -562,7 +567,7 @@ export function BillingTab({
             </div>
 
             <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-slate-200/60">
-              Instant HSN/SAC search enabled
+              Search products by name or HSN/SAC
             </p>
           </div>
 
@@ -582,11 +587,15 @@ export function BillingTab({
               <div className="mt-2 space-y-1">
                 <div className="flex items-center justify-between text-xs sm:text-[13px] gap-1">
                   <span className="text-slate-500 font-medium whitespace-nowrap">WhatsApp / Email:</span>
-                  <span className="font-bold text-emerald-700 whitespace-nowrap">Enabled</span>
+                  <span className={cn('font-bold whitespace-nowrap', whatsapp ? 'text-emerald-700' : 'text-slate-700')}>
+                    {whatsapp ? 'Enabled' : 'E-mail only'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between text-xs sm:text-[13px] gap-1">
                   <span className="text-slate-500 font-medium whitespace-nowrap">GSTR-1 & ITR Export:</span>
-                  <span className="font-bold text-emerald-700 whitespace-nowrap">1-Click Excel</span>
+                  <span className={cn('font-bold whitespace-nowrap', excel ? 'text-emerald-700' : 'text-slate-700')}>
+                    {excel ? '1-Click Excel' : 'Essentials Pro'}
+                  </span>
                 </div>
               </div>
 

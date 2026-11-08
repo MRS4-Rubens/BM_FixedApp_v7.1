@@ -33,6 +33,7 @@ export async function listBusinessesWithCounts() {
       legalName: businesses.legal_name,
       tradeName: businesses.trade_name,
       gstin: businesses.gstin,
+      stateCode: businesses.state_code,
       email: businesses.email,
       phone: businesses.phone,
       subscriptionPlan: businesses.subscription_plan,

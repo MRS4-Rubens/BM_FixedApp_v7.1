@@ -26,11 +26,6 @@ function getStorage(): StorageContext {
   return context;
 }
 
-/** Lazily constructed S3 client. Throws EnvConfigError if storage variables are invalid. */
-export function getS3(): S3Client {
-  return getStorage().client;
-}
-
 export interface UploadObjectOptions {
   readonly contentDisposition?: string;
   readonly cacheControl?: string;
