@@ -213,3 +213,12 @@ Verified on branch `fix/debt-002-shared-helpers` against `main` `71badf9`; every
 - **Call sites:** invoice-detail, payment-section, credit-note-detail, credit-note-form, get-itr-data and invoice-form (both roundings) are straight substitutions with the same inputs.
 - **Equivalence test is real (mutation check):** changing `settledPercent` from `Math.round` to `Math.floor` makes the 500-case property test fail immediately. Changing the credit-note rule from `=== 'active'` to `!== 'voided'` is (correctly) not detected because `credit_notes.status` is CHECK-constrained to `active | voided` (DB-004), so the two rules are identical in practice.
 - **Checks (local):** `pnpm typecheck` clean; `pnpm lint:ratchet` = baseline 0/1; `pnpm exec vitest run` 169 files passed, 4 skipped (1389 tests); `pnpm build` OK; print stylesheet unchanged.
+
+### Preview verification (Vercel preview of PR #25, 2026-11-09)
+
+- **CI:** all 7 checks green on `819ee27` (CI E2E now also runs the archival check).
+- **Local E2E with `E2E_EXPECT_ARCHIVAL=true`:**
+  - Run 1: Step 4's **on-screen oracle totals (taxable, CGST, SGST, grand total) all matched**; the run then timed out in `saveDraft()` because `page.waitForURL(...)` waits for the `load` event by default. The trace shows the save POST took 0.93 s and the client-side navigation to the new invoice finished by ~1.5 s — the same local-only browser `load` stall seen in earlier local runs, not an app delay.
+  - Run 2: **22 passed, 1 skipped (mailbox)** — oracle totals, partial payment, credit note, settle-to-zero balance and GSTR-1 export all green, plus the archival wait.
+- **Hydration probe:** 0 errors on all 8 pages; sidebar 68 / 220 / 68 px at 800 px.
+- **Follow-up (test-only, separate task):** E2E page objects should not wait for the browser `load` event (`page.goto` / `waitForURL` default) — wait for `commit`/`domcontentloaded` plus a visible UI assertion instead, to remove the recurring local flake.
