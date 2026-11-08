@@ -4,9 +4,10 @@ import { redirect } from 'next/navigation';
 
 import { CheckoutForm } from './checkout-form';
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { getCurrentBusiness } from '@/lib/auth/current-business';
 import { isOwnerRole } from '@/lib/auth/rbac';
 import { db } from '@/lib/db/client';
-import { businesses, subscriptionRequests } from '@/lib/db/schema';
+import { subscriptionRequests } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { loadPayeeConfig, describePayeeProblems } from '@/lib/config/payee';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
@@ -45,11 +46,10 @@ export default async function CheckoutPage({
   }
 
   // 2. Fetch business profile
-  const bizResult = await db.select().from(businesses).where(eq(businesses.id, user.business_id));
-  if (bizResult.length === 0) {
+  const business = await getCurrentBusiness();
+  if (!business) {
     redirect('/settings');
   }
-  const business = bizResult[0];
 
   // 3. Resolve payee details. FAIL CLOSED: never show customers placeholder or partial payment details.
   const payee = loadPayeeConfig();

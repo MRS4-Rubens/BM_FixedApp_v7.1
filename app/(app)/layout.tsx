@@ -3,10 +3,7 @@ import { AppSidebar } from '@/components/app/app-sidebar'
 import { AppTopbar } from '@/components/app/app-topbar'
 import { getCurrentAppUser } from '@/lib/auth/session'
 import { isPlatformAdmin } from '@/lib/auth/admin'
-
-import { db } from '@/lib/db/client'
-import { businesses } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { buildLogoUrl } from '@/lib/storage/logo-url'
 
 export const dynamic = 'force-dynamic'
@@ -16,8 +13,7 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode
 }) {
-  const user = await getCurrentAppUser()
-  const isAdminUser = await isPlatformAdmin()
+  const [user, isAdminUser] = await Promise.all([getCurrentAppUser(), isPlatformAdmin()])
 
   const cookieStore = await cookies()
   const cookieVal = cookieStore.get('sidebar:collapsed')?.value
@@ -37,29 +33,19 @@ export default async function AppLayout({
 
   let businessLogoUrl: string | undefined = undefined
 
-  if (user?.business_id) {
-    const biz = await db
-      .select({
-        plan: businesses.subscription_plan,
-        status: businesses.subscription_status,
-        endsAt: businesses.subscription_ends_at,
-        trialEndsAt: businesses.trial_ends_at,
-        logoStorageKey: businesses.logo_storage_key,
-      })
-      .from(businesses)
-      .where(eq(businesses.id, user.business_id))
-      .limit(1)
+  const business = user?.business_id ? await getCurrentBusiness() : null
 
-    if (biz[0]) {
-      subscriptionProp = {
-        plan: biz[0].plan,
-        status: biz[0].status,
-        endsAt: biz[0].endsAt ? biz[0].endsAt.toISOString() : (biz[0].trialEndsAt ? biz[0].trialEndsAt.toISOString() : null),
-      }
+  if (business && user?.business_id) {
+    subscriptionProp = {
+      plan: business.subscription_plan,
+      status: business.subscription_status,
+      endsAt: business.subscription_ends_at
+        ? business.subscription_ends_at.toISOString()
+        : (business.trial_ends_at ? business.trial_ends_at.toISOString() : null),
+    }
 
-      if (biz[0].logoStorageKey) {
-        businessLogoUrl = buildLogoUrl(user.business_id, biz[0].logoStorageKey)
-      }
+    if (business.logo_storage_key) {
+      businessLogoUrl = buildLogoUrl(user.business_id, business.logo_storage_key)
     }
   }
 

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
-import { auth } from '@/lib/auth/server';
+import { getRequestSession } from '@/lib/auth/request-session';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import type { DbTransaction } from '@/lib/db/client';
@@ -61,7 +61,7 @@ export async function assertMayEmailCustomers(business: BusinessSubscriptionSour
     });
   }
 
-  const session = await auth.getSession();
+  const session = await getRequestSession();
   const sessionUser = session?.data?.user as { emailVerified?: unknown } | undefined;
   const decision = evaluateSenderVerification({
     isPaidTier: ent.tier === 'essentials' || ent.tier === 'professional',

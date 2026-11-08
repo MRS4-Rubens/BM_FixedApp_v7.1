@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth/server';
+import { getRequestSession } from '@/lib/auth/request-session';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
 import { getAdminEnv } from '@/lib/env';
@@ -7,7 +7,7 @@ import { evaluatePlatformAdmin, type PlatformAdminDecision, type PlatformAdminId
 export type { PlatformAdminDecision, PlatformAdminIdentity } from '@/lib/auth/admin-policy';
 
 export async function getPlatformAdminDecision(): Promise<PlatformAdminDecision> {
-  const session = await auth.getSession();
+  const session = await getRequestSession();
   const env = getAdminEnv();
   return evaluatePlatformAdmin(session?.data?.user, {
     emails: env.PLATFORM_ADMIN_EMAILS,

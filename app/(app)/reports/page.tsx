@@ -5,10 +5,7 @@ import { getIstDateParts } from '@/lib/invoices/ist-date'
 import { getSalesByPeriod } from '@/lib/actions/reports/get-sales-by-period'
 import { getTopCustomers } from '@/lib/actions/reports/get-top-customers'
 import { getTopProducts } from '@/lib/actions/reports/get-top-products'
-import { getCurrentAppUser } from '@/lib/auth/session'
-import { db } from '@/lib/db/client'
-import { businesses } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { canExportStatutoryReport } from '@/lib/subscriptions/entitlements'
 
 export const metadata: Metadata = { title: 'Reports' }
@@ -74,13 +71,10 @@ export default async function ReportsPage(props: { searchParams: Promise<{ perio
   const topCustomers = topCustomersRes.data
   const topProducts = topProductsRes.data
 
-  const user = await getCurrentAppUser()
+  const business = await getCurrentBusiness()
   let canExport = false
-  if (user?.business_id) {
-    const [b] = await db.select().from(businesses).where(eq(businesses.id, user.business_id))
-    if (b) {
-      canExport = canExportStatutoryReport(b).allowed
-    }
+  if (business) {
+    canExport = canExportStatutoryReport(business).allowed
   }
 
   return (

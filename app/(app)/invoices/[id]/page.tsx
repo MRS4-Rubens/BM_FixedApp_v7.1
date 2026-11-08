@@ -2,10 +2,11 @@ import { getInvoice } from '@/lib/actions/invoices/get-invoice';
 import { InvoiceForm } from '@/components/app/invoices/invoice-form';
 import { InvoiceDetail } from '@/components/app/invoices/invoice-detail';
 import { db } from '@/lib/db/client';
-import { businesses, customers, taxRates, financialYears } from '@/lib/db/schema';
+import { customers, taxRates, financialYears } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { notFound, redirect } from 'next/navigation';
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { getCurrentBusiness } from '@/lib/auth/current-business';
 import { listPayments, type PaymentListItem } from '@/lib/actions/payments/list-payments';
 import { listCreditNotes, type CreditNoteListItem } from '@/lib/actions/credit-notes/list-credit-notes';
 import { resolveSellerDetails, toInvoicePrintFields, type SellerDetails } from '@/lib/invoices/seller-snapshot';
@@ -36,8 +37,8 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const appUser = await getCurrentAppUser();
   if (!appUser?.business_id) redirect('/settings');
 
-  const businessResult = await db.select().from(businesses).where(eq(businesses.id, appUser.business_id));
-  const business = businessResult[0];
+  const business = await getCurrentBusiness();
+  if (!business) redirect('/settings');
 
   if (invoice?.lifecycle_status === 'draft') {
     let initialCustomer: CustomerOption | null = null;
