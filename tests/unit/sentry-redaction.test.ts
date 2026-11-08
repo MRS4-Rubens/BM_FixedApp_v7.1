@@ -205,5 +205,93 @@ describe('sentry-redaction (ARCH-005)', () => {
 
     expect(scrubSentryEvent(poisoned)).toBeNull();
   });
-});
 
+  it('SEC-006: scrubs Drizzle query params while preserving SQL text', () => {
+    const raw =
+      'Failed query: insert into "customers" ("name","phone") values ($1, $2)\nparams: Ravi Kumar,9876543210';
+    const scrubbed = scrubString(raw);
+    expect(scrubbed).toContain('Failed query: insert into "customers"');
+    expect(scrubbed).toContain('params: [redacted]');
+    expect(scrubbed).not.toContain('Ravi Kumar');
+    expect(scrubbed).not.toContain('9876543210');
+  });
+
+  it('SEC-006: scrubs Postgres unique/foreign key constraint details', () => {
+    const raw = 'Key (gstin)=(27AAAAA0000A1Z5) already exists.';
+    expect(scrubString(raw)).toBe('Key (gstin)=([redacted]) already exists.');
+  });
+
+  it('SEC-006: redacts Indian mobile numbers formatted in various styles', () => {
+    expect(scrubString('Call 9876543210 please')).toBe('Call [redacted] please');
+    expect(scrubString('Call +91 98765 43210 please')).toBe('Call [redacted] please');
+    expect(scrubString('Call +91-9876543210 please')).toBe('Call [redacted] please');
+    expect(scrubString('Call 919876543210 please')).toBe('Call [redacted] please');
+  });
+
+  it('SEC-006: redacts UPI VPAs and email addresses', () => {
+    expect(scrubString('pay to ravi.kumar@okaxis now')).toBe('pay to [redacted] now');
+    expect(scrubString('email a@b.com now')).toBe('email [redacted] now');
+  });
+
+  it('SEC-006: redacts Aadhaar numbers and bank account digit runs', () => {
+    expect(scrubString('Aadhaar 1234 5678 9012 valid')).toBe('Aadhaar [redacted] valid');
+    expect(scrubString('Account 123456789012345 valid')).toBe('Account [redacted] valid');
+  });
+
+  it('SEC-006: preserves safe non-PII values and technical identifiers', () => {
+    expect(scrubString('INV/26-27/0001')).toBe('INV/26-27/0001');
+    expect(scrubString('123e4567-e89b-12d3-a456-426614174000')).toBe(
+      '123e4567-e89b-12d3-a456-426614174000',
+    );
+    expect(scrubString('0b6f1c1e-1111-4222-8333-444455556666')).toBe(
+      '0b6f1c1e-1111-4222-8333-444455556666',
+    );
+    expect(scrubString('next@16.4.5')).toBe('next@16.4.5');
+    expect(scrubString('node_modules/@sentry/nextjs')).toBe('node_modules/@sentry/nextjs');
+    expect(scrubString('amount 39900 paise')).toBe('amount 39900 paise');
+    expect(scrubString('line 12:345')).toBe('line 12:345');
+    expect(scrubString('2026-11-08T10:15:30.123Z')).toBe('2026-11-08T10:15:30.123Z');
+  });
+
+  it('SEC-006: extends isSensitiveKey for personal names, params, details, otp, and aadhaar', () => {
+    expect(isSensitiveKey('display_name')).toBe(true);
+    expect(isSensitiveKey('full_name')).toBe(true);
+    expect(isSensitiveKey('params')).toBe(true);
+    expect(isSensitiveKey('detail')).toBe(true);
+    expect(isSensitiveKey('otp')).toBe(true);
+    expect(isSensitiveKey('aadhaar_number')).toBe(true);
+
+    expect(isSensitiveKey('amount_paise')).toBe(false);
+    expect(isSensitiveKey('status')).toBe(false);
+    expect(isSensitiveKey('event_id')).toBe(false);
+    expect(isSensitiveKey('scope')).toBe(false);
+  });
+
+  it("SEC-006 reviewer: Drizzle params with newlines are fully redacted and stack frames are kept", () => {
+    const stack = [
+      'Error: Failed query: insert into "customers" ("address") values ($1)',
+      'params: Flat 4B, MG Road',
+      'Bengaluru 560001,Ravi Kumar',
+      '    at PgPreparedQuery.execute (node_modules/drizzle-orm/pg-core/session.js:10:5)',
+      '    at async createCustomer (lib/actions/customers/create-customer.ts:40:3)',
+    ].join('\n');
+    const out = scrubString(stack);
+    expect(out).toContain("params: [redacted]");
+    expect(out).not.toContain("MG Road");
+    expect(out).not.toContain("Bengaluru");
+    expect(out).not.toContain("Ravi Kumar");
+    expect(out).toContain("at PgPreparedQuery.execute");
+    expect(out).toContain("at async createCustomer");
+    // message-only form (no stack frames): redacted to the end of the string
+    expect(scrubString('Failed query: select 1\nparams: a\nb\nc')).toBe('Failed query: select 1\nparams: [redacted]');
+  });
+
+  it("SEC-006 reviewer: Postgres key detail values containing parentheses are fully redacted", () => {
+    expect(scrubString("Key (legal_name)=(ABC (India) Pvt Ltd) already exists.")).toBe(
+      "Key (legal_name)=([redacted]) already exists.",
+    );
+    expect(scrubString("Key (business_id, utr)=(0b6f1c1e-1111-4222-8333-444455556666, UTR998877) already exists.")).toBe(
+      "Key (business_id, utr)=([redacted]) already exists.",
+    );
+  });
+});

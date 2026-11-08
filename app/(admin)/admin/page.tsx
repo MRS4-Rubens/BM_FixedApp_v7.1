@@ -6,6 +6,7 @@ import { getPendingRequests } from '@/lib/actions/subscriptions/get-pending-requ
 import { getAllBusinesses } from '@/lib/actions/subscriptions/get-all-businesses';
 import { getAllUsers } from '@/lib/actions/subscriptions/get-all-users';
 import { loadPayeeConfig, describePayeeProblems } from '@/lib/config/payee';
+import { logWarn } from '@/lib/actions/_shared/logger';
 
 export const metadata: Metadata = {
   title: 'Platform Admin Console',
@@ -65,7 +66,7 @@ export default async function AdminPage() {
   const payeeConfigIssue =
     payee.status === 'unavailable' ? describePayeeProblems(payee.problems) : null;
   if (payeeConfigIssue !== null) {
-    console.error(`[admin] Payee configuration problems: ${payeeConfigIssue}`);
+    logWarn('admin:payee-config', `Payee configuration problems: ${payeeConfigIssue}`);
   }
 
   return (

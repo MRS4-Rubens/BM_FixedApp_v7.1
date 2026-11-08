@@ -10,6 +10,7 @@ import { db } from '@/lib/db/client';
 import { subscriptionRequests } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { loadPayeeConfig, describePayeeProblems } from '@/lib/config/payee';
+import { logWarn } from '@/lib/actions/_shared/logger';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
 import { buildUpiPaymentUri } from '@/lib/payments/upi-intent';
@@ -54,7 +55,8 @@ export default async function CheckoutPage({
   // 3. Resolve payee details. FAIL CLOSED: never show customers placeholder or partial payment details.
   const payee = loadPayeeConfig();
   if (payee.status === 'unavailable') {
-    console.error(
+    logWarn(
+      'checkout:payee-config',
       `[checkout] Payments unavailable - payee configuration problems: ${describePayeeProblems(payee.problems)}`
     );
     return <PaymentsUnavailable supportEmail={SUPPORT_EMAIL} />;
