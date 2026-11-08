@@ -240,3 +240,9 @@ Verified on branch `fix/sec-006-log-redaction` against `main` `722b035`; every c
   Added 2 tests; both fail on the pre-fix patterns and pass now.
 - **Not in scope / noted:** the Neon Auth library prints its own `console.warn` diagnostics (third-party code, not our logger); browser `console.error` in 4 client components stays on the user's device.
 - **Checks (local):** `pnpm typecheck` clean; `pnpm lint:ratchet` = baseline; `pnpm exec vitest run` 161 files passed, 4 skipped (1357 tests); `pnpm build` OK.
+
+### Preview verification (Vercel preview of PR #17, 2026-11-08)
+
+- **CI:** all 6 checks green on `09ea309` (quality gates, real-Postgres, Playwright E2E, dependency audit, Vercel).
+- **Local E2E against the preview** (run after CI's E2E finished): 22 passed, 1 skipped (mailbox).
+- **Hydration probe:** 0 errors on all 8 pages, including /checkout and /admin (the two pages now using `logWarn`); sidebar 68 / 220 / 68 px at 800 px.
