@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip'
 
-import { products, taxRates } from '@/lib/db/schema'
+import type { products, taxRates } from '@/lib/db/schema'
 import { UNIT_OF_MEASUREMENT_OPTIONS } from '@/lib/gst/units'
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'

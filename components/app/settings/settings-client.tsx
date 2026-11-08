@@ -17,7 +17,7 @@ import { InvoiceSettingsForm } from './invoice-settings-form';
 import { BillingTab, type SubscriptionHistoryItem } from './billing-tab';
 import { LogoUploadCard } from './logo-upload-card';
 import { UserFeedbackForm } from './user-feedback-form';
-import { businesses } from '@/lib/db/schema';
+import type { businesses } from '@/lib/db/schema';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 

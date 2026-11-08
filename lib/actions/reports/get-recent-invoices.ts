@@ -6,7 +6,6 @@ import { db } from '@/lib/db/client';
 import { invoices, customers } from '@/lib/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { getDisplayInvoiceStatus, type DisplayInvoiceStatus } from '@/lib/invoices/status';
-import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import { z } from 'zod';
 
 const getRecentInvoicesSchema = z.object({

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { recordPaymentSchema, RecordPaymentInput, VOID_PAYMENT_REASONS } from '@/lib/validations/payment';
 import { recordPayment } from '@/lib/actions/payments/record-payment';
@@ -83,7 +83,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
   const balanceDue = netBillPaise - existingSum;
   const balanceDueRupees = paiseToRupees(balanceDue > 0 ? balanceDue : 0);
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<RecordPaymentInput>({
+  const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<RecordPaymentInput>({
     resolver: zodResolver(recordPaymentSchema as never),
     defaultValues: {
       invoice_id: invoice.id,
@@ -95,7 +95,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
     }
   });
 
-  const selectedMethod = watch('payment_method');
+  const selectedMethod = useWatch({ control, name: 'payment_method' });
   const currentMethod = PAYMENT_METHODS.find((m) => m.id === selectedMethod) || PAYMENT_METHODS[0];
   const CurrentIcon = currentMethod.icon;
 

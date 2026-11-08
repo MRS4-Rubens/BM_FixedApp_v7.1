@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { products } from '@/lib/db/schema';
+import type { products } from '@/lib/db/schema';
 import { deactivateProduct } from '@/lib/actions/products/deactivate-product';
 import { reactivateProduct } from '@/lib/actions/products/reactivate-product';
 

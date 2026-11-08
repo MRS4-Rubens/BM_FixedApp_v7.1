@@ -24,7 +24,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { customers } from '@/lib/db/schema'
+import type { customers } from '@/lib/db/schema'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
 
 interface CustomerFormProps {

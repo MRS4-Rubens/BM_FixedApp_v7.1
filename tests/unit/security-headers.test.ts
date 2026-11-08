@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   ARCHIVAL_RENDER_PATH_PATTERN,
   buildAppCspPolicy,
-  buildArchivalCspPolicy,
-  buildEnforcedCspBaseline,
   buildSecurityHeaderRules,
   buildSentryCspReportUri,
   CSP_MODE,

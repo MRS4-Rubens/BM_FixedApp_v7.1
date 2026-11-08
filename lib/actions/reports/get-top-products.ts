@@ -4,7 +4,7 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { invoices, invoiceLineItems, products, creditNotes, creditNoteLineItems } from '@/lib/db/schema';
-import { eq, and, between, desc, sql } from 'drizzle-orm';
+import { eq, and, between, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 const getTopProductsSchema = z.object({

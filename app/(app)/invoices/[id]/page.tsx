@@ -1,5 +1,5 @@
 import { getInvoice } from '@/lib/actions/invoices/get-invoice';
-import { InvoiceForm } from '@/components/app/invoices/invoice-form';
+import { InvoiceForm, type InvoiceFormInitialData } from '@/components/app/invoices/invoice-form';
 import { InvoiceDetail } from '@/components/app/invoices/invoice-detail';
 import { db } from '@/lib/db/client';
 import { customers, taxRates, financialYears } from '@/lib/db/schema';
@@ -71,7 +71,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     const activeFys = await db.select().from(financialYears).where(eq(financialYears.business_id, appUser.business_id));
 
     // Convert line items to Draft Input Format
-    const initialData = {
+    const initialData: InvoiceFormInitialData = {
       id: invoice.id,
       customer_id: invoice.customer_id || '',
       billing_name: invoice.billing_name_snapshot || '',
@@ -84,14 +84,14 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         description: li.description,
         hsn_sac_code: li.hsn_sac_code,
         quantity: Number(li.quantity),
-        unit_of_measurement: li.unit_of_measurement,
+        unit_of_measurement: li.unit_of_measurement, // passed through unchanged (legacy units fail validation on save; see InvoiceFormInitialLine)
         unit_price: li.unit_price_paise / 100,
         discount: (() => {
           const qty = Number(li.quantity) || 0;
           const grossPaise = Math.round(qty * li.unit_price_paise);
           return grossPaise > 0 ? Math.round((li.discount_paise / grossPaise) * 100) : 0;
         })(),
-        tax_rate_id: allTaxRates.find(tr => Number(tr.rate_percentage) === Number(li.tax_rate_percentage))?.id || allTaxRates[0]?.id
+        tax_rate_id: allTaxRates.find(tr => Number(tr.rate_percentage) === Number(li.tax_rate_percentage))?.id || allTaxRates[0]?.id || ''
       }))
     };
 

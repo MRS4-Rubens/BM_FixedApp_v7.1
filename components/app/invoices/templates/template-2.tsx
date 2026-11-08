@@ -2,7 +2,7 @@
 
 import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
-import { INDIAN_GST_STATES, getStateAbbrByCode } from '@/lib/gst/indian-states';
+import { getStateAbbrByCode } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 
@@ -28,7 +28,7 @@ const PRINT_STYLES = {
   spacingGrid: 'p-3',
 };
 
-export function InvoiceTemplate2({ invoice, businessStateCode, printSize, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
+export function InvoiceTemplate2({ invoice, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
   const { discEnabled, showHsn, enableFixedRows, fixedRowsCount } = displayPrefs;
   const isIntra = invoice.total_igst_paise === 0;
 
@@ -37,7 +37,7 @@ export function InvoiceTemplate2({ invoice, businessStateCode, printSize, hasWat
   // Dynamically group line items by active GST rate
   const taxGroups: Record<number, { taxable: number; cgst: number; sgst: number; igst: number }> = {};
 
-  invoice.lineItems.forEach((item: any) => {
+  invoice.lineItems.forEach((item) => {
     const rate = Number(item.tax_rate_percentage) || 0;
     const taxable = item.taxable_value_paise || 0;
     const cgst = item.cgst_paise || 0;
@@ -196,7 +196,7 @@ export function InvoiceTemplate2({ invoice, businessStateCode, printSize, hasWat
           </tr>
         </thead>
         <tbody className="border-x-2 border-black">
-          {invoice.lineItems.map((item: any, idx: number) => {
+          {invoice.lineItems.map((item, idx) => {
             const qty = Number(item.quantity);
             const grossPaise = qty * item.unit_price_paise;
             const discountPct = grossPaise > 0 ? (item.discount_paise / grossPaise) * 100 : 0;
