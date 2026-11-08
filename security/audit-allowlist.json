@@ -1,0 +1,76 @@
+{
+  "$comment": "SEC-007. High/critical PRODUCTION advisories accepted on purpose. Every entry needs a reason and an expiry; CI fails after expiry. Review before launch.",
+  "entries": [
+    {
+      "ghsa": "GHSA-pw9m-5jxm-xr6h",
+      "package": "better-auth",
+      "severity": "critical",
+      "expires": "2027-02-28",
+      "reason": "Server-side oidc-provider refresh-token replay flaw; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    },
+    {
+      "ghsa": "GHSA-965c-763c-88jm",
+      "package": "better-auth",
+      "severity": "critical",
+      "expires": "2027-02-28",
+      "reason": "Server-side OAuth state usable as magic-link token; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    },
+    {
+      "ghsa": "GHSA-9h47-pqcx-hjr4",
+      "package": "better-auth",
+      "severity": "high",
+      "expires": "2027-02-28",
+      "reason": "Server-side oidcProvider plugin insecure defaults; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    },
+    {
+      "ghsa": "GHSA-86j7-9j95-vpqj",
+      "package": "better-auth",
+      "severity": "high",
+      "expires": "2027-02-28",
+      "reason": "Server-side stored XSS via javascript: redirect_uri in oidc-provider/mcp; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    },
+    {
+      "ghsa": "GHSA-7w99-5wm4-3g79",
+      "package": "better-auth",
+      "severity": "high",
+      "expires": "2027-02-28",
+      "reason": "Server-side oauth-provider concurrent authorization code redemption flaw; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    },
+    {
+      "ghsa": "GHSA-392p-2q2v-4372",
+      "package": "better-auth",
+      "severity": "high",
+      "expires": "2027-02-28",
+      "reason": "Server-side refresh-token rotation fork race condition; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    },
+    {
+      "ghsa": "GHSA-g38m-r43w-p2q7",
+      "package": "better-auth",
+      "severity": "high",
+      "expires": "2027-02-28",
+      "reason": "Server-side OAuth auto-link account takeover vulnerability; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    },
+    {
+      "ghsa": "GHSA-fmh4-wcc4-5jm3",
+      "package": "better-auth",
+      "severity": "high",
+      "expires": "2027-02-28",
+      "reason": "Server-side organization invitation acceptance flow vulnerability; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    },
+    {
+      "ghsa": "GHSA-qq9h-g4jm-xgf3",
+      "package": "better-auth",
+      "severity": "high",
+      "expires": "2027-02-28",
+      "reason": "Server-side pre-account hijacking on magic-link and email-OTP flows; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    },
+    {
+      "ghsa": "GHSA-q84f-53jg-9ppm",
+      "package": "better-auth",
+      "severity": "high",
+      "expires": "2027-02-28",
+      "reason": "Server-side device login approval UI spoofing vulnerability; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    }
+  ]
+}
+

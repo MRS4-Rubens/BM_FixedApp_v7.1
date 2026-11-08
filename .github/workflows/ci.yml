@@ -86,10 +86,9 @@ jobs:
       - name: Production build
         run: pnpm build
 
-  # Report-only until SEC-007: known high advisories remain (the better-auth fix is not yet shipped in
-  # @neondatabase/auth). Findings surface as a warning annotation instead of a red check; make it blocking in SEC-007.
+  # SEC-007: blocking. High/critical production advisories fail CI unless allowlisted (security/audit-allowlist.json, with expiry).
   dependency-audit:
-    name: Dependency audit (report only)
+    name: Dependency audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -107,12 +106,7 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Audit production dependencies
-        run: |
-          if pnpm audit --prod --audit-level=high; then
-            echo "No high or critical advisories in production dependencies."
-          else
-            echo "::warning title=Dependency audit::High or critical advisories found in production dependencies (report-only until SEC-007). See the log above."
-          fi
+        run: node scripts/ci/audit-gate.mjs
 
   integration-realdb:
     name: Real-Postgres integration tests

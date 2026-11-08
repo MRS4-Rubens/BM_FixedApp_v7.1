@@ -48,6 +48,10 @@ A GST billing and invoicing web application for Indian small businesses.
 | `lint` | `pnpm lint` | Runs ESLint to check for code quality issues. |
 | `typecheck` | `pnpm typecheck` | Runs the TypeScript compiler in no-emit mode to check for type errors. |
 
+## Dependencies & Security
+
+Every CI run audits production dependencies with a blocking gate (`scripts/ci/audit-gate.mjs`); high/critical advisories fail CI unless they are on an expiring, reviewed allowlist (`security/audit-allowlist.json`). Transitive packages get same-major security floors via `pnpm-workspace.yaml` overrides. The core authentication dependency `@neondatabase/auth` is pinned to `0.4.2-beta` with a Server Component cookie patch (`patches/@neondatabase__auth.patch`). See [docs/security/dependencies.md](docs/security/dependencies.md) for full details on dependency policies, overrides, and the audit allowlist.
+
 ## Project Status
 
 This project is being built in phases according to a documented backend roadmap. See `BillMatrix_Backend_Roadmap_v1.md` for current progress and what's implemented so far.

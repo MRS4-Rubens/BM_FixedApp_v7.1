@@ -5,7 +5,19 @@ allowBuilds:
   msw: true
   sharp: true
   unrs-resolver: true
+# SEC-007: same-major security floors for transitive deps. Never cross a major here. See docs/security/dependencies.md.
 overrides:
-  hono: 4.12.25
+  'brace-expansion@^1': ^1.1.21
+  'brace-expansion@^2': ^2.1.7
+  'brace-expansion@^5': ^5.0.12
+  browserslist: ^4.29.5
+  baseline-browser-mapping: ^2.11.35
+  'fast-uri@^3': ^3.1.9
+  'js-yaml@^4': ^4.3.2
+  'nanoid@^3': ^3.3.20
+  'postcss@^8': ^8.5.32
+  source-map-js: ^1.2.2
+  'zod@^4': ^4.6.7
+  hono: ^4.13.17
 patchedDependencies:
   '@neondatabase/auth': patches/@neondatabase__auth.patch
