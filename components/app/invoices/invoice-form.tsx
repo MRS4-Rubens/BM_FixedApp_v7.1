@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { cn } from '@/lib/utils'
 import { useForm, useFieldArray } from 'react-hook-form'
+import type { FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { invoiceDraftSchema, InvoiceDraftInput } from '@/lib/validations/invoice'
+import { invoiceDraftSchema, type InvoiceDraftInput, type InvoiceLineItemInput } from '@/lib/validations/invoice'
 import { saveInvoiceDraft } from '@/lib/actions/invoices/save-invoice-draft'
 import { finalizeInvoice } from '@/lib/actions/invoices/finalize-invoice'
 import { getNextSequenceForDate } from '@/lib/actions/invoices/get-next-sequence'
@@ -39,6 +40,19 @@ import { useIsClient } from '@/lib/hooks/use-is-client'
 import { searchCustomerOptions } from '@/lib/actions/customers/search-customer-options'
 import { searchProductOptions } from '@/lib/actions/products/search-product-options'
 import type { CustomerOption, ProductOption } from '@/lib/pickers/types'
+import type { CurrentBusiness } from '@/lib/auth/current-business'
+import type { taxRates as taxRatesTable, financialYears as financialYearsTable } from '@/lib/db/schema'
+
+/**
+ * DEBT-001: a saved draft line can hold a unit that is no longer in UNIT_OF_MEASUREMENT_OPTIONS (the DB column is free
+ * text; legacy rows may say e.g. "KG"). It is passed through UNCHANGED so the form's zod validation stops the save and
+ * the user picks a valid unit — never silently rewritten to another unit.
+ */
+export type InvoiceFormInitialLine = Omit<InvoiceLineItemInput, 'unit_of_measurement'> & { unit_of_measurement: string };
+export type InvoiceFormInitialData = Omit<Partial<InvoiceDraftInput>, 'line_items'> & {
+  id?: string;
+  line_items?: InvoiceFormInitialLine[];
+};
 
 function formatINR(n: number) {
   return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -52,11 +66,11 @@ export function InvoiceForm({
   activeFys,
   isDraft
 }: {
-  initialData?: any;
+  initialData?: InvoiceFormInitialData;
   initialCustomer?: CustomerOption | null;
-  taxRates: any[];
-  business: any;
-  activeFys: any[];
+  taxRates: (typeof taxRatesTable.$inferSelect)[];
+  business: CurrentBusiness;
+  activeFys: (typeof financialYearsTable.$inferSelect)[];
   isDraft: boolean;
 }) {
   const router = useRouter()
@@ -83,6 +97,7 @@ export function InvoiceForm({
 
   const displayPrefs = useMemo(() => resolveDraftDisplayPrefs(business?.invoice_display_prefs), [business?.invoice_display_prefs]);
 
+  // A legacy unit from initialData may sit outside the enum until the user fixes it; invoiceDraftSchema validates on save.
   const defaultValues = {
     customer_id: '',
     billing_name: '',
@@ -94,11 +109,12 @@ export function InvoiceForm({
       ? (initialData?.invoice_template || business?.default_invoice_template || 'template_1')
       : 'template_1',
     // Default GST rate type selection (inclusive vs exclusive) inherited from business profile settings
-    gst_rate_type: business.default_gst_rate_type || 'exclusive',
+    gst_rate_type: business.default_gst_rate_type === 'inclusive' ? 'inclusive' : 'exclusive',
     line_items: [{ product_id: '', description: '', hsn_sac_code: '', quantity: 1, unit_of_measurement: 'NOS', unit_price: 0, discount: 0, tax_rate_id: '' }],
     ...initialData
-  }
+  } as InvoiceDraftInput
 
+  // DEBT-001: watch() kept on purpose (React Compiler not enabled); migrate to useWatch with the invoice-form split.
   const { register, control, handleSubmit, watch, setValue, formState: { isSubmitting, errors } } = useForm<InvoiceDraftInput>({
     resolver: zodResolver(invoiceDraftSchema as never),
     defaultValues
@@ -111,7 +127,6 @@ export function InvoiceForm({
     name: "line_items"
   })
 
-  const customerId = watch('customer_id')
   const lineItems = watch('line_items')
   const invoiceDateVal = watch('invoice_date')
   const billingNameVal = watch('billing_name') || ''
@@ -121,7 +136,6 @@ export function InvoiceForm({
 
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(initialCustomer ?? null)
   const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>([])
-  const [isSearchingCustomers, setIsSearchingCustomers] = useState(false)
   const customerReqIdRef = useRef(0)
 
   useEffect(() => {
@@ -132,16 +146,9 @@ export function InvoiceForm({
     }
     const reqId = ++customerReqIdRef.current
     const timer = setTimeout(async () => {
-      setIsSearchingCustomers(true)
-      try {
-        const res = await searchCustomerOptions({ q: query })
-        if (reqId === customerReqIdRef.current && res.success) {
-          setCustomerOptions(res.data)
-        }
-      } finally {
-        if (reqId === customerReqIdRef.current) {
-          setIsSearchingCustomers(false)
-        }
+      const res = await searchCustomerOptions({ q: query })
+      if (reqId === customerReqIdRef.current && res.success) {
+        setCustomerOptions(res.data)
       }
     }, 250)
     return () => clearTimeout(timer)
@@ -171,7 +178,6 @@ export function InvoiceForm({
   const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | null>(null)
   const mounted = useIsClient()
   const [productOptions, setProductOptions] = useState<ProductOption[]>([])
-  const [isSearchingProducts, setIsSearchingProducts] = useState(false)
   const productReqIdRef = useRef(0)
 
   const activeRowDesc = suggestIdx !== null ? (watch(`line_items.${suggestIdx}.description`) || '') : ''
@@ -184,16 +190,9 @@ export function InvoiceForm({
     }
     const reqId = ++productReqIdRef.current
     const timer = setTimeout(async () => {
-      setIsSearchingProducts(true)
-      try {
-        const res = await searchProductOptions({ q: query })
-        if (reqId === productReqIdRef.current && res.success) {
-          setProductOptions(res.data)
-        }
-      } finally {
-        if (reqId === productReqIdRef.current) {
-          setIsSearchingProducts(false)
-        }
+      const res = await searchProductOptions({ q: query })
+      if (reqId === productReqIdRef.current && res.success) {
+        setProductOptions(res.data)
       }
     }, 250)
     return () => clearTimeout(timer)
@@ -484,7 +483,7 @@ export function InvoiceForm({
         fyLabel: activeFy ? activeFy.label : currentLabel,
         sequenceValue
       })
-    } catch (e) { }
+    } catch { }
   }
 
   // Live Tax Calculation
@@ -600,7 +599,7 @@ export function InvoiceForm({
     }
 
     if (Array.isArray(errors.line_items)) {
-      errors.line_items.forEach((itemError: any, idx: number) => {
+      errors.line_items.forEach((itemError: FieldErrors<InvoiceLineItemInput> | undefined, idx: number) => {
         if (!itemError) return
         const prefix = `Item Row #${idx + 1}`
         if (itemError.description?.message) {
@@ -636,7 +635,6 @@ export function InvoiceForm({
   const watchTemplate = watch('invoice_template') || 'template_1'
   const watchLineItems = watch('line_items') || []
   const watchPlaceOfSupplyState = watch('place_of_supply_state_code') || business.state_code
-  const watchNotes = watch('notes') || ''
   const watchBillingName = watch('billing_name') || ''
   const watchBillingGstin = watch('billing_gstin') || ''
   const watchInvoiceDate = watch('invoice_date') || ''
@@ -720,7 +718,7 @@ export function InvoiceForm({
         quantity: li.quantity || 0,
         unit_of_measurement: li.unit_of_measurement || 'NOS',
         unit_price_paise: sanitized ? sanitized.unitPricePaise : 0,
-        discount_paise: sanitized ? sanitized.discountPaise : 0,
+        discount_paise: sanitized?.discountPaise ?? 0,
         taxable_value_paise: calcLi.taxableValuePaise,
         tax_rate_percentage: ratePct,
         cgst_paise: calcLi.cgstPaise,

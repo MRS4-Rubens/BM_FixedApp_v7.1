@@ -18,13 +18,10 @@ import {
   Users as UsersIcon,
   Clock,
   ShieldCheck,
-  AlertTriangle,
   Search,
-  ExternalLink,
   Check,
   X,
   Loader2,
-  Calendar,
   History,
   Settings,
   Copy,
@@ -36,11 +33,8 @@ import {
   FileSpreadsheet,
   CheckCircle2,
   XCircle,
-  Info,
-  Filter,
   ArrowUpDown,
   Maximize2,
-  Briefcase,
   Layers,
   ChevronLeft,
   ChevronRight,
@@ -49,6 +43,11 @@ import {
 import { cn } from '@/lib/utils';
 import { FEEDBACK_RECIPIENT_EMAIL } from '@/lib/config/contact';
 import { formatIstDate } from '@/lib/invoices/ist-date';
+import { isOneOf } from '@/lib/db/domain-values';
+import { OVERRIDE_STATUSES, type OverrideStatus } from '@/lib/validations/admin-subscription';
+
+type BizHistoryRow = Extract<Awaited<ReturnType<typeof getBusinessSubscriptions>>, { success: true }>['data'][number];
+type AdminTab = 'overview' | 'pending' | 'businesses' | 'users' | 'settings';
 
 type ProofViewer =
   | { readonly requestId: string; readonly businessName: string; readonly title: string; readonly utr: string; readonly status: 'loading' }
@@ -167,7 +166,7 @@ export function AdminConsole({
 }: AdminConsoleProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [activeTab, setActiveTab] = useState<'overview' | 'pending' | 'businesses' | 'users' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const isMounted = useIsClient();
 
   // Clipboard copy state for quick visual feedback
@@ -230,11 +229,11 @@ export function AdminConsole({
   const [selectedBiz, setSelectedBiz] = useState<typeof businesses[0] | null>(null);
   // CLEAN-SWEEP: nested "Correct GSTIN / state" dialog (adminUpdateBusinessIdentity, AUTH-004) inside Manage Subscription.
   const [identityDialogOpen, setIdentityDialogOpen] = useState(false);
-  const [bizHistory, setBizHistory] = useState<any[]>([]);
+  const [bizHistory, setBizHistory] = useState<BizHistoryRow[]>([]);
   const [bizHistoryPage, setBizHistoryPage] = useState(1);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [overridePlan, setOverridePlan] = useState('essentials');
-  const [overrideStatus, setOverrideStatus] = useState<'trial' | 'active' | 'expired' | 'suspended'>('active');
+  const [overrideStatus, setOverrideStatus] = useState<OverrideStatus>('active');
   const [overrideEndsAt, setOverrideEndsAt] = useState('');
 
   // Screenshot Lightbox Modal (SEC-003: lazy on-demand 300s presigned URLs)
@@ -406,7 +405,7 @@ export function AdminConsole({
   const handleOpenManageBiz = async (biz: typeof businesses[0]) => {
     setSelectedBiz(biz);
     setOverridePlan(biz.subscriptionPlan);
-    setOverrideStatus(biz.subscriptionStatus as any);
+    setOverrideStatus(isOneOf(OVERRIDE_STATUSES, biz.subscriptionStatus) ? biz.subscriptionStatus : 'active');
     setOverrideEndsAt(
       biz.subscriptionEndsAt ? new Date(biz.subscriptionEndsAt).toISOString().split('T')[0] : ''
     );
@@ -692,26 +691,26 @@ export function AdminConsole({
       {/* 3. Modern Segmented Tab Navigation */}
       <div className="flex items-center justify-between border-b border-border/60 pb-px">
         <div className="flex gap-2 overflow-x-auto py-1">
-          {[
-            { id: 'overview', label: 'Overview & Analytics', icon: Layers },
+          {([
+            { id: 'overview' as const, label: 'Overview & Analytics', icon: Layers },
             {
-              id: 'pending',
+              id: 'pending' as const,
               label: 'Pending Claims',
               icon: Clock,
               badge: pendingRequests.length,
               badgeHighlight: pendingRequests.length > 0,
             },
-            { id: 'businesses', label: 'Businesses Directory', icon: Building2, badge: businesses.length },
-            { id: 'users', label: 'Platform Users', icon: UsersIcon, badge: users.length },
-            { id: 'settings', label: 'Gateways & Settings', icon: QrCode },
-          ].map((tab) => {
+            { id: 'businesses' as const, label: 'Businesses Directory', icon: Building2, badge: businesses.length },
+            { id: 'users' as const, label: 'Platform Users', icon: UsersIcon, badge: users.length },
+            { id: 'settings' as const, label: 'Gateways & Settings', icon: QrCode },
+          ]).map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
 
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={cn(
                   'group flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-bold transition-all cursor-pointer select-none outline-none',
                   isActive
@@ -790,7 +789,7 @@ export function AdminConsole({
                         tickFormatter={(val) => `₹${val}`}
                       />
                       <RechartsTooltip
-                        formatter={(val: any) => [`₹${Number(val).toLocaleString('en-IN')}`, 'Revenue']}
+                        formatter={(val) => [`₹${Number(val).toLocaleString('en-IN')}`, 'Revenue']}
                         contentStyle={{
                           backgroundColor: '#0f172a',
                           borderColor: '#1e293b',
@@ -1992,7 +1991,10 @@ export function AdminConsole({
                   </label>
                   <select
                     value={overrideStatus}
-                    onChange={(e) => setOverrideStatus(e.target.value as any)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (isOneOf(OVERRIDE_STATUSES, v)) setOverrideStatus(v);
+                    }}
                     className="h-9 w-full rounded-lg border border-border bg-background text-sm font-semibold px-2.5 outline-none focus:border-indigo-500"
                   >
                     <option value="trial">Trial</option>

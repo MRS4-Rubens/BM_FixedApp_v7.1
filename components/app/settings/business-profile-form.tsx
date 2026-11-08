@@ -1,6 +1,6 @@
 'use client'
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { businessProfileSchema, BusinessProfileInput } from '@/lib/validations/business';
 import { saveBusinessProfile } from '@/lib/actions/business/save-business-profile';
@@ -31,7 +31,7 @@ import {
   Calendar,
   Sparkles
 } from 'lucide-react';
-import { businesses } from '@/lib/db/schema';
+import type { businesses } from '@/lib/db/schema';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { ProfileSpotlightTour } from './profile-spotlight-tour';
 
@@ -63,7 +63,7 @@ export function BusinessProfileForm({
   const [isTourOpen, setIsTourOpen] = useState(isNewBusiness);
   const [showCelebration, setShowCelebration] = useState(false);
   
-  const { register, handleSubmit, formState: { errors, isSubmitting }, setError, watch, setValue } = useForm<BusinessProfileInput>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setError, control, setValue } = useForm<BusinessProfileInput>({
     resolver: zodResolver(
       // @hookform/resolvers (v5.4.0) relies on a slightly older Zod v4 draft signature
       // where _zod.version.minor was 3. Zod v4.4.3 bumped it to 4, breaking the TS structural match.
@@ -112,7 +112,7 @@ export function BusinessProfileForm({
   });
 
   // Smart Auto-fill: When GSTIN is typed, automatically extract PAN and pre-fill State code
-  const watchedGstin = watch('gstin');
+  const watchedGstin = useWatch({ control, name: 'gstin' });
   useEffect(() => {
     if (!watchedGstin) return;
     const clean = watchedGstin.trim().toUpperCase();

@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { invoiceSettingsSchema, InvoiceSettingsInput } from '@/lib/validations/invoice-settings';
 import { saveInvoiceSettings } from '@/lib/actions/invoices/save-invoice-settings';
-import { businesses } from '@/lib/db/schema';
+import type { businesses } from '@/lib/db/schema';
 import { validateInvoiceNumberFormat, resolveInvoiceNumber, getResetGranularity } from '@/lib/invoices/number-format';
 import { cn } from '@/lib/utils';
 import {
@@ -127,7 +127,7 @@ export function InvoiceSettingsForm({ business, currentFyLabel }: InvoiceSetting
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     setError,
     formState: { errors, isSubmitting },
@@ -143,11 +143,11 @@ export function InvoiceSettingsForm({ business, currentFyLabel }: InvoiceSetting
     },
   });
 
-  const watchedGstRateType = watch('default_gst_rate_type') || 'exclusive';
-  const watchedTemplate = watch('default_invoice_template') || 'template_1';
+  const watchedGstRateType = useWatch({ control, name: 'default_gst_rate_type' }) || 'exclusive';
+  const watchedTemplate = useWatch({ control, name: 'default_invoice_template' }) || 'template_1';
 
   // Real-time GST Rule 46(b) live preview
-  const watchedFormat = watch('invoice_number_format');
+  const watchedFormat = useWatch({ control, name: 'invoice_number_format' });
   let formatPreview: { generated: string; length: number } | null = null;
   let formatError: string | null = null;
 

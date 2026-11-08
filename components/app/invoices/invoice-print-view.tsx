@@ -1,4 +1,5 @@
 import { InvoiceTemplateProps, InvoiceTemplate1 } from './templates/template-1';
+import type { InvoiceLineItem } from './templates/types';
 import { InvoiceTemplate2 } from './templates/template-2';
 import { InvoiceTemplate3 } from './templates/template-3';
 import { InvoiceTemplate4 } from './templates/template-4';
@@ -47,7 +48,7 @@ export interface InvoicePrintViewProps {
     customer?: {
       phone?: string | null;
     } | null;
-    lineItems: any[];
+    lineItems: InvoiceLineItem[];
     [key: string]: unknown;
   };
   businessStateCode: string;

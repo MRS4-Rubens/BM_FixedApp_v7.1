@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   assertCreditNoteMatchesDerivation,
   buildCreditLineStates,
-  CreditLineState,
   CreditNoteRuleError,
   DerivedCreditLine,
   deriveCreditLines,

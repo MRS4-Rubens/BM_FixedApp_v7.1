@@ -2,7 +2,7 @@
 
 import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
-import { INDIAN_GST_STATES, getStateAbbrByCode } from '@/lib/gst/indian-states';
+import { getStateAbbrByCode } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 
@@ -32,7 +32,7 @@ const PAD_STYLES = {
   spacingGrid: 'p-2',
 };
 
-export function InvoiceTemplate3({ invoice, businessStateCode, printSize, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
+export function InvoiceTemplate3({ invoice, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
   const { discEnabled, showHsn, enableFixedRows, fixedRowsCount } = displayPrefs;
   const isIntra = invoice.total_igst_paise === 0;
 
@@ -233,7 +233,7 @@ export function InvoiceTemplate3({ invoice, businessStateCode, printSize, hasWat
           </tr>
         </thead>
         <tbody className="border-x-2 border-[#0e3f94]">
-          {invoice.lineItems.map((item: any, idx: number) => {
+          {invoice.lineItems.map((item, idx) => {
             const qty = Number(item.quantity);
             const grossPaise = qty * item.unit_price_paise;
             const discountPct = grossPaise > 0 ? (item.discount_paise / grossPaise) * 100 : 0;

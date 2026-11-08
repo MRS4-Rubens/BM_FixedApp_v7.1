@@ -106,8 +106,6 @@ describe('API-004: Credit note binding to original invoice lines', () => {
   // Migration test IDs
   let inv1Id: string;
   let iliSingleId: string;
-  let iliDup1Id: string;
-  let iliDup2Id: string;
   let iliFinalId: string;
   let invOtherId: string;
   let iliOtherId: string;
@@ -176,7 +174,7 @@ describe('API-004: Credit note binding to original invoice lines', () => {
       [inv1Id],
     );
 
-    iliDup1Id = await insertOne(
+    await insertOne(
       pg,
       `INSERT INTO invoice_line_items (invoice_id, description, hsn_sac_code, quantity, unit_of_measurement, unit_price_paise,
          taxable_value_paise, tax_rate_percentage, line_total_paise)
@@ -184,7 +182,7 @@ describe('API-004: Credit note binding to original invoice lines', () => {
       [inv1Id],
     );
 
-    iliDup2Id = await insertOne(
+    await insertOne(
       pg,
       `INSERT INTO invoice_line_items (invoice_id, description, hsn_sac_code, quantity, unit_of_measurement, unit_price_paise,
          taxable_value_paise, tax_rate_percentage, line_total_paise)

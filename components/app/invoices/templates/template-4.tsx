@@ -2,7 +2,7 @@
 
 import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
-import { INDIAN_GST_STATES, getStateAbbrByCode } from '@/lib/gst/indian-states';
+import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 
@@ -32,25 +32,17 @@ const PRINT_STYLES = {
   spacingSection: 'mb-2',
 };
 
-export function InvoiceTemplate4({ invoice, businessStateCode, printSize, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
+export function InvoiceTemplate4({ invoice, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
   const { discEnabled, showHsn, enableFixedRows, fixedRowsCount } = displayPrefs;
   const isIntra = invoice.total_igst_paise === 0;
 
   const customerStateInfo = INDIAN_GST_STATES.find(s => s.code === invoice.place_of_supply_state_code);
   const customerStateName = customerStateInfo ? customerStateInfo.name : (invoice.place_of_supply_state_code || '—');
-  const customerStateAbbr = getStateAbbrByCode(invoice.place_of_supply_state_code);
-
-  const businessStateInfo = INDIAN_GST_STATES.find(s => s.code === businessStateCode);
-  const businessStateName = businessStateInfo ? businessStateInfo.name : businessStateCode;
-
-  // Calculate sum of quantities & discounts
-  const totalQty = invoice.lineItems.reduce((sum, item) => sum + Number(item.quantity), 0);
-  const totalDiscount = invoice.lineItems.reduce((sum, item) => sum + item.discount_paise, 0);
 
   // Dynamically group line items by active GST rate
   const taxGroups: Record<number, { taxable: number; cgst: number; sgst: number; igst: number }> = {};
 
-  invoice.lineItems.forEach((item: any) => {
+  invoice.lineItems.forEach((item) => {
     const rate = Number(item.tax_rate_percentage) || 0;
     const taxable = item.taxable_value_paise || 0;
     const cgst = item.cgst_paise || 0;
@@ -277,7 +269,7 @@ export function InvoiceTemplate4({ invoice, businessStateCode, printSize, hasWat
           </thead>
 
           <tbody className="border-x-2 border-slate-800">
-            {invoice.lineItems.map((item: any, idx: number) => {
+            {invoice.lineItems.map((item, idx) => {
               const qty = Number(item.quantity);
               const grossPaise = qty * item.unit_price_paise;
               const discountPct = grossPaise > 0 ? (item.discount_paise / grossPaise) * 100 : 0;

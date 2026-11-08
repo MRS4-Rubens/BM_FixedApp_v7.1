@@ -2,7 +2,8 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import Link from 'next/link'
-import { businesses } from '@/lib/db/schema'
+import type { businesses } from '@/lib/db/schema'
+import { isOneOf } from '@/lib/db/domain-values'
 import { formatPaiseAsInr } from '@/lib/money'
 import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-business-subscriptions'
 import { Button } from '@/components/ui/button'
@@ -40,6 +41,9 @@ import {
   ChevronRight,
   ChevronLeft
 } from 'lucide-react'
+
+const STATUS_FILTERS = ['all', 'approved', 'pending', 'rejected'] as const
+type StatusFilter = (typeof STATUS_FILTERS)[number]
 
 export interface SubscriptionHistoryItem {
   id: string
@@ -166,7 +170,7 @@ export function BillingTab({
   
   // Ledger filters & search
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [activeTab, setActiveTab] = useState<'current' | 'compare'>('current')
   
   // Active receipt modal
@@ -807,8 +811,11 @@ export function BillingTab({
             <select
               value={statusFilter}
               onChange={(e) => {
-                setStatusFilter(e.target.value as any)
-                setHistoryPage(1)
+                const v = e.target.value
+                if (isOneOf(STATUS_FILTERS, v)) {
+                  setStatusFilter(v)
+                  setHistoryPage(1)
+                }
               }}
               className="h-8 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-sm text-slate-700 outline-none cursor-pointer focus:border-indigo-500 focus:bg-white"
             >

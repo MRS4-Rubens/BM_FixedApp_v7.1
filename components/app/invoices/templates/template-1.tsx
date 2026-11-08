@@ -1,25 +1,13 @@
 "use client";
 
 import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
-import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
+import { formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs';
 import { formatIstDate } from '@/lib/invoices/ist-date';
+import type { InvoiceLineItem } from './types';
 
-export interface InvoiceLineItem {
-  id: string;
-  description: string;
-  hsn_sac_code: string | null;
-  quantity: string | number;
-  unit_price_paise: number;
-  discount_paise: number;
-  taxable_value_paise: number;
-  tax_rate_percentage: string | number;
-  cgst_paise: number;
-  sgst_paise: number;
-  igst_paise: number;
-  line_total_paise: number;
-}
+export type { InvoiceLineItem } from './types';
 
 export interface InvoiceTemplateProps {
   invoice: {
@@ -62,7 +50,7 @@ export interface InvoiceTemplateProps {
   displayPrefs: InvoiceDisplayPrefs;
 }
 
-export function InvoiceTemplate1({ invoice, businessStateCode, printSize, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
+export function InvoiceTemplate1({ invoice, businessStateCode, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
   const { showHsn, enableFixedRows, fixedRowsCount } = displayPrefs;
   const isIntra = invoice.total_igst_paise === 0;
   const supplyLabel = isIntra ? 'Intra-State' : 'Inter-State';
@@ -204,7 +192,7 @@ export function InvoiceTemplate1({ invoice, businessStateCode, printSize, hasWat
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-300 text-[11.5px]">
-            {invoice.lineItems.map((item: any, i: number) => {
+            {invoice.lineItems.map((item, i) => {
               const isEven = i % 2 === 1;
               return (
                 <tr key={item.id} className={isEven ? 'bg-slate-100/60' : 'bg-white'}>
