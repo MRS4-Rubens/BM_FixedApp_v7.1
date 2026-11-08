@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { gotoApp } from '../support/navigation';
 
 export class SettingsPage {
   readonly page: Page;
@@ -42,7 +43,7 @@ export class SettingsPage {
       });
       this.tourHandlerRegistered = true;
     }
-    await this.page.goto('/settings');
+    await gotoApp(this.page, '/settings');
     await this.dismissTourIfPresent();
   }
 

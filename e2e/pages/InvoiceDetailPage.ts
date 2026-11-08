@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { parseInrToPaise } from '../support/money';
+import { gotoApp, waitForAppUrl } from '../support/navigation';
 
 /**
  * Finalized invoice detail page (components/app/invoices/invoice-detail.tsx + payment-section.tsx).
@@ -31,7 +32,7 @@ export class InvoiceDetailPage {
   }
 
   async goto(invoiceId: string): Promise<void> {
-    await this.page.goto(`/invoices/${invoiceId}`);
+    await gotoApp(this.page, `/invoices/${invoiceId}`);
     await expect(this.settlementCardTitle).toBeVisible();
   }
 
@@ -84,6 +85,6 @@ export class InvoiceDetailPage {
   async openCreditNote(): Promise<void> {
     await expect(this.issueCreditNoteLink).toBeVisible();
     await this.issueCreditNoteLink.click();
-    await this.page.waitForURL(/\/credit-note\/new/, { timeout: 15_000 });
+    await waitForAppUrl(this.page, /\/credit-note\/new/, 15_000);
   }
 }

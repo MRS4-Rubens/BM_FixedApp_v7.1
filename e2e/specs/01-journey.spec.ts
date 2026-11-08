@@ -10,6 +10,7 @@ import { bigintPaise, markEmailVerified, queryRows } from '../support/db';
 import { saveJourneyState, type JourneyState } from '../fixtures/test';
 import { parseGstr1Workbook } from '../support/xlsx';
 import { e2eExtraHttpHeaders } from '../support/http-headers';
+import { gotoApp, waitForAppUrl } from '../support/navigation';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -69,7 +70,7 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
         await authModal.submitLogin();
       }
 
-      await page.waitForURL(/\/(dashboard|settings)/, { timeout: 20_000 });
+      await waitForAppUrl(page, /\/(dashboard|settings)/, 20_000);
     });
 
     // ── Step 2: Business Profile Setup ───────────────────────────────────────
@@ -165,10 +166,10 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
 
     // ── Step 5: Finalization & Statutory Numbering ───────────────────────────
     await test.step('Step 5: Finalize invoice and verify statutory numbering', async () => {
-      await page.goto(`/invoices/${invoiceId}`);
+      await gotoApp(page, `/invoices/${invoiceId}`);
       await invoiceFormPage.finalize();
 
-      await page.waitForURL(new RegExp(`/invoices/${invoiceId}`), { timeout: 15_000 });
+      await waitForAppUrl(page, new RegExp(`/invoices/${invoiceId}`), 15_000);
       await invoiceDetailPage.goto(invoiceId);
 
       invoiceNumber = await invoiceDetailPage.getInvoiceNumber();

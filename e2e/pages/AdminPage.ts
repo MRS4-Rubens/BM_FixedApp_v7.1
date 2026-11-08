@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { gotoApp, reloadApp } from '../support/navigation';
 
 export class AdminPage {
   readonly page: Page;
@@ -14,7 +15,7 @@ export class AdminPage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/admin');
+    await gotoApp(this.page, '/admin');
     await expect(this.adminConsoleHeading).toBeVisible({ timeout: 15_000 });
   }
 
@@ -43,7 +44,7 @@ export class AdminPage {
       const remaining = await this.claimRow(utr).count();
       if (remaining > 0) await expect(approveBtn).toBeEnabled({ timeout: 1_000 });
     }).toPass({ timeout: 60_000 });
-    await this.page.reload();
+    await reloadApp(this.page);
     await expect(this.adminConsoleHeading).toBeVisible({ timeout: 15_000 });
     await expect(this.claimRow(utr)).toHaveCount(0, { timeout: 15_000 });
   }

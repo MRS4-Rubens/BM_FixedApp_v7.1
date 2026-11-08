@@ -5,6 +5,7 @@ import { assertSafeTarget, loadE2eEnv } from '../support/env';
 import { resetAuthRateLimits } from '../support/rate-limits';
 import { markEmailVerified } from '../support/db';
 import { e2eExtraHttpHeaders } from '../support/http-headers';
+import { gotoApp, waitForAppUrl } from '../support/navigation';
 
 export default async function globalSetup(): Promise<void> {
   const env = loadE2eEnv(process.env);
@@ -37,12 +38,12 @@ export default async function globalSetup(): Promise<void> {
   const signedInUrl = /\/(dashboard|admin|settings)(?:[/?#]|$)/;
 
   const login = async (timeout: number): Promise<boolean> => {
-    await page.goto('/?auth=login');
+    await gotoApp(page, '/?auth=login');
     await page.locator('#login-email').fill(env.E2E_ADMIN_EMAIL);
     await page.locator('#login-password').fill(env.E2E_ADMIN_PASSWORD);
     await page.locator('form button[type="submit"]').click();
     try {
-      await page.waitForURL(signedInUrl, { timeout });
+      await waitForAppUrl(page, signedInUrl, timeout);
       return true;
     } catch {
       return false;
@@ -56,7 +57,7 @@ export default async function globalSetup(): Promise<void> {
       // Credentials rejected, account missing, or account exists but is unverified. Signing up an existing
       // account is rejected by the auth service and is harmless; the verification step below handles both.
       console.log(`[E2E Global Setup] Admin login failed. Signing up admin (no-op if it already exists): ${env.E2E_ADMIN_EMAIL}`);
-      await page.goto('/?auth=signup');
+      await gotoApp(page, '/?auth=signup');
       await page.locator('#signup-owner').fill('Platform Super Admin');
       await page.locator('#signup-email').fill(env.E2E_ADMIN_EMAIL);
       await page.locator('#signup-pass').fill(env.E2E_ADMIN_PASSWORD);
@@ -80,7 +81,7 @@ export default async function globalSetup(): Promise<void> {
     }
 
     // Verify /admin accessibility
-    const adminResponse = await page.goto('/admin');
+    const adminResponse = await gotoApp(page, '/admin');
     const adminStatus = adminResponse ? adminResponse.status() : 200;
     const currentUrl = page.url();
 

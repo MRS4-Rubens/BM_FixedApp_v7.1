@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { parseInrToPaise } from '../support/money';
+import { waitForAppUrl } from '../support/navigation';
 
 export class CreditNotePage {
   readonly page: Page;
@@ -37,7 +38,7 @@ export class CreditNotePage {
     await expect(this.finalizeButton).toBeEnabled();
     await this.finalizeButton.click();
     // Finalizing runs a locked numbering transaction; on a cold preview it can exceed 15s.
-    await this.page.waitForURL(/\/credit-notes\/[0-9a-fA-F-]+/, { timeout: 45_000 });
+    await waitForAppUrl(this.page, /\/credit-notes\/[0-9a-fA-F-]+/, 45_000);
   }
 }
 

@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { gotoApp, waitForAppUrl } from '../support/navigation';
 
 export class ProductsPage {
   readonly page: Page;
@@ -28,7 +29,7 @@ export class ProductsPage {
   }
 
   async gotoNew(): Promise<void> {
-    await this.page.goto('/products/new');
+    await gotoApp(this.page, '/products/new');
     await expect(this.nameInput).toBeVisible();
   }
 
@@ -65,7 +66,7 @@ export class ProductsPage {
   async expectCreated(): Promise<void> {
     await Promise.race([
       expect(this.successNotice).toBeVisible().catch(() => {}),
-      this.page.waitForURL(/\/products/, { timeout: 10_000 }).catch(() => {}),
+      waitForAppUrl(this.page, /\/products/, 10_000).catch(() => {}),
     ]);
   }
 }

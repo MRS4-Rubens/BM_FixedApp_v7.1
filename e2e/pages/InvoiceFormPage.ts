@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { parseInrToPaise } from '../support/money';
+import { gotoApp, waitForAppUrl } from '../support/navigation';
 
 export class InvoiceFormPage {
   readonly page: Page;
@@ -42,7 +43,7 @@ export class InvoiceFormPage {
   }
 
   async gotoNew(): Promise<void> {
-    await this.page.goto('/invoices/new');
+    await gotoApp(this.page, '/invoices/new');
     await expect(this.billingNameInput).toBeVisible();
   }
 
@@ -91,7 +92,7 @@ export class InvoiceFormPage {
 
   async saveDraft(): Promise<string> {
     await this.saveDraftButton.click();
-    await this.page.waitForURL(/\/invoices\/[0-9a-fA-F-]+/, { timeout: 15_000 });
+    await waitForAppUrl(this.page, /\/invoices\/[0-9a-fA-F-]+/, 15_000);
     const url = this.page.url();
     const match = url.match(/\/invoices\/([0-9a-fA-F-]+)/);
     return match ? match[1]! : '';

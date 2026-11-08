@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { gotoApp } from '../support/navigation';
 
 export class CheckoutPage {
   readonly page: Page;
@@ -24,7 +25,7 @@ export class CheckoutPage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/checkout');
+    await gotoApp(this.page, '/checkout');
   }
 
   async submitClaim(utr: string): Promise<void> {

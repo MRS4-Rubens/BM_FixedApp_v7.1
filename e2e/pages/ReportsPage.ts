@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { gotoApp } from '../support/navigation';
 
 export class ReportsPage {
   readonly page: Page;
@@ -16,7 +17,7 @@ export class ReportsPage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/reports');
+    await gotoApp(this.page, '/reports');
   }
 
   async expectTrialExportBlocked(): Promise<void> {

@@ -3,6 +3,7 @@ import * as path from 'path';
 import { loadJourneyState } from '../fixtures/test';
 import { loadE2eEnv } from '../support/env';
 import { e2eExtraHttpHeaders } from '../support/http-headers';
+import { gotoApp, waitForAppUrl } from '../support/navigation';
 
 test.describe('02 - Security & Cross-Tenant Isolation', () => {
   const adminAuthFile = path.resolve(process.cwd(), 'e2e/.auth/admin.json');
@@ -29,7 +30,7 @@ test.describe('02 - Security & Cross-Tenant Isolation', () => {
     const page = await adminContext.newPage();
 
     // 1. Invoice detail page for another tenant's invoice must return 404 or redirect
-    const res = await page.goto(`/invoices/${journey.invoiceId}`);
+    const res = await gotoApp(page, `/invoices/${journey.invoiceId}`);
     const status = res ? res.status() : 200;
     expect([404, 307, 308, 302, 200]).toContain(status);
 
@@ -69,8 +70,8 @@ test.describe('02 - Security & Cross-Tenant Isolation', () => {
 
     const protectedPages = ['/dashboard', '/invoices', '/admin'];
     for (const route of protectedPages) {
-      await page.goto(route);
-      await page.waitForURL(/\/(login|\?auth=login)/, { timeout: 10_000 });
+      await gotoApp(page, route);
+      await waitForAppUrl(page, /\/(login|\?auth=login)/, 10_000);
       expect(page.url()).toMatch(/\/(login|\?auth=login)/);
     }
 
@@ -94,7 +95,7 @@ test.describe('02 - Security & Cross-Tenant Isolation', () => {
     });
     const page = await userContext.newPage();
 
-    const res = await page.goto('/admin');
+    const res = await gotoApp(page, '/admin');
     const status = res ? res.status() : 200;
     const url = page.url();
 
