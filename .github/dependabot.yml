@@ -1,0 +1,22 @@
+# SEC-007 / D5: Majors and the Neon Auth/better-auth stack are upgraded manually after evaluation.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: monthly }
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch: { update-types: [minor, patch] }
+    ignore:
+      - dependency-name: '@neondatabase/auth'
+      - dependency-name: '@neondatabase/auth-ui'
+      - dependency-name: 'better-auth'
+      - dependency-name: '@better-auth/*'
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    groups:
+      actions: { patterns: ['*'] }
+
