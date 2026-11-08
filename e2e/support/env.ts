@@ -39,6 +39,7 @@ export const e2eEnvSchema = z.object({
   E2E_MAILOSAUR_SERVER_ID: z.string().optional(),
   MAILOSAUR_SERVER_ID: z.string().optional(),
   E2E_UPDATE_A11Y_BASELINE: booleanFromString.default(false),
+  E2E_EXPECT_ARCHIVAL: booleanFromString.default(false),
   E2E_STAGING_DATABASE_URL_UNPOOLED: z.string().optional(),
 });
 

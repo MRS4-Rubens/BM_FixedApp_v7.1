@@ -23,8 +23,6 @@ export type ParsedSentryDsn = {
 
 export declare const CSP_MODE: 'report-only' | 'enforce';
 
-export declare const ARCHIVAL_RENDER_PATH_PATTERN: string;
-
 export declare function parseSentryDsn(dsn: string | undefined): ParsedSentryDsn | null;
 
 export declare function buildSentryCspReportUri(
@@ -37,8 +35,6 @@ export declare function parseStorageOrigins(endpoint: string | undefined): strin
 export declare function buildEnforcedCspBaseline(): string;
 
 export declare function buildAppCspPolicy(options: SecurityHeaderOptions): string;
-
-export declare function buildArchivalCspPolicy(options: SecurityHeaderOptions): string;
 
 export declare function buildSecurityHeaderRules(
   options: SecurityHeaderOptions,

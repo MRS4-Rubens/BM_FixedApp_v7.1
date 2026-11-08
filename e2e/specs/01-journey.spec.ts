@@ -189,6 +189,34 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
       );
       expect(finalizedRows[0]?.lifecycle_status).toBe('finalized');
       expect(finalizedRows[0]?.invoice_number).toBe(invoiceNumber);
+
+      if (env.E2E_EXPECT_ARCHIVAL) {
+        const deadline = Date.now() + 60_000; // PDF render alone may take up to 25 s (PDF_RENDER_TIMEOUT_MS)
+        let finalStatus = 'pending';
+        let s3Key: string | null = null;
+        while (Date.now() < deadline) {
+          const rows = await queryRows(
+            `SELECT archival_status::text AS archival_status, pdf_storage_key FROM invoices WHERE id = $1`,
+            [invoiceId],
+            z.object({
+              archival_status: z.string(),
+              pdf_storage_key: z.string().nullable(),
+            }),
+            env,
+          );
+          finalStatus = rows[0]?.archival_status ?? 'pending';
+          s3Key = rows[0]?.pdf_storage_key ?? null;
+          if (finalStatus === 'archived' && s3Key !== null) {
+            break;
+          }
+          if (finalStatus === 'failed') {
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+        expect(finalStatus).toBe('archived');
+        expect(s3Key).toBeTruthy();
+      }
     });
 
     // ── Step 6: Payment 1 (Partial Payment) ──────────────────────────────────

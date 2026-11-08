@@ -32,7 +32,7 @@ Added on Settings → Environments → **Preview** → Environment Variables, Pr
 |---|---|
 | `DATABASE_URL` / `DATABASE_URL_UNPOOLED` | `staging-e2e` branch, database **`neondb`**, pooled / direct |
 | `NEON_AUTH_BASE_URL` | The **staging-e2e branch's** Auth URL (each Neon branch has its own auth) |
-| `NEON_AUTH_COOKIE_SECRET`, `ARCHIVAL_SIGNING_SECRET`, `CRON_SECRET` | Fresh random values (≥ 32 chars), not the dev ones |
+| `NEON_AUTH_COOKIE_SECRET`, `CRON_SECRET` | Fresh random values (≥ 32 chars), not the dev ones |
 | `PLATFORM_ADMIN_EMAILS` | The E2E admin email (`E2E_ADMIN_EMAIL`) |
 | Email, Upstash, PDF, UPI/bank settings | Dev values (rotated with fresh accounts at launch) |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | Type **Config** (it is public by design); everything else type **Secret** |

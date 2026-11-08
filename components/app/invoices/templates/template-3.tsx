@@ -1,5 +1,3 @@
-"use client";
-
 import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { getStateAbbrByCode } from '@/lib/gst/indian-states';

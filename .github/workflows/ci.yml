@@ -36,7 +36,6 @@ jobs:
       RESEND_FROM_EMAIL: billing@ci.example.invalid
       UPSTASH_REDIS_REST_URL: https://ci.example.invalid
       UPSTASH_REDIS_REST_TOKEN: ci-placeholder-token
-      ARCHIVAL_SIGNING_SECRET: ci-placeholder-signing-secret-at-least-32-characters
       CRON_SECRET: ci-placeholder-cron-secret-at-least-32-characters
       HTML_TO_PDF_API_KEY: ci-placeholder-key
       PLATFORM_ADMIN_EMAILS: admin@ci.example.invalid

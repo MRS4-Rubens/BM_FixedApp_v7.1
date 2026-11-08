@@ -108,8 +108,7 @@ Archival of finalized invoices and credit notes executes reliably on serverless 
 - **Comprehensive Lifecycle Tracking:** Both `invoices` and `credit_notes` tables maintain full archival columns (`archival_status`, `archival_attempts`, `archived_at`, `archival_claimed_at`) with partial retry indexes (`*_archival_retry_idx`).
 - **Batch Sweep Cron:** `/api/cron/retry-invoice-archival` operates with `maxDuration = 300`, concurrency 2, and a soft deadline (200s). It processes pending/failed invoices and credit notes sequentially in chronological order using `FOR UPDATE SKIP LOCKED`.
 - **Sentry Observability:** Emits structured alerts when any document reaches 5 failed attempts (`scope: 'archival-exhausted'`) and when a sweep identifies an exhausted backlog (`scope: 'archival-exhausted-summary'`), transmitting only IDs and attempt counts with zero PII or vendor tokens.
-- **Committed Print Stylesheet:** Standalone render routes (`/api/invoices/[id]/archival-render` and `/api/credit-notes/[id]/archival-render`) rely on a statically generated print stylesheet (`lib/pdf/print-stylesheet.generated.ts`, built via `pnpm print-css:build`), eliminating dynamic `require()` and runtime `.next` filesystem reads. `app/globals.css` excludes `docs/`, `tests/`, `e2e/`, `scripts/`, `drizzle/` and all `*.md` from Tailwind source detection so prose and test files can never alter shipped or archival CSS.
-- **Per-Document Fail-Open Limiter:** Standalone render routes rate-limit by document ID (`archival-render:invoice:<id>` / `archival-render:credit_note:<id>`), preventing vendor IP collisions while maintaining fail-open resilience during Upstash Redis outages.
+- **In-Process Static HTML Rendering (ARCH-PDF):** Archival HTML is rendered in-process via `buildArchivalHtml` (`react-dom/server.edge`'s `renderToStaticMarkup`); no public or internal render routes or tokens exist. The generated HTML embeds a statically compiled print stylesheet (`lib/pdf/print-stylesheet.generated.ts`, built via `pnpm print-css:build`), eliminating dynamic runtime reads. `app/globals.css` excludes `docs/`, `tests/`, `e2e/`, `scripts/`, `drizzle/` and all `*.md` from Tailwind source detection so prose and test files can never alter shipped or archival CSS.
 - **Out of scope for MVP:** Formal "cold tier" data migration and reviewed deletion are deliberately scoped OUT of this MVP phase. For the complete legal protocol, statutory cutoff dates (Year 8+), and implementation guide for when financial years are ready to be closed and purged, see `docs/STATUTORY_ARCHIVAL_BLUEPRINT.md`.
 
 ## Why this structure
@@ -172,7 +171,7 @@ The public logo image route is protected by `publicAssetLimiter`:
 3. For Route Handlers: Resolve the client IP via `getClientIp(request.headers)`, invoke `await enforceRateLimit({ limiter, identifier, policy, scope })`, and return appropriate 429/503 responses with `Cache-Control: no-store` and `Retry-After`.
 
 ### 8. Report-Only Items (Technical Debt Tracking)
-- **Direct `checkRateLimit` callers in Route Handlers**: `/api/reports/export` and `/api/{invoices,credit-notes}/[id]/archival-render` still invoke `checkRateLimit` directly without passing through `enforceRateLimit`, meaning they lack throttled outage logging and formal `fail-open` fallback.
+- **Direct `checkRateLimit` callers in Route Handlers**: `/api/reports/export` still invokes `checkRateLimit` directly without passing through `enforceRateLimit`, meaning it lacks throttled outage logging and formal `fail-open` fallback.
 - **Shared Limiter Prefix**: `send-payment-reminder` uses key prefix `'payment-reminder'`, isolated from `'email-invoice'`.
 
 ## Monitoring & Logging (established Phase 18, hardened ARCH-005)
@@ -375,7 +374,7 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 - **Route Handlers Authorization Note**:
   - `/api/reports/export`: any authenticated member of the business.
   - `/api/business/[id]/logo`: public by design (referenced on customer PDF invoices and payment gateways).
-  - `/api/cron/*` and standalone archival renders (`/api/invoices/[id]/archival-render`, `/api/credit-notes/[id]/archival-render`): token/secret authenticated (HMAC / Bearer).
+  - `/api/cron/*`: Bearer authenticated (CRON_SECRET).
 - **Requirements for Future Team-Invite Feature**:
   1. Invites may only create `staff` users (owners cannot be provisioned via invite).
   2. Seat limits must be enforced using `getPlanEntitlements().teamUserLimit`.
@@ -438,31 +437,23 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 | `X-Content-Type-Options` | `nosniff` | Global (all routes) | Prevents MIME-type sniffing of uploaded images/documents. |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Global (all routes) | Protects user privacy while retaining origin on cross-site requests. |
 | `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Global (all routes) | Disables unused browser sensor/device APIs. |
-| `X-Frame-Options` | `DENY` | Non-archival routes | Prevents clickjacking across the app. |
-| `Content-Security-Policy` | `frame-ancestors 'none'; base-uri 'self'; object-src 'none'` | Non-archival routes | Enforced baseline for framing, base URI, and plugin restrictions. |
-| `Content-Security-Policy-Report-Only` | Full application policy | Non-archival routes | Collects CSP violation reports in Sentry without breaking user flows. |
-| `Content-Security-Policy-Report-Only` | Archival-specific policy (`default-src 'none'; script-src 'none'`) | Archival-render routes | Enforces script-free static document rendering for external PDF vendor. |
+| `X-Frame-Options` | `DENY` | Global (all routes) | Prevents clickjacking across the app. |
+| `Content-Security-Policy` | `frame-ancestors 'none'; base-uri 'self'; object-src 'none'` | Global (all routes) | Enforced baseline for framing, base URI, and plugin restrictions. |
+| `Content-Security-Policy-Report-Only` | Full application policy | Global (all routes) | Collects CSP violation reports in Sentry without breaking user flows. |
 
 ### 2. Two CSP Layers
 
 1. **Enforced Baseline**: `frame-ancestors 'none'; base-uri 'self'; object-src 'none'`. Safe to enforce immediately across all application pages as no legitimate page is framed or uses `<base>`/plugins. Combined with `X-Frame-Options: DENY`, this reliably prevents clickjacking even in legacy browsers that ignore `frame-ancestors` in report-only mode.
 2. **Full Policy as Report-Only (`Content-Security-Policy-Report-Only`)**: Covers scripts, styles, fonts, images, and network connections. Violations are dispatched to Sentry's security reporting endpoint derived dynamically from `NEXT_PUBLIC_SENTRY_DSN`. Controlled by a single constant `CSP_MODE = 'report-only' | 'enforce'` in `config/security-headers.mjs`.
 
-### 3. Dedicated Archival-Render Header Rules
-
-Archival-render routes (`/api/invoices/[id]/archival-render` and `/api/credit-notes/[id]/archival-render`) are fetched server-to-server and rendered headless by the external PDF generation vendor (CustomJS).
-- They MUST NOT include `X-Frame-Options: DENY` or `frame-ancestors 'none'` to avoid interfering with headless browser capture pipelines.
-- They enforce strict script-free execution (`script-src 'none'`, `default-src 'none'`) while permitting inline CSS and Google Fonts (`fonts.googleapis.com` / `fonts.gstatic.com`) for invoice template rendering.
-- The global rule uses a negative-lookahead pattern (`/((?!api/(?:invoices|credit-notes)/[^/]+/archival-render).*)`) ensuring the global rules and archival rules never conflict or overwrite each other in Next.js.
-
-### 4. Allow-List Debt
+### 3. Allow-List Debt
 
 The current policy contains documented debt that should be retired before full enforcement:
 1. `https://api.qrserver.com`: Used in `app/(app)/checkout/checkout-form.tsx` for UPI QR code generation. Tracked under **FE-005** to be replaced with a client-side SVG QR generator.
 2. `https://fonts.googleapis.com` and `https://fonts.gstatic.com`: Loaded via `@import` in invoice templates 1–4. To be replaced with self-hosted Lora webfonts matching `app/layout.tsx`.
 3. `'unsafe-inline'`: Required for inline styles and Next.js bootstrap scripts. Retained until the nonce phase.
 
-### 5. Rollout Plan
+### 4. Rollout Plan
 
 1. **Step 1 (Current)**: Ship Report-Only (`CSP_MODE = 'report-only'`) with Sentry CSP report endpoint.
 2. **Step 2**: Monitor Sentry CSP/Security Headers issue stream for at least 7 days across production traffic.
@@ -724,27 +715,7 @@ When a new database constraint requires user-friendly UI mapping:
 
 ## Archival render security (SEC-004)
 
-- **Token v2 Specification**:
-  Archival render authorization uses a five-part, URL-safe v2 token format: `<typ>.<documentId>.<jti>.<expiresAt>.<signature>`. `typ` is strictly bound to `'inv'` or `'cn'`, `documentId` is the document's UUID, `jti` is a cryptographically random 16-byte base64url nonce (22 chars), and `expiresAt` is the Unix seconds timestamp. The signature is computed via `HMAC-SHA256(ARCHIVAL_SIGNING_SECRET, "bm-archival-v2|<typ>|<documentId>|<jti>|<expiresAt>")` and verified in constant time (`crypto.timingSafeEqual`).
-- **Short-Lived Window & Expiry Ceiling**:
-  Tokens have a default TTL of 120 seconds (`ARCHIVAL_TOKEN_TTL_SECONDS = 120`), and verification explicitly rejects tokens whose remaining lifetime exceeds 300 seconds (`MAX_ARCHIVAL_TOKEN_TTL_SECONDS = 300`) to block unauthorized long-lived grants.
-- **Atomic Single-Use Primitive via Redis**:
-  Once token signature, document binding, and rate-limiting pass, the route guard atomically registers the nonce using `SET archival:jti:<jti> 1 NX EX <remainingLifetime + 60>`. If Redis returns `null`, the token has already been consumed and the request is immediately rejected with `401 Unauthorized`. The TTL guarantees that the replay tombstone covers the full validity window of the token plus a 60-second clock-skew grace period.
-- **Fail-Closed Policy & Uniform 401**:
-  Authentication rejects malformed tokens, bad signatures, expired timestamps, mismatched document types or IDs, duplicate query parameters, and replayed tokens with an identical, opaque `401 Unauthorized` body to prevent oracle attacks. Server-side failures (Redis outages, missing configuration) fail closed with `503 Service Unavailable` and `Retry-After: 5`, logged once with structured error context. Only `REPLAYED` security events are logged with `{ expected: true }`; other rejections remain silent to prevent scanner log noise.
-- **Uniform Security Headers**:
-  Every response from archival render routes (200, 4xx, 5xx) is constructed via `archivalResponse` and enforces:
-  - `Cache-Control: no-store, max-age=0`
-  - `X-Robots-Tag: noindex, nofollow, noarchive`
-  - `Referrer-Policy: no-referrer`
-  - `X-Content-Type-Options: nosniff`
-  Both routes export `export const dynamic = 'force-dynamic'` to prevent edge or build-time caching.
-- **Vendor Error Redaction**:
-  Vendor error bodies returned by the third-party PDF service are scrubbed using `redactArchivalTokens` to strip `?token=...` query parameters and any token-shaped strings before error messages are thrown or logged.
-- **Deployment Migration & Retries**:
-  Old 3-part v1 tokens are rejected immediately. Any archival jobs in flight during deployment fail once safely, refunding or incrementing the attempt count, and are automatically picked up and rendered by the background archival cron (`/api/cron/retry-invoice-archival`) using fresh v2 tokens.
-- **Accepted Architectural Limitation**:
-  Because third-party headless PDF rendering engines require an absolute HTTP URL to fetch and render the page, the ephemeral single-use token travels as a query parameter (`?token=...`). The single-use Redis guard, 120s lifespan, and downstream error redaction neutralize token exposure in vendor access logs.
+*Retired under ARCH-PDF:* Archival HTML is now rendered in-process via `buildArchivalHtml` (`react-dom/server.edge`'s `renderToStaticMarkup`) and passed directly as static HTML to the PDF generation vendor. External render routes (`/api/invoices/[id]/archival-render`, `/api/credit-notes/[id]/archival-render`), v2 signing tokens (`ARCHIVAL_SIGNING_SECRET`), and Redis single-use replay guards have been completely removed.
 
 
 ## Testing & coverage (TEST-001)

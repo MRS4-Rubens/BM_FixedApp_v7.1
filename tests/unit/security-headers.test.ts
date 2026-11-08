@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ARCHIVAL_RENDER_PATH_PATTERN,
   buildAppCspPolicy,
   buildSecurityHeaderRules,
   buildSentryCspReportUri,
@@ -13,16 +12,16 @@ const MOCK_DSN = 'https://abc123def456@o999999.ingest.sentry.io/1234567';
 const MOCK_STORAGE = 'https://s3.ap-northeast-1.idrivee2.com';
 
 describe('Security Headers & CSP (SEC-001)', () => {
-  it('(1) buildSecurityHeaderRules in production returns 3 rules with expected global headers', () => {
+  it('(1) buildSecurityHeaderRules in production returns 1 rule with expected global headers', () => {
     const rules = buildSecurityHeaderRules({
       isProduction: true,
       sentryDsn: MOCK_DSN,
       storageEndpoint: MOCK_STORAGE,
     });
 
-    expect(rules).toHaveLength(3);
+    expect(rules).toHaveLength(1);
     const globalRule = rules[0];
-    expect(globalRule.source).toBe(`/((?!${ARCHIVAL_RENDER_PATH_PATTERN}).*)`);
+    expect(globalRule.source).toBe('/:path*');
 
     const headerMap = new Map(globalRule.headers.map((h) => [h.key, h.value]));
     expect(headerMap.get('Strict-Transport-Security')).toBe(
@@ -100,60 +99,7 @@ describe('Security Headers & CSP (SEC-001)', () => {
     expect(policy).not.toContain("'unsafe-eval'");
   });
 
-  it('(4) archival routes have dedicated headers without X-Frame-Options or frame-ancestors', () => {
-    const rules = buildSecurityHeaderRules({
-      isProduction: true,
-      sentryDsn: MOCK_DSN,
-    });
-
-    const invoiceArchival = rules[1];
-    const creditNoteArchival = rules[2];
-
-    expect(invoiceArchival.source).toBe('/api/invoices/:id/archival-render');
-    expect(creditNoteArchival.source).toBe('/api/credit-notes/:id/archival-render');
-
-    for (const rule of [invoiceArchival, creditNoteArchival]) {
-      const headerMap = new Map(rule.headers.map((h) => [h.key, h.value]));
-      expect(headerMap.get('Strict-Transport-Security')).toBe(
-        'max-age=63072000; includeSubDomains; preload'
-      );
-      expect(headerMap.get('X-Content-Type-Options')).toBe('nosniff');
-      expect(headerMap.get('Referrer-Policy')).toBe('strict-origin-when-cross-origin');
-      expect(headerMap.get('Permissions-Policy')).toBe(
-        'camera=(), microphone=(), geolocation=()'
-      );
-
-      // Must NOT contain framing restrictions
-      expect(headerMap.has('X-Frame-Options')).toBe(false);
-      expect(headerMap.has('Content-Security-Policy')).toBe(false); // No baseline
-
-      const reportOnly = headerMap.get('Content-Security-Policy-Report-Only');
-      expect(reportOnly).toBeDefined();
-      expect(reportOnly).toContain("default-src 'none'");
-      expect(reportOnly).toContain("script-src 'none'");
-      expect(reportOnly).toContain("img-src data:");
-      expect(reportOnly).toContain("style-src 'unsafe-inline' https://fonts.googleapis.com");
-      expect(reportOnly).toContain("font-src https://fonts.gstatic.com data:");
-      expect(reportOnly).not.toContain('frame-ancestors');
-    }
-  });
-
-  it('(5) ARCHIVAL_RENDER_PATH_PATTERN regex excludes archival routes and matches all other paths', () => {
-    const regex = new RegExp(`^/(?!${ARCHIVAL_RENDER_PATH_PATTERN}).*$`);
-
-    // Archival routes must NOT match
-    expect(regex.test('/api/invoices/abc-123/archival-render')).toBe(false);
-    expect(regex.test('/api/credit-notes/xyz-789/archival-render')).toBe(false);
-
-    // Standard application and API routes MUST match
-    expect(regex.test('/')).toBe(true);
-    expect(regex.test('/dashboard')).toBe(true);
-    expect(regex.test('/api/auth/get-session')).toBe(true);
-    expect(regex.test('/api/invoices/abc-123')).toBe(true);
-    expect(regex.test('/_next/static/chunks/main.js')).toBe(true);
-  });
-
-  it('(6) parseSentryDsn and buildSentryCspReportUri handle regional, self-hosted, and invalid DSNs', () => {
+  it('(4) parseSentryDsn and buildSentryCspReportUri handle regional, self-hosted, and invalid DSNs', () => {
     // Standard SaaS DSN
     const dsn1 = 'https://PUBKEY@o123.ingest.sentry.io/456';
     expect(parseSentryDsn(dsn1)).toEqual({
@@ -191,7 +137,7 @@ describe('Security Headers & CSP (SEC-001)', () => {
     expect(buildSentryCspReportUri('invalid', 'production')).toBeNull();
   });
 
-  it('(7) parseStorageOrigins handles with scheme, without scheme, trailing slash, with port, and garbage', () => {
+  it('(5) parseStorageOrigins handles with scheme, without scheme, trailing slash, with port, and garbage', () => {
     const expected = [
       'https://s3.ap-northeast-1.idrivee2.com',
       'https://*.s3.ap-northeast-1.idrivee2.com',
@@ -221,7 +167,7 @@ describe('Security Headers & CSP (SEC-001)', () => {
     expect(parseStorageOrigins('garbage')).toEqual([]);
   });
 
-  it('(8) CSP_MODE is report-only; enforce mode emits single Content-Security-Policy header', () => {
+  it('(6) CSP_MODE is report-only; enforce mode emits single Content-Security-Policy header', () => {
     // Intentional guard test: CSP_MODE must remain 'report-only' in this task
     expect(CSP_MODE).toBe('report-only');
 
@@ -245,7 +191,7 @@ describe('Security Headers & CSP (SEC-001)', () => {
     expect(cspHeaders[0].value).toContain("frame-ancestors 'none'");
   });
 
-  it('(9) No header value contains newlines or non-ASCII characters', () => {
+  it('(7) No header value contains newlines or non-ASCII characters', () => {
     const rules = buildSecurityHeaderRules({
       isProduction: true,
       sentryDsn: MOCK_DSN,

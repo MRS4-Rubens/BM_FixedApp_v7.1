@@ -2,9 +2,9 @@ import * as Sentry from '@sentry/nextjs';
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { invoices, creditNotes, financialYears } from '@/lib/db/schema';
-import { getAppEnv, isEnvConfigError } from '@/lib/env';
-import { createArchivalToken } from '@/lib/security/archival-token';
-import { renderUrlToPdfBuffer } from '@/lib/pdf/html-to-pdf-provider';
+import { isEnvConfigError } from '@/lib/env';
+import { buildArchivalHtml } from '@/lib/pdf/archival-document';
+import { renderHtmlToPdfBuffer } from '@/lib/pdf/html-to-pdf-provider';
 import { uploadFileToStorage } from '@/lib/storage/idrive';
 import { logError } from '@/lib/actions/_shared/logger';
 import {
@@ -81,12 +81,9 @@ export async function archiveClaimedDocument(
       throw new Error('Financial year not found');
     }
 
-    const token = createArchivalToken(kind, id);
-    const baseUrl = getAppEnv().NEXT_PUBLIC_APP_URL;
+    const { html } = await buildArchivalHtml(kind, id);
+    const pdfBuffer = await renderHtmlToPdfBuffer(html);
     const pathPrefix = kind === 'invoice' ? 'invoices' : 'credit-notes';
-    const renderUrl = `${baseUrl}/api/${pathPrefix}/${id}/archival-render?token=${encodeURIComponent(token)}`;
-
-    const pdfBuffer = await renderUrlToPdfBuffer(renderUrl);
     const storageKey = `${pathPrefix}/${doc.businessId}/${fyLabel}/${id}.pdf`;
 
     await uploadFileToStorage(storageKey, pdfBuffer, 'application/pdf');
@@ -102,6 +99,8 @@ export async function archiveClaimedDocument(
       }
       return { success: false, error: error.message };
     }
+
+    logError('archival-failed', error, { kind, documentId: id, attempts });
 
     try {
       await markFailed(db, kind, id);
@@ -131,4 +130,3 @@ export async function archiveDocument(kind: ArchivalKind, id: string): Promise<A
   }
   return archiveClaimedDocument(kind, claim.id, claim.attempts);
 }
-

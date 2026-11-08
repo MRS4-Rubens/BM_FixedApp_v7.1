@@ -96,6 +96,7 @@ jobs:
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
       NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
       NEON_STAGING_BRANCH_ID: ${{ vars.NEON_STAGING_BRANCH_ID }}
+      E2E_EXPECT_ARCHIVAL: ${{ vars.E2E_EXPECT_ARCHIVAL || 'false' }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
