@@ -110,3 +110,13 @@ Verified on branch `fix/debt-001-types-lint` against `main` `30ee3c8`; every cha
   - New guard tests: the unit is passed through unchanged (verified: the test fails if the `'NOS'` coercion is put back) and no swallowed search errors.
 - **Existing test changed by Antigravity (accepted):** `tests/unit/invoice-templates-display-prefs.test.ts` fixture used field names that do not exist on line items (`hsn_sac`, `taxable_amount_paise`, `gst_rate`, …). The new type exposed it; renamed to the real fields (`hsn_sac_code`, `taxable_value_paise`, `tax_rate_percentage`, …). No assertion changed — the test now renders templates with real values instead of `undefined`.
 - **Checks (local):** `pnpm typecheck` clean; `pnpm lint:ratchet` = 0 / 1; `pnpm exec vitest run` 170 files passed, 4 skipped (1414 tests); `pnpm build` OK; print stylesheet unchanged.
+
+### Preview verification (Vercel preview of PR #23, 2026-11-09)
+
+- **CI:** all 7 checks green on `d35d6dd` (including the E2E job, which really ran).
+- **Local E2E against the preview — 3 runs:**
+  - Run 1: failed at journey Step 1 (sign-up → login *before* verification): the login modal closed without the expected "verify your e-mail" error banner. Auth/sign-up code is untouched by this PR; passed in CI and in runs 2–3.
+  - Run 2: Step 1 passed; failed at Step 5 after the finalize had **succeeded** (the URL moved to the finalized invoice): the next `page.goto('/invoices/<id>')` did not reach the `load` event within 30 s. The same slow reload-after-finalize was seen once during PERF-003 on unrelated code, so it predates this PR.
+  - Run 3: **22 passed, 1 skipped (mailbox)** — full journey (create, finalize, pay, credit note, export) green.
+- **Hydration probe (run 3):** 0 errors on all 8 pages; sidebar 68 / 220 / 68 px at 800 px.
+- **Follow-up (not caused by DEBT-001):** the invoice detail page can take >30 s to finish loading right after finalizing (suspect: the post-finalize PDF archival work). Worth a separate performance investigation.
