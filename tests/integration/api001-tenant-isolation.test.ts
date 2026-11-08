@@ -32,7 +32,6 @@ vi.mock('@/lib/rate-limit/upstash', () => ({
   getClientIp: () => '127.0.0.1',
 }));
 vi.mock('@/lib/actions/_shared/logger', () => ({ logError: () => undefined }));
-vi.mock('@/lib/storage/archive-invoice', () => ({ archiveInvoicePdf: async () => ({ success: true }) }));
 
 import { saveCreditNoteDraft } from '@/lib/actions/credit-notes/save-credit-note-draft';
 import { getCreditNote } from '@/lib/actions/credit-notes/get-credit-note';

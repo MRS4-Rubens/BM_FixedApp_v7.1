@@ -49,8 +49,6 @@ vi.mock('@/lib/rate-limit/upstash', () => ({
   getClientIp: () => '127.0.0.1',
 }));
 vi.mock('@/lib/actions/_shared/logger', () => ({ logError: vi.fn() }));
-vi.mock('@/lib/storage/archive-invoice', () => ({ archiveInvoicePdf: async () => ({ success: true }) }));
-vi.mock('@/lib/storage/archive-credit-note', () => ({ archiveCreditNotePdf: async () => ({ success: true }) }));
 vi.mock('@/lib/storage/schedule-archival', () => ({ scheduleArchival: vi.fn() }));
 vi.mock('@/lib/env', () => ({
   getAppEnv: () => ({ NEXT_PUBLIC_APP_URL: 'https://test.app' }),

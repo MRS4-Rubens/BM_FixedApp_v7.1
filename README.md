@@ -4,39 +4,50 @@ A GST billing and invoicing web application for Indian small businesses.
 
 ## Prerequisites
 
-- **Node.js** — version pinned in `.nvmrc`. If you have [nvm](https://github.com/nvm-sh/nvm) installed, run `nvm use` to switch to the correct version automatically.
-- **pnpm** — this repo enforces pnpm as the only package manager. Do not use npm or yarn.
+- **Node.js** — Node 22+ (pinned in `.nvmrc`). If you have [nvm](https://github.com/nvm-sh/nvm) installed, run `nvm use` to switch to the correct version automatically.
+- **pnpm** — pnpm 11. Run `corepack enable` to ensure the correct package manager is active. Do not use npm or yarn.
 
-## Getting Started
+## Local Setup
 
 1. Clone the repo:
    ```bash
    git clone <repo-url>
-   cd BM_TS_v2.0.1C
+   cd BM_FixedApp_v7.1
    ```
 
-2. Switch to the correct Node version (if using nvm):
+2. Enable corepack and install dependencies:
    ```bash
-   nvm use
-   ```
-
-3. Install dependencies:
-   ```bash
+   corepack enable
    pnpm install
    ```
 
-4. Copy `.env.example` to `.env.local` and fill in the required values:
+3. Copy `.env.example` to `.env.local` and configure:
    ```bash
    cp .env.example .env.local
    ```
+   See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for production and environment deployment details.
 
    **IDRIVE_E2_ENDPOINT** — the iDrive e2 S3 endpoint. Both `s3.<region>.idrivee2.com` and `https://s3.<region>.idrivee2.com` are accepted; a trailing slash is ignored. The value must be a bare host (no bucket path, query string, or credentials).
+
+4. Apply migrations and seed reference data:
+   ```bash
+   pnpm db:migrate
+   pnpm db:seed
+   ```
 
 5. Start the local development server:
    ```bash
    pnpm dev
    ```
    The app will be available at [http://localhost:3000](http://localhost:3000).
+
+## Tests
+
+- **Typecheck**: `pnpm typecheck` (runs `tsc --noEmit`)
+- **Lint**: `pnpm lint:ratchet` (verifies error/warning counts remain within ratchet baselines)
+- **Unit & Mock Integration**: `pnpm exec vitest run`
+- **Real Database Integration**: `pnpm test:realdb` (requires disposable PostgreSQL; see [docs/TESTING.md](docs/TESTING.md))
+- **End-to-End**: Playwright test suite against Vercel preview staging (see [docs/e2e-staging-setup.md](docs/e2e-staging-setup.md))
 
 ## Available Scripts
 
@@ -54,7 +65,7 @@ Every CI run audits production dependencies with a blocking gate (`scripts/ci/au
 
 ## Project Status
 
-This project is being built in phases according to a documented backend roadmap. See `BillMatrix_Backend_Roadmap_v1.md` for current progress and what's implemented so far.
+This project tracks quality and compliance against the comprehensive production readiness audit. See [docs/BM_FinApp_v1.1_Production-Readiness Audit.md](docs/BM_FinApp_v1.1_Production-Readiness%20Audit.md) and completed task reports in `docs/reports/` for history and verified milestone completions.
 
 ## Environment Validation
 
@@ -79,4 +90,3 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 - **Production rules**: `NEXT_PUBLIC_APP_URL` must use `https://` and be a publicly reachable host (not localhost, `.local`, or `.internal`). `NEON_AUTH_COOKIE_SECRET`, `ARCHIVAL_SIGNING_SECRET`, and `CRON_SECRET` must be at least 32 characters. At least one administrator must be configured in `PLATFORM_ADMIN_USER_IDS` or `PLATFORM_ADMIN_EMAILS` (comma-separated valid emails).
 - **Development defaults**: In non-production environments (`NODE_ENV !== 'production'`), `NEXT_PUBLIC_APP_URL` defaults to `http://localhost:3000` if omitted.
 - **Build time bypass**: `SKIP_ENV_VALIDATION=1` skips the boot-time check and relaxes production URL strictness for local and CI builds. It is strictly ignored when `VERCEL_ENV === 'production'`. It never fabricates missing variables; builds still require syntactically valid auth and database variables (dummy-valid values are acceptable in CI).
-

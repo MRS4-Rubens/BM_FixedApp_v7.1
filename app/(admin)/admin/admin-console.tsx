@@ -10,6 +10,7 @@ import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-busine
 import { getClaimScreenshotUrl } from '@/lib/actions/subscriptions/get-claim-screenshot-url';
 import { Dialog } from '@base-ui/react/dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { BusinessIdentityDialog } from './business-identity-dialog';
 import { useIsClient } from '@/lib/hooks/use-is-client';
 import {
   TrendingUp,
@@ -109,6 +110,7 @@ interface AdminConsoleProps {
     legalName: string;
     tradeName: string | null;
     gstin: string;
+    stateCode: string;
     email: string | null;
     phone: string | null;
     subscriptionPlan: string;
@@ -226,6 +228,8 @@ export function AdminConsole({
 
   // Business subscription manage modal
   const [selectedBiz, setSelectedBiz] = useState<typeof businesses[0] | null>(null);
+  // CLEAN-SWEEP: nested "Correct GSTIN / state" dialog (adminUpdateBusinessIdentity, AUTH-004) inside Manage Subscription.
+  const [identityDialogOpen, setIdentityDialogOpen] = useState(false);
   const [bizHistory, setBizHistory] = useState<any[]>([]);
   const [bizHistoryPage, setBizHistoryPage] = useState(1);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -1937,10 +1941,33 @@ export function AdminConsole({
                 <h4 className="text-sm font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Settings className="size-4" /> Manual Subscription Override
                 </h4>
-                <span className="text-xs font-semibold text-muted-foreground">
-                  GSTIN: {selectedBiz.gstin}
+                <span className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                  <span>GSTIN: {selectedBiz.gstin}</span>
+                  <button
+                    type="button"
+                    onClick={() => setIdentityDialogOpen(true)}
+                    className="rounded-md border border-indigo-300 bg-white px-2 py-0.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 cursor-pointer"
+                  >
+                    Correct GSTIN / state
+                  </button>
                 </span>
               </div>
+
+              <BusinessIdentityDialog
+                business={{
+                  id: selectedBiz.id,
+                  legalName: selectedBiz.legalName,
+                  gstin: selectedBiz.gstin,
+                  stateCode: selectedBiz.stateCode,
+                }}
+                open={identityDialogOpen}
+                onOpenChange={setIdentityDialogOpen}
+                onSaved={() => {
+                  setIdentityDialogOpen(false);
+                  setSelectedBiz(null);
+                  router.refresh();
+                }}
+              />
 
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="space-y-1">

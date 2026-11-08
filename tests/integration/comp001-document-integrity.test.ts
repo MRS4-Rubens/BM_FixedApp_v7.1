@@ -33,8 +33,6 @@ vi.mock('@/lib/rate-limit/upstash', () => ({
   getClientIp: () => '127.0.0.1',
 }));
 vi.mock('@/lib/actions/_shared/logger', () => ({ logError: () => undefined }));
-vi.mock('@/lib/storage/archive-invoice', () => ({ archiveInvoicePdf: async () => ({ success: true }) }));
-vi.mock('@/lib/storage/archive-credit-note', () => ({ archiveCreditNotePdf: async () => ({ success: true }) }));
 
 vi.mock('@/lib/storage/idrive', () => ({
   getFileBuffer: async (key: string) => {

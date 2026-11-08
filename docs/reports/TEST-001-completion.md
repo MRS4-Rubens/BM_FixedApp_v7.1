@@ -147,7 +147,7 @@ Duration      976ms
 
 ## 7. Findings Summary
 
-All 11 findings documented in `docs/TEST-001-findings.md`:
+All 11 findings documented in `docs/reports/TEST-001-findings.md`:
 - **Fixed-in-repo** (3):
   - `F-GST-1`: Intra-state odd-paise split symmetry.
   - `F-GST-2`: Floating-point imprecision on fractional quantity * unit price (`1.005 * 100`).
