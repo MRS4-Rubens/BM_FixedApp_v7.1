@@ -8,10 +8,11 @@ import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-busine
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { formatIstDate } from '@/lib/invoices/ist-date'
+import { PLAN_CATALOG, formatPlanPrice, formatPlanPriceSummary, type PlanFeature } from '@/lib/subscriptions/plan-catalog'
+import { FREE_TIER_LIMITS, PLAN_PRICING, TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements'
 import {
   Crown,
   Sparkles,
-  Calendar,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -22,7 +23,6 @@ import {
   CreditCard,
   Layers,
   FileText,
-  Users,
   Package,
   ArrowRight,
   TrendingUp,
@@ -99,76 +99,45 @@ interface PlanDefinition {
   monthlyPaise: number
   yearlyPaise: number
   invoiceMonthlyLimit: number | null // null = unlimited
-  userLimit: number | null // null = unlimited
-  features: string[]
+  features: readonly PlanFeature[]
   badge?: string
 }
 
+// CLEAN-002: names, features, prices and limits all come from the plan catalogue / entitlements (no hand-typed copies).
 const PLAN_CONFIGS: Record<string, PlanDefinition> = {
   free: {
-    name: 'Free Plan',
+    name: PLAN_CATALOG.free.name,
     price: '₹0 / month',
     monthlyPaise: 0,
     yearlyPaise: 0,
-    invoiceMonthlyLimit: 30,
-    userLimit: 1,
-    features: [
-      'Up to 30 invoices / month',
-      'Up to 30 customers & products',
-      'Template 1 (Classic Slate)',
-      'Standard GST compliance',
-      '1 Team User account',
-    ],
+    invoiceMonthlyLimit: FREE_TIER_LIMITS.invoiceMonthlyLimit,
+    features: PLAN_CATALOG.free.features,
   },
   trial: {
-    name: 'Free Trial',
-    price: '₹0 for 14 days',
+    name: PLAN_CATALOG.trial.name,
+    price: `₹0 for ${TRIAL_DURATION_DAYS} days`,
     monthlyPaise: 0,
     yearlyPaise: 0,
     invoiceMonthlyLimit: null,
-    userLimit: 3,
-    features: [
-      'Unlimited invoices during trial',
-      'Full GST compliance & e-Waybill preview',
-      'All 4 Invoice templates & branding',
-      'WhatsApp & Email invoice sharing',
-      'Up to 3 Team Members',
-    ],
+    features: PLAN_CATALOG.trial.features,
   },
   essentials: {
-    name: 'Essentials Pro Plan',
-    price: '₹399 / month (or ₹3,499 / year)',
-    monthlyPaise: 39900,
-    yearlyPaise: 349900,
+    name: PLAN_CATALOG.essentials.name,
+    price: formatPlanPriceSummary('essentials'),
+    monthlyPaise: PLAN_PRICING.essentials.monthlyPaise,
+    yearlyPaise: PLAN_PRICING.essentials.yearlyPaise,
     invoiceMonthlyLimit: null,
-    userLimit: 3,
-    features: [
-      'Unlimited GST Invoices & Credit Notes',
-      'All 4 Traditional & Book Depot Templates',
-      'Custom Logo Upload & White-Label Branding',
-      '1-Click WhatsApp Direct Share with UPI Link',
-      'Official GSTR-1 & ITR 44AD Excel Exports',
-      'Custom Invoice Number Formats & Brand Prefixes',
-      'Up to 3 Team Members',
-    ],
+    features: PLAN_CATALOG.essentials.features,
     badge: 'Popular Tier',
   },
   professional: {
-    name: 'Enterprise / CA Max',
-    price: '₹599 / month (or ₹4,999 / year)',
-    monthlyPaise: 59900,
-    yearlyPaise: 499900,
+    name: PLAN_CATALOG.professional.name,
+    price: formatPlanPriceSummary('professional'),
+    monthlyPaise: PLAN_PRICING.professional.monthlyPaise,
+    yearlyPaise: PLAN_PRICING.professional.yearlyPaise,
     invoiceMonthlyLimit: null,
-    userLimit: null,
-    features: [
-      'Everything in Essentials Pro',
-      'Unlimited Invoices & Unlimited Users',
-      'Dedicated Read-Only CA Accountant Portal',
-      'Multiple Invoice Series & Number Prefixes',
-      'Bulk Data & Inventory Import',
-      '24/7 Priority SLA & Dedicated Manager',
-    ],
-    badge: 'Enterprise Grade',
+    features: PLAN_CATALOG.professional.features,
+    badge: 'Coming soon',
   },
 }
 
@@ -489,7 +458,7 @@ export function BillingTab({
               Live Resource Consumption & Quotas
             </h3>
             <p className="text-sm text-slate-500 mt-0.5">
-              Real-time monitoring of your monthly invoicing throughput, team seat allocation, and catalog volumes.
+              Real-time monitoring of your monthly invoicing throughput and catalog volumes.
             </p>
           </div>
           <span className="inline-flex items-center gap-1 self-start sm:self-auto rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-xs font-bold text-emerald-700 shadow-2xs">
@@ -498,7 +467,7 @@ export function BillingTab({
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-3">
           {/* Meter 1: Invoices Generated */}
           <div className="rounded-xl border border-slate-200/70 bg-slate-50/50 p-3 sm:p-3.5 flex flex-col justify-between">
             <div>
@@ -549,58 +518,7 @@ export function BillingTab({
             </p>
           </div>
 
-          {/* Meter 2: Team Members */}
-          <div className="rounded-xl border border-slate-200/70 bg-slate-50/50 p-3 sm:p-3.5 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between text-sm font-semibold text-slate-500 mb-1.5">
-                <span className="flex items-center gap-1.5">
-                  <Users className="size-4 text-indigo-500" />
-                  Team Seats
-                </span>
-                <span className="text-xs font-bold text-slate-500">
-                  {planConfig.userLimit ? `Cap: ${planConfig.userLimit}` : 'Unlimited'}
-                </span>
-              </div>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-3xl font-black font-heading text-slate-900">
-                  {usageStats.teamMembersCount}
-                </span>
-                <span className="text-sm text-slate-500 font-medium">
-                  {planConfig.userLimit ? `of ${planConfig.userLimit} seats` : 'active users'}
-                </span>
-              </div>
-
-              {/* Visual Seat Indicators */}
-              <div className="mt-3 flex items-center gap-1">
-                {planConfig.userLimit ? (
-                  Array.from({ length: planConfig.userLimit }).map((_, i) => (
-                    <span
-                      key={i}
-                      className={cn(
-                        'h-2 flex-1 rounded-full transition-all',
-                        i < usageStats.teamMembersCount ? 'bg-indigo-600' : 'bg-slate-200'
-                      )}
-                      title={`Seat ${i + 1}`}
-                    />
-                  ))
-                ) : (
-                  <span className="text-xs font-bold text-emerald-700 flex items-center gap-1">
-                    <CheckCircle2 className="size-4 text-emerald-600" /> Unlimited Team Seats
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <Link
-              href="/settings?tab=Users & Roles"
-              className="mt-2 pt-1.5 border-t border-slate-200/60 text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
-            >
-              <span>Manage User Roles</span>
-              <ChevronRight className="size-3.5" />
-            </Link>
-          </div>
-
-          {/* Meter 3: Client & Catalog Volume */}
+          {/* Meter 2: Client & Catalog Volume */}
           <div className="rounded-xl border border-slate-200/70 bg-slate-50/50 p-3 sm:p-3.5 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between text-sm font-semibold text-slate-500 mb-1.5">
@@ -609,7 +527,7 @@ export function BillingTab({
                   Catalog & CRM
                 </span>
                 {/* Refined Image 3 Active Badge */}
-                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md shadow-2xs">
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-md shadow-2xs">
                   Active
                 </span>
               </div>
@@ -648,7 +566,7 @@ export function BillingTab({
             </p>
           </div>
 
-          {/* Meter 4: Compliance & Export Automation */}
+          {/* Meter 3: Compliance & Export Automation */}
           <div className="rounded-xl border border-slate-200/70 bg-slate-50/50 p-3 sm:p-3.5 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between text-sm font-semibold text-slate-500 mb-1.5">
@@ -732,10 +650,21 @@ export function BillingTab({
             {planConfig.features.map((feature, idx) => (
               <div
                 key={idx}
-                className="w-fit inline-flex items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3.5 py-2 text-sm font-semibold text-slate-800 shadow-2xs whitespace-nowrap transition-colors hover:border-indigo-300 hover:bg-white"
+                className={cn(
+                  "w-fit inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold shadow-2xs whitespace-nowrap transition-colors",
+                  feature.status === 'included'
+                    ? "border-slate-200/80 bg-slate-50/70 text-slate-800 hover:border-indigo-300 hover:bg-white"
+                    : "border-dashed border-slate-300 bg-slate-50 text-slate-600"
+                )}
               >
-                <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
-                <span>{feature}</span>
+                {feature.status === 'included' ? (
+                  <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                ) : (
+                  <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full">
+                    Coming soon
+                  </span>
+                )}
+                <span>{feature.label}</span>
               </div>
             ))}
           </div>
@@ -747,21 +676,30 @@ export function BillingTab({
               currentPlanKey === 'essentials' ? 'border-indigo-200 bg-indigo-50/20' : 'border-slate-200/80 bg-slate-50/40'
             )}>
               <div className="flex justify-between items-center mb-2">
-                <h4 className="text-base font-extrabold text-slate-900">Essentials Pro Plan</h4>
+                <h4 className="text-base font-extrabold text-slate-900">{PLAN_CONFIGS.essentials.name}</h4>
                 {currentPlanKey === 'essentials' ? (
                   <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
                     Your Current Plan
                   </span>
                 ) : (
-                  <span className="text-sm font-bold text-slate-800">₹399/mo</span>
+                  <span className="text-sm font-bold text-slate-800">{formatPlanPrice('essentials', 'monthly').headline}/mo</span>
                 )}
               </div>
               <ul className="space-y-2 mt-3 text-sm">
                 {PLAN_CONFIGS.essentials.features.map((feat, i) => (
-                  <li key={i} className="flex items-center gap-2 text-slate-600">
-                    <Check className="size-4 text-emerald-600 shrink-0" />
-                    <span>{feat}</span>
-                  </li>
+                  feat.status === 'included' ? (
+                    <li key={i} className="flex items-center gap-2 text-slate-600">
+                      <Check className="size-4 text-emerald-600 shrink-0" />
+                      <span>{feat.label}</span>
+                    </li>
+                  ) : (
+                    <li key={i} className="flex items-center gap-2 text-slate-600">
+                      <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded-full">
+                        Coming soon
+                      </span>
+                      <span>{feat.label}</span>
+                    </li>
+                  )
                 ))}
               </ul>
             </div>
@@ -769,13 +707,13 @@ export function BillingTab({
             {/* Professional Tier */}
             <div className={cn(
               'rounded-xl border p-4.5 transition-all',
-              currentPlanKey === 'professional' ? 'border-indigo-200 bg-indigo-50/20' : 'border-indigo-100 bg-gradient-to-br from-white to-indigo-50/30'
+              currentPlanKey === 'professional' ? 'border-indigo-200 bg-indigo-50/20' : 'border-slate-200/80 bg-slate-50/40'
             )}>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-1.5">
-                  <h4 className="text-base font-extrabold text-slate-900">Enterprise / CA Max</h4>
-                  <span className="text-xs font-extrabold uppercase bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded">
-                    Best for Scale
+                  <h4 className="text-base font-extrabold text-slate-900">{PLAN_CONFIGS.professional.name}</h4>
+                  <span className="text-xs font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded">
+                    Coming soon
                   </span>
                 </div>
                 {currentPlanKey === 'professional' ? (
@@ -783,34 +721,44 @@ export function BillingTab({
                     Your Current Plan
                   </span>
                 ) : (
-                  <span className="text-sm font-bold text-slate-800">₹599/mo</span>
+                  <span className="text-sm font-bold text-slate-600">{formatPlanPrice('professional', 'monthly').headline}/mo</span>
                 )}
               </div>
               <ul className="space-y-2 mt-3 text-sm">
                 {PLAN_CONFIGS.professional.features.map((feat, i) => (
-                  <li key={i} className="flex items-center gap-2 text-slate-800 font-medium">
-                    <Check className="size-4 text-indigo-600 shrink-0" />
-                    <span>{feat}</span>
-                  </li>
+                  feat.status === 'included' ? (
+                    <li key={i} className="flex items-center gap-2 text-slate-600 font-medium">
+                      <Check className="size-4 text-indigo-600 shrink-0" />
+                      <span>{feat.label}</span>
+                    </li>
+                  ) : (
+                    <li key={i} className="flex items-center gap-2 text-slate-600">
+                      <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded-full">
+                        Coming soon
+                      </span>
+                      <span>{feat.label}</span>
+                    </li>
+                  )
                 ))}
               </ul>
             </div>
           </div>
         )}
 
-        {/* Upgrade Incentive Bar (if not on professional) */}
-        {currentPlanKey !== 'professional' && (
+        {/* Upgrade Incentive Bar (if on free/trial) */}
+        {currentPlanKey !== 'essentials' && currentPlanKey !== 'professional' && (
           <div className="mt-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50/60 to-purple-50/40 py-2.5 px-3.5">
             <div className="flex items-center gap-2.5">
               <Sparkles className="size-4 text-amber-500 shrink-0" />
               <p className="text-sm text-slate-600">
-                Need <strong className="text-slate-900">Dedicated CA Portal</strong> and{' '}
-                <strong className="text-slate-900">ERP/CRM API Integration</strong>? Upgrade to Professional anytime.
+                Unlock <strong className="text-slate-900">unlimited invoices</strong>,{' '}
+                <strong className="text-slate-900">all 4 templates</strong>, and{' '}
+                <strong className="text-slate-900">WhatsApp sharing</strong> with Essentials Pro.
               </p>
             </div>
-            <Link href="/checkout?plan=professional">
+            <Link href="/checkout?plan=essentials">
               <Button size="sm" className="h-8 text-xs font-bold gap-1 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shrink-0 shadow-xs">
-                Explore Pro Tier <ArrowRight className="size-3.5" />
+                Upgrade to Essentials Pro <ArrowRight className="size-3.5" />
               </Button>
             </Link>
           </div>

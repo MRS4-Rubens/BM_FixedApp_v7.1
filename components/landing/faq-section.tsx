@@ -19,8 +19,7 @@ export function FaqSection() {
             <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
           </summary>
           <p className="text-zinc-500 text-sm mt-3 leading-relaxed">
-            Onboarding takes less than 5 minutes. As soon as you enter your GSTIN, we verify and fetch your business
-            registration data, letting you start invoicing immediately.
+            Sign up, enter your business details and GSTIN, and start invoicing in a few minutes.
           </p>
         </details>
         <details className="group bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-300 transition-all [&_summary::-webkit-details-marker]:hidden">
@@ -39,9 +38,7 @@ export function FaqSection() {
             <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
           </summary>
           <p className="text-zinc-500 text-sm mt-3 leading-relaxed">
-            Absolutely. All business communications and transactions are protected by 256-bit SSL encryption. We also
-            maintain a strict residency policy, keeping all records securely stored within servers physically located in
-            India.
+            All traffic is encrypted with HTTPS, and our database and storage providers encrypt data at rest. Each business can only access its own records.
           </p>
         </details>
         <details className="group bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-300 transition-all [&_summary::-webkit-details-marker]:hidden">
@@ -50,8 +47,7 @@ export function FaqSection() {
             <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
           </summary>
           <p className="text-zinc-500 text-sm mt-3 leading-relaxed">
-            WhatsApp invoicing is included in our Growth and Enterprise plans. There are no extra per-message or
-            per-invoice credits to purchase.
+            WhatsApp sharing is included in Essentials Pro and during the free trial. There are no per-message charges.
           </p>
         </details>
       </div>

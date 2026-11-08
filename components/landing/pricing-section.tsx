@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthModal } from '@/components/auth/auth-modal-context'
+import { PLAN_CATALOG, formatPlanPrice } from '@/lib/subscriptions/plan-catalog'
 
 export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const router = useRouter()
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const { openSignup } = useAuthModal()
 
-  const handlePlanSelect = (plan: 'free' | 'essentials' | 'professional') => {
+  const handlePlanSelect = (plan: 'free' | 'essentials') => {
     if (plan === 'free') {
       if (isLoggedIn) {
         router.push('/dashboard')
@@ -26,6 +27,14 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
       openSignup()
     }
   }
+
+  const cycle = billingCycle === 'annual' ? 'yearly' : 'monthly'
+  const freePlan = PLAN_CATALOG.free
+  const essentialsPlan = PLAN_CATALOG.essentials
+  const professionalPlan = PLAN_CATALOG.professional
+
+  const essPrice = formatPlanPrice('essentials', cycle)
+  const proPrice = formatPlanPrice('professional', cycle)
 
   return (
     <section id="pricing" className="py-24 px-6 relative overflow-hidden">
@@ -47,7 +56,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
           <div className="reveal in inline-flex items-center gap-2 bg-zinc-100 p-1 rounded-full mt-10">
             <button
               onClick={() => setBillingCycle('monthly')}
-              className={`px-6 py-2 rounded-full text-sm font-semibold transition ${
+              className={`px-6 py-2 rounded-full text-sm font-semibold transition cursor-pointer ${
                 billingCycle === 'monthly'
                   ? 'bg-white text-zinc-900 shadow'
                   : 'text-zinc-600 hover:text-zinc-900'
@@ -57,7 +66,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
             </button>
             <button
               onClick={() => setBillingCycle('annual')}
-              className={`px-6 py-2 rounded-full text-sm font-semibold transition flex items-center gap-1.5 ${
+              className={`px-6 py-2 rounded-full text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer ${
                 billingCycle === 'annual'
                   ? 'bg-white text-zinc-900 shadow'
                   : 'text-zinc-600 hover:text-zinc-900'
@@ -65,7 +74,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
             >
               Annual
               <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">
-                Save 20%
+                Save {essPrice.savingsPercent}%
               </span>
             </button>
           </div>
@@ -75,38 +84,22 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
           {/* Plan 1: Free */}
           <div className="reveal in card-hover bg-white border border-zinc-200 rounded-3xl p-8 flex flex-col justify-between hover:border-zinc-300">
             <div>
-              <div className="font-semibold text-zinc-500 text-xs uppercase tracking-wide">Free Plan</div>
+              <div className="font-semibold text-zinc-500 text-xs uppercase tracking-wide">{freePlan.name}</div>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-5xl font-bold heading text-zinc-900">₹0</span>
                 <span className="text-zinc-600 text-sm">/mo</span>
               </div>
-              <p className="text-zinc-500 text-sm mt-3">Perfect for micro-businesses starting out.</p>
+              <p className="text-zinc-500 text-sm mt-3">{freePlan.tagline}</p>
               <div className="border-t border-zinc-100 my-6"></div>
               <ul className="space-y-3.5 text-zinc-600 text-sm">
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>Up to 30 invoices/mo</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>Up to 30 customers & items</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>1 User (Owner)</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>Template 1 (Classic Slate)</span>
-                </li>
+                {freePlan.features.map((feat, idx) => (
+                  <li key={idx} className="flex items-center gap-2.5">
+                    <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
+                      <use href="#check-circle" />
+                    </svg>
+                    <span>{feat.label}</span>
+                  </li>
+                ))}
               </ul>
             </div>
             <button
@@ -124,63 +117,36 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
             </span>
             <div>
               <div className="font-semibold text-indigo-600 text-xs uppercase tracking-wide mt-2">
-                {billingCycle === 'monthly' ? 'Essentials Pro' : 'Essentials Pro Annual'}
+                {essentialsPlan.name}
               </div>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-5xl font-bold heading text-zinc-900">
-                  {billingCycle === 'monthly' ? '₹399' : '₹291'}
+                  {essPrice.headline}
                 </span>
                 <span className="text-zinc-600 text-sm">/mo</span>
               </div>
               <p className="text-zinc-500 text-sm mt-3">
-                {billingCycle === 'monthly'
-                  ? 'Billed monthly'
-                  : 'Billed annually (₹3,499/yr — Save 27%)'}
+                {essPrice.note}
               </p>
               <div className="border-t border-indigo-100 my-6"></div>
               <ul className="space-y-3.5 text-zinc-600 text-sm">
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span className="font-medium text-zinc-800">Unlimited invoices</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>All 4 Traditional & Book Depot Templates</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>Custom Logo Upload & White-Label</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>1-Click WhatsApp + UPI Share</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span className="font-semibold text-zinc-800">GSTR-1 & ITR Excel Export</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>Custom Invoice Series &amp; Brand Prefixes</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>Up to 3 Team Members</span>
-                </li>
+                {essentialsPlan.features.map((feat, idx) => (
+                  feat.status === 'included' ? (
+                    <li key={idx} className="flex items-center gap-2.5">
+                      <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
+                        <use href="#check-circle" />
+                      </svg>
+                      <span className={idx === 0 ? "font-medium text-zinc-800" : ""}>{feat.label}</span>
+                    </li>
+                  ) : (
+                    <li key={idx} className="flex items-center gap-2.5 text-zinc-600">
+                      <span>{feat.label}</span>
+                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                        Coming soon
+                      </span>
+                    </li>
+                  )
+                ))}
               </ul>
             </div>
             <button
@@ -192,67 +158,51 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
           </div>
 
           {/* Plan 3: Professional */}
-          <div className="reveal in card-hover bg-white border border-zinc-200 rounded-3xl p-8 flex flex-col justify-between hover:border-zinc-300">
+          <div className="reveal in card-hover bg-white border border-zinc-200 rounded-3xl p-8 flex flex-col justify-between hover:border-zinc-300 relative">
             <div>
-              <div className="font-semibold text-zinc-500 text-xs uppercase tracking-wide">
-                {billingCycle === 'monthly' ? 'Enterprise / CA Max' : 'Enterprise Annual'}
+              <div className="flex items-center justify-between">
+                <div className="font-semibold text-zinc-500 text-xs uppercase tracking-wide">
+                  {professionalPlan.name}
+                </div>
+                <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-600 border border-zinc-200 px-2 py-0.5 rounded-full">
+                  Coming soon
+                </span>
               </div>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-5xl font-bold heading text-zinc-900">
-                  {billingCycle === 'monthly' ? '₹599' : '₹416'}
+                  {proPrice.headline}
                 </span>
                 <span className="text-zinc-600 text-sm">/mo</span>
               </div>
               <p className="text-zinc-500 text-sm mt-3">
-                {billingCycle === 'monthly'
-                  ? 'Billed monthly'
-                  : 'Billed annually (₹4,999/yr — Save 30%)'}
+                {proPrice.note}
               </p>
               <div className="border-t border-zinc-100 my-6"></div>
               <ul className="space-y-3.5 text-zinc-600 text-sm">
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span className="font-medium text-zinc-800">Unlimited invoices & users</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>Dedicated CA Accountant Portal</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>Multiple Invoice Number Series</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>Bulk Inventory & Customer Import</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>24/7 Priority SLA & Dedicated Manager</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
-                    <use href="#check-circle" />
-                  </svg>
-                  <span>Custom document themes</span>
-                </li>
+                {professionalPlan.features.map((feat, idx) => (
+                  feat.status === 'included' ? (
+                    <li key={idx} className="flex items-center gap-2.5">
+                      <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
+                        <use href="#check-circle" />
+                      </svg>
+                      <span className="font-medium text-zinc-800">{feat.label}</span>
+                    </li>
+                  ) : (
+                    <li key={idx} className="flex items-center gap-2.5 text-zinc-600">
+                      <span>{feat.label}</span>
+                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                        Coming soon
+                      </span>
+                    </li>
+                  )
+                ))}
               </ul>
             </div>
             <button
-              onClick={() => handlePlanSelect('professional')}
-              className="block w-full text-center border-2 border-zinc-200 hover:border-zinc-800 text-zinc-700 hover:text-zinc-900 font-semibold py-3.5 rounded-xl transition mt-8 text-sm cursor-pointer"
+              disabled
+              className="block w-full text-center border-2 border-zinc-200 bg-zinc-50 text-zinc-600 font-semibold py-3.5 rounded-xl transition mt-8 text-sm cursor-not-allowed"
             >
-              Get Started →
+              Coming soon
             </button>
           </div>
         </div>

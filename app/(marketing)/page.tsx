@@ -1,11 +1,9 @@
 import { HeroSection } from '@/components/landing/hero-section'
 import { LiveDashboard } from '@/components/landing/live-dashboard'
-import { SocialProof } from '@/components/landing/social-proof'
 import { SecurityBand } from '@/components/landing/security-band'
 import { FeaturesSection } from '@/components/landing/features-section'
 import { CalculatorSection } from '@/components/landing/calculator-section'
 import { HowItWorks } from '@/components/landing/how-it-works'
-import { TestimonialsSection } from '@/components/landing/testimonials-section'
 import { ComparisonTable } from '@/components/landing/comparison-table'
 import { PricingSection } from '@/components/landing/pricing-section'
 import { FaqSection } from '@/components/landing/faq-section'
@@ -132,12 +130,10 @@ export default async function MarketingHomePage() {
       {/* Landing Page Content Sections */}
       <HeroSection />
       <LiveDashboard />
-      <SocialProof />
       <SecurityBand />
       <FeaturesSection />
       <CalculatorSection />
       <HowItWorks />
-      <TestimonialsSection />
       <ComparisonTable />
       <PricingSection isLoggedIn={isLoggedIn} />
       <FaqSection />
@@ -159,7 +155,7 @@ export default async function MarketingHomePage() {
             </h2>
             
             <p className="mt-4 text-slate-300 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-              Join 10,000+ Indian businesses automating their GST billing, WhatsApp dispatch, and tax filing.
+              Create GST invoices, share them on WhatsApp and e-mail, and export filing-ready reports.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -177,7 +173,7 @@ export default async function MarketingHomePage() {
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Free forever tier
               </span>
               <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Instant GSTIN auto-lookup
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> GSTIN format validation
               </span>
               <span className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Cancel anytime

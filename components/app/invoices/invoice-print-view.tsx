@@ -2,7 +2,7 @@ import { InvoiceTemplateProps, InvoiceTemplate1 } from './templates/template-1';
 import { InvoiceTemplate2 } from './templates/template-2';
 import { InvoiceTemplate3 } from './templates/template-3';
 import { InvoiceTemplate4 } from './templates/template-4';
-import { resolveSubscriptionPlan } from '@/lib/subscriptions/entitlements';
+import { getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs';
 import { buildLogoUrl } from '@/lib/storage/logo-url';
 
@@ -66,7 +66,7 @@ export function InvoicePrintView({ invoice, businessStateCode, printSize = 'A4',
     if (hasWatermark !== undefined) return hasWatermark;
     if (invoice.has_watermark !== undefined) return invoice.has_watermark;
     if (invoice.subscription_plan) {
-      const plan = resolveSubscriptionPlan({
+      const plan = getPlanEntitlements({
         subscription_plan: invoice.subscription_plan,
         subscription_status: invoice.subscription_status,
         trial_ends_at: invoice.trial_ends_at,

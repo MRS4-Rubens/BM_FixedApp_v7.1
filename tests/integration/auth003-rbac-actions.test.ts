@@ -513,7 +513,7 @@ describe('AUTH-003: Role-Based Access Control Integration Tests (PGlite)', () =>
 
     // 8. submitPaymentClaim
     const res8 = await submitPaymentClaim({
-      plan_name: 'professional',
+      plan_name: 'essentials',
       billing_cycle: 'yearly',
       payment_method: 'upi_id',
       payment_reference: '123456789012',
@@ -657,7 +657,7 @@ describe('AUTH-003: Role-Based Access Control Integration Tests (PGlite)', () =>
 
     // 8. submitPaymentClaim
     const res8 = await submitPaymentClaim({
-      plan_name: 'professional',
+      plan_name: 'essentials',
       billing_cycle: 'yearly',
       payment_method: 'upi_id',
       payment_reference: 'UTR987654321012',

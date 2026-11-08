@@ -9,11 +9,15 @@ import {
   X,
   CheckCircle2,
   ArrowRight,
-  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { useIsClient } from '@/lib/hooks/use-is-client';
+import { PLAN_CATALOG, formatPlanPrice } from '@/lib/subscriptions/plan-catalog';
+
+const ESSENTIALS_MONTHLY = formatPlanPrice('essentials', 'monthly');
+const ESSENTIALS_YEARLY = formatPlanPrice('essentials', 'yearly');
+const PROFESSIONAL_MONTHLY = formatPlanPrice('professional', 'monthly');
+const PROFESSIONAL_YEARLY = formatPlanPrice('professional', 'yearly');
 
 export interface UpgradePromptModalProps {
   isOpen: boolean;
@@ -26,55 +30,19 @@ export interface UpgradePromptModalProps {
   ctaText?: string;
 }
 
-const ESSENTIALS_HIGHLIGHTS = [
-  'Unlimited GST Invoices & Credit Notes',
-  'All 4 Traditional & Book Depot Templates',
-  'Custom Logo Upload & White-Label Branding',
-  '1-Click WhatsApp Direct Share with Dynamic UPI Links',
-  'Official GSTR-1 & ITR 44AD Excel Exports',
-  'Custom Invoice Number Formats & Brand Prefixes',
-];
-
-const PROFESSIONAL_HIGHLIGHTS = [
-  'Everything in Essentials Pro Plan',
-  'Unlimited Invoices & Unlimited Team Users',
-  'Dedicated Read-Only CA Accountant Portal',
-  'Multiple Invoice Series & Custom Number Prefixes',
-  'Bulk Data & Inventory Import Tools',
-  '24/7 Priority SLA & Dedicated Account Manager',
-];
-
 export function UpgradePromptModal({
   isOpen,
   onClose,
   title,
   description,
   featureName,
-  recommendedPlan = 'essentials',
-  highlights,
 }: UpgradePromptModalProps) {
   const isClient = useIsClient();
-  const [selectedPlan, setSelectedPlan] = useState<'essentials' | 'professional'>(
-    recommendedPlan === 'professional' ? 'professional' : 'essentials'
-  );
-
-  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
-  if (isOpen !== prevIsOpen) {
-    setPrevIsOpen(isOpen);
-    if (isOpen) {
-      setSelectedPlan(recommendedPlan === 'professional' ? 'professional' : 'essentials');
-    }
-  }
+  const [selectedPlan] = useState<'essentials'>('essentials');
 
   if (!isClient) return null;
 
-  // Active highlights depend on user-selected plan
-  const activeHighlights =
-    selectedPlan === 'professional'
-      ? PROFESSIONAL_HIGHLIGHTS
-      : highlights && highlights.length > 0 && selectedPlan === recommendedPlan
-      ? highlights
-      : ESSENTIALS_HIGHLIGHTS;
+  const activeFeatures = PLAN_CATALOG.essentials.features;
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -133,36 +101,18 @@ export function UpgradePromptModal({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-600">
-                    Choose Your Plan:
+                    Available Plans:
                   </p>
-                  <span className="text-[10.5px] font-semibold text-slate-600 hidden sm:inline">
-                    Click a plan to compare details
-                  </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {/* Card 1: Essentials Pro Plan */}
                   <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setSelectedPlan('essentials')}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setSelectedPlan('essentials');
-                      }
-                    }}
-                    className={cn(
-                      "relative rounded-xl border px-2.5 py-1.5 sm:px-2.5 sm:py-2 cursor-pointer transition-all select-none text-left",
-                      selectedPlan === 'essentials'
-                        ? "border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/30 ring-2 ring-indigo-600/30 shadow-xs"
-                        : "border-slate-200/90 bg-slate-50/50 hover:border-slate-300 hover:bg-slate-50"
-                    )}
+                    className="relative rounded-xl border px-2.5 py-1.5 sm:px-2.5 sm:py-2 select-none text-left border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-600/30 shadow-xs"
                   >
-                    {/* Header: Heading and Popular badge with exact 7px gap */}
                     <div className="flex items-center gap-[7px] mb-1">
                       <span className="text-xs sm:text-[12.5px] font-black tracking-tight text-slate-900 uppercase font-heading">
-                        Essentials Pro
+                        {PLAN_CATALOG.essentials.name}
                       </span>
                       <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[9.5px] sm:text-[10px] font-black text-amber-800 shrink-0">
                         <Crown className="size-2.5 text-amber-700" />
@@ -170,88 +120,77 @@ export function UpgradePromptModal({
                       </span>
                     </div>
 
-                    {/* Rates side-by-side with 5px gap around '|', equal font size & full /month /year */}
                     <div className="flex items-center border-t border-slate-200/70 pt-1 mb-0.5">
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">₹399</span>
+                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">{ESSENTIALS_MONTHLY.headline}</span>
                         <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600">/month</span>
                       </div>
-                      <span className="text-slate-300 mx-[5px] text-xs font-light select-none">|</span>
+                      <span aria-hidden="true" className="text-slate-300 mx-[5px] text-xs font-light select-none">|</span>
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">₹3,499</span>
+                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">{ESSENTIALS_YEARLY.yearlyTotal}</span>
                         <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600">/year</span>
                       </div>
                     </div>
 
                     <div className="text-[10.5px] sm:text-[11px] font-bold text-emerald-700">
-                      Save 27% on Annual (₹291/mo)
+                      Save {ESSENTIALS_YEARLY.savingsPercent}% on Annual ({ESSENTIALS_YEARLY.headline}/mo)
                     </div>
                   </div>
 
-                  {/* Card 2: Enterprise / CA Max */}
+                  {/* Card 2: Professional (Disabled / Coming Soon) */}
                   <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => setSelectedPlan('professional')}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setSelectedPlan('professional');
-                      }
-                    }}
-                    className={cn(
-                      "relative rounded-xl border px-2.5 py-1.5 sm:px-2.5 sm:py-2 cursor-pointer transition-all select-none text-left",
-                      selectedPlan === 'professional'
-                        ? "border-violet-600 bg-violet-50/70 dark:bg-violet-950/30 ring-2 ring-violet-600/30 shadow-xs"
-                        : "border-slate-200/90 bg-slate-50/50 hover:border-slate-300 hover:bg-slate-50"
-                    )}
+                    aria-disabled="true"
+                    className="relative rounded-xl border border-dashed px-2.5 py-1.5 sm:px-2.5 sm:py-2 select-none text-left border-slate-300 bg-slate-50 cursor-not-allowed"
                   >
-                    {/* Header: Heading and Scale badge with exact 7px gap */}
                     <div className="flex items-center gap-[7px] mb-1">
-                      <span className="text-xs sm:text-[12.5px] font-black tracking-tight text-slate-900 uppercase font-heading">
-                        Enterprise / CA Max
+                      <span className="text-xs sm:text-[12.5px] font-black tracking-tight text-slate-700 uppercase font-heading">
+                        {PLAN_CATALOG.professional.name}
                       </span>
-                      <span className="inline-flex items-center gap-0.5 rounded-full bg-violet-500/15 border border-violet-500/30 px-1.5 py-0.2 text-[9.5px] sm:text-[10px] font-black text-violet-700 shrink-0">
-                        <Zap className="size-2.5 text-violet-700" />
-                        Scale
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-200 border border-slate-300 px-1.5 py-0.2 text-[9.5px] sm:text-[10px] font-black text-slate-700 shrink-0">
+                        Coming soon
                       </span>
                     </div>
 
-                    {/* Rates side-by-side with 5px gap around '|', equal font size & full /month /year */}
                     <div className="flex items-center border-t border-slate-200/70 pt-1 mb-0.5">
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">₹599</span>
+                        <span className="text-[15px] sm:text-base font-black text-slate-700 font-heading">{PROFESSIONAL_MONTHLY.headline}</span>
                         <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600">/month</span>
                       </div>
-                      <span className="text-slate-300 mx-[5px] text-xs font-light select-none">|</span>
+                      <span aria-hidden="true" className="text-slate-300 mx-[5px] text-xs font-light select-none">|</span>
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">₹4,999</span>
+                        <span className="text-[15px] sm:text-base font-black text-slate-700 font-heading">{PROFESSIONAL_YEARLY.yearlyTotal}</span>
                         <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600">/year</span>
                       </div>
                     </div>
 
-                    <div className="text-[10.5px] sm:text-[11px] font-bold text-emerald-700">
-                      Save 30% on Annual (₹416/mo)
+                    <div className="text-[10.5px] sm:text-[11px] font-bold text-slate-600">
+                      Save {PROFESSIONAL_YEARLY.savingsPercent}% on Annual ({PROFESSIONAL_YEARLY.headline}/mo)
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Dynamic Feature Highlights */}
+              {/* Dynamic Feature Highlights from PLAN_CATALOG */}
               <div className="space-y-1.5 pt-0.5">
                 <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-slate-600">
-                  {selectedPlan === 'professional'
-                    ? 'What you unlock with Enterprise / CA Max:'
-                    : 'What you unlock with Essentials Pro:'}
+                  What you unlock with Essentials Pro:
                 </p>
                 <ul className="space-y-1.5">
-                  {activeHighlights.map((feat, idx) => (
+                  {activeFeatures.map((feat, idx) => (
                     <li key={idx} className="flex items-start gap-2 text-xs sm:text-[13px] text-slate-700 font-medium">
-                      <CheckCircle2 className={cn(
-                        "size-3.5 sm:size-4 shrink-0 mt-0.5",
-                        selectedPlan === 'professional' ? "text-violet-600" : "text-emerald-700"
-                      )} />
-                      <span>{feat}</span>
+                      {feat.status === 'included' ? (
+                        <>
+                          <CheckCircle2 className="size-3.5 sm:size-4 shrink-0 mt-0.5 text-emerald-700" />
+                          <span>{feat.label}</span>
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-slate-600">
+                          <span className="text-[9.5px] uppercase font-bold tracking-wider bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.2 rounded-full shrink-0">
+                            Coming soon
+                          </span>
+                          <span>{feat.label}</span>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -265,18 +204,11 @@ export function UpgradePromptModal({
                   onClick={onClose}
                 >
                   <Button
-                    className={cn(
-                      "w-full h-10 gap-2 text-white font-bold text-xs sm:text-[13px] shadow-md cursor-pointer rounded-xl transition-all px-3",
-                      selectedPlan === 'professional'
-                        ? "bg-gradient-to-r from-violet-600 via-purple-700 to-indigo-700 hover:from-violet-500 hover:to-indigo-600"
-                        : "bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600"
-                    )}
+                    className="w-full h-10 gap-2 text-white font-bold text-xs sm:text-[13px] shadow-md cursor-pointer rounded-xl transition-all px-3 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600"
                   >
                     <Sparkles className="size-3.5 sm:size-4 text-amber-300 shrink-0" />
                     <span className="truncate">
-                      {selectedPlan === 'professional'
-                        ? 'Upgrade to Enterprise / CA Max (₹599/mo)'
-                        : 'Upgrade to Essentials Pro (₹399/mo)'}
+                      Upgrade to {PLAN_CATALOG.essentials.name} ({ESSENTIALS_MONTHLY.headline}/mo)
                     </span>
                     <ArrowRight className="size-3.5 sm:size-4 shrink-0" />
                   </Button>

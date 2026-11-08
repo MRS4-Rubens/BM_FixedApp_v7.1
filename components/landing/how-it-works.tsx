@@ -16,9 +16,9 @@ export function HowItWorks() {
           <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold mx-auto mb-6 pulse-ring-rose transition-all duration-300 shadow-md hover:scale-110">
             1
           </div>
-          <h3 className="font-semibold text-lg heading">Enter GSTIN</h3>
+          <h3 className="font-semibold text-lg heading">Set up your business</h3>
           <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Simply enter your GSTIN during onboard registration. We fetch your business particulars instantly.
+            Enter your GSTIN and business details once; we validate the GSTIN format.
           </p>
         </div>
 
@@ -26,9 +26,9 @@ export function HowItWorks() {
           <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold mx-auto mb-6 pulse-ring-amber transition-all duration-300 shadow-md hover:scale-110">
             2
           </div>
-          <h3 className="font-semibold text-lg heading">Upload Master Data</h3>
+          <h3 className="font-semibold text-lg heading">Add customers & products</h3>
           <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Import your customer catalog and product prices in bulk using simple Excel templates.
+            Save them once and reuse them on every invoice.
           </p>
         </div>
 
@@ -36,9 +36,9 @@ export function HowItWorks() {
           <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold mx-auto mb-6 pulse-ring-emerald transition-all duration-300 shadow-md hover:scale-110">
             3
           </div>
-          <h3 className="font-semibold text-lg heading">Invoice & Share</h3>
+          <h3 className="font-semibold text-lg heading">Invoice & share</h3>
           <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Click &apos;New Invoice&apos;, choose client + items, and hit send. Customers get PDFs via Email & WhatsApp.
+            Pick a customer and items, finalize, then e-mail the PDF or share on WhatsApp.
           </p>
         </div>
 
@@ -46,9 +46,9 @@ export function HowItWorks() {
           <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-2xl flex items-center justify-center text-xl font-bold mx-auto mb-6 pulse-ring-indigo transition-all duration-300 shadow-md hover:scale-110">
             4
           </div>
-          <h3 className="font-semibold text-lg heading">Autopilot Reminders</h3>
+          <h3 className="font-semibold text-lg heading">Track payments</h3>
           <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Outstanding invoices are automatically followed up until paid. Watch your cashflow grow.
+            Record payments, see what is outstanding, and send reminders in one click.
           </p>
         </div>
       </div>

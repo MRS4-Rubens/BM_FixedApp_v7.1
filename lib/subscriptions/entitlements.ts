@@ -5,7 +5,7 @@
  * 1. Plan tiers ('free', 'trial', 'essentials', 'professional')
  * 2. Subscription statuses ('trial', 'active', 'expired', 'suspended')
  * 3. Quotas (invoices/month, customers, products, team users)
- * 4. Feature permissions (templates, logo upload, statutory reports, WhatsApp dispatch, white-label branding)
+ * 4. Feature permissions (templates, logo upload, watermark, WhatsApp sharing, statutory reports, custom invoice format)
  */
 
 export type PlanTier = 'free' | 'trial' | 'essentials' | 'professional';
@@ -27,6 +27,9 @@ export const PLAN_PRICING: Record<'essentials' | 'professional', PlanPricing> = 
     yearlyPaise: 499900,  // ₹4,999 / year (~₹416/month, Save 30%)
   },
 };
+
+/** Length of the free trial a new business gets at signup (lib/business/save-profile-tx.ts re-exports it). */
+export const TRIAL_DURATION_DAYS = 14;
 
 export const FREE_TIER_LIMITS = {
   invoiceMonthlyLimit: 30, // Max 30 invoices per calendar month
@@ -71,6 +74,7 @@ export interface PlanEntitlements {
   invoiceMonthlyLimit: number | null;
   customerLimit: number | null;
   productLimit: number | null;
+  /** RESERVED — enforced when team invites ship (no invite flow exists yet); the plan catalogue lists team members as coming_soon. */
   teamUserLimit: number | null;
 
   // Feature Flags
@@ -79,10 +83,6 @@ export interface PlanEntitlements {
   hasWatermark: boolean;
   canDirectWhatsApp: boolean;
   canExportExcelReports: boolean;
-  canFinalizeCreditNotes: boolean;
-  canBulkImportCsv: boolean;
-  canAccessCaPortal: boolean;
-  hasPermanentPdfStorage: boolean;
   canCustomizeInvoiceFormat: boolean;
 }
 
@@ -131,8 +131,45 @@ export function resolveBusinessPlan(business?: BusinessSubscriptionSource | null
     };
   }
 
+  // F-ENT-1: Explicitly expired status takes precedence over future trial/subscription end dates
+  if (rawStatus === 'expired') {
+    return {
+      tier: 'free',
+      effectiveStatus: 'expired',
+      daysRemaining: 0,
+      targetExpiry: subEnd || trialEnd,
+    };
+  }
+
   // Active paid subscription
   if (rawStatus === 'active') {
+    // F-ENT-2: unparseable subscription_ends_at fails closed to expired
+    if (
+      business.subscription_ends_at !== null &&
+      business.subscription_ends_at !== undefined &&
+      business.subscription_ends_at !== '' &&
+      subEnd === null
+    ) {
+      return {
+        tier: 'free',
+        effectiveStatus: 'expired',
+        daysRemaining: 0,
+        targetExpiry: null,
+      };
+    }
+
+    // F-ENT-3: a paid tier is granted ONLY when rawPlan is 'essentials' or 'professional'; any other plan -> free
+    if (rawPlan !== 'essentials' && rawPlan !== 'professional') {
+      return {
+        tier: 'free',
+        effectiveStatus: 'active',
+        daysRemaining: null,
+        targetExpiry: null,
+      };
+    }
+
+    const tier: PlanTier = rawPlan === 'professional' ? 'professional' : 'essentials';
+
     if (subEnd) {
       const remainingMs = subEnd.getTime() - now;
       const days = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
@@ -145,7 +182,6 @@ export function resolveBusinessPlan(business?: BusinessSubscriptionSource | null
           targetExpiry: subEnd,
         };
       }
-      const tier: PlanTier = rawPlan === 'professional' ? 'professional' : 'essentials';
       return {
         tier,
         effectiveStatus: 'active',
@@ -155,7 +191,6 @@ export function resolveBusinessPlan(business?: BusinessSubscriptionSource | null
     }
 
     // Active with no end date (continuous active)
-    const tier: PlanTier = rawPlan === 'professional' ? 'professional' : 'essentials';
     return {
       tier,
       effectiveStatus: 'active',
@@ -246,15 +281,9 @@ export function getPlanEntitlements(business?: BusinessSubscriptionSource | null
     hasWatermark: !isProLevel,
     canDirectWhatsApp: isProLevel,
     canExportExcelReports: isProLevel,
-    canFinalizeCreditNotes: isProLevel,
-    canBulkImportCsv: isProLevel,
-    canAccessCaPortal: isEnterpriseLevel,
-    hasPermanentPdfStorage: isProLevel,
     canCustomizeInvoiceFormat: isProLevel,
   };
 }
-
-export const resolveSubscriptionPlan = getPlanEntitlements;
 
 /** API-010: a suspended business is read-only. Pure; the DB-aware guard lives in lib/actions/_shared/subscription-guard.ts. */
 export function checkAccountNotSuspended(
@@ -415,6 +444,33 @@ export function canCustomizeInvoiceNumberFormat(
       allowed: false,
       reason: 'Custom invoice numbering formats, brand initials (e.g. MBS), and daily/monthly series are exclusive to paid plans. Upgrade to Essentials Pro to customize your invoice format.',
       code: 'INVOICE_FORMAT_LOCKED',
+    };
+  }
+
+  return { allowed: true };
+}
+
+/**
+ * Checks if WhatsApp invoice sharing is allowed
+ */
+export function canShareInvoiceOnWhatsApp(
+  business: BusinessSubscriptionSource | null | undefined
+): { allowed: boolean; reason?: string; code?: string } {
+  const entitlements = getPlanEntitlements(business);
+
+  if (entitlements.isSuspended) {
+    return {
+      allowed: false,
+      reason: 'Your account has been suspended. Please contact platform support.',
+      code: 'ACCOUNT_SUSPENDED',
+    };
+  }
+
+  if (!entitlements.canDirectWhatsApp) {
+    return {
+      allowed: false,
+      reason: 'WhatsApp sharing is part of Essentials Pro. Upgrade to send invoices on WhatsApp.',
+      code: 'WHATSAPP_SHARE_LOCKED',
     };
   }
 

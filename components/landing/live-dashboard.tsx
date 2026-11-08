@@ -223,7 +223,12 @@ export function LiveDashboard() {
           <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
               <div>
-                <div className="font-bold text-xl heading">Business Snapshot</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xl heading">Business Snapshot</span>
+                  <span className="rounded-full bg-slate-100 border border-slate-300 text-slate-600 px-2 py-0.5 text-xs font-semibold">
+                    Sample data
+                  </span>
+                </div>
                 <div className="text-xs text-zinc-600 flex items-center gap-2 mt-0.5">
                   <svg className="w-3.5 h-3.5">
                     <use href="#clock" />
@@ -285,7 +290,7 @@ export function LiveDashboard() {
               <svg className="w-5 h-5 text-emerald-500 mx-auto mb-1">
                 <use href="#shield" />
               </svg>
-              <div className="text-2xl md:text-3xl font-bold heading text-emerald-700">99.9%</div>
+              <div className="text-xl md:text-2xl font-bold heading text-emerald-700">GST Ready</div>
               <div className="text-xs text-zinc-500 mt-1.5 font-medium">Compliance</div>
             </div>
             <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 text-center hover:border-amber-400 transition-all group">

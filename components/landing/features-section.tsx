@@ -72,12 +72,12 @@ export function FeaturesSection() {
         <div className="reveal in card-hover bento-card bg-white border border-zinc-200 rounded-3xl p-8 animated-border">
           <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-pink-500 rounded-2xl flex items-center justify-center mb-5 icon-bounce text-white">
             <svg className="w-8 h-8">
-              <use href="#users" />
+              <use href="#invoice" />
             </svg>
           </div>
-          <h3 className="font-semibold text-xl heading">Multi-User Access</h3>
+          <h3 className="font-semibold text-xl heading">Credit Notes & Payments</h3>
           <p className="text-zinc-500 text-sm mt-2 leading-relaxed font-normal">
-            Role-aware authentication for your whole team.
+            Issue GST credit notes and record full or part payments against every invoice.
           </p>
         </div>
 
@@ -90,8 +90,7 @@ export function FeaturesSection() {
           </div>
           <h3 className="font-semibold text-xl heading">Email & WhatsApp Sharing + Payment Tracking</h3>
           <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Send invoices instantly, set recurring billing, and track every payment with automated follow-up reminders
-            — <span className="text-zinc-700 font-medium">never chase a payment manually again.</span>
+            Send invoices by e-mail (with PDF) or WhatsApp, record payments, and send a payment reminder in one click.
           </p>
         </div>
 
