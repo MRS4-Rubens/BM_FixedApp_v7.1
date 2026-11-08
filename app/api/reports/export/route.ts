@@ -13,6 +13,7 @@ import { getGstr1ExportData } from '@/lib/actions/reports/get-gstr1-data';
 import { writeGstr1Workbook } from '@/lib/excel/build-gstr1-report';
 import { writeHsnWorkbook } from '@/lib/excel/build-hsn-report';
 import { canExportStatutoryReport, checkAccountNotSuspended } from '@/lib/subscriptions/entitlements';
+import { PLAN_SOURCE_COLUMNS } from '@/lib/subscriptions/load';
 import { exportQuerySchema } from '@/lib/validations/export';
 import { xlsxStreamResponse } from '@/lib/excel/xlsx-response';
 
@@ -39,10 +40,7 @@ export async function GET(request: NextRequest) {
   // 2. Entitlement check for statutory Excel reports
   const bizResult = await db
     .select({
-      subscription_plan: businesses.subscription_plan,
-      subscription_status: businesses.subscription_status,
-      trial_ends_at: businesses.trial_ends_at,
-      subscription_ends_at: businesses.subscription_ends_at,
+      ...PLAN_SOURCE_COLUMNS,
     })
     .from(businesses)
     .where(eq(businesses.id, appUser.business_id))

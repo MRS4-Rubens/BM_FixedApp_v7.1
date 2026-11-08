@@ -128,9 +128,8 @@ export function prorateRoundHalfUp(amount: number, partMilli: number, wholeMilli
   return Number((two * numerator + denominator) / (two * denominator));
 }
 
-export function roundToRupeePaise(paise: number): number {
-  return Math.round(paise / 100) * 100; // same rule the app already uses for document grand totals
-}
+import { roundToRupeePaise } from '@/lib/money';
+export { roundToRupeePaise } from '@/lib/money';
 
 /** Builds per-original-line state. Fails closed on legacy/unlinked or foreign credited lines. */
 export function buildCreditLineStates(

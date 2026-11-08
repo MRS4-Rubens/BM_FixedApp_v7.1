@@ -84,3 +84,7 @@ export function percentOfPaiseRoundHalfUp(amountPaise: number, percent: number):
   if (!Number.isInteger(percent) || percent < 0 || percent > 100) throw new RangeError('percent must be an integer between 0 and 100');
   return Number((BigInt(amountPaise) * BigInt(percent) + BigInt(50)) / BigInt(100));
 }
+
+export function roundToRupeePaise(paise: number): number {
+  return Math.round(paise / 100) * 100; // same rule the app already uses for document grand totals
+}

@@ -21,6 +21,7 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useState, useTransition, useEffect } from 'react'
 import { formatPaiseAsInr } from '@/lib/money'
+import { sumActiveCreditedPaise, sumActivePaidPaise, summarizeSettlement } from '@/lib/invoices/settlement'
 import { emailInvoice } from '@/lib/actions/invoices/email-invoice'
 import { sendPaymentReminder } from '@/lib/actions/invoices/send-payment-reminder'
 import { getArchivedPdfUrl } from '@/lib/actions/invoices/get-archived-pdf-url'
@@ -143,16 +144,17 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
   }
 
   // Calculations for financial settlement including credit notes
-  const totalCreditedPaise = creditNotes
-    .filter(note => note.lifecycle_status === 'finalized' && (note.status || 'active') === 'active')
-    .reduce((acc, note) => acc + Number(note.grand_total_paise || 0), 0)
-  const netBillPaise = Math.max(0, Number(invoice.grand_total_paise || 0) - totalCreditedPaise)
+  const totalCreditedPaise = sumActiveCreditedPaise(creditNotes)
+  const settlement = summarizeSettlement({
+    grandTotalPaise: invoice.grand_total_paise,
+    totalCreditedPaise,
+    activePaidPaise: sumActivePaidPaise(payments),
+  })
+  const netBillPaise = settlement.netBillPaise
   const activePayments = payments.filter(p => (p.status || 'active') === 'active')
-  const existingSum = activePayments.reduce((acc, p) => acc + Number(p.amount_paise || 0), 0)
-  const balanceDue = netBillPaise - existingSum
-  const settlementPercentage = netBillPaise > 0 
-    ? Math.min(100, Math.round((existingSum / netBillPaise) * 100))
-    : 100
+  const existingSum = settlement.activePaidPaise
+  const balanceDue = settlement.balanceDuePaise
+  const settlementPercentage = settlement.settledPercent
 
   // Handle auto-printing if query param set
   useEffect(() => {

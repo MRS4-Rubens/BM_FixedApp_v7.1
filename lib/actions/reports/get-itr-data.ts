@@ -6,6 +6,7 @@ import { db } from '@/lib/db/client';
 import { businesses, invoices, invoiceLineItems, payments, creditNotes, creditNoteLineItems } from '@/lib/db/schema';
 import { eq, and, between, inArray, asc } from 'drizzle-orm';
 import { exportRangeSchema } from '@/lib/validations/export';
+import { computeNetBillPaise } from '@/lib/invoices/settlement';
 
 export interface ItrInvoiceItem {
   id: string;
@@ -310,7 +311,7 @@ export const getItrExportData = createAuthenticatedAction(exportRangeSchema, asy
     const cnForInv = invoiceCnMap.get(inv.id);
     const netSubtotal = Math.max(0, inv.subtotal_paise - (cnForInv?.subtotalPaise || 0));
     const netTax = Math.max(0, inv.total_tax_paise - (cnForInv?.taxPaise || 0));
-    const netGrandTotal = Math.max(0, inv.grand_total_paise - (cnForInv?.grandTotalPaise || 0));
+    const netGrandTotal = computeNetBillPaise(inv.grand_total_paise, cnForInv?.grandTotalPaise || 0);
 
     if (cnForInv?.rates) {
       for (const [rStr, val] of Object.entries(cnForInv.rates)) {
@@ -399,7 +400,7 @@ export const getItrExportData = createAuthenticatedAction(exportRangeSchema, asy
     const entry = getOrCreateMonthEntry(cn.issue_date);
     entry.subtotal_paise = Math.max(0, entry.subtotal_paise - cn.subtotal_paise);
     entry.total_tax_paise = Math.max(0, entry.total_tax_paise - cn.total_tax_paise);
-    entry.grand_total_paise = Math.max(0, entry.grand_total_paise - cn.grand_total_paise);
+    entry.grand_total_paise = computeNetBillPaise(entry.grand_total_paise, cn.grand_total_paise);
 
     const rates = cnRateMap.get(cn.id);
     if (rates) {

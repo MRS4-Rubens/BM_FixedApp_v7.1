@@ -4,7 +4,7 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { assertOwnedCustomer, assertOwnedProducts } from '@/lib/actions/_shared/ownership';
-import { roundToRupeePaise } from '@/lib/credit-notes/derivation';
+import { roundToRupeePaise } from '@/lib/money';
 import { invoiceDraftSchema } from '@/lib/validations/invoice';
 import { db } from '@/lib/db/client';
 import { invoices, invoiceLineItems, businesses, taxRates } from '@/lib/db/schema';

@@ -27,6 +27,7 @@ import { deleteCreditNoteDraft } from '@/lib/actions/credit-notes/delete-credit-
 import { getArchivedCreditNotePdfUrl } from '@/lib/actions/credit-notes/get-archived-credit-note-pdf-url';
 import { useRouter } from 'next/navigation';
 import { formatPaiseAsInr } from '@/lib/money';
+import { computeNetBillPaise } from '@/lib/invoices/settlement';
 import { getCreditNoteReasonLabel, VOID_CREDIT_NOTE_REASONS } from '@/lib/validations/credit-note';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { cn } from '@/lib/utils';
@@ -142,7 +143,7 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
   const originalBillPaise = Number(creditNote.originalInvoice.grand_total_paise || 0);
   const creditPaise = Number(creditNote.grand_total_paise || 0);
   const totalCreditedForInvoicePaise = Number(creditNote.totalCreditedPaiseForInvoice ?? creditPaise);
-  const netAdjustedBillPaise = Math.max(0, originalBillPaise - totalCreditedForInvoicePaise);
+  const netAdjustedBillPaise = computeNetBillPaise(originalBillPaise, totalCreditedForInvoicePaise);
 
   const posState = INDIAN_GST_STATES.find(
     s => s.code === (creditNote.originalInvoice.place_of_supply_state_code || '')

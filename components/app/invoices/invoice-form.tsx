@@ -36,6 +36,7 @@ import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt
 import { TemplateSelector } from './template-selector'
 import { buildPreviewTaxLineInput } from '@/lib/invoices/line-math'
 import { useIsClient } from '@/lib/hooks/use-is-client'
+import { roundToRupeePaise } from '@/lib/money'
 
 import { searchCustomerOptions } from '@/lib/actions/customers/search-customer-options'
 import { searchProductOptions } from '@/lib/actions/products/search-product-options'
@@ -524,7 +525,7 @@ export function InvoiceForm({
   const totalIGST = taxResult ? taxResult.totalIgstPaise / 100 : 0
 
   const rawTotalAmountPaise = taxResult ? taxResult.grandTotalPaise : 0
-  const roundedGrandTotalPaise = Math.round(rawTotalAmountPaise / 100) * 100
+  const roundedGrandTotalPaise = roundToRupeePaise(rawTotalAmountPaise)
   const roundOffPaise = roundedGrandTotalPaise - rawTotalAmountPaise
 
   const roundOff = roundOffPaise / 100
@@ -770,7 +771,7 @@ export function InvoiceForm({
       total_sgst_paise: previewTaxResult.totalSgstPaise,
       total_igst_paise: previewTaxResult.totalIgstPaise,
       total_tax_paise: previewTaxResult.totalTaxPaise,
-      grand_total_paise: Math.round(previewTaxResult.grandTotalPaise / 100) * 100,
+      grand_total_paise: roundToRupeePaise(previewTaxResult.grandTotalPaise),
       invoice_template: watchTemplate,
       // Set rate type snapshot on mapped preview metadata object
       gst_rate_type: gstRateTypeVal,
