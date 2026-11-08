@@ -128,3 +128,14 @@ Verified on branch `fix/arch-pdf-archival` against `main` `92ce554`; every chang
 - **Reviewer fix:** the new gated E2E archival check (`E2E_EXPECT_ARCHIVAL`) queried a column `archival_s3_key` that **does not exist** (the key is `pdf_storage_key`) — it would have failed the moment the check was enabled. Fixed the column, cast `archival_status::text`, and used the specified 60 s wait (render alone may take 25 s).
 - **Checks (local):** `pnpm typecheck` clean; `pnpm lint:ratchet` = baseline 0/1; `pnpm exec vitest run` 167 files passed, 4 skipped (1382 tests); `pnpm build` OK (proves `react-dom/server.edge` + the server-safe templates bundle into the finalize action path); audit gate exit 0; print stylesheet unchanged.
 - **User follow-up after merge:** delete `ARCHIVAL_SIGNING_SECRET` from `.env.local`, `.env.vercel-preview.local` and Vercel Preview (no code reads it any more). Production gets its own valid CustomJS key at launch.
+
+### Preview verification (Vercel preview of PR #24, 2026-11-09)
+
+- **CI:** all 7 checks green on `6438e3b`.
+- **Local E2E with the archival check ON (`E2E_EXPECT_ARCHIVAL=true`):**
+  - Run 1: Step 5 (finalize → wait for `archived`) **passed**; the run later failed at Step 8 with `page.goto('/reports')` not reaching the `load` event in 30 s. The Playwright trace shows the document served in 0.49 s and every sub-resource done by ~0.6 s, then ~20 s of browser inactivity — a client-side stall seen only in local runs (video + trace recording on this PC), never in CI. Not related to archival.
+  - Run 2: **22 passed, 1 skipped (mailbox)**, including the archival wait.
+- **Database (read-only) after run 2:** journey invoice `BMA/26-27/0001` → `archived`, attempt 1, PDF key stored, archived **6 s** after finalize; journey credit note `CN/26-27/001` → `archived`, attempt 1, PDF key stored; all 3 invoices finalized on staging in the previous 30 min are `archived`.
+- **Download PDF (first time ever visible):** on the archived invoice the **Email** and **Download PDF** buttons appear; Download PDF returns a short-lived iDrive e2 URL (`s3.ap-northeast-1.idrivee2.com`) serving a **266 KB `application/pdf`** starting with `%PDF-`. (Email was not clicked to avoid sending a real e-mail; its server gate only required `archived`, which is now true.)
+- **Hydration probe:** 0 errors on all 8 pages; sidebar 68 / 220 / 68 px at 800 px.
+- **Noted, not in scope:** invoice templates 1–4 load the Lora font from Google Fonts via `@import` (already listed as tracked debt in ARCHITECTURE.md: self-host Lora); the browser logs cross-origin font errors for it on invoice pages.
