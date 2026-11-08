@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/test';
 import * as path from 'path';
 import * as fs from 'fs';
+import { gotoApp } from '../support/navigation';
 
 test.describe('04 - Mobile Smoke (375x667)', () => {
   const userStatePath = path.resolve(process.cwd(), 'e2e/.auth/user.json');
@@ -23,7 +24,7 @@ test.describe('04 - Mobile Smoke (375x667)', () => {
       }
     });
 
-    await page.goto('/dashboard');
+    await gotoApp(page, '/dashboard');
     await expect(page).toHaveURL(/.*dashboard.*/);
 
     // Verify no horizontal overflow (tolerance 1px for fractional subpixel layout)
@@ -49,7 +50,7 @@ test.describe('04 - Mobile Smoke (375x667)', () => {
       }
     });
 
-    await page.goto('/invoices/new');
+    await gotoApp(page, '/invoices/new');
     await expect(page).toHaveURL(/.*invoices\/new.*/);
 
     const noOverflow = await page.evaluate(
@@ -73,7 +74,7 @@ test.describe('04 - Mobile Smoke (375x667)', () => {
       }
     });
 
-    await page.goto('/checkout');
+    await gotoApp(page, '/checkout');
     await expect(page).toHaveURL(/.*checkout.*/);
 
     const noOverflow = await page.evaluate(

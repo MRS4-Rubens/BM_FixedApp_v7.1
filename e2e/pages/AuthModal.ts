@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { gotoApp } from '../support/navigation';
 
 export class AuthModal {
   readonly page: Page;
@@ -47,13 +48,13 @@ export class AuthModal {
   }
 
   async openSignup(): Promise<void> {
-    await this.page.goto('/?auth=signup');
+    await gotoApp(this.page, '/?auth=signup');
     await expect(this.modalDialog).toBeVisible();
     await expect(this.signupEmailInput).toBeVisible();
   }
 
   async openLogin(): Promise<void> {
-    await this.page.goto('/?auth=login');
+    await gotoApp(this.page, '/?auth=login');
     await expect(this.modalDialog).toBeVisible();
     await expect(this.loginEmailInput).toBeVisible();
   }
