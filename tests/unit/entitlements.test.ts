@@ -6,6 +6,7 @@ import {
   canCreateInvoice,
   canCustomizeInvoiceNumberFormat,
   canExportStatutoryReport,
+  canShareInvoiceOnWhatsApp,
   canUploadBusinessLogo,
   canUseTemplate,
   checkAccountNotSuspended,
@@ -192,43 +193,51 @@ describe('Entitlements & Subscription Engine (TEST-001)', () => {
     });
   });
 
-  describe('CHAR / Findings Characterization (F-ENT-1, F-ENT-2, F-ENT-3)', () => {
-    it('CHAR F-ENT-1: plan "trial" with status "expired" and future trial_ends_at still resolves as active trial', () => {
+  describe('Findings Characterization Fixed (F-ENT-1, F-ENT-2, F-ENT-3)', () => {
+    it('F-ENT-1: plan "trial" with status "expired" and future trial_ends_at resolves as expired free tier', () => {
+      const futureDate = new Date('2026-10-25T12:00:00.000Z');
       const res = resolveBusinessPlan({
         subscription_plan: 'trial',
         subscription_status: 'expired',
-        trial_ends_at: new Date('2026-10-25T12:00:00.000Z'),
+        trial_ends_at: futureDate,
       });
-      // Characterizes limitation: rawPlan === 'trial' check precedes rawStatus
-      expect(res.tier).toBe('trial');
-      expect(res.effectiveStatus).toBe('trial');
+      expect(res.tier).toBe('free');
+      expect(res.effectiveStatus).toBe('expired');
+      expect(res.daysRemaining).toBe(0);
+      expect(res.targetExpiry?.toISOString()).toBe(futureDate.toISOString());
     });
 
-    it.todo('F-ENT-1: plan trial with raw status expired should not resolve to active trial');
-
-    it('CHAR F-ENT-2: unparseable subscription_ends_at string with active status fails open to perpetual active', () => {
+    it('F-ENT-2: unparseable subscription_ends_at string with active status fails closed to expired free tier', () => {
       const res = resolveBusinessPlan({
         subscription_plan: 'essentials',
         subscription_status: 'active',
         subscription_ends_at: 'not-a-valid-date',
       });
-      expect(res.tier).toBe('essentials');
-      expect(res.effectiveStatus).toBe('active');
-      expect(res.daysRemaining).toBeNull();
+      expect(res.tier).toBe('free');
+      expect(res.effectiveStatus).toBe('expired');
+      expect(res.daysRemaining).toBe(0);
+      expect(res.targetExpiry).toBeNull();
     });
 
-    it.todo('F-ENT-2: unparseable subscription_ends_at string should fail closed or throw error');
-
-    it('CHAR F-ENT-3: plan "free" with status "active" resolves to essentials tier', () => {
+    it('F-ENT-3: plan "free" with status "active" resolves to free tier', () => {
       const res = resolveBusinessPlan({
         subscription_plan: 'free',
         subscription_status: 'active',
       });
-      // Characterizes limitation: rawPlan !== 'professional' defaults to 'essentials' when rawStatus === 'active'
-      expect(res.tier).toBe('essentials');
+      expect(res.tier).toBe('free');
+      expect(res.effectiveStatus).toBe('active');
+      expect(res.daysRemaining).toBeNull();
+      expect(res.targetExpiry).toBeNull();
     });
 
-    it.todo('F-ENT-3: plan free with status active should resolve to free tier');
+    it('F-ENT-3: plan "trial" with status "active" resolves to free tier', () => {
+      const res = resolveBusinessPlan({
+        subscription_plan: 'trial',
+        subscription_status: 'active',
+      });
+      expect(res.tier).toBe('free');
+      expect(res.effectiveStatus).toBe('active');
+    });
   });
 
   describe('SPEC: getPlanEntitlements Quotas and Flags per Tier', () => {
@@ -272,7 +281,6 @@ describe('Entitlements & Subscription Engine (TEST-001)', () => {
       });
       expect(ent.tier).toBe('professional');
       expect(ent.teamUserLimit).toBeNull(); // Unlimited seats
-      expect(ent.canAccessCaPortal).toBe(true);
       expect(ent.hasWatermark).toBe(false);
     });
   });
@@ -335,6 +343,35 @@ describe('Entitlements & Subscription Engine (TEST-001)', () => {
       const format = canCustomizeInvoiceNumberFormat(null);
       expect(format.allowed).toBe(false);
       expect(format.code).toBe('INVOICE_FORMAT_LOCKED');
+
+      // WhatsApp sharing: free locked, essentials/trial allowed, expired trial locked
+      const waFree = canShareInvoiceOnWhatsApp(null);
+      expect(waFree.allowed).toBe(false);
+      expect(waFree.code).toBe('WHATSAPP_SHARE_LOCKED');
+      expect(waFree.reason).toBe(
+        'WhatsApp sharing is part of Essentials Pro. Upgrade to send invoices on WhatsApp.'
+      );
+
+      const waEssentials = canShareInvoiceOnWhatsApp({
+        subscription_status: 'active',
+        subscription_plan: 'essentials',
+      });
+      expect(waEssentials.allowed).toBe(true);
+
+      const waTrial = canShareInvoiceOnWhatsApp({
+        subscription_status: 'trial',
+        subscription_plan: 'trial',
+        trial_ends_at: new Date('2026-10-25T12:00:00.000Z'),
+      });
+      expect(waTrial.allowed).toBe(true);
+
+      const waExpiredTrial = canShareInvoiceOnWhatsApp({
+        subscription_status: 'trial',
+        subscription_plan: 'trial',
+        trial_ends_at: new Date('2026-10-10T12:00:00.000Z'),
+      });
+      expect(waExpiredTrial.allowed).toBe(false);
+      expect(waExpiredTrial.code).toBe('WHATSAPP_SHARE_LOCKED');
     });
 
     it('checkAccountNotSuspended pure function checks', () => {

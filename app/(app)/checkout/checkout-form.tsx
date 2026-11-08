@@ -35,41 +35,29 @@ import {
 import { cn } from '@/lib/utils';
 import { formatIstDate, formatIstTime } from '@/lib/invoices/ist-date';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
+import { PLAN_CATALOG, isPurchasablePlan } from '@/lib/subscriptions/plan-catalog';
 import type { UpiPaymentsMap } from '@/lib/payments/types';
 
 // Plan pricing definitions
 const PLANS = [
   {
     id: 'essentials' as const,
-    name: 'Essentials Pro Plan',
-    tagline: 'Ideal for retailers, wholesalers & growing trade accounts',
+    name: PLAN_CATALOG.essentials.name,
+    tagline: PLAN_CATALOG.essentials.tagline,
     monthlyPricePaise: PLAN_PRICING.essentials.monthlyPaise,
     yearlyPricePaise: PLAN_PRICING.essentials.yearlyPaise,
-    features: [
-      'Unlimited GST Invoices & Credit Notes',
-      'All 4 Traditional & Book Depot Templates',
-      'Custom Logo Upload & White-Label Branding',
-      '1-Click WhatsApp Direct Share with UPI Link',
-      'Official GSTR-1 & ITR 44AD Excel Exports',
-      'Custom Invoice Number Formats & Brand Prefixes',
-      'Up to 3 Team Members',
-    ],
+    features: PLAN_CATALOG.essentials.features,
+    purchasable: PLAN_CATALOG.essentials.purchasable,
     popular: true,
   },
   {
     id: 'professional' as const,
-    name: 'Enterprise / CA Max',
-    tagline: 'For high-volume traders & chartered accountant collaboration',
+    name: PLAN_CATALOG.professional.name,
+    tagline: PLAN_CATALOG.professional.tagline,
     monthlyPricePaise: PLAN_PRICING.professional.monthlyPaise,
     yearlyPricePaise: PLAN_PRICING.professional.yearlyPaise,
-    features: [
-      'Everything in Essentials Pro',
-      'Unlimited Invoices & Unlimited Users',
-      'Dedicated Read-Only CA Accountant Portal',
-      'Multiple Invoice Series & Number Prefixes',
-      'Bulk Data & Inventory Import',
-      '24/7 Priority SLA & Dedicated Manager',
-    ],
+    features: PLAN_CATALOG.professional.features,
+    purchasable: PLAN_CATALOG.professional.purchasable,
     popular: false,
   },
 ];
@@ -119,8 +107,8 @@ export function CheckoutForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const normalizedInitialPlan =
-    initialPlan?.toLowerCase() === 'professional' ? 'professional' : 'essentials';
+  const normalizedInitialPlan: 'essentials' | 'professional' =
+    initialPlan && isPurchasablePlan(initialPlan) ? (initialPlan as 'essentials' | 'professional') : 'essentials';
   const normalizedInitialCycle =
     initialCycle?.toLowerCase() === 'yearly' || initialCycle?.toLowerCase() === 'annual'
       ? 'yearly'
@@ -199,6 +187,7 @@ export function CheckoutForm({
 
   // Handle plan and cycle changes
   const handlePlanChange = (planId: 'essentials' | 'professional') => {
+    if (!isPurchasablePlan(planId)) return;
     setSelectedPlan(planId);
     setValue('plan_name', planId);
 
@@ -446,7 +435,7 @@ export function CheckoutForm({
                 Free Trial Active ({daysRemaining ?? 14} Days Left)
               </b>
               <span className="text-xs mt-0.5 block text-amber-700">
-                Upgrade to Essentials or Professional now to lock in continuous access and avoid feature interruption.
+                Upgrade to Essentials now to lock in continuous access and avoid feature interruption.
               </span>
             </div>
           </div>
@@ -545,12 +534,15 @@ export function CheckoutForm({
                 <button
                   key={plan.id}
                   type="button"
-                  onClick={() => handlePlanChange(plan.id)}
+                  disabled={!plan.purchasable}
+                  onClick={() => plan.purchasable && handlePlanChange(plan.id)}
                   className={cn(
-                    'flex flex-col justify-between text-left p-3.5 sm:p-4 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden',
-                    isSelected
-                      ? 'border-indigo-600 ring-2 ring-indigo-500/10 shadow-md bg-gradient-to-b from-white to-indigo-50/30'
-                      : 'border-slate-200/80 hover:border-slate-300 bg-slate-50/40 hover:bg-white'
+                    'flex flex-col justify-between text-left p-3.5 sm:p-4 rounded-2xl border-2 transition-all relative overflow-hidden',
+                    !plan.purchasable
+                      ? 'opacity-60 cursor-not-allowed border-slate-200 bg-slate-50/50'
+                      : isSelected
+                      ? 'border-indigo-600 ring-2 ring-indigo-500/10 shadow-md bg-gradient-to-b from-white to-indigo-50/30 cursor-pointer'
+                      : 'border-slate-200/80 hover:border-slate-300 bg-slate-50/40 hover:bg-white cursor-pointer'
                   )}
                 >
                   {/* Top Badges */}
@@ -559,7 +551,11 @@ export function CheckoutForm({
                       <span className="text-sm font-bold uppercase tracking-wider text-slate-500">
                         {plan.name}
                       </span>
-                      {isCurrent ? (
+                      {!plan.purchasable ? (
+                        <span className="rounded-full bg-slate-100 border border-slate-300 text-slate-600 px-2.5 py-0.5 text-xs font-semibold shadow-2xs">
+                          Coming soon
+                        </span>
+                      ) : isCurrent ? (
                         <span className="rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 px-2.5 py-0.5 text-xs font-extrabold shadow-2xs">
                           Current Tier
                         </span>
@@ -588,8 +584,14 @@ export function CheckoutForm({
                     <ul className="space-y-1">
                       {plan.features.slice(0, 4).map((feat, i) => (
                         <li key={i} className="text-xs text-slate-800 flex items-center gap-1.5 font-medium">
-                          <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
-                          <span>{feat}</span>
+                          {feat.status === 'coming_soon' ? (
+                            <Clock className="size-3.5 text-slate-400 shrink-0" />
+                          ) : (
+                            <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
+                          )}
+                          <span className={feat.status === 'coming_soon' ? 'text-slate-500' : ''}>
+                            {feat.label}
+                          </span>
                         </li>
                       ))}
                     </ul>

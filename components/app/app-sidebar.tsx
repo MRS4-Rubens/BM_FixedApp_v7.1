@@ -390,7 +390,7 @@ export function AppSidebar({
         </div>
 
         <p className="text-[10px] font-medium text-slate-600 dark:text-slate-300 leading-snug mb-2.5">
-          Unlock unlimited invoices, multi-users & WhatsApp sharing.
+          Unlock unlimited invoices, all templates and WhatsApp sharing.
         </p>
 
         <Link href="/checkout" onClick={onCardNavigate} className="block w-full">

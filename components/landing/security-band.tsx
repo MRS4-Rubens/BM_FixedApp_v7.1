@@ -1,35 +1,35 @@
 'use client'
 
-import { ShieldCheck, Lock, Landmark, Headphones, Server } from 'lucide-react'
+import { ShieldCheck, Lock, Landmark, Headphones } from 'lucide-react'
 
 export function SecurityBand() {
   const pillars = [
     {
       icon: Lock,
-      title: '256-Bit Bank-Grade Encryption',
-      desc: 'All business communication and invoice documents are protected with TLS 1.3 in transit and AES-256 at rest.',
-      badge: 'Zero Knowledge',
+      title: 'Encrypted connections',
+      desc: 'All traffic uses HTTPS; our database and file-storage providers encrypt data at rest.',
+      badge: 'HTTPS & Encrypted',
       color: 'text-indigo-600 bg-indigo-50 border-indigo-100',
     },
     {
-      icon: Landmark,
-      title: '100% Indian Data Residency',
-      desc: 'All database records and backups reside strictly in MeitY-empaneled tier-4 data centers within Indian borders.',
-      badge: 'MeitY & RBI Compliant',
-      color: 'text-amber-800 bg-amber-50 border-amber-100',
-    },
-    {
-      icon: Server,
-      title: '99.99% Cloud SLA & Uptime',
-      desc: 'High-availability infrastructure with automatic geo-redundancy ensuring uninterrupted billing at peak business hours.',
-      badge: 'Zero Downtime',
+      icon: ShieldCheck,
+      title: 'Tamper-proof records',
+      desc: 'Finalized invoices cannot be edited; corrections go through GST credit notes.',
+      badge: 'Credit Notes Only',
       color: 'text-emerald-700 bg-emerald-50 border-emerald-100',
     },
     {
+      icon: Landmark,
+      title: 'Your data stays yours',
+      desc: 'Each business can only see its own invoices, customers and reports.',
+      badge: 'Isolated Data',
+      color: 'text-amber-800 bg-amber-50 border-amber-100',
+    },
+    {
       icon: Headphones,
-      title: 'Human CA & Tech Support',
-      desc: 'Direct priority assistance from certified GST practitioners and engineers via WhatsApp, Email & Call.',
-      badge: 'Mon–Sat 9AM–7PM',
+      title: 'E-mail support',
+      desc: 'Reach us at the support address shown in the app.',
+      badge: 'Direct Help',
       color: 'text-sky-600 bg-sky-50 border-sky-100',
     },
   ]
@@ -39,11 +39,14 @@ export function SecurityBand() {
       <div className="text-center max-w-2xl mx-auto mb-14">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold uppercase tracking-wider mb-3">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-          Enterprise Security & Trust
+          Security
         </div>
         <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight heading">
-          Built for regulatory compliance and absolute data integrity
+          Security & trust
         </h2>
+        <p className="text-sm sm:text-base text-slate-500 mt-2 font-normal">
+          Built to keep your GST records correct and private.
+        </p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">

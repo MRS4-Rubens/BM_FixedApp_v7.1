@@ -58,7 +58,7 @@ export function ComparisonTable() {
                 <svg className="w-4 h-4 inline-block mr-1.5">
                   <use href="#check" />
                 </svg>{' '}
-                Automated
+                One-click e-mail reminders
               </td>
               <td className="p-5 text-zinc-600">
                 <svg className="w-4 h-4 inline-block mr-1">

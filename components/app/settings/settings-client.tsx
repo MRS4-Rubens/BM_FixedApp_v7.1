@@ -158,6 +158,11 @@ export function SettingsClient({
                     )}
                   />
                   <span>{item}</span>
+                  {(item === 'Users & Roles' || item === 'Notifications') && (
+                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 text-[10px] font-semibold">
+                      Coming soon
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -173,13 +178,18 @@ export function SettingsClient({
                 type="button"
                 onClick={() => setActive(item)}
                 className={cn(
-                  'rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer',
+                  'rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer flex items-center justify-between gap-1.5',
                   active === item
                     ? 'bg-emerald-50/80 font-bold text-emerald-900 border-l-2 border-emerald-800 pl-2.5 shadow-xs'
                     : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground font-medium'
                 )}
               >
-                {item}
+                <span>{item}</span>
+                {(item === 'Users & Roles' || item === 'Notifications') && (
+                  <span className="rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap">
+                    Coming soon
+                  </span>
+                )}
               </button>
             ))}
           </nav>

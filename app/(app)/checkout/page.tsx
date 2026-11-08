@@ -13,6 +13,7 @@ import { loadPayeeConfig, describePayeeProblems } from '@/lib/config/payee';
 import { logWarn } from '@/lib/actions/_shared/logger';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
+import { PURCHASABLE_PLAN_IDS, isPurchasablePlan } from '@/lib/subscriptions/plan-catalog';
 import { buildUpiPaymentUri } from '@/lib/payments/upi-intent';
 import { buildUpiQrDataUrl } from '@/lib/payments/upi-qr';
 import type { UpiPaymentsMap } from '@/lib/payments/types';
@@ -37,7 +38,7 @@ export default async function CheckoutPage({
   }
 
   const resolvedParams = searchParams ? await searchParams : undefined;
-  const initialPlan = resolvedParams?.plan;
+  const initialPlan = resolvedParams?.plan && isPurchasablePlan(resolvedParams.plan) ? resolvedParams.plan : 'essentials';
   const initialCycle = resolvedParams?.cycle;
   const initialAction = resolvedParams?.action;
 
@@ -65,10 +66,10 @@ export default async function CheckoutPage({
   // 3b. Build localized UPI payment options and SVG QR data URLs for all plan/cycle combinations
   const PLAN_DISPLAY_NAMES = {
     essentials: 'Essentials Pro Plan',
-    professional: 'Enterprise / CA Max',
+    professional: 'Professional',
   } as const;
 
-  const plans = ['essentials', 'professional'] as const;
+  const plans = PURCHASABLE_PLAN_IDS;
   const cycles = ['monthly', 'yearly'] as const;
 
   const paymentEntries = await Promise.all(

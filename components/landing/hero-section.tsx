@@ -1,66 +1,7 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { useAuthModal } from '@/components/auth/auth-modal-context'
-
-interface CounterProps {
-  target: number
-  prefix?: string
-  suffix?: string
-}
-
-function Counter({ target, prefix = '', suffix = '' }: CounterProps) {
-  const [value, setValue] = useState(0)
-  const elementRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          const duration = 1500 // 1.5s animation
-          const startTime = performance.now()
-
-          const animate = (now: number) => {
-            const progress = Math.min((now - startTime) / duration, 1)
-            // Ease out cubic
-            const easeProgress = 1 - Math.pow(1 - progress, 3)
-            const currentValue = easeProgress * target
-            setValue(currentValue)
-
-            if (progress < 1) {
-              requestAnimationFrame(animate)
-            } else {
-              setValue(target)
-            }
-          }
-
-          requestAnimationFrame(animate)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.1 }
-    )
-
-    if (elementRef.current) {
-      observer.observe(elementRef.current)
-    }
-
-    return () => observer.disconnect()
-  }, [target])
-
-  const formatted = target % 1 === 0
-    ? Math.round(value).toLocaleString('en-IN')
-    : value.toFixed(1)
-
-  return (
-    <span ref={elementRef}>
-      {prefix}
-      {formatted}
-      {suffix}
-    </span>
-  )
-}
 
 export function HeroSection() {
   const { openSignup } = useAuthModal()
@@ -134,21 +75,21 @@ export function HeroSection() {
         <div className="reveal in mt-12 grid grid-cols-3 gap-8 max-w-lg mx-auto">
           <div>
             <div className="text-4xl font-bold text-zinc-900 heading">
-              <Counter target={10000} suffix="+" />
+              4
             </div>
-            <div className="text-sm text-zinc-500 mt-1 font-medium">Businesses</div>
+            <div className="text-sm text-zinc-500 mt-1 font-medium">Invoice templates</div>
           </div>
           <div>
             <div className="text-4xl font-bold text-zinc-900 heading">
-              <Counter target={500} prefix="₹" suffix="Cr+" />
+              4
             </div>
-            <div className="text-sm text-zinc-500 mt-1 font-medium">Invoiced</div>
+            <div className="text-sm text-zinc-500 mt-1 font-medium">Excel reports (GSTR-1, HSN, Sales, ITR)</div>
           </div>
           <div>
             <div className="text-4xl font-bold text-emerald-700 heading">
-              <Counter target={99.9} suffix="%" />
+              ₹0
             </div>
-            <div className="text-sm text-zinc-500 mt-1 font-medium">Compliance</div>
+            <div className="text-sm text-zinc-500 mt-1 font-medium">To start</div>
           </div>
         </div>
       </div>

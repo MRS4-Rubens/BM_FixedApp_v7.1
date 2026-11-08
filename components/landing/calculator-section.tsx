@@ -120,16 +120,9 @@ export function CalculatorSection() {
                 </div>
               </div>
 
-              <div className="mt-4 space-y-2 text-xs text-slate-300">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  <span>CA Filing turnaround reduced from 4 days to 5 mins</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                  <span>Up to 35% faster payment collections via WhatsApp</span>
-                </div>
-              </div>
+              <p className="mt-4 text-xs text-slate-400">
+                Estimate based on the numbers you enter.
+              </p>
             </div>
 
             <button

@@ -6,6 +6,7 @@
  */
 
 import { formatPaiseAsInr } from '@/lib/money';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 
 export interface WhatsAppInvoiceData {
   customerName?: string | null;
@@ -15,8 +16,6 @@ export interface WhatsAppInvoiceData {
   dueDate?: string | Date | null;
   grandTotalPaise: number;
   businessName: string;
-  payeeUpiId?: string | null;
-  invoiceUrl?: string | null;
 }
 
 /**
@@ -47,10 +46,10 @@ export function generateWhatsAppInvoiceUrl(data: WhatsAppInvoiceData): string {
 
   const customerGreeting = data.customerName ? `Namaste ${data.customerName}` : 'Namaste';
   const dateFormatted = data.invoiceDate
-    ? new Date(data.invoiceDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    ? formatIstDate(data.invoiceDate, { day: 'numeric', month: 'short', year: 'numeric' })
     : '';
   const dueFormatted = data.dueDate
-    ? new Date(data.dueDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+    ? formatIstDate(data.dueDate, { day: 'numeric', month: 'short', year: 'numeric' })
     : null;
 
   const lines = [
@@ -61,8 +60,6 @@ export function generateWhatsAppInvoiceUrl(data: WhatsAppInvoiceData): string {
     dateFormatted ? `📅 *Date:* ${dateFormatted}` : null,
     `💰 *Amount Due:* ${amountStr}`,
     dueFormatted ? `⏳ *Due Date:* ${dueFormatted}` : null,
-    data.payeeUpiId ? `📱 *Pay via UPI:* ${data.payeeUpiId}` : null,
-    data.invoiceUrl ? `🔗 *View Digital Bill:* ${data.invoiceUrl}` : null,
     '',
     `Thank you for your business! 🙏`,
   ].filter((line) => line !== null);

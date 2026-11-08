@@ -29,7 +29,7 @@ import { PaymentSection } from './payment-section'
 import { cn } from '@/lib/utils'
 import { InvoicePrintView, type InvoicePrintViewProps } from './invoice-print-view'
 import { generateWhatsAppInvoiceUrl } from '@/lib/subscriptions/whatsapp'
-import { resolveSubscriptionPlan } from '@/lib/subscriptions/entitlements'
+import { canShareInvoiceOnWhatsApp } from '@/lib/subscriptions/entitlements'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs'
 import { formatIstDate } from '@/lib/invoices/ist-date'
@@ -117,11 +117,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
   const [copied, setCopied] = useState(false)
   const [showWhatsAppUpgradeModal, setShowWhatsAppUpgradeModal] = useState(false)
 
-  const canUseWhatsApp = (() => {
-    if (!business) return false
-    const plan = resolveSubscriptionPlan(business)
-    return plan.tier !== 'free'
-  })()
+  const canUseWhatsApp = canShareInvoiceOnWhatsApp(business).allowed
 
   const handleWhatsAppDispatch = () => {
     if (!canUseWhatsApp) {
@@ -141,8 +137,6 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
       dueDate: invoice.due_date,
       grandTotalPaise: Number(invoice.grand_total_paise || 0),
       businessName,
-      payeeUpiId: (invoice.upi_id as string) || business?.upi_id || null,
-      invoiceUrl: typeof window !== 'undefined' ? window.location.href : null,
     })
 
     window.open(shareUrl, '_blank', 'noopener,noreferrer')
@@ -356,7 +350,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                       ? "border-emerald-500/30 text-emerald-700 dark:text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/50"
                       : "border-amber-500/30 text-amber-700 dark:text-amber-400 bg-amber-500/5 hover:bg-amber-500/10"
                   )}
-                  title={canUseWhatsApp ? "Share on WhatsApp with Dynamic UPI Link" : "Unlock WhatsApp Invoicing (Essentials Pro)"}
+                  title={canUseWhatsApp ? "Share on WhatsApp" : "Unlock WhatsApp Invoicing (Essentials Pro)"}
                 >
                   <WhatsAppIcon className="size-4 text-[#25D366] shrink-0" />
                   <span className="whitespace-nowrap">WhatsApp</span>
@@ -731,9 +725,9 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
       <UpgradePromptModal
         isOpen={showWhatsAppUpgradeModal}
         onClose={() => setShowWhatsAppUpgradeModal(false)}
-        title="Unlock 1-Click WhatsApp Invoicing"
-        featureName="1-Click WhatsApp Direct Share with Dynamic UPI Links"
-        description="Upgrade to Essentials Pro (₹399/mo) to send formatted invoice summaries directly to your customer's WhatsApp with dynamic UPI payment links and instant digital bills."
+        title="Unlock WhatsApp Invoicing"
+        featureName="WhatsApp Direct Share"
+        description="Upgrade to Essentials Pro (₹399/mo) to send formatted invoice summaries directly to your customer's WhatsApp."
         recommendedPlan="essentials"
         ctaText="Upgrade to Essentials Pro (₹399/mo)"
       />

@@ -11,6 +11,7 @@ import { subscriptionClaimSchema } from '@/lib/validations/subscription';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests, businesses } from '@/lib/db/schema';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
+import { isPurchasablePlan } from '@/lib/subscriptions/plan-catalog';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
 import { getResend } from '@/lib/email/resend';
@@ -35,6 +36,12 @@ export const submitPaymentClaim = createAuthenticatedAction(
     if (!businessId) {
       throw new ActionError('Your user account is not linked to a business profile.', {
         code: 'NO_BUSINESS_PROFILE',
+      });
+    }
+
+    if (!isPurchasablePlan(input.plan_name)) {
+      throw new ActionError('This plan is not available yet. Please choose Essentials Pro.', {
+        code: 'PLAN_NOT_AVAILABLE',
       });
     }
 

@@ -711,7 +711,7 @@ describe('API-009: Subscription approval race and manual override integrity', ()
     }
 
     const freshClaimAfterApprove = await submitPaymentClaim({
-      plan_name: 'professional',
+      plan_name: 'essentials',
       billing_cycle: 'yearly',
       payment_method: 'bank_transfer',
       payment_reference: 'UTR-TENANT-B-FRESH',
