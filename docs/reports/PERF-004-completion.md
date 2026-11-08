@@ -309,3 +309,9 @@ Verified on branch `fix/perf-004-request-dedupe` against `main` `64ef410`; every
 - **Accepted behaviour changes:** `invoices/[id]` and `invoices/new` now `redirect('/settings')` when the business row is missing (previously `business` was `undefined`; impossible with the FK, fail-safe now). `reports/page.tsx` relies on `getCurrentBusiness()` (which still redirects a signed-out user via `requireSession`).
 - **Not done on purpose:** joining users + businesses into one SQL query (would change `AppUser`, used in 50+ places, to save one indexed PK lookup).
 - **Checks (local):** `pnpm typecheck` clean; `pnpm lint:ratchet` 18 / 38 = baseline; `pnpm exec vitest run` 160 files passed, 4 skipped (1342 tests); `pnpm build` OK. No UI class changes, so no print-stylesheet impact.
+
+### Preview verification (Vercel preview of PR #16, 2026-11-08)
+
+- **CI:** all 6 checks green on `993f389` (quality gates, real-Postgres, Playwright E2E, dependency audit, Vercel).
+- **Local E2E against the preview** (`.claude/reviewer-tools/verify-pr.sh`, run after CI's E2E finished): 22 passed, 1 skipped (mailbox).
+- **Hydration probe:** 0 errors on all 8 pages (/, /dashboard, /invoices/new, /settings?tab=billing, /settings, /reports, /checkout, /admin); every signed-in page rendered for its own user (no redirect), sidebar 68 / 220 / 68 px at 800 px.
