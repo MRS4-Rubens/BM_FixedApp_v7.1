@@ -74,7 +74,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
             >
               Annual
               <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">
-                Save up to 30%
+                Save {essPrice.savingsPercent}%
               </span>
             </button>
           </div>
@@ -141,7 +141,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
                   ) : (
                     <li key={idx} className="flex items-center gap-2.5 text-zinc-600">
                       <span>{feat.label}</span>
-                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
                         Coming soon
                       </span>
                     </li>
@@ -190,7 +190,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
                   ) : (
                     <li key={idx} className="flex items-center gap-2.5 text-zinc-600">
                       <span>{feat.label}</span>
-                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
                         Coming soon
                       </span>
                     </li>

@@ -376,3 +376,18 @@ Verified on branch `fix/clean-002-plan-features` against `main` `08e6395`; every
 - **Hand-typed prices removed** from the billing tab (6) and upgrade modal (7): they now use `PLAN_PRICING` / `formatPlanPrice` (new `yearlyTotal`, `savingsPercent`) / new `formatPlanPriceSummary`. `TRIAL_DURATION_DAYS` moved to the client-safe `entitlements.ts` (re-exported from `save-profile-tx.ts`) so the billing tab shows the real trial length; free invoice limit read from `FREE_TIER_LIMITS`.
 - **New guard tests:** no non-zero rupee literal in the 4 plan screens; price helper fields/summary; single `TRIAL_DURATION_DAYS` definition.
 - **Checks:** typecheck clean; lint = baseline; vitest 168 files (1398 tests); build OK; print stylesheet: no invoice/credit-note template class touched.
+
+### Preview verification (Vercel preview of PR #21, 2026-11-08)
+
+- **CI:** all 6 checks green on `d250904` (including the a11y ratchet that failed on `098cf84`).
+- **Landing a11y re-scan** (axe, WCAG 2.1 AA, landing + login modal, same tags as `05-a11y`): **no violations** (was 10 color-contrast).
+- **Local E2E against the preview** (after CI's E2E finished): 22 passed, 1 skipped (mailbox).
+- **Hydration probe:** 0 errors on all 8 pages; sidebar 68 / 220 / 68 px at 800 px.
+- **Screenshots reviewed** (landing hero, pricing, how-it-works, security band; signed-in billing tab and checkout): honest hero tiles, Essentials the only buyable plan, Professional clearly "Coming soon" with a disabled button, billing price from the shared helper.
+- **Found in the screenshots and fixed (final commit):**
+  1. Checkout yearly toggle said **"SAVE 20%"** (real saving 27%) and the landing toggle said **"Save up to 30%"** (30% only applies to Professional, which is not purchasable). Both now show the computed Essentials saving from `formatPlanPrice(...).savingsPercent`.
+  2. Checkout claimed **"100% Tax Deductible — GST compliant tax invoice provided for input tax credit"**. The app issues a payment receipt (Billing & Usage), not a GST tax invoice for the subscription, so this tax claim was replaced with "A payment receipt is available under Settings → Billing & Usage after approval." and "Your plan is activated as soon as we verify the payment."
+  3. "Coming soon" pills on the landing pricing card no longer wrap onto two lines.
+  - New guard test: the plan screens may not hand-type a saving percentage or claim "tax deductible" / "input tax credit".
+- **Checks after the final commit:** typecheck clean; lint = baseline; vitest 168 files (1399 tests); build OK; print stylesheet: no invoice/credit-note template class touched.
+- **Not changed (noted for the CLEAN sweep):** decorative in-app labels on the billing tab such as "Live Database Sync" are cosmetic, not plan promises.

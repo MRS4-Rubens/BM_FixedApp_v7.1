@@ -35,7 +35,10 @@ import {
 import { cn } from '@/lib/utils';
 import { formatIstDate, formatIstTime } from '@/lib/invoices/ist-date';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
-import { PLAN_CATALOG, isPurchasablePlan } from '@/lib/subscriptions/plan-catalog';
+import { PLAN_CATALOG, formatPlanPrice, isPurchasablePlan } from '@/lib/subscriptions/plan-catalog';
+
+// CLEAN-002: the yearly saving shown on the toggle is computed from PLAN_PRICING (was a hand-typed, wrong "20%").
+const ESSENTIALS_YEARLY_SAVING = formatPlanPrice('essentials', 'yearly').savingsPercent;
 import type { UpiPaymentsMap } from '@/lib/payments/types';
 
 // Plan pricing definitions
@@ -507,7 +510,7 @@ export function CheckoutForm({
               >
                 <span>Yearly</span>
                 <span className="bg-emerald-100 border border-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded text-xs font-extrabold">
-                  SAVE 20%
+                  SAVE {ESSENTIALS_YEARLY_SAVING}%
                 </span>
               </button>
             </div>
@@ -1032,11 +1035,11 @@ export function CheckoutForm({
             <div className="mt-3 space-y-1.5 pt-1">
               <div className="flex items-start gap-2 text-xs text-slate-600">
                 <ShieldCheck className="size-4 text-emerald-600 shrink-0 mt-0.5" />
-                <span>100% Tax Deductible — GST compliant tax invoice provided for input tax credit.</span>
+                <span>A payment receipt is available under Settings → Billing &amp; Usage after approval.</span>
               </div>
               <div className="flex items-start gap-2 text-xs text-slate-600">
                 <CheckCircle className="size-4 text-indigo-600 shrink-0 mt-0.5" />
-                <span>Immediate plan activation on transaction verification.</span>
+                <span>Your plan is activated as soon as we verify the payment.</span>
               </div>
             </div>
 

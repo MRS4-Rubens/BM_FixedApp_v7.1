@@ -109,4 +109,22 @@ describe('CLEAN-002 reviewer: one source for prices', () => {
     const src = fs.readFileSync(path.resolve(process.cwd(), 'lib/business/save-profile-tx.ts'), 'utf8');
     expect(src).not.toMatch(/export const TRIAL_DURATION_DAYS\s*=/);
   });
+
+  it("plan screens never hand-type a saving percentage or an unsupported tax claim", () => {
+    const files = [
+      "components/landing/pricing-section.tsx",
+      "components/app/settings/billing-tab.tsx",
+      "components/app/subscription/upgrade-prompt-modal.tsx",
+      "app/(app)/checkout/checkout-form.tsx",
+    ];
+    const offenders: string[] = [];
+    for (const rel of files) {
+      const src = fs.readFileSync(path.resolve(process.cwd(), rel), "utf8");
+      for (const re of [/saves+(?:ups+tos+)?d+s*%/i, /taxs+deductible/i, /inputs+taxs+credit/i]) {
+        const m = src.match(re);
+        if (m) offenders.push(rel + ": " + m[0]);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });
