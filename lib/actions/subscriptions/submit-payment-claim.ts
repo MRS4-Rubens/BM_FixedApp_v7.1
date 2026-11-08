@@ -17,7 +17,7 @@ import { getResend } from '@/lib/email/resend';
 import { getAdminEnv, getAppEnv, getEmailEnv } from '@/lib/env';
 import { SubscriptionRequestEmail } from '@/lib/email/templates/subscription-request-email';
 import { formatPaiseAsInr } from '@/lib/money';
-import { auth } from '@/lib/auth/server';
+import { getRequestSession } from '@/lib/auth/request-session';
 import { classifyClaimInsertError } from '@/lib/subscriptions/claim-errors';
 import { requireValidUpload, buildUploadKey, IMAGE_MIMES } from '@/lib/security/upload';
 
@@ -182,7 +182,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
     try {
       const adminEmails = getAdminEnv().PLATFORM_ADMIN_EMAILS;
       if (adminEmails.length > 0) {
-        const session = await auth.getSession();
+        const session = await getRequestSession();
         const ownerEmail = session?.data?.user?.email || 'No email';
         const amountFormatted = formatPaiseAsInr(authoritativeAmountPaise);
 

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { auth } from '@/lib/auth/server';
+import { getRequestSession } from '@/lib/auth/request-session';
 import { db } from '@/lib/db/client';
 import { users, businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -20,7 +20,7 @@ export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   // 1. Session Check (return 401 if unauthorized, no redirect)
-  const sessionResponse = await auth.getSession();
+  const sessionResponse = await getRequestSession();
   if (!sessionResponse || !sessionResponse.data || !sessionResponse.data.user) {
     return new Response('Unauthorized', { status: 401 });
   }

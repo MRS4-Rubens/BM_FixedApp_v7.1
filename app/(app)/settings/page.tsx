@@ -1,6 +1,7 @@
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { getCurrentBusiness } from '@/lib/auth/current-business';
 import { db } from '@/lib/db/client';
-import { businesses, subscriptionRequests, users, invoices, customers, products } from '@/lib/db/schema';
+import { subscriptionRequests, users, invoices, customers, products } from '@/lib/db/schema';
 import { eq, and, desc, sql, between } from 'drizzle-orm';
 import { SettingsClient } from '@/components/app/settings/settings-client';
 import { redirect } from 'next/navigation';
@@ -48,8 +49,7 @@ export default async function SettingsPage({
   };
 
   if (appUser.business_id) {
-    const businessRows = await db.select().from(businesses).where(eq(businesses.id, appUser.business_id));
-    business = businessRows[0] || null;
+    business = await getCurrentBusiness();
 
     if (business) {
       const monthRange = getCurrentMonthRange();

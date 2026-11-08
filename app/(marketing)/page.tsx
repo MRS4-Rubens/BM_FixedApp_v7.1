@@ -11,14 +11,14 @@ import { PricingSection } from '@/components/landing/pricing-section'
 import { FaqSection } from '@/components/landing/faq-section'
 import { AuthTriggerButton } from '@/components/auth/trigger-button'
 import { Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react'
-import { auth } from '@/lib/auth/server'
+import { getRequestSession } from '@/lib/auth/request-session'
 
 export const dynamic = 'force-dynamic'
 
 export default async function MarketingHomePage() {
   let isLoggedIn = false
   try {
-    const session = await auth.getSession()
+    const session = await getRequestSession()
     isLoggedIn = Boolean(session?.data?.user)
   } catch {
     isLoggedIn = false

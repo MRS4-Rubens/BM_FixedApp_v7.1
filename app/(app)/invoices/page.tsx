@@ -3,9 +3,7 @@ import { listInvoices } from '@/lib/actions/invoices/list-invoices';
 import { listCreditNotes } from '@/lib/actions/credit-notes/list-credit-notes';
 import { InvoicesClient } from './client';
 import { getCurrentAppUser } from '@/lib/auth/session';
-import { db } from '@/lib/db/client';
-import { businesses } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { getCurrentBusiness } from '@/lib/auth/current-business';
 import { parseInvoiceListParams, type RawSearchParams } from '@/lib/invoices/list-params';
 import { buildListHref } from '@/lib/pagination/url';
 
@@ -22,12 +20,8 @@ export default async function InvoicesPage({
   const rawParams = searchParams ? await searchParams : {};
   const params = parseInvoiceListParams(rawParams);
 
-  const businessResult = await db
-    .select({ state_code: businesses.state_code })
-    .from(businesses)
-    .where(eq(businesses.id, appUser.business_id))
-    .limit(1);
-  const businessStateCode = businessResult[0]?.state_code || '';
+  const business = await getCurrentBusiness();
+  const businessStateCode = business?.state_code || '';
 
   const isActiveInvoices = params.tab === 'invoices';
 

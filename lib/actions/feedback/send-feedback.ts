@@ -8,7 +8,7 @@ import {
   MAX_FILE_SIZE_BYTES,
   MAX_TOTAL_SIZE_BYTES,
 } from '@/lib/validations/feedback';
-import { auth } from '@/lib/auth/server';
+import { getRequestSession } from '@/lib/auth/request-session';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -34,7 +34,7 @@ export const sendFeedbackAction = createAuthenticatedAction(
   sendFeedbackSchema,
   async (input, { appUser }) => {
     // 1. Retrieve the authenticated user's session email
-    const session = await auth.getSession();
+    const session = await getRequestSession();
     const userEmail = session?.data?.user?.email;
 
     if (!userEmail) {

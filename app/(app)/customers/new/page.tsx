@@ -1,10 +1,8 @@
 import type { Metadata } from 'next'
 import { CustomerForm } from '@/components/app/customers/customer-form'
 import { getCurrentAppUser } from '@/lib/auth/session'
+import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { redirect } from 'next/navigation'
-import { db } from '@/lib/db/client'
-import { businesses } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
 
 export const metadata: Metadata = { title: 'Add Customer' }
 
@@ -18,12 +16,8 @@ export default async function NewCustomerPage() {
     redirect('/settings')
   }
 
-  const businessResult = await db
-    .select({ state_code: businesses.state_code })
-    .from(businesses)
-    .where(eq(businesses.id, appUser.business_id))
-    .limit(1)
-  const sellerStateCode = businessResult[0]?.state_code || ''
+  const business = await getCurrentBusiness()
+  const sellerStateCode = business?.state_code || ''
 
   return (
     <div className="w-full space-y-6">

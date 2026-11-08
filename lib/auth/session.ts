@@ -1,23 +1,27 @@
+import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { and, eq, isNull } from 'drizzle-orm';
-import { auth } from '@/lib/auth/server';
 import { db } from '@/lib/db/client';
 import { users } from '@/lib/db/schema';
 import { ensureAppUser, type AppUser } from '@/lib/auth/ensure-app-user';
+import { getRequestSession, type GetSessionResult } from '@/lib/auth/request-session';
 
-type GetSessionResult = Awaited<ReturnType<typeof auth.getSession>>;
 export type SessionData = NonNullable<NonNullable<GetSessionResult>['data']>;
 
 export async function requireSession(): Promise<SessionData> {
-  const sessionResponse = await auth.getSession();
+  const sessionResponse = await getRequestSession();
   if (!sessionResponse || !sessionResponse.data || !sessionResponse.data.user) {
     redirect('/login');
   }
   return sessionResponse.data;
 }
 
-/** Self-healing: a valid session always yields an app user. Hot path = one SELECT; the row is (re)created only when missing. */
-export async function getCurrentAppUser(): Promise<AppUser> {
+/**
+ * PERF-004: request-scoped (render pass) app user lookup. In Server Actions and Route Handlers,
+ * cache() is a pass-through so mutations followed by re-reads always see fresh state.
+ * Self-healing: a valid session always yields an app user. Hot path = one SELECT; the row is (re)created only when missing.
+ */
+export const getCurrentAppUser = cache(async (): Promise<AppUser> => {
   const sessionData = await requireSession();
   const [existing] = await db.select().from(users).where(eq(users.auth_user_id, sessionData.user.id)).limit(1);
   if (existing) {
@@ -36,4 +40,4 @@ export async function getCurrentAppUser(): Promise<AppUser> {
     email: sessionData.user.email ?? null,
     displayName: sessionData.user.name ?? null,
   });
-}
+});

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { CustomerForm } from '@/components/app/customers/customer-form'
 import { getCurrentAppUser } from '@/lib/auth/session'
+import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { redirect, notFound } from 'next/navigation'
 import { db } from '@/lib/db/client'
-import { customers, businesses } from '@/lib/db/schema'
+import { customers } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 import { CustomerActions } from '@/components/app/customers/customer-actions'
 
@@ -21,14 +22,11 @@ export default async function EditCustomerPage({ params }: { params: Promise<{ i
 
   const { id } = await params
 
-  const [customerResult, businessResult] = await Promise.all([
+  const [customerResult, business] = await Promise.all([
     db.select()
       .from(customers)
       .where(and(eq(customers.id, id), eq(customers.business_id, appUser.business_id))),
-    db.select({ state_code: businesses.state_code })
-      .from(businesses)
-      .where(eq(businesses.id, appUser.business_id))
-      .limit(1)
+    getCurrentBusiness(),
   ])
 
   const customer = customerResult[0]
@@ -36,7 +34,7 @@ export default async function EditCustomerPage({ params }: { params: Promise<{ i
     notFound()
   }
 
-  const sellerStateCode = businessResult[0]?.state_code || ''
+  const sellerStateCode = business?.state_code || ''
 
   return (
     <div className="w-full space-y-6">
