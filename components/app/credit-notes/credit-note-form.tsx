@@ -19,6 +19,7 @@ import {
   type DerivedCreditLine,
 } from '@/lib/credit-notes/derivation';
 import { formatPaiseAsInr } from '@/lib/money';
+import { computeNetBillPaise } from '@/lib/invoices/settlement';
 import { CREDIT_NOTE_REASONS, type CreditNoteReasonCode } from '@/lib/validations/credit-note';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 
@@ -143,7 +144,7 @@ export function CreditNoteForm({
 
   const currentCreditPaise = preview.ok ? preview.grandTotalPaise : 0;
   const totalCumulativeCreditedPaise = previouslyCreditedPaise + currentCreditPaise;
-  const netAdjustedBalancePaise = Math.max(0, originalInvoice.grand_total_paise - totalCumulativeCreditedPaise);
+  const netAdjustedBalancePaise = computeNetBillPaise(originalInvoice.grand_total_paise, totalCumulativeCreditedPaise);
 
   const displayedError = errorMessage ?? (preview.ok ? null : preview.message);
 

@@ -17,6 +17,7 @@ import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { canUploadBusinessLogo } from '@/lib/subscriptions/entitlements';
+import { PLAN_SOURCE_COLUMNS } from '@/lib/subscriptions/load';
 import {
   requireValidUpload,
   buildUploadKey,
@@ -50,10 +51,7 @@ export const uploadBusinessLogo = createAuthenticatedAction(
     const existing = await db
       .select({
         logo_storage_key: businesses.logo_storage_key,
-        subscription_plan: businesses.subscription_plan,
-        subscription_status: businesses.subscription_status,
-        trial_ends_at: businesses.trial_ends_at,
-        subscription_ends_at: businesses.subscription_ends_at,
+        ...PLAN_SOURCE_COLUMNS,
       })
       .from(businesses)
       .where(eq(businesses.id, businessId))

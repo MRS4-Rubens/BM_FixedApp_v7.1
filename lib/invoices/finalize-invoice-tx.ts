@@ -2,7 +2,7 @@ import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { findOwnedCustomer } from '@/lib/actions/_shared/ownership';
 import { writeAudit, type AuditRequestContext } from '@/lib/audit/log';
-import { roundToRupeePaise } from '@/lib/credit-notes/derivation';
+import { roundToRupeePaise } from '@/lib/money';
 import type { DbTransaction } from '@/lib/db/client';
 import { lockBusinessRow } from '@/lib/actions/_shared/business-lock';
 import { invoiceLineItems, invoices } from '@/lib/db/schema';

@@ -1,25 +1,15 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { creditNotes, invoices, payments } from '@/lib/db/schema';
 import type { DbTransaction } from '@/lib/db/client';
+import { computeNetBillPaise, computePaymentStatus, type PaymentStatus } from './settlement';
 
-export type PaymentStatus = 'unpaid' | 'partially_paid' | 'paid';
+export { computeNetBillPaise, computePaymentStatus, type PaymentStatus } from './settlement';
 
 export interface InvoiceBalance {
   readonly netBillPaise: number;
   readonly totalCreditedPaise: number;
   readonly activePaidPaise: number;
   readonly remainingPaise: number;
-}
-
-export function computeNetBillPaise(grandTotalPaise: number, totalCreditedPaise: number): number {
-  return Math.max(0, grandTotalPaise - totalCreditedPaise);
-}
-
-/** Pure. Preserves existing behaviour: netBill = 0 counts as 'paid'. */
-export function computePaymentStatus(netBillPaise: number, activePaidPaise: number): PaymentStatus {
-  if (activePaidPaise >= netBillPaise) return 'paid';
-  if (activePaidPaise > 0) return 'partially_paid';
-  return 'unpaid';
 }
 
 function toSafePaise(value: unknown): number {

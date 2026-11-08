@@ -14,6 +14,7 @@ import {
   getPlanEntitlements,
   type BusinessSubscriptionSource,
 } from '@/lib/subscriptions/entitlements';
+import { PLAN_SOURCE_COLUMNS } from '@/lib/subscriptions/load';
 
 export interface SenderBusiness extends BusinessSubscriptionSource {
   readonly id: string;
@@ -37,10 +38,7 @@ export async function loadSenderBusiness(
       city: businesses.city,
       email: businesses.email,
       phone: businesses.phone,
-      subscription_plan: businesses.subscription_plan,
-      subscription_status: businesses.subscription_status,
-      trial_ends_at: businesses.trial_ends_at,
-      subscription_ends_at: businesses.subscription_ends_at,
+      ...PLAN_SOURCE_COLUMNS,
     })
     .from(businesses)
     .where(eq(businesses.id, businessId));

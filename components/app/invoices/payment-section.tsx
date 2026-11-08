@@ -8,6 +8,7 @@ import { recordPayment } from '@/lib/actions/payments/record-payment';
 import { VoidPaymentDialog, VoidablePayment } from './void-payment-dialog';
 import { Button } from '@/components/ui/button';
 import { formatPaiseAsInr, paiseToRupees } from '@/lib/money';
+import { sumActivePaidPaise, summarizeSettlement } from '@/lib/invoices/settlement';
 import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import {
   Ban,
@@ -77,10 +78,14 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
   const activePayments = payments.filter((p) => (p.status || 'active') === 'active');
   const voidedPayments = payments.filter((p) => p.status === 'voided');
 
-  const creditedPaise = Number(totalCreditedPaise || 0);
-  const netBillPaise = Math.max(0, Number(invoice.grand_total_paise || 0) - creditedPaise);
-  const existingSum = activePayments.reduce((acc, p) => acc + Number(p.amount_paise || 0), 0);
-  const balanceDue = netBillPaise - existingSum;
+  const settlement = summarizeSettlement({
+    grandTotalPaise: invoice.grand_total_paise,
+    totalCreditedPaise: Number(totalCreditedPaise || 0),
+    activePaidPaise: sumActivePaidPaise(payments),
+  });
+  const creditedPaise = settlement.totalCreditedPaise;
+  const existingSum = settlement.activePaidPaise;
+  const balanceDue = settlement.balanceDuePaise;
   const balanceDueRupees = paiseToRupees(balanceDue > 0 ? balanceDue : 0);
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<RecordPaymentInput>({

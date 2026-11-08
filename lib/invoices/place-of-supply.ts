@@ -1,5 +1,5 @@
 import { ActionError } from '@/lib/actions/_shared/errors';
-import { roundToRupeePaise } from '@/lib/credit-notes/derivation';
+import { roundToRupeePaise } from '@/lib/money';
 import { isValidStateCode } from '@/lib/gst/indian-states';
 import type { TaxCalculationResult } from '@/lib/gst/types';
 
