@@ -8,7 +8,8 @@ import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-busine
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { formatIstDate } from '@/lib/invoices/ist-date'
-import { PLAN_CATALOG, type PlanFeature } from '@/lib/subscriptions/plan-catalog'
+import { PLAN_CATALOG, formatPlanPrice, formatPlanPriceSummary, type PlanFeature } from '@/lib/subscriptions/plan-catalog'
+import { FREE_TIER_LIMITS, PLAN_PRICING, TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements'
 import {
   Crown,
   Sparkles,
@@ -102,18 +103,19 @@ interface PlanDefinition {
   badge?: string
 }
 
+// CLEAN-002: names, features, prices and limits all come from the plan catalogue / entitlements (no hand-typed copies).
 const PLAN_CONFIGS: Record<string, PlanDefinition> = {
   free: {
     name: PLAN_CATALOG.free.name,
     price: '₹0 / month',
     monthlyPaise: 0,
     yearlyPaise: 0,
-    invoiceMonthlyLimit: 30,
+    invoiceMonthlyLimit: FREE_TIER_LIMITS.invoiceMonthlyLimit,
     features: PLAN_CATALOG.free.features,
   },
   trial: {
     name: PLAN_CATALOG.trial.name,
-    price: '₹0 for 14 days',
+    price: `₹0 for ${TRIAL_DURATION_DAYS} days`,
     monthlyPaise: 0,
     yearlyPaise: 0,
     invoiceMonthlyLimit: null,
@@ -121,18 +123,18 @@ const PLAN_CONFIGS: Record<string, PlanDefinition> = {
   },
   essentials: {
     name: PLAN_CATALOG.essentials.name,
-    price: '₹399 / month (or ₹3,499 / year)',
-    monthlyPaise: 39900,
-    yearlyPaise: 349900,
+    price: formatPlanPriceSummary('essentials'),
+    monthlyPaise: PLAN_PRICING.essentials.monthlyPaise,
+    yearlyPaise: PLAN_PRICING.essentials.yearlyPaise,
     invoiceMonthlyLimit: null,
     features: PLAN_CATALOG.essentials.features,
     badge: 'Popular Tier',
   },
   professional: {
     name: PLAN_CATALOG.professional.name,
-    price: '₹599 / month (or ₹4,999 / year)',
-    monthlyPaise: 59900,
-    yearlyPaise: 499900,
+    price: formatPlanPriceSummary('professional'),
+    monthlyPaise: PLAN_PRICING.professional.monthlyPaise,
+    yearlyPaise: PLAN_PRICING.professional.yearlyPaise,
     invoiceMonthlyLimit: null,
     features: PLAN_CATALOG.professional.features,
     badge: 'Coming soon',
@@ -652,13 +654,13 @@ export function BillingTab({
                   "w-fit inline-flex items-center gap-2 rounded-xl border px-3.5 py-2 text-sm font-semibold shadow-2xs whitespace-nowrap transition-colors",
                   feature.status === 'included'
                     ? "border-slate-200/80 bg-slate-50/70 text-slate-800 hover:border-indigo-300 hover:bg-white"
-                    : "border-slate-200/60 bg-slate-50/40 text-slate-400"
+                    : "border-dashed border-slate-300 bg-slate-50 text-slate-600"
                 )}
               >
                 {feature.status === 'included' ? (
                   <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
                 ) : (
-                  <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-200/80 text-slate-600 px-1.5 py-0.5 rounded-full">
+                  <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full">
                     Coming soon
                   </span>
                 )}
@@ -680,7 +682,7 @@ export function BillingTab({
                     Your Current Plan
                   </span>
                 ) : (
-                  <span className="text-sm font-bold text-slate-800">₹399/mo</span>
+                  <span className="text-sm font-bold text-slate-800">{formatPlanPrice('essentials', 'monthly').headline}/mo</span>
                 )}
               </div>
               <ul className="space-y-2 mt-3 text-sm">
@@ -691,8 +693,8 @@ export function BillingTab({
                       <span>{feat.label}</span>
                     </li>
                   ) : (
-                    <li key={i} className="flex items-center gap-2 text-slate-400">
-                      <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded-full">
+                    <li key={i} className="flex items-center gap-2 text-slate-600">
+                      <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded-full">
                         Coming soon
                       </span>
                       <span>{feat.label}</span>
@@ -719,7 +721,7 @@ export function BillingTab({
                     Your Current Plan
                   </span>
                 ) : (
-                  <span className="text-sm font-bold text-slate-500">₹599/mo</span>
+                  <span className="text-sm font-bold text-slate-600">{formatPlanPrice('professional', 'monthly').headline}/mo</span>
                 )}
               </div>
               <ul className="space-y-2 mt-3 text-sm">
@@ -730,8 +732,8 @@ export function BillingTab({
                       <span>{feat.label}</span>
                     </li>
                   ) : (
-                    <li key={i} className="flex items-center gap-2 text-slate-400">
-                      <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded-full">
+                    <li key={i} className="flex items-center gap-2 text-slate-600">
+                      <span className="text-[10px] uppercase font-bold tracking-wider bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded-full">
                         Coming soon
                       </span>
                       <span>{feat.label}</span>

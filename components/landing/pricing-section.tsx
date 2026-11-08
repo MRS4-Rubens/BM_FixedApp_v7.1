@@ -139,9 +139,9 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
                       <span className={idx === 0 ? "font-medium text-zinc-800" : ""}>{feat.label}</span>
                     </li>
                   ) : (
-                    <li key={idx} className="flex items-center gap-2.5 text-zinc-400">
+                    <li key={idx} className="flex items-center gap-2.5 text-zinc-600">
                       <span>{feat.label}</span>
-                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded-full">
                         Coming soon
                       </span>
                     </li>
@@ -188,9 +188,9 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
                       <span className="font-medium text-zinc-800">{feat.label}</span>
                     </li>
                   ) : (
-                    <li key={idx} className="flex items-center gap-2.5 text-zinc-400">
+                    <li key={idx} className="flex items-center gap-2.5 text-zinc-600">
                       <span>{feat.label}</span>
-                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-500 border border-zinc-200 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded-full">
                         Coming soon
                       </span>
                     </li>
@@ -200,7 +200,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
             </div>
             <button
               disabled
-              className="block w-full text-center border-2 border-zinc-200 bg-zinc-50 text-zinc-400 font-semibold py-3.5 rounded-xl transition mt-8 text-sm cursor-not-allowed"
+              className="block w-full text-center border-2 border-zinc-200 bg-zinc-50 text-zinc-600 font-semibold py-3.5 rounded-xl transition mt-8 text-sm cursor-not-allowed"
             >
               Coming soon
             </button>

@@ -24,7 +24,9 @@ import { hasFinalizedInvoices } from './identity-lock';
 export const DEFAULT_INVOICE_NUMBER_FORMAT = 'BMA/{FY}/{SEQ:4}';
 export const DEFAULT_CREDIT_NOTE_PREFIX = 'CN';
 export const DEFAULT_PAYMENT_DUE_DAYS = 30;
-export const TRIAL_DURATION_DAYS = 14;
+// CLEAN-002: defined in the client-safe entitlements module so the billing UI shows the same trial length.
+export { TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements';
+import { TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements';
 export const DEFAULT_INVOICE_TERMS =
   '1. Goods once sold will not be taken back.\n2. Payment to be made within 30 days from the date of invoice.\n3. Interest @ 24% per annum will be charged on overdue invoices until payment is received.';
 

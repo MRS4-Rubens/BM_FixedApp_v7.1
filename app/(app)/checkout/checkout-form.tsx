@@ -539,7 +539,7 @@ export function CheckoutForm({
                   className={cn(
                     'flex flex-col justify-between text-left p-3.5 sm:p-4 rounded-2xl border-2 transition-all relative overflow-hidden',
                     !plan.purchasable
-                      ? 'opacity-60 cursor-not-allowed border-slate-200 bg-slate-50/50'
+                      ? 'cursor-not-allowed border-dashed border-slate-300 bg-slate-50'
                       : isSelected
                       ? 'border-indigo-600 ring-2 ring-indigo-500/10 shadow-md bg-gradient-to-b from-white to-indigo-50/30 cursor-pointer'
                       : 'border-slate-200/80 hover:border-slate-300 bg-slate-50/40 hover:bg-white cursor-pointer'
@@ -552,7 +552,7 @@ export function CheckoutForm({
                         {plan.name}
                       </span>
                       {!plan.purchasable ? (
-                        <span className="rounded-full bg-slate-100 border border-slate-300 text-slate-600 px-2.5 py-0.5 text-xs font-semibold shadow-2xs">
+                        <span className="rounded-full bg-slate-200 border border-slate-300 text-slate-700 px-2.5 py-0.5 text-xs font-semibold shadow-2xs">
                           Coming soon
                         </span>
                       ) : isCurrent ? (
@@ -585,12 +585,13 @@ export function CheckoutForm({
                       {plan.features.slice(0, 4).map((feat, i) => (
                         <li key={i} className="text-xs text-slate-800 flex items-center gap-1.5 font-medium">
                           {feat.status === 'coming_soon' ? (
-                            <Clock className="size-3.5 text-slate-400 shrink-0" />
+                            <Clock className="size-3.5 text-slate-500 shrink-0" aria-hidden="true" />
                           ) : (
-                            <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
+                            <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" aria-hidden="true" />
                           )}
-                          <span className={feat.status === 'coming_soon' ? 'text-slate-500' : ''}>
+                          <span className={feat.status === 'coming_soon' ? 'text-slate-600' : ''}>
                             {feat.label}
+                            {feat.status === 'coming_soon' && <span className="sr-only"> (coming soon)</span>}
                           </span>
                         </li>
                       ))}

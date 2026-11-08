@@ -367,3 +367,12 @@ Verified on branch `fix/clean-002-plan-features` against `main` `08e6395`; every
   2. `e2e/pages/CheckoutPage.ts` had stale locators (`"Essentials Pro Plan"`, `"Enterprise / CA Max"`). Neither is used by any spec, but they no longer match the UI: Essentials locator now matches `"Essentials Pro"`, the Professional locator is removed (not purchasable).
   3. Lint warnings dropped 38 -> 37; baseline lowered with `pnpm lint:ratchet --update`.
 - **Checks (local):** `pnpm typecheck` clean; `pnpm lint:ratchet` 18 errors / 37 warnings = new baseline; `pnpm exec vitest run` 168 files passed, 4 skipped (1395 tests); `pnpm build` OK.
+
+### Reviewer follow-up: CI a11y regression (commit after 098cf84)
+
+- **CI E2E failed** on `05-a11y` -> `marketing_auth_modal`: 10 new `color-contrast` nodes (baseline 0). A local axe scan of the preview landing page pinned them all to the Professional pricing card's coming-soon rows: feature text `text-zinc-400` (2.62:1) and "Coming soon" pills `text-zinc-500` on `bg-zinc-100` (4.39:1); AA needs 4.5:1.
+- **Fixed on every plan screen, not just the one CI caught:** coming-soon text -> zinc/slate-600 (~7.7:1), pills -> 700 (~9:1); removed `opacity-60` from the disabled Professional cards (upgrade modal, checkout) and marked them with a dashed border + "Coming soon" text instead (not colour-only); checkout coming-soon items get an sr-only "(coming soon)"; decorative icons/separators `aria-hidden`.
+- **Upgrade modal:** removed `role="button" tabIndex={0}` from the Essentials summary card: it was keyboard-focusable but did nothing (the real action is the Upgrade link).
+- **Hand-typed prices removed** from the billing tab (6) and upgrade modal (7): they now use `PLAN_PRICING` / `formatPlanPrice` (new `yearlyTotal`, `savingsPercent`) / new `formatPlanPriceSummary`. `TRIAL_DURATION_DAYS` moved to the client-safe `entitlements.ts` (re-exported from `save-profile-tx.ts`) so the billing tab shows the real trial length; free invoice limit read from `FREE_TIER_LIMITS`.
+- **New guard tests:** no non-zero rupee literal in the 4 plan screens; price helper fields/summary; single `TRIAL_DURATION_DAYS` definition.
+- **Checks:** typecheck clean; lint = baseline; vitest 168 files (1398 tests); build OK; print stylesheet: no invoice/credit-note template class touched.

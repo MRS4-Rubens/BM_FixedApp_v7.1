@@ -72,3 +72,41 @@ describe('Plan Catalog (CLEAN-002)', () => {
   });
 });
 
+
+describe('CLEAN-002 reviewer: one source for prices', () => {
+  it('formatPlanPrice exposes the yearly total and saving for both cycles', async () => {
+    const { formatPlanPrice: f, formatPlanPriceSummary } = await import('@/lib/subscriptions/plan-catalog');
+    expect(f('essentials', 'monthly').yearlyTotal).toBe('₹3,499');
+    expect(f('essentials', 'yearly').yearlyTotal).toBe('₹3,499');
+    expect(f('essentials', 'yearly').savingsPercent).toBe(27);
+    expect(f('professional', 'monthly').yearlyTotal).toBe('₹4,999');
+    expect(f('professional', 'yearly').savingsPercent).toBe(30);
+    expect(formatPlanPriceSummary('essentials')).toBe('₹399 / month (or ₹3,499 / year)');
+    expect(formatPlanPriceSummary('professional')).toBe('₹599 / month (or ₹4,999 / year)');
+  });
+
+  it('plan screens never hand-type a non-zero rupee price (they must use PLAN_PRICING / formatPlanPrice)', () => {
+    const files = [
+      'components/landing/pricing-section.tsx',
+      'components/app/settings/billing-tab.tsx',
+      'components/app/subscription/upgrade-prompt-modal.tsx',
+      'app/(app)/checkout/checkout-form.tsx',
+    ];
+    const offenders: string[] = [];
+    for (const rel of files) {
+      const lines = fs.readFileSync(path.resolve(process.cwd(), rel), 'utf8').split(/\r?\n/);
+      lines.forEach((line, i) => {
+        // "₹" followed by a digit other than a lone 0 (₹0 for free/trial is fine).
+        if (/₹\s?(?!0\b)\d/.test(line)) offenders.push(`${rel}:${i + 1}: ${line.trim().slice(0, 120)}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('TRIAL_DURATION_DAYS has one definition, re-exported for the signup transaction', async () => {
+    const ent = await import('@/lib/subscriptions/entitlements');
+    expect(ent.TRIAL_DURATION_DAYS).toBe(14);
+    const src = fs.readFileSync(path.resolve(process.cwd(), 'lib/business/save-profile-tx.ts'), 'utf8');
+    expect(src).not.toMatch(/export const TRIAL_DURATION_DAYS\s*=/);
+  });
+});

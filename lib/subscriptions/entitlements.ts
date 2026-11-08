@@ -28,6 +28,9 @@ export const PLAN_PRICING: Record<'essentials' | 'professional', PlanPricing> = 
   },
 };
 
+/** Length of the free trial a new business gets at signup (lib/business/save-profile-tx.ts re-exports it). */
+export const TRIAL_DURATION_DAYS = 14;
+
 export const FREE_TIER_LIMITS = {
   invoiceMonthlyLimit: 30, // Max 30 invoices per calendar month
   customerLimit: 30,       // Max 30 customer contacts

@@ -12,7 +12,12 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsClient } from '@/lib/hooks/use-is-client';
-import { PLAN_CATALOG } from '@/lib/subscriptions/plan-catalog';
+import { PLAN_CATALOG, formatPlanPrice } from '@/lib/subscriptions/plan-catalog';
+
+const ESSENTIALS_MONTHLY = formatPlanPrice('essentials', 'monthly');
+const ESSENTIALS_YEARLY = formatPlanPrice('essentials', 'yearly');
+const PROFESSIONAL_MONTHLY = formatPlanPrice('professional', 'monthly');
+const PROFESSIONAL_YEARLY = formatPlanPrice('professional', 'yearly');
 
 export interface UpgradePromptModalProps {
   isOpen: boolean;
@@ -103,9 +108,7 @@ export function UpgradePromptModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {/* Card 1: Essentials Pro Plan */}
                   <div
-                    role="button"
-                    tabIndex={0}
-                    className="relative rounded-xl border px-2.5 py-1.5 sm:px-2.5 sm:py-2 select-none text-left border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-600/30 shadow-xs cursor-pointer"
+                    className="relative rounded-xl border px-2.5 py-1.5 sm:px-2.5 sm:py-2 select-none text-left border-indigo-600 bg-indigo-50/70 ring-2 ring-indigo-600/30 shadow-xs"
                   >
                     <div className="flex items-center gap-[7px] mb-1">
                       <span className="text-xs sm:text-[12.5px] font-black tracking-tight text-slate-900 uppercase font-heading">
@@ -119,49 +122,49 @@ export function UpgradePromptModal({
 
                     <div className="flex items-center border-t border-slate-200/70 pt-1 mb-0.5">
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">₹399</span>
+                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">{ESSENTIALS_MONTHLY.headline}</span>
                         <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600">/month</span>
                       </div>
-                      <span className="text-slate-300 mx-[5px] text-xs font-light select-none">|</span>
+                      <span aria-hidden="true" className="text-slate-300 mx-[5px] text-xs font-light select-none">|</span>
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">₹3,499</span>
+                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">{ESSENTIALS_YEARLY.yearlyTotal}</span>
                         <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600">/year</span>
                       </div>
                     </div>
 
                     <div className="text-[10.5px] sm:text-[11px] font-bold text-emerald-700">
-                      Save 27% on Annual (₹291/mo)
+                      Save {ESSENTIALS_YEARLY.savingsPercent}% on Annual ({ESSENTIALS_YEARLY.headline}/mo)
                     </div>
                   </div>
 
                   {/* Card 2: Professional (Disabled / Coming Soon) */}
                   <div
                     aria-disabled="true"
-                    className="relative rounded-xl border px-2.5 py-1.5 sm:px-2.5 sm:py-2 select-none text-left border-slate-200/90 bg-slate-50/50 opacity-60 cursor-not-allowed"
+                    className="relative rounded-xl border border-dashed px-2.5 py-1.5 sm:px-2.5 sm:py-2 select-none text-left border-slate-300 bg-slate-50 cursor-not-allowed"
                   >
                     <div className="flex items-center gap-[7px] mb-1">
                       <span className="text-xs sm:text-[12.5px] font-black tracking-tight text-slate-700 uppercase font-heading">
                         {PLAN_CATALOG.professional.name}
                       </span>
-                      <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-200/80 border border-slate-300 px-1.5 py-0.2 text-[9.5px] sm:text-[10px] font-black text-slate-600 shrink-0">
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-200 border border-slate-300 px-1.5 py-0.2 text-[9.5px] sm:text-[10px] font-black text-slate-700 shrink-0">
                         Coming soon
                       </span>
                     </div>
 
                     <div className="flex items-center border-t border-slate-200/70 pt-1 mb-0.5">
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-[15px] sm:text-base font-black text-slate-600 font-heading">₹599</span>
-                        <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-500">/month</span>
+                        <span className="text-[15px] sm:text-base font-black text-slate-700 font-heading">{PROFESSIONAL_MONTHLY.headline}</span>
+                        <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600">/month</span>
                       </div>
-                      <span className="text-slate-300 mx-[5px] text-xs font-light select-none">|</span>
+                      <span aria-hidden="true" className="text-slate-300 mx-[5px] text-xs font-light select-none">|</span>
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-[15px] sm:text-base font-black text-slate-600 font-heading">₹4,999</span>
-                        <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-500">/year</span>
+                        <span className="text-[15px] sm:text-base font-black text-slate-700 font-heading">{PROFESSIONAL_YEARLY.yearlyTotal}</span>
+                        <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600">/year</span>
                       </div>
                     </div>
 
-                    <div className="text-[10.5px] sm:text-[11px] font-bold text-slate-500">
-                      Save 30% on Annual (₹416/mo)
+                    <div className="text-[10.5px] sm:text-[11px] font-bold text-slate-600">
+                      Save {PROFESSIONAL_YEARLY.savingsPercent}% on Annual ({PROFESSIONAL_YEARLY.headline}/mo)
                     </div>
                   </div>
                 </div>
@@ -181,8 +184,8 @@ export function UpgradePromptModal({
                           <span>{feat.label}</span>
                         </>
                       ) : (
-                        <div className="flex items-center gap-1.5 text-slate-400">
-                          <span className="text-[9.5px] uppercase font-bold tracking-wider bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.2 rounded-full shrink-0">
+                        <div className="flex items-center gap-1.5 text-slate-600">
+                          <span className="text-[9.5px] uppercase font-bold tracking-wider bg-slate-100 text-slate-700 border border-slate-200 px-1.5 py-0.2 rounded-full shrink-0">
                             Coming soon
                           </span>
                           <span>{feat.label}</span>
@@ -205,7 +208,7 @@ export function UpgradePromptModal({
                   >
                     <Sparkles className="size-3.5 sm:size-4 text-amber-300 shrink-0" />
                     <span className="truncate">
-                      Upgrade to Essentials Pro (₹399/mo)
+                      Upgrade to {PLAN_CATALOG.essentials.name} ({ESSENTIALS_MONTHLY.headline}/mo)
                     </span>
                     <ArrowRight className="size-3.5 sm:size-4 shrink-0" />
                   </Button>

@@ -87,33 +87,48 @@ export function isPurchasablePlan(id: string): boolean {
   return (PURCHASABLE_PLAN_IDS as readonly string[]).includes(id);
 }
 
-export function formatPlanPrice(
-  plan: 'essentials' | 'professional',
-  cycle: BillingCycle
-): { headline: string; perMonthPaise: number; note: string } {
+export interface PlanPriceDisplay {
+  /** Price shown big: the monthly price, or the yearly price spread per month. */
+  headline: string;
+  perMonthPaise: number;
+  note: string;
+  /** Full yearly charge, e.g. "₹3,499" (same for both cycles). */
+  yearlyTotal: string;
+  /** Whole-percent saving of the yearly plan versus 12 monthly payments. */
+  savingsPercent: number;
+}
+
+const inrFormatter = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+const rupees = (paise: number): string => `₹${inrFormatter.format(Math.floor(paise / 100))}`;
+
+export function formatPlanPrice(plan: 'essentials' | 'professional', cycle: BillingCycle): PlanPriceDisplay {
   const pricing = PLAN_PRICING[plan];
-  const inrFormatter = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 });
+  const yearlyTotal = rupees(pricing.yearlyPaise);
+  const savingsPercent = Math.round((1 - pricing.yearlyPaise / (pricing.monthlyPaise * 12)) * 100);
 
   if (cycle === 'monthly') {
-    const rupees = Math.floor(pricing.monthlyPaise / 100);
     return {
-      headline: `₹${inrFormatter.format(rupees)}`,
+      headline: rupees(pricing.monthlyPaise),
       perMonthPaise: pricing.monthlyPaise,
       note: 'Billed monthly',
+      yearlyTotal,
+      savingsPercent,
     };
   }
 
   const perMonthPaise = Math.floor(pricing.yearlyPaise / 12);
-  const perMonthRupees = Math.floor(perMonthPaise / 100);
-  const yearlyRupees = Math.floor(pricing.yearlyPaise / 100);
-  const savingsPercent = Math.round(
-    (1 - pricing.yearlyPaise / (pricing.monthlyPaise * 12)) * 100
-  );
-
   return {
-    headline: `₹${inrFormatter.format(perMonthRupees)}`,
+    headline: rupees(perMonthPaise),
     perMonthPaise,
-    note: `Billed yearly (₹${inrFormatter.format(yearlyRupees)}/yr — save ${savingsPercent}%)`,
+    note: `Billed yearly (${yearlyTotal}/yr — save ${savingsPercent}%)`,
+    yearlyTotal,
+    savingsPercent,
   };
+}
+
+/** One-line summary for settings, e.g. "₹399 / month (or ₹3,499 / year)". */
+export function formatPlanPriceSummary(plan: 'essentials' | 'professional'): string {
+  const p = formatPlanPrice(plan, 'monthly');
+  return `${p.headline} / month (or ${p.yearlyTotal} / year)`;
 }
 
