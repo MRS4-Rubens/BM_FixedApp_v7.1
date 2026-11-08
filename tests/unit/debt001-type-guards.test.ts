@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readComponentSources } from '../helpers/component-sources';
 
 const ROOT_DIR = process.cwd();
 
@@ -123,13 +124,10 @@ describe('DEBT-001: Type Safety, Lint Ratchet & Anti-Regression Guards', () => {
       expect(stripped).not.toMatch(/\bwatch\(/);
     }
 
-    const invoiceFormContent = fs.readFileSync(
-      path.join(ROOT_DIR, 'components/app/invoices/invoice-form.tsx'),
-      'utf8',
-    );
-    expect(invoiceFormContent).toContain(
-      '// DEBT-001: watch() kept on purpose (React Compiler not enabled); migrate to useWatch with the invoice-form split.',
-    );
+    const invoiceFormCombined = readComponentSources('components/app/invoices/invoice-form.tsx');
+    expect(invoiceFormCombined).toContain('useWatch');
+    const strippedInvoiceForm = stripComments(invoiceFormCombined);
+    expect(strippedInvoiceForm).not.toMatch(/\bwatch\(/);
   });
 
   it('reviewer: a saved draft unit is passed to the form unchanged (never silently rewritten)', () => {
@@ -138,12 +136,12 @@ describe('DEBT-001: Type Safety, Lint Ratchet & Anti-Regression Guards', () => {
     // No coercion like `isOneOf(...) ? li.unit_of_measurement : 'NOS'` on the unit line.
     const unitLine = page.split(/\r?\n/).find((l) => l.includes('unit_of_measurement:')) ?? '';
     expect(unitLine).not.toContain("'NOS'");
-    const form = fs.readFileSync(path.resolve(process.cwd(), 'components/app/invoices/invoice-form.tsx'), 'utf8');
+    const form = readComponentSources('components/app/invoices/invoice-form.tsx');
     expect(form).toContain('export type InvoiceFormInitialLine');
   });
 
   it('reviewer: invoice-form search failures are not silently swallowed', () => {
-    const form = fs.readFileSync(path.resolve(process.cwd(), 'components/app/invoices/invoice-form.tsx'), 'utf8');
+    const form = readComponentSources('components/app/invoices/invoice-form.tsx');
     expect(form).not.toContain('// search failed');
   });
 });

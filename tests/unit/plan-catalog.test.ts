@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
+import { listComponentSourceFiles, readComponentSources } from '../helpers/component-sources';
 import {
   PLAN_CATALOG,
   PURCHASABLE_PLAN_IDS,
@@ -90,7 +91,7 @@ describe('CLEAN-002 reviewer: one source for prices', () => {
       'components/landing/pricing-section.tsx',
       'components/app/settings/billing-tab.tsx',
       'components/app/subscription/upgrade-prompt-modal.tsx',
-      'app/(app)/checkout/checkout-form.tsx',
+      ...listComponentSourceFiles('app/(app)/checkout/checkout-form.tsx'),
     ];
     const offenders: string[] = [];
     for (const rel of files) {
@@ -115,15 +116,19 @@ describe('CLEAN-002 reviewer: one source for prices', () => {
       "components/landing/pricing-section.tsx",
       "components/app/settings/billing-tab.tsx",
       "components/app/subscription/upgrade-prompt-modal.tsx",
-      "app/(app)/checkout/checkout-form.tsx",
     ];
     const offenders: string[] = [];
     for (const rel of files) {
       const src = fs.readFileSync(path.resolve(process.cwd(), rel), "utf8");
-      for (const re of [/saves+(?:ups+tos+)?d+s*%/i, /taxs+deductible/i, /inputs+taxs+credit/i]) {
+      for (const re of [/save\s+(?:up\s+to\s+)?\d+\s*%/i, /tax\s+deductible/i, /input\s+tax\s+credit/i]) {
         const m = src.match(re);
         if (m) offenders.push(rel + ": " + m[0]);
       }
+    }
+    const checkoutSrc = readComponentSources('app/(app)/checkout/checkout-form.tsx');
+    for (const re of [/save\s+(?:up\s+to\s+)?\d+\s*%/i, /tax\s+deductible/i, /input\s+tax\s+credit/i]) {
+      const m = checkoutSrc.match(re);
+      if (m) offenders.push('app/(app)/checkout/checkout-form.tsx: ' + m[0]);
     }
     expect(offenders).toEqual([]);
   });

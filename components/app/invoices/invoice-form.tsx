@@ -1,48 +1,39 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react'
-import { resolveDraftDisplayPrefs } from '@/lib/invoices/display-prefs'
-import { createPortal } from 'react-dom'
-import Link from 'next/link'
-import { ArrowLeft, Plus, Trash2, Send, ChevronDown, ChevronUp, User, Receipt, ListTodo, ClipboardEdit, AlertCircle, Calendar, Percent, Eye, Printer, GripVertical, ArrowUpDown } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { cn } from '@/lib/utils'
-import { useForm, useFieldArray } from 'react-hook-form'
-import type { FieldErrors } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { invoiceDraftSchema, type InvoiceDraftInput, type InvoiceLineItemInput } from '@/lib/validations/invoice'
-import { saveInvoiceDraft } from '@/lib/actions/invoices/save-invoice-draft'
-import { finalizeInvoice } from '@/lib/actions/invoices/finalize-invoice'
-import { getNextSequenceForDate } from '@/lib/actions/invoices/get-next-sequence'
-import { calculateInvoiceTax } from '@/lib/gst/calculate'
+import { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { useForm, useFieldArray, FormProvider, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { invoiceDraftSchema, type InvoiceDraftInput, type InvoiceLineItemInput } from '@/lib/validations/invoice';
+import { getNextSequenceForDate } from '@/lib/actions/invoices/get-next-sequence';
+import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
+import { canUseTemplate } from '@/lib/subscriptions/entitlements';
+import { DeleteDraftButton } from '@/components/app/invoices/delete-draft-button';
+import { useIsClient } from '@/lib/hooks/use-is-client';
+import { resolveDraftDisplayPrefs } from '@/lib/invoices/display-prefs';
+import type { CustomerOption } from '@/lib/pickers/types';
+import type { CurrentBusiness } from '@/lib/auth/current-business';
+import type { taxRates as taxRatesTable, financialYears as financialYearsTable } from '@/lib/db/schema';
+
 import {
-  TaxCalculationInput,
-  TaxCalculationResult,
-  TaxLineItemInput,
-  TaxLineItemResult,
-} from '@/lib/gst/types'
-import { UNIT_OF_MEASUREMENT_OPTIONS } from '@/lib/gst/units'
-import { useRouter } from 'next/navigation'
-import { formatIstDate, formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date'
-import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year'
-import { resolveInvoiceNumber } from '@/lib/invoices/number-format'
-import { INDIAN_GST_STATES } from '@/lib/gst/indian-states'
-import { InvoicePrintView } from './invoice-print-view'
-import { canUseTemplate } from '@/lib/subscriptions/entitlements'
-import { isInvoiceTemplateId } from '@/lib/invoices/template-ids'
-import { DeleteDraftButton } from '@/components/app/invoices/delete-draft-button'
-import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
-import { TemplateSelector } from './template-selector'
-import { buildPreviewTaxLineInput } from '@/lib/invoices/line-math'
-import { useIsClient } from '@/lib/hooks/use-is-client'
-import { roundToRupeePaise } from '@/lib/money'
-
-import { searchCustomerOptions } from '@/lib/actions/customers/search-customer-options'
-import { searchProductOptions } from '@/lib/actions/products/search-product-options'
-import type { CustomerOption, ProductOption } from '@/lib/pickers/types'
-import type { CurrentBusiness } from '@/lib/auth/current-business'
-import type { taxRates as taxRatesTable, financialYears as financialYearsTable } from '@/lib/db/schema'
+  computeInvoiceTaxPreview,
+  buildInvoiceNumberPreview,
+  collectValidationErrors,
+  buildPreviewInvoiceData,
+} from './invoice-form/form-calculations';
+import { useCustomerSearch } from './invoice-form/use-customer-search';
+import { useProductSuggestions } from './invoice-form/use-product-suggestions';
+import { useLineReorder } from './invoice-form/use-line-reorder';
+import { useInvoiceSubmit } from './invoice-form/use-invoice-submit';
+import { InvoiceDetailsCard } from './invoice-form/invoice-details-card';
+import { CustomerDetailsCard } from './invoice-form/customer-details-card';
+import { LineItemsTable } from './invoice-form/line-items-table';
+import { InternalNotesCard } from './invoice-form/internal-notes-card';
+import { GstBreakdownCard } from './invoice-form/gst-breakdown-card';
+import { TotalsSummaryCard } from './invoice-form/totals-summary-card';
+import { InvoicePreviewModal } from './invoice-form/invoice-preview-modal';
+import { FinalizeDialogs } from './invoice-form/finalize-dialogs';
 
 /**
  * DEBT-001: a saved draft line can hold a unit that is no longer in UNIT_OF_MEASUREMENT_OPTIONS (the DB column is free
@@ -55,47 +46,31 @@ export type InvoiceFormInitialData = Omit<Partial<InvoiceDraftInput>, 'line_item
   line_items?: InvoiceFormInitialLine[];
 };
 
-function formatINR(n: number) {
-  return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
 export function InvoiceForm({
   initialData,
   initialCustomer,
   taxRates,
   business,
   activeFys,
-  isDraft
+  isDraft,
 }: {
   initialData?: InvoiceFormInitialData;
   initialCustomer?: CustomerOption | null;
-  taxRates: (typeof taxRatesTable.$inferSelect)[];
+  taxRates: Array<typeof taxRatesTable.$inferSelect>;
   business: CurrentBusiness;
-  activeFys: (typeof financialYearsTable.$inferSelect)[];
+  activeFys: Array<typeof financialYearsTable.$inferSelect>;
   isDraft: boolean;
 }) {
-  const router = useRouter()
-  const [isFinalizing, setIsFinalizing] = useState(false)
-  const [globalError, setGlobalError] = useState<string | null>(null)
-  const [previewSequence, setPreviewSequence] = useState<number | null>(null)
-
-  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false)
-  const [showTemplateUpgradeModal, setShowTemplateUpgradeModal] = useState(false)
-  const [showQuotaUpgradeModal, setShowQuotaUpgradeModal] = useState(false)
+  const [previewSequence, setPreviewSequence] = useState<number | null>(null);
+  const [showTemplateUpgradeModal, setShowTemplateUpgradeModal] = useState(false);
 
   // Preview and verification states
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-  const [isPreviewVerified, setIsPreviewVerified] = useState(false)
-  const [showPreviewWarning, setShowPreviewWarning] = useState(false)
-  const [previewPrintSize, setPreviewPrintSize] = useState<'A4' | 'A5'>('A5')
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isPreviewVerified, setIsPreviewVerified] = useState(false);
+  const [showPreviewWarning, setShowPreviewWarning] = useState(false);
+  const [previewPrintSize, setPreviewPrintSize] = useState<'A4' | 'A5'>('A5');
 
-  // Accessible confirmation dialog states
-  const [showFinalizeDialog, setShowFinalizeDialog] = useState(false)
-  const [showCrossFyDialog, setShowCrossFyDialog] = useState(false)
-  const [crossFyErrorMessage, setCrossFyErrorMessage] = useState('')
-  const [pendingFinalizeData, setPendingFinalizeData] = useState<InvoiceDraftInput | null>(null)
-  const [pendingSavedInvoiceId, setPendingSavedInvoiceId] = useState<string | null>(null)
-
+  const mounted = useIsClient();
   const displayPrefs = useMemo(() => resolveDraftDisplayPrefs(business?.invoice_display_prefs), [business?.invoice_display_prefs]);
 
   // A legacy unit from initialData may sit outside the enum until the user fixes it; invoiceDraftSchema validates on save.
@@ -112,1686 +87,306 @@ export function InvoiceForm({
     // Default GST rate type selection (inclusive vs exclusive) inherited from business profile settings
     gst_rate_type: business.default_gst_rate_type === 'inclusive' ? 'inclusive' : 'exclusive',
     line_items: [{ product_id: '', description: '', hsn_sac_code: '', quantity: 1, unit_of_measurement: 'NOS', unit_price: 0, discount: 0, tax_rate_id: '' }],
-    ...initialData
-  } as InvoiceDraftInput
+    ...initialData,
+  } as InvoiceDraftInput;
 
-  // DEBT-001: watch() kept on purpose (React Compiler not enabled); migrate to useWatch with the invoice-form split.
-  const { register, control, handleSubmit, watch, setValue, formState: { isSubmitting, errors } } = useForm<InvoiceDraftInput>({
+  const methods = useForm<InvoiceDraftInput>({
     resolver: zodResolver(invoiceDraftSchema as never),
-    defaultValues
-  })
+    defaultValues,
+  });
 
-  const sortedTaxRates = [...taxRates].sort((a, b) => Number(a.rate_percentage) - Number(b.rate_percentage))
+  const { register, control, setValue, getValues, formState: { errors } } = methods;
+
+  const sortedTaxRates = useMemo(
+    () => [...taxRates].sort((a, b) => Number(a.rate_percentage) - Number(b.rate_percentage)),
+    [taxRates]
+  );
 
   const { fields, append, remove, move } = useFieldArray({
     control,
-    name: "line_items"
-  })
+    name: 'line_items',
+  });
 
-  const lineItems = watch('line_items')
-  const invoiceDateVal = watch('invoice_date')
-  const billingNameVal = watch('billing_name') || ''
-  const placeOfSupplyStateCodeVal = watch('place_of_supply_state_code')
-  // Watch active GST rate type of this invoice to adapt headers and backward calculation math
-  const gstRateTypeVal = watch('gst_rate_type') || 'exclusive'
+  const lineItems = useWatch({ control, name: 'line_items' }) || [];
+  const invoiceDateVal = useWatch({ control, name: 'invoice_date' }) || '';
+  const billingNameVal = useWatch({ control, name: 'billing_name' }) || '';
+  const placeOfSupplyStateCodeVal = useWatch({ control, name: 'place_of_supply_state_code' }) || business.state_code;
+  const gstRateTypeVal = useWatch({ control, name: 'gst_rate_type' }) || 'exclusive';
+  const watchTemplate = useWatch({ control, name: 'invoice_template' }) || 'template_1';
+  const watchBillingGstin = useWatch({ control, name: 'billing_gstin' }) || '';
 
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(initialCustomer ?? null)
-  const [customerOptions, setCustomerOptions] = useState<CustomerOption[]>([])
-  const customerReqIdRef = useRef(0)
+  const {
+    selectedCustomer, customerOptions, isSuggestionsOpen,
+    setIsSuggestionsOpen, handleSelectCustomer, handleNameChange,
+  } = useCustomerSearch({ billingNameVal, setValue, initialCustomer });
 
-  useEffect(() => {
-    const query = billingNameVal.trim()
-    if (!query) {
-      setCustomerOptions([])
-      return
-    }
-    const reqId = ++customerReqIdRef.current
-    const timer = setTimeout(async () => {
-      const res = await searchCustomerOptions({ q: query })
-      if (reqId === customerReqIdRef.current && res.success) {
-        setCustomerOptions(res.data)
-      }
-    }, 250)
-    return () => clearTimeout(timer)
-  }, [billingNameVal])
+  const {
+    suggestIdx, isProdSuggestionsOpen,
+    setIsProdSuggestionsOpen, activeInputRect, updateInputRect,
+    productOptions, handleSelectProduct, handleDescChange, handleDescFocus,
+  } = useProductSuggestions({ setValue, lineItems });
 
-  const handleSelectCustomer = (cust: CustomerOption) => {
-    setSelectedCustomer(cust)
-    setValue('customer_id', cust.id)
-    setValue('billing_name', cust.name)
-    setValue('billing_gstin', cust.gstin || '')
-    setValue('place_of_supply_state_code', cust.state_code)
-    setIsSuggestionsOpen(false)
-  }
+  const {
+    draggedIdx,
+    dropTargetIdx,
+    dropPosition,
+    touchDraggingIdx,
+    handleDragStart,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop,
+    handleDragEnd,
+    handleMoveLine,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    handleGroupByGst,
+  } = useLineReorder({
+    fieldsLength: fields.length,
+    move,
+    setValue,
+    getValues,
+    taxRates,
+    onBeforeDrag: () => {
+      setIsProdSuggestionsOpen(false);
+      updateInputRect(null);
+    },
+  });
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setValue('billing_name', val)
-    setValue('customer_id', '') // Reset customer_id for ad-hoc customer typing
-    setSelectedCustomer(null)
-    setIsSuggestionsOpen(true)
-  }
-
-  // Description Autocomplete States
-  const [suggestIdx, setSuggestIdx] = useState<number | null>(null)
-  const [isProdSuggestionsOpen, setIsProdSuggestionsOpen] = useState(false)
-  const [activeInputRect, setActiveInputRect] = useState<{ top: number, left: number, width: number, height: number } | null>(null)
-  const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | null>(null)
-  const mounted = useIsClient()
-  const [productOptions, setProductOptions] = useState<ProductOption[]>([])
-  const productReqIdRef = useRef(0)
-
-  const activeRowDesc = suggestIdx !== null ? (watch(`line_items.${suggestIdx}.description`) || '') : ''
-
-  useEffect(() => {
-    const query = activeRowDesc.trim()
-    if (suggestIdx === null || !query) {
-      setProductOptions([])
-      return
-    }
-    const reqId = ++productReqIdRef.current
-    const timer = setTimeout(async () => {
-      const res = await searchProductOptions({ q: query })
-      if (reqId === productReqIdRef.current && res.success) {
-        setProductOptions(res.data)
-      }
-    }, 250)
-    return () => clearTimeout(timer)
-  }, [suggestIdx, activeRowDesc])
-
-  const updateInputRect = (el: HTMLInputElement | null) => {
-    if (el) {
-      setActiveInputRef(el)
-      const rect = el.getBoundingClientRect()
-      setActiveInputRect({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        height: rect.height
-      })
-    } else {
-      setActiveInputRef(null)
-      setActiveInputRect(null)
-    }
-  }
-
-  useEffect(() => {
-    if (!activeInputRef) return
-
-    const handleUpdate = () => {
-      const rect = activeInputRef.getBoundingClientRect()
-      setActiveInputRect({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        height: rect.height
-      })
-    }
-
-    window.addEventListener('scroll', handleUpdate, true)
-    window.addEventListener('resize', handleUpdate)
-
-    return () => {
-      window.removeEventListener('scroll', handleUpdate, true)
-      window.removeEventListener('resize', handleUpdate)
-    }
-  }, [activeInputRef])
-
-  // NET Amount Input Raw Overrides
-  const [netAmtInputValues, setNetAmtInputValues] = useState<Record<string, string>>({})
-
-  // Line Items Drag & Drop Reordering State (Mouse + Touch)
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null)
-  const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null)
-  const [dropPosition, setDropPosition] = useState<'top' | 'bottom' | null>(null)
-  const [touchDraggingIdx, setTouchDraggingIdx] = useState<number | null>(null)
-
-  const handleDragStart = (e: React.DragEvent, idx: number) => {
-    setIsProdSuggestionsOpen(false)
-    updateInputRect(null)
-    setDraggedIdx(idx)
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', String(idx))
-
-    // Set the drag ghost image to the entire row if supported
-    const tr = (e.currentTarget as HTMLElement).closest('tr')
-    if (tr && e.dataTransfer.setDragImage) {
-      const rect = tr.getBoundingClientRect()
-      e.dataTransfer.setDragImage(tr, e.clientX - rect.left, e.clientY - rect.top)
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent, idx: number) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    if (draggedIdx === null || draggedIdx === idx) {
-      if (dropTargetIdx !== null) {
-        setDropTargetIdx(null)
-        setDropPosition(null)
-      }
-      return
-    }
-
-    const rect = e.currentTarget.getBoundingClientRect()
-    const midY = rect.top + rect.height / 2
-    const position = e.clientY < midY ? 'top' : 'bottom'
-
-    if (dropTargetIdx !== idx || dropPosition !== position) {
-      setDropTargetIdx(idx)
-      setDropPosition(position)
-    }
-  }
-
-  const handleDragLeave = (e: React.DragEvent, idx: number) => {
-    if (e.currentTarget.contains(e.relatedTarget as Node)) return
-    if (dropTargetIdx === idx) {
-      setDropTargetIdx(null)
-      setDropPosition(null)
-    }
-  }
-
-  const handleDrop = (e: React.DragEvent, targetIdx: number) => {
-    e.preventDefault()
-    if (draggedIdx === null || draggedIdx === targetIdx) {
-      setDraggedIdx(null)
-      setDropTargetIdx(null)
-      setDropPosition(null)
-      return
-    }
-
-    const from = draggedIdx
-    let to = targetIdx
-    if (from < targetIdx) {
-      to = dropPosition === 'top' ? targetIdx - 1 : targetIdx
-    } else if (from > targetIdx) {
-      to = dropPosition === 'top' ? targetIdx : targetIdx + 1
-    }
-
-    to = Math.max(0, Math.min(fields.length - 1, to))
-
-    if (from !== to) {
-      move(from, to)
-    }
-
-    setDraggedIdx(null)
-    setDropTargetIdx(null)
-    setDropPosition(null)
-  }
-
-  const handleDragEnd = () => {
-    setDraggedIdx(null)
-    setDropTargetIdx(null)
-    setDropPosition(null)
-  }
-
-  // Accessible keyboard line item reordering with focus persistence
-  const handleMoveLine = (from: number, to: number, direction: 'up' | 'down') => {
-    if (to < 0 || to >= fields.length) return
-    move(from, to)
-    const targetLineNum = to + 1
-    requestAnimationFrame(() => {
-      let el = document.getElementById(`move-line-${direction}-${targetLineNum}`) as HTMLButtonElement | null
-      if (!el || el.disabled) {
-        const altDirection = direction === 'up' ? 'down' : 'up'
-        el = document.getElementById(`move-line-${altDirection}-${targetLineNum}`) as HTMLButtonElement | null
-      }
-      el?.focus()
-    })
-  }
-
-  // Mobile & Tablet Touch Drag Handlers (re-using the exact same insertion drop-line feedback)
-  const handleTouchStart = (e: React.TouchEvent, idx: number) => {
-    if (fields.length <= 1) return
-    setIsProdSuggestionsOpen(false)
-    updateInputRect(null)
-    setDraggedIdx(idx)
-    setTouchDraggingIdx(idx)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (draggedIdx === null) return
-    const touch = e.touches[0]
-    if (!touch) return
-
-    // Find the table row under touch point via elementFromPoint
-    const el = document.elementFromPoint(touch.clientX, touch.clientY)
-    const targetTr = el?.closest('tbody tr[data-row-index]') as HTMLElement | null
-    if (!targetTr) {
-      if (dropTargetIdx !== null) {
-        setDropTargetIdx(null)
-        setDropPosition(null)
-      }
-      return
-    }
-
-    const rawIdx = targetTr.getAttribute('data-row-index')
-    if (rawIdx === null) return
-    const targetIdx = parseInt(rawIdx, 10)
-
-    if (targetIdx === draggedIdx) {
-      if (dropTargetIdx !== null) {
-        setDropTargetIdx(null)
-        setDropPosition(null)
-      }
-      return
-    }
-
-    const rect = targetTr.getBoundingClientRect()
-    const midY = rect.top + rect.height / 2
-    const position: 'top' | 'bottom' = touch.clientY < midY ? 'top' : 'bottom'
-
-    if (dropTargetIdx !== targetIdx || dropPosition !== position) {
-      setDropTargetIdx(targetIdx)
-      setDropPosition(position)
-    }
-  }
-
-  const handleTouchEnd = () => {
-    if (draggedIdx !== null && dropTargetIdx !== null && dropPosition !== null) {
-      const from = draggedIdx
-      let to = dropTargetIdx
-      if (from < dropTargetIdx) {
-        to = dropPosition === 'top' ? dropTargetIdx - 1 : dropTargetIdx
-      } else if (from > dropTargetIdx) {
-        to = dropPosition === 'top' ? dropTargetIdx : dropTargetIdx + 1
-      }
-
-      to = Math.max(0, Math.min(fields.length - 1, to))
-
-      if (from !== to) {
-        move(from, to)
-      }
-    }
-
-    setDraggedIdx(null)
-    setDropTargetIdx(null)
-    setDropPosition(null)
-    setTouchDraggingIdx(null)
-  }
-
-  const handleGroupByGst = () => {
-    if (fields.length <= 1) return
-    const currentItems = [...lineItems]
-    // Group descending by tax rate percentage (18%, 12%, 5%, 0%)
-    const sorted = [...currentItems].sort((a, b) => {
-      const pctA = Number(taxRates.find(tr => tr.id === a.tax_rate_id)?.rate_percentage || 0)
-      const pctB = Number(taxRates.find(tr => tr.id === b.tax_rate_id)?.rate_percentage || 0)
-      return pctB - pctA
-    })
-    setValue('line_items', sorted)
-  }
-
-  const handleSelectProduct = (idx: number, prod: ProductOption) => {
-    setValue(`line_items.${idx}.product_id`, prod.id)
-    setValue(`line_items.${idx}.description`, prod.name)
-    setValue(`line_items.${idx}.hsn_sac_code`, prod.hsn_sac_code || '')
-    setValue(
-      `line_items.${idx}.unit_of_measurement`,
-      (prod.unit_of_measurement || 'NOS') as InvoiceDraftInput['line_items'][number]['unit_of_measurement']
-    )
-    setValue(`line_items.${idx}.unit_price`, prod.default_sale_price_paise / 100)
-    if (prod.default_tax_rate_id) {
-      setValue(`line_items.${idx}.tax_rate_id`, prod.default_tax_rate_id, {
-        shouldValidate: true,
-        shouldDirty: true,
-      })
-    }
-    setIsProdSuggestionsOpen(false)
-    updateInputRect(null)
-  }
-
-  const handleDescChange = (idx: number, val: string) => {
-    setValue(`line_items.${idx}.description`, val)
-    setValue(`line_items.${idx}.product_id`, '') // Clear product_id for ad-hoc typing
-    setSuggestIdx(idx)
-    setIsProdSuggestionsOpen(true)
-  }
+  const {
+    isFinalizing,
+    globalError,
+    setGlobalError,
+    showQuotaUpgradeModal,
+    setShowQuotaUpgradeModal,
+    showFinalizeDialog,
+    setShowFinalizeDialog,
+    showCrossFyDialog,
+    setShowCrossFyDialog,
+    crossFyErrorMessage,
+    onSaveDraft,
+    onFinalizeClick,
+    executeFinalize,
+  } = useInvoiceSubmit({
+    isPreviewVerified,
+    setShowPreviewWarning,
+  });
 
   // Fetch sequence value dynamically from DB when date changes
   useEffect(() => {
-    if (!invoiceDateVal) return
-    let active = true
+    if (!invoiceDateVal) return;
+    let active = true;
 
     async function fetchSequence() {
       try {
-        const res = await getNextSequenceForDate({ dateStr: invoiceDateVal })
+        const res = await getNextSequenceForDate({ dateStr: invoiceDateVal });
         if (active && res.success && res.data) {
-          setPreviewSequence(res.data.nextSequence)
+          setPreviewSequence(res.data.nextSequence);
         }
       } catch (e) {
-        console.error('Failed to load dynamic sequence preview:', e)
+        console.error('Failed to load dynamic sequence preview:', e);
       }
     }
 
-    fetchSequence()
+    fetchSequence();
 
     return () => {
-      active = false
-    }
-  }, [invoiceDateVal])
+      active = false;
+    };
+  }, [invoiceDateVal]);
 
-  // Live Invoice Number Preview Calculation
-  let invoiceNumberFormatPreview = 'DRAFT'
-  if (business && invoiceDateVal) {
-    try {
-      const parsedDate = parseIsoDateToIstDate(invoiceDateVal)
-      const currentLabel = getIndianFinancialYearForDate(parsedDate).label
-      const activeFy = activeFys.find(fy => fy.label === currentLabel)
-      const sequenceValue = previewSequence !== null ? previewSequence : (activeFy ? activeFy.invoice_sequence_counter + 1 : 1)
+  const invoiceNumberFormatPreview = buildInvoiceNumberPreview({
+    business,
+    invoiceDate: invoiceDateVal,
+    activeFys,
+    previewSequence,
+  });
 
-      invoiceNumberFormatPreview = resolveInvoiceNumber(business.invoice_number_format, {
-        invoiceDate: parsedDate,
-        fyLabel: activeFy ? activeFy.label : currentLabel,
-        sequenceValue
-      })
-    } catch { }
-  }
+  const {
+    taxResult,
+    supplyType,
+    totalTaxable,
+    totalCGST,
+    totalSGST,
+    totalIGST,
+    roundOff,
+    grandTotal,
+    gstBreakdownMap,
+    sortedGstRates,
+  } = computeInvoiceTaxPreview({
+    lineItems,
+    taxRates,
+    sellerStateCode: business.state_code,
+    placeOfSupplyStateCode: placeOfSupplyStateCodeVal,
+    gstRateType: gstRateTypeVal,
+  });
 
-  // Live Tax Calculation
-  let taxResult: TaxCalculationResult | null = null
-  if (lineItems.length > 0) {
-    try {
-      const taxLineItemInputs: TaxLineItemInput[] = lineItems
-        .map((li) => {
-          const ratePct = taxRates.find((tr) => tr.id === li.tax_rate_id)?.rate_percentage || 0
-          return buildPreviewTaxLineInput({
-            quantity: li.quantity,
-            unitPriceRupees: li.unit_price,
-            discountPercent: li.discount,
-            taxRatePercentage: Number(ratePct),
-          })
-        })
-        .filter((li): li is TaxLineItemInput => li !== null)
+  const validationErrors = collectValidationErrors(errors);
 
-      if (taxLineItemInputs.length > 0) {
-        const taxCalcInput: TaxCalculationInput = {
-          sellerStateCode: business.state_code,
-          placeOfSupplyStateCode: placeOfSupplyStateCodeVal || business.state_code,
-          lineItems: taxLineItemInputs,
-          // Pass calculation mode to standard calculator routine
-          gstRateType: gstRateTypeVal,
-        }
-        taxResult = calculateInvoiceTax(taxCalcInput)
-      }
-    } catch {
-      // Ignore intermediate calculation errors during typing
-    }
-  }
-
-  const supplyType = taxResult ? taxResult.supplyType : 'intra_state'
-  const totalTaxable = taxResult ? taxResult.subtotalPaise / 100 : 0
-  const totalCGST = taxResult ? taxResult.totalCgstPaise / 100 : 0
-  const totalSGST = taxResult ? taxResult.totalSgstPaise / 100 : 0
-  const totalIGST = taxResult ? taxResult.totalIgstPaise / 100 : 0
-
-  const rawTotalAmountPaise = taxResult ? taxResult.grandTotalPaise : 0
-  const roundedGrandTotalPaise = roundToRupeePaise(rawTotalAmountPaise)
-  const roundOffPaise = roundedGrandTotalPaise - rawTotalAmountPaise
-
-  const roundOff = roundOffPaise / 100
-  const grandTotal = roundedGrandTotalPaise / 100
-
-  // Dynamic GST Rate-wise Breakdown Grouping
-  interface GstRateRow {
-    ratePercentage: number
-    taxableValuePaise: number
-    cgstPaise: number
-    sgstPaise: number
-    igstPaise: number
-  }
-
-  const gstBreakdownMap: Record<number, GstRateRow> = {}
-
-  // Initialize the map with ALL active tax rates from DB so they always render in order
-  for (const tr of sortedTaxRates) {
-    const rate = Number(tr.rate_percentage)
-    if (!gstBreakdownMap[rate]) {
-      gstBreakdownMap[rate] = {
-        ratePercentage: rate,
-        taxableValuePaise: 0,
-        cgstPaise: 0,
-        sgstPaise: 0,
-        igstPaise: 0,
-      }
-    }
-  }
-
-  if (taxResult && taxResult.lineItems) {
-    for (const item of taxResult.lineItems) {
-      const rate = Number(item.taxRatePercentage)
-      if (!gstBreakdownMap[rate]) {
-        gstBreakdownMap[rate] = {
-          ratePercentage: rate,
-          taxableValuePaise: 0,
-          cgstPaise: 0,
-          sgstPaise: 0,
-          igstPaise: 0,
-        }
-      }
-      gstBreakdownMap[rate].taxableValuePaise += item.taxableValuePaise
-      gstBreakdownMap[rate].cgstPaise += item.cgstPaise
-      gstBreakdownMap[rate].sgstPaise += item.sgstPaise
-      gstBreakdownMap[rate].igstPaise += item.igstPaise
-    }
-  }
-
-  const sortedGstRates = Object.keys(gstBreakdownMap)
-    .map(Number)
-    .sort((a, b) => a - b)
-
-  // Collect all validation errors to display in a clean summary banner
-  const getValidationErrors = () => {
-    const errorList: string[] = []
-
-    if (errors.billing_name?.message) {
-      errorList.push(`Customer Name: ${errors.billing_name.message}`)
-    }
-    if (errors.billing_gstin?.message) {
-      errorList.push(`Customer GSTIN: ${errors.billing_gstin.message}`)
-    }
-    if (errors.place_of_supply_state_code?.message) {
-      errorList.push(`Place of Supply: ${errors.place_of_supply_state_code.message}`)
-    }
-    if (errors.invoice_date?.message) {
-      errorList.push(`Invoice Date: ${errors.invoice_date.message}`)
-    }
-    if (errors.notes?.message) {
-      errorList.push(`Notes: ${errors.notes.message}`)
-    }
-
-    if (Array.isArray(errors.line_items)) {
-      errors.line_items.forEach((itemError: FieldErrors<InvoiceLineItemInput> | undefined, idx: number) => {
-        if (!itemError) return
-        const prefix = `Item Row #${idx + 1}`
-        if (itemError.description?.message) {
-          errorList.push(`${prefix}: ${itemError.description.message}`)
-        }
-        if (itemError.hsn_sac_code?.message) {
-          errorList.push(`${prefix}: ${itemError.hsn_sac_code.message}`)
-        }
-        if (itemError.quantity?.message) {
-          errorList.push(`${prefix}: ${itemError.quantity.message}`)
-        }
-        if (itemError.unit_price?.message) {
-          errorList.push(`${prefix}: ${itemError.unit_price.message}`)
-        }
-        if (itemError.discount?.message) {
-          errorList.push(`${prefix}: ${itemError.discount.message}`)
-        }
-        if (itemError.tax_rate_id?.message) {
-          errorList.push(`${prefix}: ${itemError.tax_rate_id.message}`)
-        }
-      })
-    }
-
-    if (errors.line_items?.root?.message) {
-      errorList.push(`Line Items: ${errors.line_items.root.message}`)
-    }
-
-    return errorList
-  }
-
-  const validationErrors = getValidationErrors()
-
-  const watchTemplate = watch('invoice_template') || 'template_1'
-  const watchLineItems = watch('line_items') || []
-  const watchPlaceOfSupplyState = watch('place_of_supply_state_code') || business.state_code
-  const watchBillingName = watch('billing_name') || ''
-  const watchBillingGstin = watch('billing_gstin') || ''
-  const watchInvoiceDate = watch('invoice_date') || ''
-
-  // Recalculate invoice totals and taxes in real-time for preview props
-  const previewInvoiceData = (() => {
-    // 1. Prepare sanitized tax calculation inputs while tracking original row indices
-    const indexedInputs = (watchLineItems ?? []).map((li, idx) => {
-      const tr = taxRates.find((r) => r.id === li.tax_rate_id)
-      const ratePct = tr ? Number(tr.rate_percentage) : 0
-      const input = buildPreviewTaxLineInput({
-        quantity: li.quantity,
-        unitPriceRupees: li.unit_price,
-        discountPercent: li.discount,
-        taxRatePercentage: ratePct,
-      })
-
-      return {
-        idx,
-        input,
-      }
-    })
-
-    const validIndexedInputs = indexedInputs.filter(
-      (entry): entry is { idx: number; input: TaxLineItemInput } => entry.input !== null
-    )
-
-    let previewTaxResult: TaxCalculationResult = {
-      supplyType:
-        (watchPlaceOfSupplyState || business.state_code) === business.state_code
-          ? 'intra_state'
-          : 'inter_state',
-      lineItems: [],
-      subtotalPaise: 0,
-      totalCgstPaise: 0,
-      totalSgstPaise: 0,
-      totalIgstPaise: 0,
-      totalTaxPaise: 0,
-      grandTotalPaise: 0,
-      gstRateType: gstRateTypeVal,
-    }
-
-    if (validIndexedInputs.length > 0) {
-      try {
-        previewTaxResult = calculateInvoiceTax({
-          sellerStateCode: business.state_code,
-          placeOfSupplyStateCode: watchPlaceOfSupplyState || business.state_code,
-          lineItems: validIndexedInputs.map((entry) => entry.input),
-          gstRateType: gstRateTypeVal,
-        })
-      } catch {
-        // Fallback to zero summary while user is mid-edit
-      }
-    }
-
-    const calcByRowIndex = new Map<number, TaxLineItemResult>()
-    validIndexedInputs.forEach((entry, validIdx) => {
-      const calcItem = previewTaxResult.lineItems[validIdx]
-      if (calcItem) {
-        calcByRowIndex.set(entry.idx, calcItem)
-      }
-    })
-
-    // 2. Map line items to format expected by templates
-    const lineItemsMapped = (watchLineItems ?? []).map((li, idx) => {
-      const sanitized = indexedInputs[idx]?.input
-      const ratePct = sanitized ? sanitized.taxRatePercentage : 0
-      const calcLi = calcByRowIndex.get(idx) || {
-        taxableValuePaise: 0,
-        cgstPaise: 0,
-        sgstPaise: 0,
-        igstPaise: 0,
-        lineTotalPaise: 0,
-        taxRatePercentage: ratePct,
-      }
-
-      return {
-        id: `item-${idx}`,
-        description: li.description || '',
-        hsn_sac_code: li.hsn_sac_code || '',
-        quantity: li.quantity || 0,
-        unit_of_measurement: li.unit_of_measurement || 'NOS',
-        unit_price_paise: sanitized ? sanitized.unitPricePaise : 0,
-        discount_paise: sanitized?.discountPaise ?? 0,
-        taxable_value_paise: calcLi.taxableValuePaise,
-        tax_rate_percentage: ratePct,
-        cgst_paise: calcLi.cgstPaise,
-        sgst_paise: calcLi.sgstPaise,
-        igst_paise: calcLi.igstPaise,
-        line_total_paise: calcLi.lineTotalPaise,
-      }
-    })
-
-    let billingAddressSnapshot: string | null = null
-    if (selectedCustomer) {
-      const cityStatePincode = [selectedCustomer.city, selectedCustomer.state_code, selectedCustomer.pincode]
-        .filter(Boolean)
-        .join(', ')
-      billingAddressSnapshot = [
-        selectedCustomer.address_line1,
-        selectedCustomer.address_line2,
-        cityStatePincode,
-      ]
-        .filter(Boolean)
-        .join('\n')
-    }
-
-    return {
-      id: initialData?.id || 'draft-id',
-      business_id: business.id,
-      logo_storage_key: business.logo_storage_key,
-      business_name: business.legal_name,
-      city: business.city,
-      seller_gstin_snapshot: business.gstin ? business.gstin.toUpperCase() : null,
-      phone: business.phone,
-      nature_of_business: business.nature_of_business || null,
-      alternate_phone: business.alternate_phone || null,
-      address_line1: business.address_line1,
-      address_line2: business.address_line2 || null,
-      pincode: business.pincode,
-      bank_name: business.bank_name,
-      bank_account_number: business.bank_account_number,
-      bank_ifsc: business.bank_ifsc ? business.bank_ifsc.toUpperCase() : null,
-      invoice_terms: business.invoice_terms,
-      invoice_number: invoiceNumberFormatPreview,
-      invoice_date: watchInvoiceDate,
-      billing_name_snapshot: watchBillingName,
-      billing_gstin_snapshot: watchBillingGstin ? watchBillingGstin.toUpperCase() : null,
-      billing_address_snapshot: billingAddressSnapshot,
-      place_of_supply_state_code: watchPlaceOfSupplyState,
-      subtotal_paise: previewTaxResult.subtotalPaise,
-      total_cgst_paise: previewTaxResult.totalCgstPaise,
-      total_sgst_paise: previewTaxResult.totalSgstPaise,
-      total_igst_paise: previewTaxResult.totalIgstPaise,
-      total_tax_paise: previewTaxResult.totalTaxPaise,
-      grand_total_paise: roundToRupeePaise(previewTaxResult.grandTotalPaise),
-      invoice_template: watchTemplate,
-      // Set rate type snapshot on mapped preview metadata object
-      gst_rate_type: gstRateTypeVal,
-      subscription_plan: business.subscription_plan,
-      subscription_status: business.subscription_status,
-      trial_ends_at: business.trial_ends_at,
-      customer: selectedCustomer ? { phone: selectedCustomer.phone } : null,
-      lineItems: lineItemsMapped,
-    }
-  })()
-
-  const onSaveDraft = async (data: InvoiceDraftInput) => {
-    setGlobalError(null)
-    const res = await saveInvoiceDraft(data)
-    if (res.success) {
-      router.push(`/invoices/${res.data?.invoiceId}`)
-    } else {
-      setGlobalError(res.error.message)
-      if (res.error.code === 'INVOICE_QUOTA_EXCEEDED' || res.error.code === 'QUOTA_EXCEEDED') {
-        setShowQuotaUpgradeModal(true)
-      }
-    }
-  }
-
-  const onFinalizeClick = (data: InvoiceDraftInput) => {
-    if (!isPreviewVerified) {
-      setShowPreviewWarning(true)
-      setGlobalError("Please open the Invoice Preview and verify the layout before finalization.")
-      const pBtn = document.getElementById("draft-preview-btn")
-      if (pBtn) pBtn.scrollIntoView({ behavior: "smooth", block: "center" })
-      return
-    }
-
-    setPendingFinalizeData(data)
-    setShowFinalizeDialog(true)
-  }
-
-  const executeFinalize = async (crossFy = false) => {
-    if (!pendingFinalizeData) return
-    setIsFinalizing(true)
-    setGlobalError(null)
-    try {
-      // Always save the CURRENT form data before finalizing, so edits made after a cancelled attempt (e.g. a
-      // back-dated warning) are never lost. Reuse the id of a draft created by an earlier attempt so a new
-      // invoice is updated in place instead of creating a duplicate draft.
-      const draftRes = await saveInvoiceDraft({
-        ...pendingFinalizeData,
-        id: pendingFinalizeData.id ?? pendingSavedInvoiceId ?? undefined,
-      })
-      if (!draftRes.success) {
-        setGlobalError(draftRes.error.message)
-        if (draftRes.error.code === 'INVOICE_QUOTA_EXCEEDED' || draftRes.error.code === 'QUOTA_EXCEEDED') {
-          setShowQuotaUpgradeModal(true)
-        }
-        setIsFinalizing(false)
-        setShowFinalizeDialog(false)
-        setShowCrossFyDialog(false)
-        return
-      }
-      const invoiceId = draftRes.data?.invoiceId ?? null
-      setPendingSavedInvoiceId(invoiceId)
-
-      if (!invoiceId) {
-        setIsFinalizing(false)
-        setShowFinalizeDialog(false)
-        return
-      }
-
-      const finRes = await finalizeInvoice({
-        id: invoiceId,
-        ...(crossFy ? { confirm_cross_financial_year: true } : {})
-      })
-
-      if (!finRes.success && finRes.error.code === 'INVOICE_DATE_CROSS_FY') {
-        setShowFinalizeDialog(false)
-        setCrossFyErrorMessage(finRes.error.message)
-        setShowCrossFyDialog(true)
-        return
-      }
-
-      if (finRes.success) {
-        setShowFinalizeDialog(false)
-        setShowCrossFyDialog(false)
-        router.push(`/invoices/${finRes.data?.invoiceId}`)
-      } else {
-        setShowFinalizeDialog(false)
-        setShowCrossFyDialog(false)
-        setGlobalError(finRes.error.message)
-        if (finRes.error.code === 'INVOICE_QUOTA_EXCEEDED' || finRes.error.code === 'QUOTA_EXCEEDED') {
-          setShowQuotaUpgradeModal(true)
-        }
-      }
-    } finally {
-      setIsFinalizing(false)
-    }
-  }
-
-  const inputCls = "w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all hover:border-muted-foreground/30 shadow-sm"
-  const tableInputCls = "w-full rounded-md border border-border bg-background px-2 py-1 text-sm font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring hover:border-muted-foreground/20 shadow-sm transition-all"
-  const labelCls = "mb-1 block text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap"
-  const sectionTitleCls = "flex items-center gap-2 mb-2 pb-1.5 border-b border-border"
-
-  const colStyles = {
-    drag: { width: '56px', minWidth: '56px', textAlign: 'left' } as const,
-    sNo: { width: '42px', minWidth: '42px', textAlign: 'left' } as const,
-    // Slightly reduced from 340px to give other columns header wrapping clearance
-    description: { width: '100%', minWidth: '250px' } as const,
-    hsn: { width: '76px', minWidth: '76px', textAlign: 'center' } as const,
-    qty: { width: '64px', minWidth: '64px', textAlign: 'center' } as const,
-    uqc: { width: '72px', minWidth: '72px', textAlign: 'center' } as const,
-    // Expanded from 84px to 125px to prevent "Rate (GST Incl)" column header wrapping
-    rate: { width: '125px', minWidth: '125px', textAlign: 'right' } as const,
-    disc: { width: '64px', minWidth: '64px', textAlign: 'right' } as const,
-    gst: { width: '80px', minWidth: '80px', textAlign: 'center' } as const,
-    netAmt: { width: '100px', minWidth: '100px', textAlign: 'right' } as const,
-    action: { width: '40px', minWidth: '40px', textAlign: 'center' } as const,
-  }
+  const previewInvoiceData = buildPreviewInvoiceData({
+    initialId: initialData?.id,
+    business,
+    watchLineItems: lineItems,
+    watchPlaceOfSupplyState: placeOfSupplyStateCodeVal,
+    watchBillingName: billingNameVal,
+    watchBillingGstin,
+    watchInvoiceDate: invoiceDateVal,
+    watchTemplate,
+    gstRateTypeVal,
+    taxRates,
+    selectedCustomer,
+    invoiceNumberFormatPreview,
+  });
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-3.5 print:hidden">
-        <div className="flex items-center gap-3">
-          <Link href="/invoices" aria-label="Back to invoices" className="flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-sm shrink-0">
-            <ArrowLeft className="size-4" />
-          </Link>
-          <h1 className="text-2xl font-bold tracking-tight font-heading text-foreground whitespace-nowrap">{isDraft ? 'Edit Draft Invoice' : 'New Invoice'}</h1>
-          {isDraft && initialData?.id ? (
-            <div className="ml-auto">
-              <DeleteDraftButton invoiceId={initialData.id} variant="button" redirectTo="/invoices" onError={setGlobalError} />
-            </div>
-          ) : null}
-        </div>
-
-        {globalError && (
-          <div role="alert" className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium animate-shake">
-            <AlertCircle className="size-5 shrink-0 mt-0.5" />
-            <div>{globalError}</div>
-          </div>
-        )}
-        {validationErrors.length > 0 && (
-          <div role="alert" className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium animate-shake">
-            <AlertCircle className="size-5 shrink-0 mt-0.5" />
-            <div className="space-y-1.5 flex-1">
-              <div className="font-bold text-xs uppercase tracking-wider">Please resolve the following validation issues:</div>
-              <ul className="list-disc pl-4 space-y-1 text-xs">
-                {validationErrors.map((err, idx) => (
-                  <li key={idx} className="leading-relaxed font-semibold">{err}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-
-        <form className="flex flex-col gap-3.5">
-          {/* Hidden calculation mode input registered in Hook Form */}
-          <input type="hidden" {...register('gst_rate_type')} />
-          <div className="grid gap-3.5 lg:grid-cols-12">
-            {/* Invoice Details */}
-            <div className="rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm lg:col-span-7">
-              <div className={sectionTitleCls}>
-                <ClipboardEdit className="size-4 text-primary shrink-0" />
-                <span className="text-sm font-bold text-foreground uppercase tracking-wider whitespace-nowrap">Invoice Info</span>
+    <FormProvider {...methods}>
+      <div className="space-y-4">
+        <div className="space-y-3.5 print:hidden">
+          <div className="flex items-center gap-3">
+            <Link href="/invoices" aria-label="Back to invoices" className="flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-sm shrink-0">
+              <ArrowLeft className="size-4" />
+            </Link>
+            <h1 className="text-2xl font-bold tracking-tight font-heading text-foreground whitespace-nowrap">{isDraft ? 'Edit Draft Invoice' : 'New Invoice'}</h1>
+            {isDraft && initialData?.id ? (
+              <div className="ml-auto">
+                <DeleteDraftButton invoiceId={initialData.id} variant="button" redirectTo="/invoices" onError={setGlobalError} />
               </div>
-              <div className="grid gap-3 sm:grid-cols-3 items-end">
-                <div>
-                  <label htmlFor="invoice-number-input" className={labelCls}>Invoice Number</label>
-                  <div className="relative">
-                    <input id="invoice-number-input" aria-label="Invoice number (assigned on finalize)" type="text" readOnly value={invoiceNumberFormatPreview} className={cn(inputCls, 'pr-16 font-mono text-xs text-muted-foreground bg-muted/50 border-dashed')} />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 rounded bg-success-subtle px-1.5 py-0.5 text-[10px] font-bold text-success-text border border-success/20 whitespace-nowrap">AUTO</span>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground whitespace-nowrap truncate">Will lock to a formal series on finalize</p>
-                </div>
-                <div>
-                  <label htmlFor="invoice-date-input" className={labelCls}>Invoice Date</label>
-                  <div className="relative">
-                    <input
-                      id="invoice-date-input"
-                      aria-label="Invoice date"
-                      type="date"
-                      className={cn(inputCls, 'pr-10', errors.invoice_date && 'border-destructive focus:ring-destructive/30 animate-shake')}
-                      {...register('invoice_date')}
-                    />
-                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
-                  </div>
-                  {errors.invoice_date ? (
-                    <p className="mt-1 text-xs text-destructive font-medium">{errors.invoice_date.message}</p>
-                  ) : (
-                    <p className="mt-1 text-xs text-muted-foreground whitespace-nowrap truncate">Select the legal date of this invoice</p>
-                  )}
-                </div>
-                <div>
-                  <label className={labelCls}>Print Preview</label>
-                  <button
-                    id="draft-preview-btn"
-                    type="button"
-                    onClick={() => {
-                      setIsPreviewOpen(true);
-                      setShowPreviewWarning(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center justify-center gap-2 px-3 py-1.5 border rounded-lg text-sm font-semibold transition-all h-[34px] shadow-sm whitespace-nowrap",
-                      showPreviewWarning
-                        ? "border-destructive text-destructive bg-destructive/10 ring-2 ring-destructive/20 animate-shake"
-                        : "border-input bg-background hover:bg-accent text-foreground hover:text-accent-foreground"
-                    )}
-                  >
-                    <Eye className="size-4 shrink-0" /> <span>Preview Invoice</span>
-                  </button>
-                  <p className="mt-1 text-xs text-muted-foreground whitespace-nowrap truncate">Verification check required</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Customer Details */}
-            <div className="rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm lg:col-span-5">
-              <div className={sectionTitleCls}>
-                <User className="size-4 text-primary shrink-0" />
-                <span className="text-sm font-bold text-foreground uppercase tracking-wider whitespace-nowrap">Customer Details</span>
-              </div>
-              <div className="flex flex-col gap-3">
-                <div className="relative">
-                  <label htmlFor="customer-name-input" className={labelCls}>Customer Name</label>
-                  <input
-                    id="customer-name-input"
-                    type="text"
-                    placeholder="Type to search or enter ad-hoc name..."
-                    className={cn(inputCls, errors.billing_name && 'border-destructive focus:ring-destructive/30 animate-shake')}
-                    {...register('billing_name')}
-                    onChange={handleNameChange}
-                    onFocus={() => setIsSuggestionsOpen(true)}
-                    onBlur={() => setTimeout(() => setIsSuggestionsOpen(false), 200)}
-                  />
-                  {errors.billing_name && <p className="mt-1 text-xs text-destructive font-medium">{errors.billing_name.message}</p>}
-
-                  {isSuggestionsOpen && billingNameVal.trim().length > 0 && customerOptions.length > 0 && (
-                    <div className="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg border border-border bg-popover py-1.5 shadow-lg animate-fadeIn text-popover-foreground">
-                      {customerOptions.map(cust => (
-                        <button
-                          key={cust.id}
-                          type="button"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => handleSelectCustomer(cust)}
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium flex justify-between items-center border-b border-border/40 last:border-b-0 cursor-pointer"
-                        >
-                          <span>{cust.name}</span>
-                          {cust.gstin && <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">{cust.gstin}</span>}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label htmlFor="billing-gstin-input" className={labelCls}>GSTIN (Optional)</label>
-                    <input
-                      id="billing-gstin-input"
-                      type="text"
-                      placeholder="e.g. 29ABCDE1234F1Z5"
-                      className={cn(inputCls, 'font-mono text-xs uppercase', errors.billing_gstin && 'border-destructive focus:ring-destructive/30 animate-shake')}
-                      {...register('billing_gstin')}
-                    />
-                    {errors.billing_gstin && <p className="mt-1 text-xs text-destructive font-medium">{errors.billing_gstin.message}</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="place-of-supply-input" className={labelCls}>Place of Supply State</label>
-                    <div className="relative">
-                      <select
-                        id="place-of-supply-input"
-                        aria-label="Place of supply state"
-                        className={cn(inputCls, 'appearance-none pr-9', errors.place_of_supply_state_code && 'border-destructive focus:ring-destructive/30 animate-shake')}
-                        {...register('place_of_supply_state_code')}
-                      >
-                        {INDIAN_GST_STATES.map(s => (
-                          <option key={s.code} value={s.code}>{s.code} - {s.name}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
-                    </div>
-                    {errors.place_of_supply_state_code && <p className="mt-1 text-xs text-destructive font-medium">{errors.place_of_supply_state_code.message}</p>}
-                    {selectedCustomer && selectedCustomer.state_code && placeOfSupplyStateCodeVal && selectedCustomer.state_code !== placeOfSupplyStateCodeVal ? (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Customer is registered in {INDIAN_GST_STATES.find((s) => s.code === selectedCustomer.state_code)?.name ?? selectedCustomer.state_code}. Tax is calculated for the delivery state selected here.
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            </div>
+            ) : null}
           </div>
 
-          {/* Invoice Items */}
-          <div className="rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm">
-            <div className="mb-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-2">
-              <div className="flex items-center gap-2">
-                <ListTodo className="size-4 text-primary" />
-                <span className="text-sm font-bold text-foreground uppercase tracking-wider">Invoice Line Items</span>
-                {fields.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={handleGroupByGst}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground hover:text-primary bg-muted/60 hover:bg-muted px-2 py-0.5 rounded-md border border-border/60 transition-colors ml-1 cursor-pointer"
-                    title="Automatically sort and group items by GST tax bracket (18%, 12%, 5%, 0%)"
-                  >
-                    <ArrowUpDown className="size-3" />
-                    <span>Group by GST</span>
-                  </button>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">GST is calculated automatically in the estimate below</p>
+          {globalError && (
+            <div role="alert" className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium animate-shake">
+              <AlertCircle className="size-5 shrink-0 mt-0.5" />
+              <div>{globalError}</div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/10">
-                    <th className="pl-2 pr-0 py-1.5" style={colStyles.drag} aria-label="Reorder"></th>
-                    <th className="pl-3 pr-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left whitespace-nowrap" style={colStyles.sNo}>S.No</th>
-                    <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left whitespace-nowrap" style={colStyles.description}>Description</th>
-                    {displayPrefs.showHsn && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.hsn}>HSN/SAC</th>}
-                    <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.qty}>Qty</th>
-                    <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.uqc}>UQC</th>
-                    <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center select-none whitespace-nowrap" style={colStyles.rate}>
-                      {/* Native title tooltip wrapper to guarantee no absolute layout clipping within overflow containers */}
-                      <div
-                        className="flex items-center justify-end gap-1 cursor-help whitespace-nowrap"
-                        title={gstRateTypeVal === 'inclusive'
-                          ? "Prices entered are inclusive of GST. Tax will be extracted from this rate during calculations."
-                          : "Prices entered are exclusive of GST. Tax will be added on top of this rate during calculations."
-                        }
-                      >
-                        <span className="whitespace-nowrap">Rate ({gstRateTypeVal === 'inclusive' ? 'GST Incl' : 'GST Excl'})</span>
-                        <span className="text-xs text-muted-foreground font-bold font-sans flex items-center justify-center border border-muted-foreground/30 rounded-full size-3.5 select-none transition-colors hover:border-primary hover:text-primary">i</span>
-                      </div>
-                    </th>
-                    {displayPrefs.discEnabled && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.disc}>Disc (%)</th>}
-                    <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.gst}>GST Rate</th>
-                    <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.netAmt}>Net Amount</th>
-                    <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.action}></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/60">
-                  {fields.map((field, idx) => {
-                    const qty = Number(watch(`line_items.${idx}.quantity`)) || 0
-                    const rate = Number(watch(`line_items.${idx}.unit_price`)) || 0
-                    const disc = Number(watch(`line_items.${idx}.discount`)) || 0
-                    const trId = watch(`line_items.${idx}.tax_rate_id`)
-                    const trPct = Number(taxRates.find(tr => tr.id === trId)?.rate_percentage || 0)
-
-                    const lineGross = rate * qty
-                    const discountAmount = lineGross * (disc / 100)
-                    // If inclusive, line total before roundoff is simply the gross value after discount
-                    const currentNetAmt = gstRateTypeVal === 'inclusive'
-                      ? (lineGross - discountAmount)
-                      : (lineGross - discountAmount) * (1 + trPct / 100)
-                    const lineItemId = field.id
-
-                    const displayNetAmt = netAmtInputValues[lineItemId] !== undefined
-                      ? netAmtInputValues[lineItemId]
-                      : (currentNetAmt > 0 ? currentNetAmt.toFixed(2) : '0.00')
-
-                    const onNetAmtChange = (valStr: string) => {
-                      setNetAmtInputValues(prev => ({ ...prev, [lineItemId]: valStr }))
-
-                      const val = parseFloat(valStr)
-                      if (!isNaN(val) && val >= 0) {
-                        if (qty > 0) {
-                          const discountFactor = 1 - (disc / 100)
-                          if (discountFactor > 0) {
-                            let calculatedRate = 0
-                            if (gstRateTypeVal === 'inclusive') {
-                              // Case 4 (Inclusive Backward): Extract rate directly from Net Amount without backing out tax
-                              calculatedRate = val / (qty * discountFactor)
-                            } else {
-                              // Case 2 (Exclusive Backward): Back out the tax first, then extract rate
-                              const amtBeforeGst = val / (1 + trPct / 100)
-                              calculatedRate = amtBeforeGst / (qty * discountFactor)
-                            }
-                            setValue(`line_items.${idx}.unit_price`, parseFloat(calculatedRate.toFixed(2)))
-                          }
-                        }
-                      }
-                    }
-
-                    const onNetAmtBlur = () => {
-                      setNetAmtInputValues(prev => {
-                        const copy = { ...prev }
-                        delete copy[lineItemId]
-                        return copy
-                      })
-                    }
-
-                    const rowDescVal = watch(`line_items.${idx}.description`) || ''
-
-                    const isDragging = draggedIdx === idx
-                    const isDropTop = dropTargetIdx === idx && dropPosition === 'top' && draggedIdx !== idx
-                    const isDropBottom = dropTargetIdx === idx && dropPosition === 'bottom' && draggedIdx !== idx
-
-                    return (
-                      <tr
-                        key={field.id}
-                        data-row-index={idx}
-                        onDragOver={(e) => handleDragOver(e, idx)}
-                        onDragLeave={(e) => handleDragLeave(e, idx)}
-                        onDrop={(e) => handleDrop(e, idx)}
-                        className={cn(
-                          "group transition-colors relative",
-                          (isDragging || touchDraggingIdx === idx) && "opacity-60 bg-muted/40 select-none",
-                          (!isDragging && touchDraggingIdx !== idx) && "hover:bg-muted/5",
-                          isDropTop && "bg-slate-200/75 dark:bg-slate-800/80 [box-shadow:inset_0_3px_0_0_#334155] dark:[box-shadow:inset_0_3px_0_0_#94a3b8]",
-                          isDropBottom && "bg-slate-200/75 dark:bg-slate-800/80 [box-shadow:inset_0_-3px_0_0_#334155] dark:[box-shadow:inset_0_-3px_0_0_#94a3b8]"
-                        )}
-                      >
-                        {/* Drag Handle & Keyboard Reorder */}
-                        <td className="pl-2 pr-0 py-1.5 align-middle" style={colStyles.drag}>
-                          <div className="flex items-center gap-0.5">
-                            <div
-                              draggable={fields.length > 1}
-                              onDragStart={(e) => handleDragStart(e, idx)}
-                              onDragEnd={handleDragEnd}
-                              onTouchStart={(e) => handleTouchStart(e, idx)}
-                              onTouchMove={handleTouchMove}
-                              onTouchEnd={handleTouchEnd}
-                              onTouchCancel={handleTouchEnd}
-                              className={cn(
-                                "flex items-center justify-center w-4 h-6 rounded transition-all select-none touch-none",
-                                fields.length > 1
-                                  ? "cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-muted/80 active:scale-95"
-                                  : "opacity-20 cursor-default",
-                                touchDraggingIdx === idx && "bg-indigo-500/20 text-indigo-600 scale-110 shadow-xs"
-                              )}
-                              title={fields.length > 1 ? "Drag to reorder row" : undefined}
-                              aria-label={fields.length > 1 ? `Reorder line item ${idx + 1}` : undefined}
-                            >
-                              <GripVertical className="size-3.5" />
-                            </div>
-                            <div className="flex flex-col gap-0.5">
-                              <button
-                                type="button"
-                                id={`move-line-up-${idx + 1}`}
-                                disabled={idx === 0}
-                                aria-label={`Move line ${idx + 1} up`}
-                                onClick={() => handleMoveLine(idx, idx - 1, 'up')}
-                                className="flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
-                              >
-                                <ChevronUp className="size-3" />
-                              </button>
-                              <button
-                                type="button"
-                                id={`move-line-down-${idx + 1}`}
-                                disabled={idx === fields.length - 1}
-                                aria-label={`Move line ${idx + 1} down`}
-                                onClick={() => handleMoveLine(idx, idx + 1, 'down')}
-                                className="flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
-                              >
-                                <ChevronDown className="size-3" />
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* S.No */}
-                        <td className="pl-3 pr-2 py-1.5 text-xs font-mono text-muted-foreground text-left" style={colStyles.sNo}>
-                          {String(idx + 1).padStart(3, '0')}
-                        </td>
-
-                        {/* Description with autocomplete */}
-                        <td className="px-2 py-1.5 relative" style={colStyles.description}>
-                          <input
-                            type="text"
-                            placeholder="Description"
-                            aria-label={`Description, line ${idx + 1}`}
-                            className={cn(tableInputCls, errors.line_items?.[idx]?.description && 'border-destructive focus:ring-destructive/30 animate-shake')}
-                            style={colStyles.description}
-                            {...register(`line_items.${idx}.description`)}
-                            onChange={(e) => {
-                              handleDescChange(idx, e.target.value)
-                              updateInputRect(e.target)
-                            }}
-                            onFocus={(e) => {
-                              setSuggestIdx(idx)
-                              setIsProdSuggestionsOpen(true)
-                              updateInputRect(e.target)
-                            }}
-                            onBlur={() => {
-                              setTimeout(() => {
-                                setIsProdSuggestionsOpen(false)
-                                updateInputRect(null)
-                              }, 200)
-                            }}
-                          />
-                          {mounted && isProdSuggestionsOpen && suggestIdx === idx && rowDescVal.trim().length > 0 && productOptions.length > 0 && activeInputRect && (
-                            createPortal(
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  top: activeInputRect.top + 4,
-                                  left: activeInputRect.left,
-                                  width: activeInputRect.width,
-                                  zIndex: 9999,
-                                }}
-                                className="max-h-48 overflow-y-auto rounded-lg border border-border bg-popover py-1.5 shadow-lg animate-fadeIn text-popover-foreground"
-                              >
-                                {productOptions.map(prod => (
-                                  <button
-                                    key={prod.id}
-                                    type="button"
-                                    onMouseDown={(e) => e.preventDefault()}
-                                    onClick={() => handleSelectProduct(idx, prod)}
-                                    className="w-full text-left px-3 py-2 text-xs hover:bg-accent hover:text-accent-foreground transition-colors font-medium flex justify-between items-center border-b border-border/40 last:border-b-0 cursor-pointer"
-                                  >
-                                    <span>{prod.name}</span>
-                                    <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded animate-fadeIn">
-                                      {prod.hsn_sac_code || 'N/A'} | ₹{(prod.default_sale_price_paise / 100).toFixed(2)}
-                                    </span>
-                                  </button>
-                                ))}
-                              </div>,
-                              document.body
-                            )
-                          )}
-                        </td>
-
-                        {/* HSN/SAC */}
-                        {displayPrefs.showHsn && (
-                          <td className="px-2 py-1.5" style={colStyles.hsn}>
-                            <input
-                              type="text"
-                              placeholder="HSN"
-                              aria-label={`HSN or SAC, line ${idx + 1}`}
-                              className={cn(tableInputCls, 'font-mono text-center', errors.line_items?.[idx]?.hsn_sac_code && 'border-destructive focus:ring-destructive/30 animate-shake')}
-                              style={colStyles.hsn}
-                              {...register(`line_items.${idx}.hsn_sac_code`)}
-                            />
-                          </td>
-                        )}
-
-                        {/* Qty */}
-                        <td className="px-2 py-1.5" style={colStyles.qty}>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.001"
-                            aria-label={`Quantity, line ${idx + 1}`}
-                            className={cn(tableInputCls, 'text-center font-semibold', errors.line_items?.[idx]?.quantity && 'border-destructive focus:ring-destructive/30 animate-shake')}
-                            style={colStyles.qty}
-                            {...register(`line_items.${idx}.quantity`)}
-                          />
-                        </td>
-
-                        {/* UQC */}
-                        <td className="px-2 py-1.5" style={colStyles.uqc}>
-                          <div className="relative" style={colStyles.uqc}>
-                            <select
-                              aria-label={`Unit, line ${idx + 1}`}
-                              className="w-full appearance-none rounded-md border border-border bg-background pl-2.5 pr-6 py-1 text-sm font-medium text-foreground text-center focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer hover:border-muted-foreground/20 shadow-sm transition-all"
-                              style={colStyles.uqc}
-                              {...register(`line_items.${idx}.unit_of_measurement`)}
-                            >
-                              {UNIT_OF_MEASUREMENT_OPTIONS.map((uqc) => (
-                                <option key={uqc} value={uqc}>
-                                  {uqc}
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none size-3 text-muted-foreground" />
-                          </div>
-                        </td>
-
-                        {/* Rate */}
-                        <td className="px-2 py-1.5" style={colStyles.rate}>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            aria-label={`Rate, line ${idx + 1}`}
-                            className={cn(tableInputCls, 'text-right', errors.line_items?.[idx]?.unit_price && 'border-destructive focus:ring-destructive/30 animate-shake')}
-                            style={colStyles.rate}
-                            {...register(`line_items.${idx}.unit_price`)}
-                          />
-                        </td>
-
-                        {/* Disc */}
-                        {displayPrefs.discEnabled && (
-                          <td className="px-2 py-1.5" style={colStyles.disc}>
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              step="1"
-                              aria-label={`Discount percent, line ${idx + 1}`}
-                              className={cn(tableInputCls, 'text-right', errors.line_items?.[idx]?.discount && 'border-destructive focus:ring-destructive/30 animate-shake')}
-                              style={colStyles.disc}
-                              {...register(`line_items.${idx}.discount`)}
-                            />
-                          </td>
-                        )}
-
-                        {/* GST Rate */}
-                        <td className="px-2 py-1.5" style={colStyles.gst}>
-                          <div className="relative" style={colStyles.gst}>
-                            <select
-                              aria-label={`Tax rate, line ${idx + 1}`}
-                              className={cn("w-full appearance-none rounded-md border border-border bg-background pl-2.5 pr-6 py-1 text-xs text-foreground text-center focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer hover:border-muted-foreground/20 shadow-sm transition-all", errors.line_items?.[idx]?.tax_rate_id && 'border-destructive focus:ring-destructive/30 animate-shake')}
-                              style={colStyles.gst}
-                              title={taxRates.find(tr => tr.id === trId)?.label || 'Select GST Rate'}
-                              {...register(`line_items.${idx}.tax_rate_id`)}
-                            >
-                              <option value="" disabled>SELECT</option>
-                              {sortedTaxRates.map(tr => (
-                                <option key={tr.id} value={tr.id} title={tr.label}>
-                                  {Number(tr.rate_percentage)}%
-                                </option>
-                              ))}
-                            </select>
-                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none size-3 text-muted-foreground" />
-                          </div>
-                        </td>
-
-                        {/* NET Amount */}
-                        <td className="px-2 py-1.5" style={colStyles.netAmt}>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            aria-label={`Net amount, line ${idx + 1}`}
-                            className={cn(tableInputCls, 'text-right font-semibold text-primary focus:ring-primary/20')}
-                            style={colStyles.netAmt}
-                            value={displayNetAmt}
-                            onChange={(e) => onNetAmtChange(e.target.value)}
-                            onBlur={onNetAmtBlur}
-                          />
-                        </td>
-
-                        {/* Action */}
-                        <td className="px-2 py-1.5 text-center" style={colStyles.action}>
-                          {fields.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => remove(idx)}
-                              aria-label={`Remove line item ${idx + 1}`}
-                              className="flex size-7 items-center justify-center rounded-lg text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive border border-transparent hover:border-destructive/20 shadow-sm md:opacity-0 group-hover:opacity-100 cursor-pointer"
-                            >
-                              <Trash2 className="size-3.5" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <button type="button" onClick={() => append({ product_id: '', description: '', hsn_sac_code: '', quantity: 1, unit_of_measurement: 'NOS', unit_price: 0, discount: 0, tax_rate_id: '' })} className="mt-2.5 flex items-center gap-1.5 text-sm font-bold text-primary transition-all hover:text-primary/80 hover:translate-x-0.5 whitespace-nowrap cursor-pointer">
-              <Plus className="size-4" /> Add Item Row
-            </button>
-          </div>
-
-          {/* Notes + Summary */}
-          <div className="grid gap-3.5 lg:grid-cols-[1fr_1.3fr_1fr]">
-            {/* Internal Notes */}
-            <div className="rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm flex flex-col h-full">
-              <div className={sectionTitleCls}>
-                <ClipboardEdit className="size-4 text-primary" />
-                <span className="text-sm font-bold text-foreground uppercase tracking-wider">Internal Notes</span>
+          )}
+          {validationErrors.length > 0 && (
+            <div role="alert" className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium animate-shake">
+              <AlertCircle className="size-5 shrink-0 mt-0.5" />
+              <div className="space-y-1.5 flex-1">
+                <div className="font-bold text-xs uppercase tracking-wider">Please resolve the following validation issues:</div>
+                <ul className="list-disc pl-4 space-y-1 text-xs">
+                  {validationErrors.map((err, idx) => (
+                    <li key={idx} className="leading-relaxed font-semibold">{err}</li>
+                  ))}
+                </ul>
               </div>
-              <textarea
-                rows={3}
-                placeholder="Provide payment instructions or extra notes to display on the invoice..."
-                className={cn(inputCls, 'resize-none flex-1 mt-1.5')}
-                {...register('notes')}
+            </div>
+          )}
+
+          <form className="flex flex-col gap-3.5">
+            {/* Hidden calculation mode input registered in Hook Form */}
+            <input type="hidden" {...register('gst_rate_type')} />
+            <div className="grid gap-3.5 lg:grid-cols-12">
+              <InvoiceDetailsCard
+                invoiceNumberFormatPreview={invoiceNumberFormatPreview}
+                showPreviewWarning={showPreviewWarning}
+                setIsPreviewOpen={setIsPreviewOpen}
+                setShowPreviewWarning={setShowPreviewWarning}
+              />
+              <CustomerDetailsCard
+                selectedCustomer={selectedCustomer}
+                customerOptions={customerOptions}
+                isSuggestionsOpen={isSuggestionsOpen}
+                billingNameVal={billingNameVal}
+                placeOfSupplyStateCodeVal={placeOfSupplyStateCodeVal}
+                setIsSuggestionsOpen={setIsSuggestionsOpen}
+                handleSelectCustomer={handleSelectCustomer}
+                handleNameChange={handleNameChange}
               />
             </div>
 
-            {/* GST Rate-wise Breakdown Card */}
-            <div className="rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm flex flex-col h-full">
-              <div className={sectionTitleCls}>
-                <Percent className="size-4 text-primary" />
-                <span className="text-sm font-bold text-foreground uppercase tracking-wider">GST Rate-wise Breakdown</span>
-              </div>
-              <div className="overflow-x-auto flex-1 mt-1">
-                {(() => {
-                  const formatTaxBreakdown = (paise: number) => {
-                    if (paise === 0) {
-                      return <span className="text-zinc-300 dark:text-zinc-700 font-normal select-none">–</span>;
-                    }
-                    return formatINR(paise / 100);
-                  };
+            <LineItemsTable
+              fields={fields}
+              append={append}
+              remove={remove}
+              handleMoveLine={handleMoveLine}
+              handleGroupByGst={handleGroupByGst}
+              taxRates={taxRates}
+              sortedTaxRates={sortedTaxRates}
+              gstRateTypeVal={gstRateTypeVal}
+              displayPrefs={displayPrefs}
+              mounted={mounted}
+              draggedIdx={draggedIdx}
+              dropTargetIdx={dropTargetIdx}
+              dropPosition={dropPosition}
+              touchDraggingIdx={touchDraggingIdx}
+              handleDragStart={handleDragStart}
+              handleDragOver={handleDragOver}
+              handleDragLeave={handleDragLeave}
+              handleDrop={handleDrop}
+              handleDragEnd={handleDragEnd}
+              handleTouchStart={handleTouchStart}
+              handleTouchMove={handleTouchMove}
+              handleTouchEnd={handleTouchEnd}
+              suggestIdx={suggestIdx}
+              isProdSuggestionsOpen={isProdSuggestionsOpen}
+              setIsProdSuggestionsOpen={setIsProdSuggestionsOpen}
+              activeInputRect={activeInputRect}
+              updateInputRect={updateInputRect}
+              productOptions={productOptions}
+              handleSelectProduct={handleSelectProduct}
+              handleDescChange={handleDescChange}
+              handleDescFocus={handleDescFocus}
+            />
 
-                  return (
-                    <table className="w-full text-sm text-left">
-                      <thead>
-                        <tr className="border-b border-border bg-muted/10">
-                          <th className="px-3 py-1 text-left font-bold text-muted-foreground uppercase tracking-wider text-xs">GST Rate</th>
-                          <th className="px-3 py-1 text-right font-bold text-muted-foreground uppercase tracking-wider text-xs">Taxable Value</th>
-                          <th className="px-3 py-1 text-right font-bold text-muted-foreground uppercase tracking-wider text-xs">CGST</th>
-                          <th className="px-3 py-1 text-right font-bold text-muted-foreground uppercase tracking-wider text-xs">SGST</th>
-                          <th className="px-3 py-1 text-right font-bold text-muted-foreground uppercase tracking-wider text-xs">IGST</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border/40">
-                        {sortedGstRates.map(rate => {
-                          const row = gstBreakdownMap[rate];
-                          return (
-                            <tr key={rate} className="hover:bg-muted/5 transition-colors">
-                              <td className="px-3 py-1 text-left font-semibold text-foreground">{rate}%</td>
-                              <td className="px-3 py-1 text-right text-foreground">{formatINR(row.taxableValuePaise / 100)}</td>
-                              <td className="px-3 py-1 text-right text-foreground">{formatTaxBreakdown(row.cgstPaise)}</td>
-                              <td className="px-3 py-1 text-right text-foreground">{formatTaxBreakdown(row.sgstPaise)}</td>
-                              <td className="px-3 py-1 text-right text-foreground">{formatTaxBreakdown(row.igstPaise)}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                      <tfoot>
-                        <tr className="border-t-2 border-border font-bold bg-muted/5">
-                          <td className="px-3 py-1 text-left text-foreground">Total</td>
-                          <td className="px-3 py-1 text-right text-foreground">{formatINR(totalTaxable)}</td>
-                          <td className="px-3 py-1 text-right text-foreground">{formatTaxBreakdown(taxResult ? taxResult.totalCgstPaise : 0)}</td>
-                          <td className="px-3 py-1 text-right text-foreground">{formatTaxBreakdown(taxResult ? taxResult.totalSgstPaise : 0)}</td>
-                          <td className="px-3 py-1 text-right text-foreground">{formatTaxBreakdown(taxResult ? taxResult.totalIgstPaise : 0)}</td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  );
-                })()}
-              </div>
+            <div className="grid gap-3.5 lg:grid-cols-[1fr_1.3fr_1fr]">
+              <InternalNotesCard />
+              <GstBreakdownCard
+                sortedGstRates={sortedGstRates}
+                gstBreakdownMap={gstBreakdownMap}
+                totalTaxable={totalTaxable}
+                taxResult={taxResult}
+              />
+              <TotalsSummaryCard
+                supplyType={supplyType}
+                totalTaxable={totalTaxable}
+                totalCGST={totalCGST}
+                totalSGST={totalSGST}
+                totalIGST={totalIGST}
+                roundOff={roundOff}
+                grandTotal={grandTotal}
+                isFinalizing={isFinalizing}
+                onSaveDraft={onSaveDraft}
+                onFinalizeClick={onFinalizeClick}
+              />
             </div>
-
-            {/* Summary & GST Breakdown */}
-            <div className="rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm flex flex-col h-full">
-              <div className={sectionTitleCls}>
-                <Receipt className="size-4 text-primary shrink-0" />
-                <span className="text-sm font-bold text-foreground uppercase tracking-wider whitespace-nowrap">Summary &amp; GST Breakdown</span>
-              </div>
-              <div className="mb-1">
-                <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider border whitespace-nowrap', supplyType === 'intra_state' ? 'bg-success-subtle text-success-text border-success/20' : 'bg-blue-100/60 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 border-blue-200 dark:border-blue-900')}>
-                  {supplyType === 'intra_state' ? 'Intra-state Supply (CGST + SGST)' : 'Inter-state Supply (IGST)'}
-                </span>
-              </div>
-              <div className="flex flex-col flex-1 justify-between mt-1">
-                <div className="divide-y divide-zinc-150 dark:divide-zinc-800/40 text-sm border-b border-zinc-150 dark:border-zinc-800/40 mb-2.5">
-                  <div className="flex justify-between py-0.5">
-                    <span className="text-muted-foreground font-semibold whitespace-nowrap">Taxable Value</span>
-                    <span className="font-bold text-foreground whitespace-nowrap">{formatINR(totalTaxable)}</span>
-                  </div>
-                  {supplyType === 'intra_state' ? (
-                    <>
-                      <div className="flex justify-between py-0.5">
-                        <span className="text-muted-foreground font-semibold flex items-center gap-1.5 whitespace-nowrap">
-                          <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] shrink-0" />
-                          CGST
-                        </span>
-                        <span className="font-bold text-foreground whitespace-nowrap">{formatINR(totalCGST)}</span>
-                      </div>
-                      <div className="flex justify-between py-0.5">
-                        <span className="text-muted-foreground font-semibold flex items-center gap-1.5 whitespace-nowrap">
-                          <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)] shrink-0" />
-                          SGST
-                        </span>
-                        <span className="font-bold text-foreground whitespace-nowrap">{formatINR(totalSGST)}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex justify-between py-0.5">
-                      <span className="text-muted-foreground font-semibold flex items-center gap-1.5 whitespace-nowrap">
-                        <span className="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.6)] shrink-0" />
-                        IGST
-                      </span>
-                      <span className="font-bold text-foreground whitespace-nowrap">{formatINR(totalIGST)}</span>
-                    </div>
-                  )}
-
-                  {/* Rounded Off Row */}
-                  <div className="flex justify-between py-0.5 italic text-muted-foreground">
-                    <span className="font-semibold whitespace-nowrap">Rounded Off</span>
-                    <span className="font-bold whitespace-nowrap">
-                      {roundOff >= 0 ? `+₹${roundOff.toFixed(2)}` : `-₹${Math.abs(roundOff).toFixed(2)}`}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="rounded-xl bg-gradient-to-r from-primary/[0.05] to-primary/[0.015] dark:from-primary/[0.04] dark:to-transparent border-2 border-primary/30 dark:border-primary/20 px-3.5 py-2 flex justify-between items-center shadow-[0_0_20px_rgba(59,130,246,0.14),inset_0_1px_0_rgba(255,255,255,0.05)] dark:shadow-[0_0_25px_rgba(59,130,246,0.09),inset_0_1px_0_rgba(255,255,255,0.05)] hover:border-primary/50 hover:shadow-[0_0_28px_rgba(59,130,246,0.22),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all duration-300">
-                    <span className="text-base font-bold text-foreground whitespace-nowrap">Grand Total</span>
-                    <span className="text-xl font-black text-primary font-heading whitespace-nowrap">{formatINR(grandTotal)}</span>
-                  </div>
-
-                  <div className="mt-2.5 flex gap-2.5">
-                    <Button variant="outline" size="sm" type="button" className="flex-1 shadow-sm font-bold text-sm whitespace-nowrap" disabled={isSubmitting || isFinalizing} onClick={handleSubmit(onSaveDraft)}>
-                      Save Draft
-                    </Button>
-                    <Button type="button" size="sm" className="flex-1 shadow-sm font-bold text-sm hover:glow-btn whitespace-nowrap" disabled={isSubmitting || isFinalizing} onClick={handleSubmit(onFinalizeClick)}>
-                      <Send className="size-4 shrink-0" /> <span className="whitespace-nowrap">{isFinalizing ? 'Finalizing...' : 'Finalize Invoice'}</span>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      {/* Dynamic Live Print Preview Modal Overlay */}
-      {mounted && isPreviewOpen && (() => {
-        // Calculate elastic page and modal widths dynamically based on active columns
-        const templateWidth = 780 + (displayPrefs.showHsn ? 70 : 0) + (displayPrefs.discEnabled ? 70 : 0);
-        const previewMaxWidth = `${templateWidth}px`;
-        const modalMaxWidth = `${templateWidth + 80}px`;
-
-        return createPortal(
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none animate-fadeIn print:hidden">
-            <div
-              className="bg-background rounded-xl border border-border shadow-2xl w-full h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
-              style={{ maxWidth: modalMaxWidth }}
-            >
-              {/* Modal Header */}
-              <div className="px-4 sm:px-6 py-2.5 border-b border-border flex flex-row items-center justify-between gap-4 bg-muted/20 overflow-x-auto shrink-0">
-                {/* Left Side: Title */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <Eye className="size-5 text-primary" />
-                  <span className="text-sm font-bold text-foreground uppercase tracking-wider whitespace-nowrap">Invoice Print Preview</span>
-                </div>
-
-                {/* Right Side: Grouped Controls */}
-                <div className="flex items-center gap-3 shrink-0">
-                  {/* 4. Template Selector synced with form */}
-                  <TemplateSelector
-                    value={watchTemplate}
-                    business={business}
-                    compact
-                    onChange={(chosen) => {
-                      if (isInvoiceTemplateId(chosen)) {
-                        setValue('invoice_template', chosen);
-                      }
-                    }}
-                    onUpgradeClick={() => {
-                      setValue('invoice_template', 'template_1');
-                      setShowTemplateUpgradeModal(true);
-                    }}
-                  />
-
-                  {/* 3. Print size/orientation toggle with Print Button */}
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex overflow-hidden rounded-md border border-primary/25 text-[13px] shadow-[0_0_8px_rgba(59,130,246,0.06)] bg-card">
-                      {(['A4', 'A5'] as const).map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setPreviewPrintSize(s)}
-                          className={cn(
-                            "px-3 py-1 transition-all cursor-pointer font-bold",
-                            previewPrintSize === s
-                              ? 'bg-primary text-primary-foreground font-bold'
-                              : 'bg-background text-muted-foreground hover:bg-accent font-semibold first:border-r first:border-border'
-                          )}
-                          title={`${s} Paper Layout`}
-                        >
-                          {s}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => window.print()}
-                      className="flex size-8 items-center justify-center rounded-md border border-primary/25 bg-background text-muted-foreground hover:text-foreground transition-all hover:bg-accent shadow-[0_0_8px_rgba(59,130,246,0.06)] cursor-pointer"
-                      title="Print Invoice (System Dialog)"
-                    >
-                      <Printer className="size-[18px]" />
-                    </button>
-                  </div>
-
-                  {/* Group containing checkbox and close button with exact 7px gap */}
-                  <div className="flex items-center gap-[7px]">
-                    {/* 2. Preview Verified Checkbox */}
-                    <label className={cn(
-                      "flex items-center gap-2 cursor-pointer bg-card rounded-md px-3 py-1.5 text-xs font-bold transition-all select-none border",
-                      isPreviewVerified
-                        ? "border-success/30 dark:border-success/20 shadow-[0_0_10px_rgba(16,185,129,0.08)] hover:border-success/50"
-                        : "border-border shadow-sm hover:border-muted-foreground/30"
-                    )}>
-                      <input
-                        type="checkbox"
-                        checked={isPreviewVerified}
-                        onChange={(e) => {
-                          setIsPreviewVerified(e.target.checked);
-                          if (e.target.checked) setShowPreviewWarning(false);
-                        }}
-                        className="rounded border-border text-success focus:ring-success accent-success size-4 cursor-pointer"
-                      />
-                      <span className={cn(
-                        "transition-colors whitespace-nowrap",
-                        isPreviewVerified
-                          ? "text-success-text font-bold"
-                          : "text-muted-foreground font-semibold"
-                      )}>
-                        Preview Verified
-                      </span>
-                    </label>
-
-                    {/* 1. Close Button */}
-                    <button
-                      type="button"
-                      aria-label="Close dialog"
-                      onClick={() => setIsPreviewOpen(false)}
-                      className="rounded-lg p-1.5 text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all border border-red-500/25 shadow-[0_0_8px_rgba(239,68,68,0.12)] hover:border-red-500/45 cursor-pointer"
-                    >
-                      <span className="sr-only">Close</span>
-                      <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Body */}
-              <div className="flex-1 overflow-y-auto p-6 bg-zinc-100 dark:bg-zinc-900/60 flex justify-center select-text">
-                <div
-                  className="w-full bg-white shadow-md border border-border transition-all print:p-0 print:border-none print:shadow-none print:rounded-none"
-                  style={{
-                    maxWidth: previewMaxWidth,
-                    fontFamily: 'inherit'
-                  }}
-                >
-                  <InvoicePrintView
-                    invoice={previewInvoiceData}
-                    businessStateCode={business.state_code}
-                    printSize={previewPrintSize}
-                    displayPrefs={displayPrefs}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )
-      })()}
-
-      {/* Hidden print container for preview rendering in draft mode */}
-      {isPreviewOpen && (
-        <div className="hidden print:block bg-white text-slate-900">
-          <InvoicePrintView
-            invoice={previewInvoiceData}
-            businessStateCode={business.state_code}
-            printSize={previewPrintSize}
-            displayPrefs={displayPrefs}
-          />
+          </form>
         </div>
-      )}
 
-      <UpgradePromptModal
-        isOpen={showTemplateUpgradeModal}
-        onClose={() => setShowTemplateUpgradeModal(false)}
-        title="Unlock Premium Print Templates"
-        featureName="Traditional &amp; Book Depot Print Templates"
-        description="Upgrade to Essentials Pro (₹399/mo) to unlock authentic Book Depot, Carbon Pad, and Modern GST invoice print templates."
-        recommendedPlan="essentials"
-        ctaText="Upgrade to Essentials Pro (₹399/mo)"
-      />
+        <InvoicePreviewModal
+          mounted={mounted}
+          isPreviewOpen={isPreviewOpen}
+          setIsPreviewOpen={setIsPreviewOpen}
+          previewInvoiceData={previewInvoiceData}
+          business={business}
+          displayPrefs={displayPrefs}
+          watchTemplate={watchTemplate}
+          previewPrintSize={previewPrintSize}
+          setPreviewPrintSize={setPreviewPrintSize}
+          isPreviewVerified={isPreviewVerified}
+          setIsPreviewVerified={setIsPreviewVerified}
+          setShowPreviewWarning={setShowPreviewWarning}
+          showTemplateUpgradeModal={showTemplateUpgradeModal}
+          setShowTemplateUpgradeModal={setShowTemplateUpgradeModal}
+          setValue={setValue}
+        />
 
-      <UpgradePromptModal
-        isOpen={showQuotaUpgradeModal}
-        onClose={() => setShowQuotaUpgradeModal(false)}
-        title="Monthly Invoice Limit Reached"
-        featureName="Unlimited Monthly Invoicing"
-        description="You have reached your Free plan limit of 30 invoices this calendar month. Upgrade to Essentials Pro (₹399/mo) for unlimited invoices and full statutory compliance."
-        recommendedPlan="essentials"
-        ctaText="Upgrade to Essentials Pro (₹399/mo)"
-      />
-
-      {/* Accessible statutory finalize confirmation dialog */}
-      <ConfirmDialog
-        open={showFinalizeDialog}
-        onOpenChange={setShowFinalizeDialog}
-        title="Finalize invoice?"
-        confirmLabel="Finalize invoice"
-        description={
-          <div className="space-y-3 text-sm">
-            <p>
-              Once finalized, this invoice cannot be edited — only corrected via a credit note.
-            </p>
-            <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-1.5 text-xs">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Invoice Number:</span>
-                <span className="font-semibold text-foreground">{invoiceNumberFormatPreview}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Invoice Date:</span>
-                <span className="font-semibold text-foreground">{invoiceDateVal ? formatIstDate(invoiceDateVal, { day: '2-digit', month: 'short', year: 'numeric' }) : 'Today'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Customer:</span>
-                <span className="font-semibold text-foreground">{billingNameVal || '—'}</span>
-              </div>
-              <div className="flex justify-between border-t border-border/60 pt-1.5 mt-1">
-                <span className="text-muted-foreground font-medium">Grand Total:</span>
-                <span className="font-bold text-foreground">{formatINR(grandTotal)}</span>
-              </div>
-            </div>
-          </div>
-        }
-        onConfirm={() => executeFinalize(false)}
-      />
-
-      {/* Accessible cross-financial-year confirmation dialog */}
-      <ConfirmDialog
-        open={showCrossFyDialog}
-        onOpenChange={setShowCrossFyDialog}
-        title="Finalize back-dated invoice?"
-        confirmLabel="Finalize back-dated invoice"
-        description={
-          <div className="space-y-2 text-sm">
-            <p>{crossFyErrorMessage}</p>
-            <p className="text-xs text-muted-foreground">
-              Proceed with this back-dated invoice?
-            </p>
-          </div>
-        }
-        onConfirm={() => executeFinalize(true)}
-      />
-    </div>
-  )
+        <FinalizeDialogs
+          showQuotaUpgradeModal={showQuotaUpgradeModal}
+          setShowQuotaUpgradeModal={setShowQuotaUpgradeModal}
+          showFinalizeDialog={showFinalizeDialog}
+          setShowFinalizeDialog={setShowFinalizeDialog}
+          showCrossFyDialog={showCrossFyDialog}
+          setShowCrossFyDialog={setShowCrossFyDialog}
+          crossFyErrorMessage={crossFyErrorMessage}
+          invoiceNumberFormatPreview={invoiceNumberFormatPreview}
+          invoiceDateVal={invoiceDateVal}
+          billingNameVal={billingNameVal}
+          grandTotal={grandTotal}
+          executeFinalize={executeFinalize}
+        />
+      </div>
+    </FormProvider>
+  );
 }
