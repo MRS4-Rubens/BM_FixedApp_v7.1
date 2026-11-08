@@ -298,3 +298,10 @@ Verified on branch `fix/sec-007-dependency-audit` against `main` `3e0c0f3`; ever
 - **Print stylesheet:** postcss/browserslist moved, so I rebuilt `lib/pdf/print-stylesheet.generated.ts`: byte-identical (225,718 bytes, no diff).
 - **Checks (local):** `pnpm install --frozen-lockfile` clean; `pnpm typecheck` clean; `pnpm lint:ratchet` = baseline; `pnpm exec vitest run` 163 files passed, 4 skipped (1377 tests); `pnpm build` OK.
 - **Before launch:** the better-auth allowlist expires 2027-02-28; re-review it together with the @neondatabase/auth 0.7.0-beta evaluation (D5). Session-refresh-after-idle-hour (audit verification item) is a manual check at that evaluation.
+
+### Preview verification (Vercel preview of PR #18, 2026-11-08)
+
+- **CI:** all 6 checks green on `73961ea`, including the now-blocking "Dependency audit" job (CI log: `critical=2, high=8, moderate=5, low=2 (total=17)`, `Result: PASSED`, same as local).
+- **Local E2E against the preview** (run after CI's E2E finished): 22 passed, 1 skipped (mailbox). Sign-up with e-mail verification, login, session, admin approval and exports all work with the new lockfile.
+- **Note:** in this local run the E2E global setup's first admin login (8 s wait) timed out and the built-in fallback (verify + 20 s re-login) succeeded. CI's E2E on the same commit logged in on the first attempt, and no earlier run showed it, so it is login latency on that run, not a behaviour change from this PR.
+- **Hydration probe:** 0 errors on all 8 pages; sidebar 68 / 220 / 68 px at 800 px.
