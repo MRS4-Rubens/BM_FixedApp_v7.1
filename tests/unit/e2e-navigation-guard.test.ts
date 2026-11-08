@@ -41,11 +41,14 @@ describe('E2E navigation waits (no raw "load" waits)', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('the helper waits for domcontentloaded + window.next, never for "load"', () => {
+  it('the helper waits for domcontentloaded + window.next + a BOUNDED "load" grace, never an unbounded load wait', () => {
     const helper = readFileSync(join(ROOT, 'e2e/support/navigation.ts'), 'utf8');
     expect(helper).toContain("waitUntil: 'domcontentloaded'");
     expect(helper).toContain("waitUntil: 'commit'");
     expect(helper).toContain('w.next');
+    // The load wait must stay bounded by LOAD_GRACE_MS and must not fail the step when "load" stalls.
+    expect(helper).toMatch(/waitForLoadState\('load',\s*\{\s*timeout:\s*Math\.min\(LOAD_GRACE_MS/);
+    expect(helper).toMatch(/\.catch\(\(\) =>/);
     expect(helper).not.toMatch(/waitUntil:\s*'load'/);
   });
 });
