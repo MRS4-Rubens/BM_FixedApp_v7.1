@@ -97,7 +97,6 @@ describe('DEBT-001: Type Safety, Lint Ratchet & Anti-Regression Guards', () => {
       'components/app/customers/customer-form.tsx',
       'components/app/products/product-actions.tsx',
       'components/app/products/product-form.tsx',
-      'components/app/settings/billing-tab.tsx',
       'components/app/settings/business-profile-form.tsx',
       'components/app/settings/invoice-settings-form.tsx',
       'components/app/settings/settings-client.tsx',
@@ -108,6 +107,10 @@ describe('DEBT-001: Type Safety, Lint Ratchet & Anti-Regression Guards', () => {
       expect(content).toMatch(/import\s+type\s+\{[^}]*\}\s+from\s+['"]@\/lib\/db\/schema['"]/);
       expect(content).not.toMatch(/import\s+\{[^}]*\}\s+from\s+['"]@\/lib\/db\/schema['"]/);
     }
+
+    const billingCombined = readComponentSources('components/app/settings/billing-tab.tsx');
+    expect(billingCombined).toMatch(/import\s+type\s+\{[^}]*\}\s+from\s+['"]@\/lib\/db\/schema['"]/);
+    expect(billingCombined).not.toMatch(/import\s+\{[^}]*\}\s+from\s+['"]@\/lib\/db\/schema['"]/);
   });
 
   it('4. Components migrated from watch() to useWatch() without watch() calls, and invoice-form has debt comment', () => {

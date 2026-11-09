@@ -89,7 +89,7 @@ describe('CLEAN-002 reviewer: one source for prices', () => {
   it('plan screens never hand-type a non-zero rupee price (they must use PLAN_PRICING / formatPlanPrice)', () => {
     const files = [
       'components/landing/pricing-section.tsx',
-      'components/app/settings/billing-tab.tsx',
+      ...listComponentSourceFiles('components/app/settings/billing-tab.tsx'),
       'components/app/subscription/upgrade-prompt-modal.tsx',
       ...listComponentSourceFiles('app/(app)/checkout/checkout-form.tsx'),
     ];
@@ -114,7 +114,7 @@ describe('CLEAN-002 reviewer: one source for prices', () => {
   it("plan screens never hand-type a saving percentage or an unsupported tax claim", () => {
     const files = [
       "components/landing/pricing-section.tsx",
-      "components/app/settings/billing-tab.tsx",
+      ...listComponentSourceFiles("components/app/settings/billing-tab.tsx"),
       "components/app/subscription/upgrade-prompt-modal.tsx",
     ];
     const offenders: string[] = [];
