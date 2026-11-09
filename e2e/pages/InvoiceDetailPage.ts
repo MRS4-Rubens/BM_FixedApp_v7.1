@@ -57,8 +57,13 @@ export class InvoiceDetailPage {
     await expect(settledCard.or(this.balanceDisplay).first()).toBeVisible();
     if (await settledCard.isVisible().catch(() => false)) return 0;
 
-    await expect(this.balanceDisplay).toBeVisible();
-    const text = await this.balanceDisplay.innerText();
+    // The balance line can unmount between the two checks above (the final payment just settled the invoice; seen on
+    // CI for PR #29). Read it with a short timeout; if it is gone, the settled card must be what replaced it.
+    const text = await this.balanceDisplay.innerText({ timeout: 2_000 }).catch(() => null);
+    if (text === null) {
+      await expect(settledCard).toBeVisible();
+      return 0;
+    }
     const match = text.match(/₹[\d,.]+/);
     if (!match) throw new Error(`Could not find balance in: ${text}`);
     return parseInrToPaise(match[0]);
