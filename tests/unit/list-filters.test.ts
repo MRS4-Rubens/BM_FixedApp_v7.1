@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildDisplayStatusCondition,
-  defaultListPeriod,
   resolveListPeriod,
 } from '@/lib/invoices/list-filters';
+import { defaultListPeriod } from '@/lib/invoices/list-period';
 
 describe('list filters & period resolution (PERF-001)', () => {
   it('resolves normal 31-day months (e.g. December, March)', () => {

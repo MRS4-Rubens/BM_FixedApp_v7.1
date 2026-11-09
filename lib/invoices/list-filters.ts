@@ -54,15 +54,6 @@ export function resolveListPeriod(
   };
 }
 
-/** Default period is the current IST month and year. */
-export function defaultListPeriod(now?: Date): { month: number; year: number } {
-  const current = getIstDateParts(now || new Date());
-  return {
-    month: current.month,
-    year: current.year,
-  };
-}
-
 /**
  * Builds the exact SQL condition matching `getDisplayInvoiceStatus(invoice, todayIso)`.
  * - draft: lifecycle_status = 'draft'

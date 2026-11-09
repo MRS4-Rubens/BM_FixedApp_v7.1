@@ -32,7 +32,7 @@ import { LineItemsTable } from './invoice-form/line-items-table';
 import { InternalNotesCard } from './invoice-form/internal-notes-card';
 import { GstBreakdownCard } from './invoice-form/gst-breakdown-card';
 import { TotalsSummaryCard } from './invoice-form/totals-summary-card';
-import { InvoicePreviewModal } from './invoice-form/invoice-preview-modal';
+import { InvoicePreviewModal } from './invoice-form/invoice-preview-modal-lazy';
 import { FinalizeDialogs } from './invoice-form/finalize-dialogs';
 
 /**
@@ -354,6 +354,7 @@ export function InvoiceForm({
           </form>
         </div>
 
+        {(isPreviewOpen || showTemplateUpgradeModal) && (
         <InvoicePreviewModal
           mounted={mounted}
           isPreviewOpen={isPreviewOpen}
@@ -371,6 +372,7 @@ export function InvoiceForm({
           setShowTemplateUpgradeModal={setShowTemplateUpgradeModal}
           setValue={setValue}
         />
+        )}
 
         <FinalizeDialogs
           showQuotaUpgradeModal={showQuotaUpgradeModal}

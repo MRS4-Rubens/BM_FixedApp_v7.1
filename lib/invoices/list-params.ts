@@ -1,7 +1,8 @@
 import { readFirst } from '@/lib/pagination/url';
 import { normalizeSearchTerm } from '@/lib/pagination/search';
 import { decodeCursor, DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, MIN_PAGE_SIZE } from '@/lib/pagination/keyset';
-import { defaultListPeriod, INVOICE_LIST_STATUSES, type InvoiceListStatus } from './list-filters';
+import { INVOICE_LIST_STATUSES, type InvoiceListStatus } from './list-filters';
+import { defaultListPeriod } from './list-period';
 import { getIstDateParts } from './ist-date';
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;

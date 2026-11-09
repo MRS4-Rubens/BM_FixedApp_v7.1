@@ -22,8 +22,8 @@ import {
   requireValidUpload,
   buildUploadKey,
   IMAGE_MIMES,
-  maxBase64Chars,
 } from '@/lib/security/upload';
+import { maxBase64Chars } from '@/lib/security/upload-limits';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB

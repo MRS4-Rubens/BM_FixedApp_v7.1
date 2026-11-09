@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { maxBase64Chars } from '@/lib/security/upload';
+import { maxBase64Chars } from '@/lib/security/upload-limits';
 
 const FEEDBACK_CATEGORIES = ['bug', 'feature_request', 'ui_ux', 'general'] as const;
 export type FeedbackCategory = (typeof FEEDBACK_CATEGORIES)[number];

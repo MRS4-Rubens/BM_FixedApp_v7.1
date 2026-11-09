@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 import type { MonthlySalesData } from '@/lib/actions/reports/get-sales-by-period'
 import type { FinancialYearSalesData } from '@/lib/actions/reports/get-sales-by-financial-year'
 
-interface DashboardChartProps {
+export interface DashboardChartProps {
   initialSalesData: MonthlySalesData[]
   fySalesData?: FinancialYearSalesData[]
   currentFyLabel: string
