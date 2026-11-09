@@ -12,7 +12,7 @@ export const CREDIT_NOTE_REASONS = [
   { code: '07-others', label: '07 - Others' },
 ] as const;
 
-export const CREDIT_NOTE_REASON_CODES = [
+const CREDIT_NOTE_REASON_CODES = [
   '01-sales-return',
   '02-post-sale-discount',
   '03-deficiency-in-service',
@@ -29,7 +29,7 @@ export function getCreditNoteReasonLabel(code: string): string {
   return found ? found.label : code;
 }
 
-export const creditNoteLineItemSchema = z
+const creditNoteLineItemSchema = z
   .object({
     original_line_item_id: z.string().uuid('Original line item ID is required'),
     quantity: z

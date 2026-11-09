@@ -26,9 +26,9 @@ const DEFAULT_TIMEOUT_MS = 30_000;
  * (traces showed in-app navigation completing while "load" was still pending), so we continue after this grace period
  * instead of failing at the full timeout.
  */
-export const LOAD_GRACE_MS = 10_000;
+const LOAD_GRACE_MS = 10_000;
 
-export async function waitForAppReady(page: Page, timeout: number = DEFAULT_TIMEOUT_MS): Promise<void> {
+async function waitForAppReady(page: Page, timeout: number = DEFAULT_TIMEOUT_MS): Promise<void> {
   await page.waitForLoadState('domcontentloaded', { timeout });
   await page.waitForFunction(
     () => {

@@ -14,7 +14,7 @@ import {
 import { gstin, moneyRupees, quantity, stateCode, templateId } from '@/lib/validations/common';
 import { multiplyMilliByPaiseRoundHalfUp, parseQuantityToMilli, parseRupeesToPaise } from '@/lib/money';
 
-export const invoiceLineItemSchema = z.object({
+const invoiceLineItemSchema = z.object({
   product_id: z.string().uuid().optional().nullable().or(z.literal('')),
   description: z.string().min(1, 'Description is required').max(300, 'Description cannot exceed 300 characters'),
   hsn_sac_code: z.string().regex(/^\d{4}$|^\d{6}$|^\d{8}$/, 'HSN/SAC must be 4, 6, or 8 digits'),

@@ -23,7 +23,7 @@ export interface TourStep {
   placement?: 'top' | 'bottom' | 'auto'
 }
 
-export const TOUR_STEPS: TourStep[] = [
+const TOUR_STEPS: TourStep[] = [
   {
     id: 1,
     selector: '[data-tour-step="1"]',

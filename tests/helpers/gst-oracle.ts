@@ -4,7 +4,7 @@ const TEN_THOUSAND = BigInt(10000);
 const TWENTY_THOUSAND = BigInt(20000);
 
 /** Exact half-up rounding of n/d for n >= 0, d > 0. */
-export function roundHalfUp(n: bigint, d: bigint): bigint {
+function roundHalfUp(n: bigint, d: bigint): bigint {
   return (TWO * n + d) / (TWO * d);
 }
 

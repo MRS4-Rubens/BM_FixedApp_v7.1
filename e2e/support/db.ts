@@ -23,13 +23,6 @@ function getPool(env: E2eEnv): Pool {
   return poolInstance;
 }
 
-export async function closePool(): Promise<void> {
-  if (poolInstance) {
-    await poolInstance.end();
-    poolInstance = null;
-  }
-}
-
 /**
  * Executes a parameterized SQL SELECT query and parses the resulting rows with a Zod schema.
  * Rejects any non-SELECT statement to uphold the read-only invariant.

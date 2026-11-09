@@ -123,7 +123,7 @@ function isStringOrNull(value: unknown): value is string | null {
   return typeof value === 'string' || value === null;
 }
 
-export function isSellerAddress(value: unknown): value is SellerAddressSnapshot {
+function isSellerAddress(value: unknown): value is SellerAddressSnapshot {
   if (!isPlainObject(value)) return false;
   return (
     isStringOrNull(value.line1) &&
@@ -133,7 +133,7 @@ export function isSellerAddress(value: unknown): value is SellerAddressSnapshot 
   );
 }
 
-export function isSellerBank(value: unknown): value is SellerBankSnapshot {
+function isSellerBank(value: unknown): value is SellerBankSnapshot {
   if (!isPlainObject(value)) return false;
   return (
     isStringOrNull(value.accountName) &&

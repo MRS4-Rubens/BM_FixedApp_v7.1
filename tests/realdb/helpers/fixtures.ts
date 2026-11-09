@@ -121,17 +121,6 @@ export async function createFreePlanBusiness(
   };
 }
 
-export async function createTrialBusiness(
-  testDb: TestDb,
-  opts: { readonly trialEndsAt: Date | null },
-): Promise<TestBusiness> {
-  return createFreePlanBusiness(testDb, {
-    subscription_plan: 'trial',
-    subscription_status: 'trial',
-    trial_ends_at: opts.trialEndsAt,
-  });
-}
-
 const PAN_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 /** Random PAN in the statutory shape AAAAA9999A (5 letters, 4 digits, 1 letter). */

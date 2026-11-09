@@ -18,7 +18,7 @@ function toCount(value: unknown): number {
 }
 
 /** Finalized invoices of the business whose invoice_date falls in the IST month containing `invoiceDateIso`. Drafts never count. */
-export async function countFinalizedInvoicesInMonthOf(
+async function countFinalizedInvoicesInMonthOf(
   tx: DbTransaction,
   businessId: string,
   invoiceDateIso: string,

@@ -13,7 +13,7 @@ import {
 } from '@/lib/email/send-guards';
 import { sendCustomerEmail } from '@/lib/email/send-customer-email';
 import { sanitizeEmailHeaderText } from '@/lib/email/send-policy';
-import PaymentReminderEmail from '@/lib/email/templates/payment-reminder-email';
+import { PaymentReminderEmail } from '@/lib/email/templates/payment-reminder-email';
 import {
   claimReminderInTransaction,
   releaseReminderClaim,

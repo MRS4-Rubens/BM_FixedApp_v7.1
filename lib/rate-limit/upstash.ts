@@ -26,16 +26,16 @@ export function getRedis(): Redis {
 /**
  * Centrally tunable auth rate-limiting parameters.
  */
-export const LOGIN_IP_LIMIT = 30;
-export const LOGIN_IP_WINDOW = '15 m';
-export const LOGIN_EMAIL_LIMIT = 10;
-export const LOGIN_EMAIL_WINDOW = '15 m';
-export const SIGNUP_IP_LIMIT = 3;
-export const SIGNUP_IP_WINDOW = '1 h';
-export const RECOVERY_IP_LIMIT = 10;
-export const RECOVERY_IP_WINDOW = '15 m';
-export const RECOVERY_EMAIL_LIMIT = 3;
-export const RECOVERY_EMAIL_WINDOW = '15 m';
+const LOGIN_IP_LIMIT = 30;
+const LOGIN_IP_WINDOW = '15 m';
+const LOGIN_EMAIL_LIMIT = 10;
+const LOGIN_EMAIL_WINDOW = '15 m';
+const SIGNUP_IP_LIMIT = 3;
+const SIGNUP_IP_WINDOW = '1 h';
+const RECOVERY_IP_LIMIT = 10;
+const RECOVERY_IP_WINDOW = '15 m';
+const RECOVERY_EMAIL_LIMIT = 3;
+const RECOVERY_EMAIL_WINDOW = '15 m';
 
 // AUTH-002: Dedicated limiters for auth boundaries and server actions
 export const loginIpLimiter: RateLimiter = lazyLimiter(

@@ -72,7 +72,7 @@ function serialize(directives) {
 }
 
 /** Directives that are safe to ENFORCE today. */
-export function buildEnforcedCspBaseline() {
+function buildEnforcedCspBaseline() {
   return serialize([
     ['frame-ancestors', ["'none'"]],
     ['base-uri', ["'self'"]],

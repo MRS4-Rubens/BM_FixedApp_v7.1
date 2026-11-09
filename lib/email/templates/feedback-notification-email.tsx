@@ -228,8 +228,6 @@ export const FeedbackNotificationEmail = ({
   );
 };
 
-export default FeedbackNotificationEmail;
-
 // ── Styles ────────────────────────────────────────────────────────
 const main = {
   backgroundColor: '#f1f5f9',

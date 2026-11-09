@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 import { getPdfEnv } from '@/lib/env';
 import { scrubString } from '@/lib/observability/sentry-redaction';
 
-export const PDF_RENDER_TIMEOUT_MS = 25_000;
+const PDF_RENDER_TIMEOUT_MS = 25_000;
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
 const MAX_HTML_BYTES = 8 * 1024 * 1024;
 const MAX_ERROR_TEXT_CHARS = 200;

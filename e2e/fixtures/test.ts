@@ -14,7 +14,7 @@ import { CheckoutPage } from '../pages/CheckoutPage';
 import { ReportsPage } from '../pages/ReportsPage';
 import { AdminPage } from '../pages/AdminPage';
 
-export const journeyStateSchema = z.object({
+const journeyStateSchema = z.object({
   runId: z.string(),
   userEmail: z.string().email(),
   userPassword: z.string(),

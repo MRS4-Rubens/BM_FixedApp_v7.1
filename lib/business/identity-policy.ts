@@ -1,8 +1,7 @@
 import { getPgError } from '@/lib/db/pg-error';
 
 export const GSTIN_UNIQUE_CONSTRAINT = 'businesses_gstin_unique';
-export const IDENTITY_FIELDS = ['gstin', 'state_code'] as const;
-export type IdentityField = (typeof IDENTITY_FIELDS)[number];
+export type IdentityField = 'gstin' | 'state_code';
 
 export interface BusinessIdentity {
   readonly gstin: string;

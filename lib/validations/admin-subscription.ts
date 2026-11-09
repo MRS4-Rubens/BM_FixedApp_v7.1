@@ -5,7 +5,7 @@ export const OVERRIDE_PLANS = SUBSCRIPTION_PLANS;
 export const OVERRIDE_STATUSES = SUBSCRIPTION_STATUSES;
 export type OverridePlan = (typeof OVERRIDE_PLANS)[number];
 export type OverrideStatus = (typeof OVERRIDE_STATUSES)[number];
-export const REJECT_REASON_MAX_LENGTH = 500;
+const REJECT_REASON_MAX_LENGTH = 500;
 export const MAX_OVERRIDE_HORIZON_DAYS = 3660; // ~10 years; documented policy constant
 
 export const processSubscriptionRequestSchema = z.object({

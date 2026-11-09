@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { isoDate } from '@/lib/validations/common';
 import { EXPORT_LABEL_MAX_LENGTH, EXPORT_MAX_RANGE_DAYS } from '@/lib/validations/limits';
 
-export const EXPORT_REPORT_TYPES = ['sales_register', 'gstr1', 'itr_report', 'hsn_summary'] as const;
+const EXPORT_REPORT_TYPES = ['sales_register', 'gstr1', 'itr_report', 'hsn_summary'] as const;
 export type ExportReportType = (typeof EXPORT_REPORT_TYPES)[number];
 
 const MS_PER_DAY = 86_400_000;

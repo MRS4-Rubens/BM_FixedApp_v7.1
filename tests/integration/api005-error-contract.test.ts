@@ -86,11 +86,11 @@ vi.mock('@/lib/storage/idrive', () => ({
 }));
 
 vi.mock('@/lib/email/templates/invoice-delivery-email', () => ({
-  default: () => null,
+  InvoiceDeliveryEmail: () => null,
 }));
 
 vi.mock('@/lib/email/templates/payment-reminder-email', () => ({
-  default: () => null,
+  PaymentReminderEmail: () => null,
 }));
 
 vi.mock('@/lib/email/resend', () => ({

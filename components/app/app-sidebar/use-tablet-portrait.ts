@@ -2,9 +2,9 @@
 
 import { useSyncExternalStore } from 'react'
 
-export const TABLET_PORTRAIT_MEDIA = '(min-width: 768px) and (max-width: 1023px)'
+const TABLET_PORTRAIT_MEDIA = '(min-width: 768px) and (max-width: 1023px)'
 
-export function subscribeTabletMedia(callback: () => void) {
+function subscribeTabletMedia(callback: () => void) {
   if (typeof window === 'undefined' || !window.matchMedia) {
     return () => {}
   }
@@ -15,12 +15,12 @@ export function subscribeTabletMedia(callback: () => void) {
   }
 }
 
-export function getTabletSnapshot(): boolean {
+function getTabletSnapshot(): boolean {
   if (typeof window === 'undefined' || !window.matchMedia) return false
   return window.matchMedia(TABLET_PORTRAIT_MEDIA).matches
 }
 
-export function getTabletServerSnapshot(): boolean {
+function getTabletServerSnapshot(): boolean {
   return false
 }
 

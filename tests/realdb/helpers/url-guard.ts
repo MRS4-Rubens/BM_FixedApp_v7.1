@@ -6,7 +6,7 @@ export interface DbIdentity {
 }
 
 /** Normalises Neon pooled/direct hosts (`ep-x-pooler.region...` vs `ep-x.region...`) to one identity. */
-export function parseDbIdentity(connectionString: string): DbIdentity {
+function parseDbIdentity(connectionString: string): DbIdentity {
   const url = new URL(connectionString);
   return {
     host: url.hostname.toLowerCase().replace(/-pooler(?=\.)/, ''),

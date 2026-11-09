@@ -10,7 +10,7 @@ export interface TemplateOption {
   name: string;
 }
 
-export const TEMPLATE_OPTIONS: TemplateOption[] = [
+const TEMPLATE_OPTIONS: TemplateOption[] = [
   { id: 'template_1', name: 'Template 1 (Classic Slate)' },
   { id: 'template_2', name: 'Template 2 (Traditional Book Depot)' },
   { id: 'template_3', name: 'Template 3 (Pre-Printed Carbon Pad)' },
