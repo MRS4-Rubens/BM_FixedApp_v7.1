@@ -4,6 +4,13 @@ import { renderToStaticMarkup } from 'react-dom/server';
 
 let currentPathname = '/dashboard';
 
+// Pin env-driven contact addresses (CI sets NEXT_PUBLIC_SUPPORT_EMAIL / FEEDBACK_RECIPIENT_EMAIL) so the snapshot is the
+// same on every machine. Values = the lib/config/contact.ts fallbacks the snapshot was recorded with.
+vi.mock('@/lib/config/contact', () => ({
+  SUPPORT_EMAIL: 'support@billmatrix.in',
+  FEEDBACK_RECIPIENT_EMAIL: 'support@billmatrix.in',
+}));
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: vi.fn(),
