@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Lora, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { SentryInit } from '@/components/sentry-init'
+import { siteOrigin, isIndexableDeployment } from '@/lib/seo/routes'
 
 const lora = Lora({
   variable: '--font-lora',
@@ -15,14 +16,18 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
+const DEFAULT_TITLE = 'Bill Matrix — Smart GST Invoicing for Indian Businesses'
+const DEFAULT_DESCRIPTION =
+  'Bill Matrix is a GST invoicing and business-management platform built for small and medium businesses across India.'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin()),
+  applicationName: 'Bill Matrix',
   title: {
-    default: 'Bill Matrix — Smart GST Invoicing for Indian Businesses',
+    default: DEFAULT_TITLE,
     template: '%s | Bill Matrix',
   },
-  description:
-    'Bill Matrix is a GST invoicing and business-management platform built for small and medium businesses across India.',
-  generator: 'v0.app',
+  description: DEFAULT_DESCRIPTION,
   icons: {
     icon: [
       { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
@@ -31,6 +36,21 @@ export const metadata: Metadata = {
     ],
     apple: '/apple-icon.png',
   },
+  openGraph: {
+    type: 'website',
+    siteName: 'Bill Matrix',
+    locale: 'en_IN',
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+  },
+  robots: isIndexableDeployment()
+    ? { index: true, follow: true }
+    : { index: false, follow: false },
 }
 
 export const viewport: Viewport = {

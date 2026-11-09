@@ -4,27 +4,29 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 
 
-interface Activity {
+export interface Activity {
   id: number
   icon: string
   color: 'emerald' | 'indigo' | 'amber' | 'violet'
-  text: string
+  before: string
+  strong: string
+  after: string
   time: string
   desc: string
 }
 
-const initialActivities: Activity[] = [
-  { id: 1, icon: '#check-circle', color: 'emerald', text: 'Payment received <span class="font-semibold text-zinc-800">₹42,000</span>', time: '2 minutes ago', desc: 'Invoice #1284' },
-  { id: 2, icon: '#invoice', color: 'indigo', text: 'Invoice <span class="font-semibold text-zinc-800">#1292</span> sent via WhatsApp', time: '15 minutes ago', desc: 'Customer: KiranaKart' },
-  { id: 3, icon: '#bell', color: 'amber', text: 'Follow-up reminder sent to <span class="font-semibold text-zinc-800">StyleDesk</span>', time: '1 hour ago', desc: 'Payment overdue' },
-  { id: 4, icon: '#thumbs-up', color: 'violet', text: 'New customer <span class="font-semibold text-zinc-800">AgroTrade</span> onboarded', time: '2 hours ago', desc: 'Self signup' }
+export const initialActivities: Activity[] = [
+  { id: 1, icon: '#check-circle', color: 'emerald', before: 'Payment received ', strong: '₹42,000', after: '', time: '2 minutes ago', desc: 'Invoice #1284' },
+  { id: 2, icon: '#invoice', color: 'indigo', before: 'Invoice ', strong: '#1292', after: ' sent via WhatsApp', time: '15 minutes ago', desc: 'Customer: KiranaKart' },
+  { id: 3, icon: '#bell', color: 'amber', before: 'Follow-up reminder sent to ', strong: 'StyleDesk', after: '', time: '1 hour ago', desc: 'Payment overdue' },
+  { id: 4, icon: '#thumbs-up', color: 'violet', before: 'New customer ', strong: 'AgroTrade', after: ' onboarded', time: '2 hours ago', desc: 'Self signup' }
 ]
 
-const dummyActivities = [
-  { icon: '#check-circle', color: 'emerald', text: 'Payment received <span class="font-semibold text-zinc-800">₹18,500</span>', time: 'Just now', desc: 'Invoice #1295' },
-  { icon: '#invoice', color: 'indigo', text: 'Invoice <span class="font-semibold text-zinc-800">#1296</span> generated', time: 'Just now', desc: 'Customer: MediSupply' },
-  { icon: '#bell', color: 'amber', text: 'Follow-up sent to <span class="font-semibold text-zinc-800">ShopSwift</span>', time: 'Just now', desc: 'Pending ₹22,000' },
-  { icon: '#thumbs-up', color: 'violet', text: 'New customer <span class="font-semibold text-zinc-800">UrbanD2C</span> added', time: 'Just now', desc: 'Self registration' }
+export const dummyActivities = [
+  { icon: '#check-circle', color: 'emerald', before: 'Payment received ', strong: '₹18,500', after: '', time: 'Just now', desc: 'Invoice #1295' },
+  { icon: '#invoice', color: 'indigo', before: 'Invoice ', strong: '#1296', after: ' generated', time: 'Just now', desc: 'Customer: MediSupply' },
+  { icon: '#bell', color: 'amber', before: 'Follow-up sent to ', strong: 'ShopSwift', after: '', time: 'Just now', desc: 'Pending ₹22,000' },
+  { icon: '#thumbs-up', color: 'violet', before: 'New customer ', strong: 'UrbanD2C', after: ' added', time: 'Just now', desc: 'Self registration' }
 ] as const
 
 const baseRevenuePoints = [
@@ -166,7 +168,9 @@ export function LiveDashboard() {
         id: activityIdCounter,
         icon: dummy.icon,
         color: dummy.color,
-        text: dummy.text,
+        before: dummy.before,
+        strong: dummy.strong,
+        after: dummy.after,
         time: 'Just now',
         desc: dummy.desc
       }
@@ -410,7 +414,7 @@ export function LiveDashboard() {
                       </svg>
                     </div>
                     <div>
-                      <p className="text-zinc-700" dangerouslySetInnerHTML={{ __html: activity.text }} />
+                      <p className="text-zinc-700">{activity.before}<span className="font-semibold text-zinc-800">{activity.strong}</span>{activity.after}</p>
                       <p className="text-xs text-zinc-600">
                         {activity.desc} · {activity.time}
                       </p>

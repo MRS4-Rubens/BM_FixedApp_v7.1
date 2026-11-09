@@ -75,7 +75,7 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 
 | Group | Variables | Validation Timing | Failure Behavior |
 |-------|-----------|-------------------|------------------|
-| **Core: App** | `NEXT_PUBLIC_APP_URL` | Boot (`instrumentation.ts`) | Fails boot (`EnvConfigError`) |
+| **Core: App** | `NEXT_PUBLIC_APP_URL` | Boot (`instrumentation.ts`) and `next build` (SEO metadata, FE-006) | Fails boot / build (`EnvConfigError`) |
 | **Core: Database** | `DATABASE_URL` | Boot (`instrumentation.ts`) | Fails boot (`EnvConfigError`) |
 | **Core: Auth** | `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` | Boot (`instrumentation.ts`) | Fails boot (`EnvConfigError`) |
 | **Core: Cron** | `CRON_SECRET` | Boot (`instrumentation.ts`) | Fails boot (`EnvConfigError`) |

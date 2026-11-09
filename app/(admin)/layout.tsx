@@ -1,9 +1,17 @@
+import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/app/app-sidebar';
 import { AppTopbar } from '@/components/app/app-topbar';
 import { getPlatformAdminDecision } from '@/lib/auth/admin';
 import { getCurrentAppUser } from '@/lib/auth/session';
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export const dynamic = 'force-dynamic';
 
