@@ -83,3 +83,20 @@ export async function countExhausted(db: SqlExecutor, kind: ArchivalKind): Promi
   return typeof row === 'object' && row !== null && 'n' in row && typeof row.n === 'number' ? row.n : 0;
 }
 
+export async function countStalePending(
+  db: SqlExecutor,
+  kind: ArchivalKind,
+  olderThanMinutes: number,
+): Promise<number> {
+  const result = await db.execute(sql`SELECT count(*)::int AS n FROM ${table(kind)}
+    WHERE lifecycle_status = 'finalized'
+      AND archival_status IN ('pending', 'failed')
+      AND archival_attempts < ${ARCHIVAL_MAX_ATTEMPTS}
+      AND finalized_at < now() - make_interval(mins => ${olderThanMinutes}::int)`);
+  const row = result.rows[0];
+  if (typeof row === 'object' && row !== null && 'n' in row) {
+    if (typeof row.n === 'number') return row.n;
+    if (typeof row.n === 'string') return parseInt(row.n, 10) || 0;
+  }
+  return 0;
+}

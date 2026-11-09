@@ -14,6 +14,7 @@ import {
   markFailed,
   refundAttempt,
   countExhausted,
+  countStalePending,
 } from '@/lib/storage/archival-claims';
 
 const DRIZZLE_DIR = join(process.cwd(), 'drizzle');
@@ -481,5 +482,93 @@ describe('API-008: serverless PDF archival claims and integrity (PGlite)', () =>
 
     const schemaCreditNotes = readFileSync(join(process.cwd(), 'lib/db/schema/credit_notes.ts'), 'utf8');
     expect(schemaCreditNotes).toContain(`archival_attempts} < 5`);
+  });
+
+  it('13. countStalePending counts only finalized + pending/failed + under-max-attempts + finalized_at older than threshold', async () => {
+    const pg = new PGlite();
+    await applyMigrations(pg, CURRENT_MIGRATION_TAG);
+    const db = drizzle(pg, { schema });
+    const fx = await createBaseFixture(pg);
+
+    const insertInvoice = async (opts: {
+      lifecycle: string;
+      archivalStatus: string;
+      attempts: number;
+      finalizedMinutesAgo: number | null;
+    }) => {
+      seq += 1;
+      const finalizedSql =
+        opts.finalizedMinutesAgo !== null
+          ? `now() - make_interval(mins => ${opts.finalizedMinutesAgo}::int)`
+          : 'NULL';
+      return await insertOne(
+        pg,
+        `INSERT INTO invoices (
+           business_id, financial_year_id, invoice_number, invoice_sequence, lifecycle_status,
+           invoice_date, due_date, finalized_at, subtotal_paise, total_tax_paise, grand_total_paise,
+           archival_status, archival_attempts,
+           seller_name_snapshot, seller_address_snapshot, seller_state_code_snapshot,
+           seller_snapshot_source, seller_gstin_snapshot
+         ) VALUES (
+           $1, $2, $3, $4, $5,
+           '2026-05-01', '2026-05-15', ${finalizedSql}, 10000, 1800, 11800,
+           $6, $7,
+           'Test Business', '{"city":"Mumbai"}'::jsonb, '27',
+           'captured_at_finalization', '27AAPFU0939F1ZV'
+         ) RETURNING id`,
+        [fx.businessId, fx.financialYearId, `INV-STALE-${seq}`, seq, opts.lifecycle, opts.archivalStatus, opts.attempts],
+      );
+    };
+
+    // 1. Finalized 70 mins ago, pending, attempts=1 -> STALE
+    await insertInvoice({ lifecycle: 'finalized', archivalStatus: 'pending', attempts: 1, finalizedMinutesAgo: 70 });
+
+    // 2. Finalized 70 mins ago, failed, attempts=3 -> STALE
+    await insertInvoice({ lifecycle: 'finalized', archivalStatus: 'failed', attempts: 3, finalizedMinutesAgo: 70 });
+
+    // 3. Finalized 10 mins ago, pending, attempts=0 -> NOT STALE (too fresh)
+    await insertInvoice({ lifecycle: 'finalized', archivalStatus: 'pending', attempts: 0, finalizedMinutesAgo: 10 });
+
+    // 4. Finalized 70 mins ago, archived, attempts=1 -> NOT STALE (already archived)
+    await insertInvoice({ lifecycle: 'finalized', archivalStatus: 'archived', attempts: 1, finalizedMinutesAgo: 70 });
+
+    // 5. Finalized 70 mins ago, pending, attempts=5 -> NOT STALE (exhausted)
+    await insertInvoice({ lifecycle: 'finalized', archivalStatus: 'pending', attempts: ARCHIVAL_MAX_ATTEMPTS, finalizedMinutesAgo: 70 });
+
+    // 6. Draft, pending, attempts=0 -> NOT STALE (not finalized)
+    await insertInvoice({ lifecycle: 'draft', archivalStatus: 'pending', attempts: 0, finalizedMinutesAgo: null });
+
+    const staleInvoices = await countStalePending(db, 'invoice', 60);
+    expect(staleInvoices).toBe(2);
+
+    // Verify credit notes queue is independent
+    const staleCreditNotesInitial = await countStalePending(db, 'credit_note', 60);
+    expect(staleCreditNotesInitial).toBe(0);
+
+    // Insert a stale credit note
+    seq += 1;
+    const invId = await insertInvoice({ lifecycle: 'finalized', archivalStatus: 'archived', attempts: 1, finalizedMinutesAgo: 80 });
+    await insertOne(
+      pg,
+      `INSERT INTO credit_notes (
+         business_id, original_invoice_id, financial_year_id, credit_note_number,
+         credit_note_sequence, lifecycle_status, issue_date, finalized_at,
+         reason, subtotal_paise, total_tax_paise, grand_total_paise,
+         archival_status, archival_attempts,
+         seller_name_snapshot, seller_address_snapshot, seller_state_code_snapshot,
+         seller_snapshot_source, seller_gstin_snapshot
+       ) VALUES (
+         $1, $2, $3, 'CN-STALE-1',
+         $4, 'finalized', '2026-05-03', now() - make_interval(mins => 75::int),
+         'Return', 2000, 360, 2360,
+         'pending', 0,
+         'Test Business', '{"city":"Mumbai"}'::jsonb, '27',
+         'captured_at_finalization', '27AAPFU0939F1ZV'
+       ) RETURNING id`,
+      [fx.businessId, invId, fx.financialYearId, seq],
+    );
+
+    const staleCreditNotesAfter = await countStalePending(db, 'credit_note', 60);
+    expect(staleCreditNotesAfter).toBe(1);
   });
 }, 60_000);

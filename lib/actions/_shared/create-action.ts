@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { unstable_rethrow } from 'next/navigation';
 import { ActionResult } from './types';
@@ -6,6 +7,7 @@ import { logError } from './logger';
 import { getCurrentAppUser } from '@/lib/auth/session';
 import { users } from '@/lib/db/schema';
 import { headers } from 'next/headers';
+import { runWithRequestId, requestIdFromHeaders } from '@/lib/observability/request-context';
 import { getClientIp, type RateLimiter } from '@/lib/rate-limit/upstash';
 import {
   enforceRateLimit,
@@ -56,45 +58,55 @@ async function runValidatedHandler<TSchema extends z.ZodTypeAny, TOutput, TConte
   resolveContext: () => Promise<TContext>,
   handler: (parsedData: z.infer<TSchema>, context: TContext) => Promise<TOutput>
 ): Promise<ActionResult<TOutput>> {
-  const parseResult = schema.safeParse(rawInput);
-
-  if (!parseResult.success) {
-    const flattened = z.flattenError(parseResult.error);
-    return {
-      success: false,
-      error: {
-        message: 'Please check the highlighted fields and try again.',
-        code: 'VALIDATION_ERROR',
-        fieldErrors: flattened.fieldErrors,
-      },
-    };
+  let requestId: string;
+  try {
+    const h = await headers();
+    requestId = requestIdFromHeaders(h);
+  } catch {
+    requestId = randomUUID();
   }
 
-  try {
-    const context = await resolveContext();
-    const result = await handler(parseResult.data, context);
-    return { success: true, data: result };
-  } catch (error) {
-    unstable_rethrow(error);
+  return runWithRequestId(requestId, async () => {
+    const parseResult = schema.safeParse(rawInput);
 
-    if (error instanceof ActionError) {
-      logError(scopeName, error, { code: error.code, expected: true });
+    if (!parseResult.success) {
+      const flattened = z.flattenError(parseResult.error);
       return {
         success: false,
         error: {
-          message: error.message,
-          code: error.code,
-          fieldErrors: error.fieldErrors,
+          message: 'Please check the highlighted fields and try again.',
+          code: 'VALIDATION_ERROR',
+          fieldErrors: flattened.fieldErrors,
         },
       };
     }
 
-    logError(scopeName, error, { expected: false });
-    return {
-      success: false,
-      error: { message: GENERIC_ERROR_MESSAGE, code: 'INTERNAL_ERROR' },
-    };
-  }
+    try {
+      const context = await resolveContext();
+      const result = await handler(parseResult.data, context);
+      return { success: true, data: result };
+    } catch (error) {
+      unstable_rethrow(error);
+
+      if (error instanceof ActionError) {
+        logError(scopeName, error, { code: error.code, expected: true });
+        return {
+          success: false,
+          error: {
+            message: error.message,
+            code: error.code,
+            fieldErrors: error.fieldErrors,
+          },
+        };
+      }
+
+      logError(scopeName, error, { expected: false });
+      return {
+        success: false,
+        error: { message: GENERIC_ERROR_MESSAGE, code: 'INTERNAL_ERROR' },
+      };
+    }
+  });
 }
 
 export function createAction<TSchema extends z.ZodTypeAny, TOutput>(

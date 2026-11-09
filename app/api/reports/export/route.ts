@@ -16,10 +16,12 @@ import { canExportStatutoryReport, checkAccountNotSuspended } from '@/lib/subscr
 import { PLAN_SOURCE_COLUMNS } from '@/lib/subscriptions/load';
 import { exportQuerySchema } from '@/lib/validations/export';
 import { xlsxStreamResponse } from '@/lib/excel/xlsx-response';
+import { logError } from '@/lib/actions/_shared/logger';
+import { runWithRequestId, requestIdFromHeaders } from '@/lib/observability/request-context';
 
 export const maxDuration = 60;
 
-export async function GET(request: NextRequest) {
+async function handleExport(request: NextRequest): Promise<Response> {
   // 1. Session Check (return 401 if unauthorized, no redirect)
   const sessionResponse = await getRequestSession();
   if (!sessionResponse || !sessionResponse.data || !sessionResponse.data.user) {
@@ -139,4 +141,20 @@ export async function GET(request: NextRequest) {
 
   const exportData = exportDataRes.data;
   return xlsxStreamResponse((stream) => writeSalesRegisterWorkbook(exportData, stream), `Sales-Register-${sanitizedLabel}.xlsx`);
+}
+
+export async function GET(request: NextRequest): Promise<Response> {
+  const requestId = requestIdFromHeaders(request.headers);
+  return runWithRequestId(requestId, async () => {
+    try {
+      const response = await handleExport(request);
+      response.headers.set('x-request-id', requestId);
+      return response;
+    } catch (error) {
+      logError('reports-export', error);
+      const res = new Response('Internal Server Error', { status: 500 });
+      res.headers.set('x-request-id', requestId);
+      return res;
+    }
+  });
 }
