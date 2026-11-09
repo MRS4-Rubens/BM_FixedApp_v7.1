@@ -8,10 +8,10 @@ import { customers, invoices } from '@/lib/db/schema';
 import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import {
   buildDisplayStatusCondition,
-  defaultListPeriod,
   INVOICE_LIST_STATUSES,
   resolveListPeriod,
 } from '@/lib/invoices/list-filters';
+import { defaultListPeriod } from '@/lib/invoices/list-period';
 import {
   buildPageSlice,
   decodeCursor,

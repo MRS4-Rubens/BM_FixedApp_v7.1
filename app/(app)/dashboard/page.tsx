@@ -24,7 +24,7 @@ import { getSalesByFinancialYear } from '@/lib/actions/reports/get-sales-by-fina
 import { getCurrentAppUser } from '@/lib/auth/session'
 import { getCurrentFinancialYearRange } from '@/lib/reports/period'
 import { formatPaiseAsInr } from '@/lib/money'
-import { DashboardChart } from '@/components/app/dashboard-chart'
+import { DashboardChart } from '@/components/app/dashboard-chart-lazy'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Dashboard' }

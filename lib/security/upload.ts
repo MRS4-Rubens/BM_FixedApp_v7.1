@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { ActionError } from '@/lib/actions/_shared/errors';
+import { maxBase64Chars } from './upload-limits';
 
 export type UploadMime = 'image/png' | 'image/jpeg' | 'image/webp' | 'application/pdf';
 export type UploadExtension = 'png' | 'jpg' | 'webp' | 'pdf';
@@ -29,15 +30,8 @@ export const IMAGE_MIMES: readonly UploadMime[] = ['image/png', 'image/jpeg', 'i
 export const IMAGE_AND_PDF_MIMES: readonly UploadMime[] = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'];
 
 const MIN_BYTES = 32;
-const BASE64_EXPANSION = 1.37;
-const DATA_URL_SLACK = 256;
 const DATA_URL_PREFIX = /^data:[^;,]{1,100};base64,/i;
 const BASE64_BODY = /^[A-Za-z0-9+/]+={0,2}$/;
-
-/** Maximum base64 characters worth parsing for a given decoded limit (cheap pre-decode guard for Zod schemas). */
-export function maxBase64Chars(maxBytes: number): number {
-  return Math.ceil(maxBytes * BASE64_EXPANSION) + DATA_URL_SLACK;
-}
 
 function hasAscii(buffer: Buffer, offset: number, text: string): boolean {
   if (buffer.length < offset + text.length) return false;

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { maxBase64Chars } from '@/lib/security/upload';
+import { maxBase64Chars } from '@/lib/security/upload-limits';
 import { PAID_PLAN_NAMES, CLAIM_BILLING_CYCLES, CLAIM_PAYMENT_METHODS } from '@/lib/db/domain-values';
 
 export const subscriptionClaimSchema = z.object({

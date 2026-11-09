@@ -6,7 +6,8 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { creditNotes, invoices } from '@/lib/db/schema';
-import { defaultListPeriod, resolveListPeriod } from '@/lib/invoices/list-filters';
+import { resolveListPeriod } from '@/lib/invoices/list-filters';
+import { defaultListPeriod } from '@/lib/invoices/list-period';
 import {
   buildPageSlice,
   decodeCursor,

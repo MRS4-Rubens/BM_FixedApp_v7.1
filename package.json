@@ -28,6 +28,7 @@
     "lint:ratchet": "tsx scripts/ci/lint-ratchet.ts",
     "knip": "knip",
     "ops:audit-gstin": "tsx scripts/ops/audit-gstin-checksums.ts",
+    "perf:first-load": "node scripts/perf/first-load-js.mjs",
     "print-css:build": "tsx scripts/build-print-css.ts",
     "e2e": "playwright test",
     "e2e:headed": "playwright test --headed",

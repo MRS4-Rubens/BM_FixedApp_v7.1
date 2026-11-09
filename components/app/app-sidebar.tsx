@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { authClient } from '@/lib/auth/client'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useTabletPortrait } from './app-sidebar/use-tablet-portrait'
 import { DesktopSidebar } from './app-sidebar/desktop-sidebar'
@@ -88,6 +87,7 @@ export function AppSidebar({
   }, [userMenuOpen, mobileUserMenuOpen, mobileOpen])
 
   async function handleSignOut() {
+    const { authClient } = await import('@/lib/auth/client')
     await authClient.signOut()
     router.push('/login')
     router.refresh()
