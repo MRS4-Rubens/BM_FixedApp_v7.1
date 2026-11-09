@@ -14,14 +14,16 @@ function DashboardChartPlaceholder() {
       <span className="sr-only">Loading revenue chart...</span>
       {/* Panel Header */}
       <div className="panel-head flex flex-wrap justify-between items-start gap-2 mb-1.5">
-        <div className="space-y-1">
+        {/* Heights mirror the real header (24px title row, 2px gap, 16px subtitle; 32px tab pills) so nothing
+            moves when the chart replaces this placeholder (measured on the PERF-005 preview). */}
+        <div>
           <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-6 w-40" />
             <Skeleton className="h-4 w-16 rounded-full" />
           </div>
-          <Skeleton className="h-3 w-48" />
+          <Skeleton className="mt-0.5 h-4 w-48" />
         </div>
-        <Skeleton className="h-7 w-28 rounded-lg" />
+        <Skeleton className="h-8 w-28 rounded-xl" />
       </div>
 
       {/* Chart Canvas Area */}

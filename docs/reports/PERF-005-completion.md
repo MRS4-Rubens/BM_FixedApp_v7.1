@@ -238,3 +238,10 @@ The drop on every app page comes from the 42 KB auth client, which is no longer 
 - "Sign out" works with the lazily loaded auth client (reviewer probe with its own fresh login, so the shared E2E session is not revoked).
 - The dashboard chart placeholder has the same height as the real chart (no layout jump).
 - The print preview still opens. The finalize E2E flow requires it, so the suite covers it.
+
+### Preview verification round 1 (reviewer, PR #33 head `7337bdd`)
+- E2E against the preview: 22 passed, 1 skipped. Hydration probe: 0 errors on 8 routes.
+- **Sign out** (own fresh login as the journey user, so no shared session was revoked): the user lands on `/login`, and opening `/dashboard` afterwards redirects to `/login`. No page errors.
+- **Chart placeholder:** measured with only the lazily loaded scripts held back (on Vercel they live under `/_next/static/immutable/chunks/` and are not referenced by the page HTML).
+  - It was **6 px short on desktop** (250 vs 256) and **10 px short at 390 px** (286 vs 296; the tab pills wrap there), so the content below moved by that much. CLS was 0.0013.
+  - **Fixed:** the skeleton now mirrors the real header: a 24 px title row, a 2 px gap, a 16 px subtitle and 32 px tab pills. The result is re-measured after the redeploy (round 2 below).
