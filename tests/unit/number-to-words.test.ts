@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
+import { amountInWordsIndian, amountInWordsFromPaise } from '@/lib/pdf/number-to-words';
 import { mulberry32, randomInt } from '../helpers/prng';
 
 describe('Indian Currency Amount in Words (TEST-001)', () => {
@@ -68,23 +68,146 @@ describe('Indian Currency Amount in Words (TEST-001)', () => {
     });
   });
 
-  describe('CHAR / F-WORDS-1: Known Limitations', () => {
-    it('CHAR F-WORDS-1: non-integer float inputs are truncated via Math.floor', () => {
-      // 12.9 rupees -> 12, 0.9 paise -> 0 paise (yielding empty paise section)
-      expect(amountInWordsIndian(12.9, 0.9)).toBe('Twelve Rupees and  Paise Only');
+  describe('SPEC / F-WORDS-1: Validations and Multi-Crore Formatting', () => {
+    it('rejects non-integer float inputs with RangeError', () => {
+      expect(() => amountInWordsIndian(12.9, 0)).toThrow(RangeError);
+      expect(() => amountInWordsIndian(12, 0.9)).toThrow(RangeError);
+      expect(() => amountInWordsIndian(12.9, 0.9)).toThrow(RangeError);
     });
 
-    it('CHAR F-WORDS-1: negative input yields empty words prefix', () => {
-      expect(amountInWordsIndian(-100, 0)).toBe(' Rupees Only');
+    it('rejects negative inputs and out-of-range paise with RangeError', () => {
+      expect(() => amountInWordsIndian(-100, 0)).toThrow(RangeError);
+      expect(() => amountInWordsIndian(0, -1)).toThrow(RangeError);
+      expect(() => amountInWordsIndian(100, 100)).toThrow(RangeError);
+      expect(() => amountInWordsIndian(NaN, 0)).toThrow(RangeError);
+      expect(() => amountInWordsIndian(0, NaN)).toThrow(RangeError);
+      expect(() => amountInWordsIndian(Infinity, 0)).toThrow(RangeError);
     });
 
-    it.todo('F-WORDS-1: amountInWordsIndian should reject negative values or format as Minus/Negative');
+    it('F-WORDS-1: amountInWordsIndian rejects negative values with RangeError', () => {
+      expect(() => amountInWordsIndian(-1, 0)).toThrow(RangeError);
+      expect(() => amountInWordsIndian(0, -5)).toThrow(RangeError);
+    });
 
-    it('CHAR F-WORDS-1: >= 1,000 crore yields awkward "Ten Hundred Crore"', () => {
+    it('formats >= 1,000 crore properly as "One Thousand Crore"', () => {
       // 10,000,000,000 rupees (1,000 crore)
-      expect(amountInWordsIndian(10_000_000_000, 0)).toBe('Ten Hundred Crore Rupees Only');
+      expect(amountInWordsIndian(10_000_000_000, 0)).toBe('One Thousand Crore Rupees Only');
     });
 
-    it.todo('F-WORDS-1: amountInWordsIndian should correctly format numbers >= 1,000 crore (e.g. One Thousand Crore)');
+    it('F-WORDS-1: amountInWordsIndian correctly formats numbers >= 1,000 crore', () => {
+      // 1,000 crore
+      expect(amountInWordsIndian(1_000 * 10_000_000, 0)).toBe('One Thousand Crore Rupees Only');
+      // 1,00,000 crore
+      expect(amountInWordsIndian(100_000 * 10_000_000, 0)).toBe('One Lakh Crore Rupees Only');
+      // 12,34,567 crore + 89,90,123 rupees
+      expect(amountInWordsIndian(12_345_678_990_123, 0)).toBe(
+        'Twelve Lakh Thirty Four Thousand Five Hundred Sixty Seven Crore Eighty Nine Lakh Ninety Thousand One Hundred Twenty Three Rupees Only'
+      );
+    });
+  });
+
+  describe('amountInWordsFromPaise', () => {
+    it('correctly converts non-negative paise integers', () => {
+      expect(amountInWordsFromPaise(0)).toBe('Zero Rupees Only');
+      expect(amountInWordsFromPaise(1)).toBe('Zero Rupees and One Paise Only');
+      expect(amountInWordsFromPaise(99)).toBe('Zero Rupees and Ninety Nine Paise Only');
+      expect(amountInWordsFromPaise(100)).toBe('One Rupees Only');
+      expect(amountInWordsFromPaise(39900)).toBe('Three Hundred Ninety Nine Rupees Only');
+      expect(amountInWordsFromPaise(123456789)).toBe(
+        'Twelve Lakh Thirty Four Thousand Five Hundred Sixty Seven Rupees and Eighty Nine Paise Only'
+      );
+    });
+
+    it('rejects negative, float, and NaN paise values with RangeError', () => {
+      expect(() => amountInWordsFromPaise(-1)).toThrow(RangeError);
+      expect(() => amountInWordsFromPaise(1.5)).toThrow(RangeError);
+      expect(() => amountInWordsFromPaise(NaN)).toThrow(RangeError);
+      expect(() => amountInWordsFromPaise(Infinity)).toThrow(RangeError);
+    });
+  });
+
+  describe('EQUIVALENCE: Exactly matches legacy algorithm below 100 crore', () => {
+    // Copy of the legacy algorithm before multi-crore refactor
+    function legacyAmountInWordsIndian(rupees: number, paise: number): string {
+      const ones = [
+        '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+        'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+        'Seventeen', 'Eighteen', 'Nineteen'
+      ];
+      const tens = [
+        '', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'
+      ];
+
+      function convertGroup(n: number): string {
+        let str = '';
+        if (n > 99) {
+          str += ones[Math.floor(n / 100)] + ' Hundred ';
+          n %= 100;
+        }
+        if (n > 19) {
+          str += tens[Math.floor(n / 10)] + ' ';
+          n %= 10;
+        }
+        if (n > 0) {
+          str += ones[n] + ' ';
+        }
+        return str.trim();
+      }
+
+      function getRupeesInWords(amount: number): string {
+        if (amount === 0) return 'Zero';
+
+        let result = '';
+        const crore = Math.floor(amount / 10000000);
+        amount %= 10000000;
+        const lakh = Math.floor(amount / 100000);
+        amount %= 100000;
+        const thousand = Math.floor(amount / 1000);
+        amount %= 1000;
+        const hundred = amount;
+
+        if (crore > 0) {
+          result += convertGroup(crore) + ' Crore ';
+        }
+        if (lakh > 0) {
+          result += convertGroup(lakh) + ' Lakh ';
+        }
+        if (thousand > 0) {
+          result += convertGroup(thousand) + ' Thousand ';
+        }
+        if (hundred > 0) {
+          result += convertGroup(hundred);
+        }
+
+        return result.trim();
+      }
+
+      const rupeesWords = getRupeesInWords(Math.floor(rupees));
+      if (paise === 0) {
+        return `${rupeesWords} Rupees Only`;
+      } else {
+        const paiseWords = convertGroup(Math.floor(paise));
+        return `${rupeesWords} Rupees and ${paiseWords} Paise Only`;
+      }
+    }
+
+    it('matches legacy output across 2,000+ sampled values below 100 crore', () => {
+      const fixedValues = [
+        0, 1, 99, 100, 101, 999, 1000, 99999, 100000, 9999999, 10000000, 999999999
+      ];
+      for (const rupees of fixedValues) {
+        for (const paise of [0, 1, 50, 99]) {
+          expect(amountInWordsIndian(rupees, paise)).toBe(legacyAmountInWordsIndian(rupees, paise));
+        }
+      }
+
+      const prng = mulberry32(4242);
+      for (let i = 0; i < 2000; i++) {
+        // Values strictly below 100 crore (< 1,000,000,000)
+        const rupees = randomInt(prng, 0, 999_999_999);
+        const paise = randomInt(prng, 0, 99);
+        expect(amountInWordsIndian(rupees, paise)).toBe(legacyAmountInWordsIndian(rupees, paise));
+      }
+    });
   });
 });

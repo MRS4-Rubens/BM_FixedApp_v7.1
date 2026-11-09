@@ -10,13 +10,13 @@ This document records all discrepancies, edge cases, statutory ambiguities, and 
 |---|---|---|---|---|---|
 | **F-GST-1** | Intra-state tie-breaking & odd-paise split symmetry | `fixed-in-repo` | Medium | `tests/unit/gst-calculate.test.ts` | Tax Engine / CA |
 | **F-GST-2** | Floating-point imprecision in `quantity * unitPrice` (`1.005 * 100`) | `fixed-in-repo` | High | `tests/unit/gst-calculate.test.ts` | Core Engine |
-| **F-GST-3** | Compensation Cess application order vs taxable value | `informational` | Low | `tests/unit/gst-calculate.test.ts` | Product / CA |
+| **F-GST-3** | Compensation Cess application order vs taxable value | `scheduled after Phase 3` | Low | `tests/unit/gst-calculate.test.ts` | Product / CA |
 | **F-GST-4** | Legal rupee rounding at document vs line item level (CGST Act § 170) | `informational` | Medium | `tests/unit/round-to-rupee.test.ts` | Tax Compliance |
-| **F-NUM-1** | Format `{FY}` vs `{FYYYY}` in 16-character Rule 46(b) limit | `spec-defect` | Medium | `tests/unit/invoice-number-format.test.ts` | Settings UI |
+| **F-NUM-1** | Format `{FY}` vs `{FYYYY}` in 16-character Rule 46(b) limit | `fixed-in-repo (P3-WRAPUP)` | Medium | `tests/unit/invoice-number-format.test.ts` | Settings UI |
 | **F-ENT-1** | Trial plan with NULL `trial_ends_at` fallback | `fixed-in-repo` | High | `tests/unit/entitlements.test.ts` | Subscriptions Team |
 | **F-ENT-2** | Grace period expiration boundary (millisecond vs day) | `informational` | Low | `tests/unit/entitlements.test.ts` | Subscriptions UI |
 | **F-ENT-3** | Overdue plan status: read-only grace vs hard lockout | `informational` | Medium | `tests/unit/entitlements.test.ts` | Auth / Subscriptions |
-| **F-WORDS-1**| Negative amount in `number-to-words` throws unhandled `RangeError` | `code-defect` | Low | `tests/unit/number-to-words.test.ts` | PDF Generator |
+| **F-WORDS-1**| Negative amount in `number-to-words` throws unhandled `RangeError` | `fixed-in-repo (P3-WRAPUP)` | Low | `tests/unit/number-to-words.test.ts` | PDF Generator |
 | **F-STATUS-1**| `computePaymentStatus` does not filter soft-deleted payment records | `code-defect` | Medium | `tests/unit/invoice-status.test.ts` | Payments Team |
 | **F-IST-1** | Month notation and timezone invariance in IST date helpers | `informational` | Low | `tests/unit/ist-date.test.ts` | Utilities |
 
@@ -82,8 +82,8 @@ This document records all discrepancies, edge cases, statutory ambiguities, and 
 
 ---
 
-### F-NUM-1: Format `{FY}` vs `{FYYYY}` in 16-character Rule 46(b) limit
-- **Status**: `spec-defect`
+### F-NUM-1: Format `{FY}` vs `{FYYYY}` in 16-character Rule 46(b) limit & sequence validation
+- **Status**: `fixed-in-repo (P3-WRAPUP)`
 - **Severity**: Medium
 - **Test File**: `tests/unit/invoice-number-format.test.ts`
 - **Description**:
@@ -92,7 +92,8 @@ This document records all discrepancies, edge cases, statutory ambiguities, and 
   The token `{FYYYY}` expands to 7 chars (e.g., `2025-26`).
   If a user configures a long organization prefix such as `CORP-NORTH/` (11 chars) with `{FY}/{SEQ:4}`, total resolved length is `11 + 5 + 4 = 20 > 16`.
   `validateInvoiceNumberFormat` correctly detects this statically and calculates the exact number of characters to shorten (`maxResolvedLength - 16`).
-- **Suggested Next Action**: Guarded by SPEC test. Front-end settings UI should provide live length counters.
+  In P3-WRAPUP, sequence parameter validation was added to `resolveInvoiceNumber`: sequences must be positive safe integers (`sequenceValue >= 1`), throwing `RangeError` otherwise, while permitting statutory sequence overflow beyond configured width without padding truncation.
+- **Suggested Next Action**: Guarded by SPEC test in `tests/unit/invoice-number-format.test.ts`. Front-end settings UI provides live length counters.
 
 ---
 
@@ -129,16 +130,17 @@ This document records all discrepancies, edge cases, statutory ambiguities, and 
 
 ---
 
-### F-WORDS-1: Negative amount in `number-to-words` throws unhandled `RangeError`
-- **Status**: `code-defect`
+### F-WORDS-1: Amount in words domain handling, multi-crore support & non-negative bounds
+- **Status**: `fixed-in-repo (P3-WRAPUP)`
 - **Severity**: Low
 - **Test File**: `tests/unit/number-to-words.test.ts`
 - **Description**:
-  `amountInWords(amountPaise)` in `lib/pdf/number-to-words.ts` enforces `if (amountPaise < 0) throw new RangeError('amountPaise cannot be negative')`.
-  If a caller formats a negative net credit note balance or negative refund using `amountInWords`, an unhandled `RangeError` is thrown, crashing PDF generation.
-- **Suggested Next Action**: Either:
-  1. Add negative handling returning `'Minus ' + amountInWords(Math.abs(amountPaise))`.
-  2. Document caller precondition that only absolute paise amounts are allowed.
+  `amountInWords(amountPaise)` (and `numberToWordsRupeesPaise`) in `lib/pdf/number-to-words.ts` strictly validates domain inputs:
+  - Non-negative safe integers required for rupees (throws `RangeError` if negative, non-integer, or unsafe integer).
+  - Paise must be in range 0..99.
+  - Multi-crore amounts (e.g. 100+ crore up to `Number.MAX_SAFE_INTEGER`, such as 90 lakh crore) are now converted recursively using the standard Indian numbering system.
+  - Exported `amountInWordsFromPaise(totalPaise: number): string` converts total paise directly, cleanly handling zero paise and fractional edge cases.
+- **Suggested Next Action**: Fully resolved in P3-WRAPUP and verified against 2,000+ pseudo-random values below 100 crore for exact behavioral parity.
 
 ---
 

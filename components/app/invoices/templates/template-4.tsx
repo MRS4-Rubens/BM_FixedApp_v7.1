@@ -1,4 +1,4 @@
-import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
+import { amountInWordsFromPaise } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
@@ -581,7 +581,7 @@ export function InvoiceTemplate4({ invoice, hasWatermark, displayPrefs }: Invoic
       {/* 5. AMOUNT IN WORDS RIBBON                                           */}
       {/* ==================================================================== */}
       <div className="bg-slate-100/90 border border-slate-300 rounded-md py-0.5 px-3 mb-[3px] text-[13px] font-bold text-slate-800 leading-tight">
-        Amount in Words : <span className="italic font-extrabold text-slate-955">{amountInWordsIndian(Math.floor(invoice.grand_total_paise / 100), invoice.grand_total_paise % 100)}.</span>
+        Amount in Words : <span className="italic font-extrabold text-slate-955">{amountInWordsFromPaise(invoice.grand_total_paise)}.</span>
       </div>
 
       {/* ==================================================================== */}

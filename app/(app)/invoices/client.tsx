@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  AlertCircle,
   ArrowDownRight,
   ChevronDown,
   Download,
@@ -13,11 +14,13 @@ import {
   Plus,
   Printer,
   Search,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/app/empty-state';
 import { PaginationControls } from '@/components/app/pagination-controls';
 import { DeleteDraftButton } from '@/components/app/invoices/delete-draft-button';
+import { openSignedPdf } from '@/lib/pdf/open-signed-pdf';
 import { getArchivedPdfUrl } from '@/lib/actions/invoices/get-archived-pdf-url';
 import { getArchivedCreditNotePdfUrl } from '@/lib/actions/credit-notes/get-archived-credit-note-pdf-url';
 import type { InvoiceListItem } from '@/lib/actions/invoices/list-invoices';
@@ -93,6 +96,7 @@ export function InvoicesClient({
 }: InvoicesClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [listError, setListError] = useState<string | null>(null);
 
   const [search, setSearch] = useState(currentParams.q ?? '');
   const [prevQ, setPrevQ] = useState(currentParams.q ?? '');
@@ -281,6 +285,16 @@ export function InvoicesClient({
         </div>
       </div>
 
+      {listError && (
+        <div role="alert" className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium">
+          <AlertCircle className="size-5 shrink-0 mt-0.5" />
+          <div className="flex-1">{listError}</div>
+          <button type="button" onClick={() => setListError(null)} aria-label="Dismiss message" className="text-destructive/70 hover:text-destructive cursor-pointer">
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+
       {/* Tabs: Tax Invoices vs Credit Notes & Primary Action */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 border-b border-border pb-1.5">
         <div className="grid grid-cols-2 sm:flex items-center gap-2 w-full sm:w-auto">
@@ -427,7 +441,7 @@ export function InvoicesClient({
                                       >
                                         <Pencil className="size-3.5" />
                                       </Link>
-                                      <DeleteDraftButton invoiceId={inv.id} variant="icon" />
+                                      <DeleteDraftButton invoiceId={inv.id} variant="icon" onError={setListError} />
                                     </>
                                   ) : (
                                     <>
@@ -441,12 +455,8 @@ export function InvoicesClient({
                                       <button
                                         onClick={async (e) => {
                                           e.preventDefault();
-                                          const res = await getArchivedPdfUrl({ id: inv.id });
-                                          if (res.success) {
-                                            window.open(res.data.url, '_blank');
-                                          } else {
-                                            alert(res.error.message);
-                                          }
+                                          const r = await openSignedPdf(() => getArchivedPdfUrl({ id: inv.id }));
+                                          if (!r.ok) setListError(r.message); else setListError(null);
                                         }}
                                         title="Download PDF"
                                         className="flex size-7.5 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-sm cursor-pointer"
@@ -557,7 +567,7 @@ export function InvoicesClient({
                                 <Pencil className="size-3.5 text-muted-foreground" />
                                 <span>Edit Draft</span>
                               </Link>
-                              <DeleteDraftButton invoiceId={inv.id} variant="icon" />
+                              <DeleteDraftButton invoiceId={inv.id} variant="icon" onError={setListError} />
                             </>
                           ) : (
                             <>
@@ -572,12 +582,8 @@ export function InvoicesClient({
                                 type="button"
                                 onClick={async (e) => {
                                   e.preventDefault();
-                                  const res = await getArchivedPdfUrl({ id: inv.id });
-                                  if (res.success) {
-                                    window.open(res.data.url, '_blank');
-                                  } else {
-                                    alert(res.error.message);
-                                  }
+                                  const r = await openSignedPdf(() => getArchivedPdfUrl({ id: inv.id }));
+                                  if (!r.ok) setListError(r.message); else setListError(null);
                                 }}
                                 className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg border border-border bg-background text-foreground text-xs font-bold shadow-2xs hover:bg-accent transition-colors cursor-pointer"
                               >
@@ -710,12 +716,8 @@ export function InvoicesClient({
                                     <button
                                       onClick={async (e) => {
                                         e.preventDefault();
-                                        const res = await getArchivedCreditNotePdfUrl({ id: note.id });
-                                        if (res.success) {
-                                          window.open(res.data.url, '_blank');
-                                        } else {
-                                          alert(res.error.message);
-                                        }
+                                        const r = await openSignedPdf(() => getArchivedCreditNotePdfUrl({ id: note.id }));
+                                        if (!r.ok) setListError(r.message); else setListError(null);
                                       }}
                                       title="Download PDF"
                                       className="flex size-7.5 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-sm cursor-pointer"
@@ -820,12 +822,8 @@ export function InvoicesClient({
                                 type="button"
                                 onClick={async (e) => {
                                   e.preventDefault();
-                                  const res = await getArchivedCreditNotePdfUrl({ id: note.id });
-                                  if (res.success) {
-                                    window.open(res.data.url, '_blank');
-                                  } else {
-                                    alert(res.error.message);
-                                  }
+                                  const r = await openSignedPdf(() => getArchivedCreditNotePdfUrl({ id: note.id }));
+                                  if (!r.ok) setListError(r.message); else setListError(null);
                                 }}
                                 className="flex items-center gap-1 py-1.5 px-3 rounded-lg border border-border bg-background text-foreground text-xs font-bold shadow-2xs hover:bg-accent transition-colors cursor-pointer"
                               >

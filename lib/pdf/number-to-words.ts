@@ -1,4 +1,16 @@
 export function amountInWordsIndian(rupees: number, paise: number): string {
+  if (
+    !Number.isSafeInteger(rupees) ||
+    rupees < 0 ||
+    !Number.isSafeInteger(paise) ||
+    paise < 0 ||
+    paise > 99
+  ) {
+    throw new RangeError(
+      'amountInWordsIndian: rupees must be a non-negative integer and paise an integer from 0 to 99'
+    );
+  }
+
   const ones = [
     '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
     'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
@@ -28,20 +40,21 @@ export function amountInWordsIndian(rupees: number, paise: number): string {
     if (amount === 0) return 'Zero';
 
     let result = '';
-    
+
     const crore = Math.floor(amount / 10000000);
     amount %= 10000000;
-    
+
     const lakh = Math.floor(amount / 100000);
     amount %= 100000;
-    
+
     const thousand = Math.floor(amount / 1000);
     amount %= 1000;
-    
+
     const hundred = amount;
 
     if (crore > 0) {
-      result += convertGroup(crore) + ' Crore ';
+      const croreWords = crore >= 100 ? getRupeesInWords(crore) : convertGroup(crore);
+      result += croreWords + ' Crore ';
     }
     if (lakh > 0) {
       result += convertGroup(lakh) + ' Lakh ';
@@ -56,12 +69,21 @@ export function amountInWordsIndian(rupees: number, paise: number): string {
     return result.trim();
   }
 
-  const rupeesWords = getRupeesInWords(Math.floor(rupees));
-  
+  const rupeesWords = getRupeesInWords(rupees);
+
   if (paise === 0) {
     return `${rupeesWords} Rupees Only`;
   } else {
-    const paiseWords = convertGroup(Math.floor(paise));
+    const paiseWords = convertGroup(paise);
     return `${rupeesWords} Rupees and ${paiseWords} Paise Only`;
   }
+}
+
+export function amountInWordsFromPaise(totalPaise: number): string {
+  if (!Number.isSafeInteger(totalPaise) || totalPaise < 0) {
+    throw new RangeError(
+      'amountInWordsFromPaise: totalPaise must be a non-negative integer'
+    );
+  }
+  return amountInWordsIndian(Math.floor(totalPaise / 100), totalPaise % 100);
 }

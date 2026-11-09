@@ -1,4 +1,4 @@
-import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
+import { amountInWordsFromPaise } from '@/lib/pdf/number-to-words';
 import { formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs';
@@ -314,7 +314,7 @@ export function InvoiceTemplate1({ invoice, businessStateCode, hasWatermark, dis
       <div className="bg-slate-100 border border-slate-400 rounded px-3 py-0.5 mb-[5px] text-[13px] text-slate-900 leading-tight">
         <span className="font-black text-slate-955">Amount in Words: </span>
         <span className="italic font-bold text-slate-900">
-          {amountInWordsIndian(Math.floor(invoice.grand_total_paise / 100), invoice.grand_total_paise % 100)}.
+          {amountInWordsFromPaise(invoice.grand_total_paise)}.
         </span>
       </div>
       {/* ==================================================================== */}

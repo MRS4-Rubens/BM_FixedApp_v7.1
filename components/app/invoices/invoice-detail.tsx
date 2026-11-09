@@ -25,6 +25,7 @@ import { sumActiveCreditedPaise, sumActivePaidPaise, summarizeSettlement } from 
 import { emailInvoice } from '@/lib/actions/invoices/email-invoice'
 import { sendPaymentReminder } from '@/lib/actions/invoices/send-payment-reminder'
 import { getArchivedPdfUrl } from '@/lib/actions/invoices/get-archived-pdf-url'
+import { openSignedPdf } from '@/lib/pdf/open-signed-pdf'
 import { getDisplayInvoiceStatus, getDisplayStatusLabel } from '@/lib/invoices/status'
 import { PaymentSection } from './payment-section'
 import { cn } from '@/lib/utils'
@@ -181,11 +182,9 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
   async function handleDownloadArchived() {
     setIsDownloading(true)
     setDownloadError(null)
-    const res = await getArchivedPdfUrl({ id: invoice.id })
-    if (res.success) {
-      window.open(res.data.url, '_blank')
-    } else {
-      setDownloadError(res.error.message)
+    const r = await openSignedPdf(() => getArchivedPdfUrl({ id: invoice.id }))
+    if (!r.ok) {
+      setDownloadError(r.message)
     }
     setIsDownloading(false)
   }

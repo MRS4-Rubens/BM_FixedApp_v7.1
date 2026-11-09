@@ -170,9 +170,14 @@ export function getPeriodKey(granularity: 'daily' | 'monthly' | 'yearly', financ
 }
 
 export function resolveInvoiceNumber(format: string, params: { invoiceDate: Date; fyLabel: string; sequenceValue: number }): string {
+  const { sequenceValue } = params;
+  if (!Number.isSafeInteger(sequenceValue) || sequenceValue < 1) {
+    throw new RangeError('resolveInvoiceNumber: sequenceValue must be a positive integer');
+  }
+
   const { tokens } = parseInvoiceNumberFormat(format);
   
-  const { invoiceDate, fyLabel, sequenceValue } = params;
+  const { invoiceDate, fyLabel } = params;
   
   const { year, month, day } = getIstDateParts(invoiceDate);
   const dateYear = year;
