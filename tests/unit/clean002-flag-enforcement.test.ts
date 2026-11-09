@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
-import { readComponentSources } from '../helpers/component-sources';
+import { listComponentSourceFiles } from '../helpers/component-sources';
 
 function getAllSourceFiles(dir: string, fileList: string[] = []): string[] {
   const files = fs.readdirSync(dir);
@@ -121,21 +121,19 @@ describe('CLEAN-002: Flag Enforcement & Plan Hygiene', () => {
       'White-Label',
     ];
 
-    const targetFiles = [
+    const targetEntries = [
       'components/landing/pricing-section.tsx',
       'components/app/settings/billing-tab.tsx',
       'components/app/subscription/upgrade-prompt-modal.tsx',
       'app/(app)/checkout/checkout-form.tsx',
       'components/app/app-sidebar.tsx',
     ];
+    const targetFiles = targetEntries.flatMap((entry) => listComponentSourceFiles(entry));
 
     for (const relPath of targetFiles) {
       const filePath = path.resolve(rootDir, relPath);
       if (!fs.existsSync(filePath)) continue;
-      const content = (relPath === 'app/(app)/checkout/checkout-form.tsx'
-        ? readComponentSources(relPath)
-        : fs.readFileSync(filePath, 'utf8')
-      ).toLowerCase();
+      const content = fs.readFileSync(filePath, 'utf8').toLowerCase();
       for (const banned of bannedClaims) {
         expect(
           content.includes(banned.toLowerCase()),

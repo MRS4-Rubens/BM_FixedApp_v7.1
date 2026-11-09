@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readComponentSources } from '../helpers/component-sources';
 
 const ROOT_DIR = process.cwd();
 
@@ -173,10 +174,7 @@ describe('CLEAN-SWEEP: Architecture, Dead Code, and Documentation Guards', () =>
   });
 
   it('8. admin-console.tsx imports BusinessIdentityDialog, business-identity-dialog.tsx calls adminUpdateBusinessIdentity, and business-directory.ts selects state_code', () => {
-    const adminConsole = fs.readFileSync(
-      path.resolve(ROOT_DIR, 'app/(admin)/admin/admin-console.tsx'),
-      'utf8',
-    );
+    const adminConsole = readComponentSources('app/(admin)/admin/admin-console.tsx');
     expect(adminConsole).toContain('BusinessIdentityDialog');
 
     const dialog = fs.readFileSync(
@@ -193,10 +191,7 @@ describe('CLEAN-SWEEP: Architecture, Dead Code, and Documentation Guards', () =>
   });
 
   it('9. billing-tab.tsx has no "Live Database Sync", and contains canShareInvoiceOnWhatsApp and canExportStatutoryReport', () => {
-    const billingTab = fs.readFileSync(
-      path.resolve(ROOT_DIR, 'components/app/settings/billing-tab.tsx'),
-      'utf8',
-    );
+    const billingTab = readComponentSources('components/app/settings/billing-tab.tsx');
     expect(billingTab).not.toContain('Live Database Sync');
     expect(billingTab).toContain('canShareInvoiceOnWhatsApp');
     expect(billingTab).toContain('canExportStatutoryReport');
