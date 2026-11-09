@@ -17,6 +17,7 @@ import { getClientIp } from '@/lib/rate-limit/upstash';
 import { enforceRateLimit } from '@/lib/rate-limit/enforce';
 import { publicAssetLimiter } from '@/lib/rate-limit/limiters';
 import { logError } from '@/lib/actions/_shared/logger';
+import { runWithRequestId, requestIdFromHeaders } from '@/lib/observability/request-context';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const IMMUTABLE_CACHE = 'public, max-age=31536000, immutable';
@@ -47,7 +48,7 @@ function ifNoneMatchHits(header: string | null, etag: string): boolean {
     .some((t) => t === cleanEtag);
 }
 
-export async function GET(
+async function handleLogoGet(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
@@ -154,4 +155,14 @@ export async function GET(
     logError('logo-route', error);
     return new NextResponse('Failed to load logo', { status: 500, headers: NO_STORE });
   }
+}
+
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+): Promise<NextResponse> {
+  const requestId = requestIdFromHeaders(request.headers);
+  // Logs inside carry the request id, but the response does not: logo responses are cached publicly for a year
+  // (IMMUTABLE_CACHE), and a per-request header would be frozen into every cached copy.
+  return runWithRequestId(requestId, () => handleLogoGet(request, context));
 }

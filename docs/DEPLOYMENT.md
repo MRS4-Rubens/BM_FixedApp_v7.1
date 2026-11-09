@@ -150,3 +150,52 @@ If any query returns a non-zero count, remediate legacy rows before migrating:
 - Node: .nvmrc is the exact version (local + CI); package.json engines "24.x" is what Vercel uses; a unit test keeps the majors equal. Upgrading Node = change both in one PR.
 - Images: plain <img> is deliberate (data/blob URLs, expiring signed URLs, print templates); no next/image, so no images config. If next/image is ever added for remote images, configure images.remotePatterns at that time.
 - Not used, on purpose: output: 'standalone' (only for self-hosting; we deploy on Vercel); Renovate (Dependabot already configured in .github/dependabot.yml); experimental.serverActions.allowedOrigins (only needed if a proxy/CDN in front of Vercel changes the Host header — re-check on launch day).
+
+## Monitoring & alerting (OPT-001)
+
+### Uptime monitoring
+- **Endpoint**: Configure an external uptime monitor (e.g. Better Uptime, Datadog Synthetics, or Pingdom) to poll `GET <origin>/api/health` once every minute (`1m` interval).
+- **Alert trigger**: Alert on non-`200` HTTP status (e.g. `503 Service Unavailable`) for **2 consecutive checks** (prevents alerting on transient network hiccups).
+- **Response structure**:
+  ```json
+  {
+    "status": "ok",
+    "checks": {
+      "database": "ok",
+      "redis": "ok"
+    }
+  }
+  ```
+  - `"status": "ok"` / HTTP 200: Both PostgreSQL (Neon) and Redis (Upstash) answered within 3000 ms.
+  - `"status": "error"` / HTTP 503: At least one dependency check failed or exceeded 3000 ms. The `checks` object indicates specifically which subsystem is degraded (`database` or `redis`).
+  - The endpoint never exposes stack traces, credentials, environment variables, or hostnames.
+- **Caching**: Results are memoized in module scope for **10 seconds** to prevent quota exhaustion or denial-of-service against Neon or Upstash. Any failed check logs `health-check` to server logs and Sentry once per computation (not on cached hits).
+
+### Request correlation & logs
+- **Request IDs**: Every server action (via `runValidatedHandler` in `lib/actions/_shared/create-action.ts`) and the API routes we own (`/api/health`, `/api/cron/retry-invoice-archival`, `/api/reports/export`, `/api/business/[id]/logo`) run inside a request context, so their error log lines carry `requestId` and their Sentry events carry the tag `request_id`. The Neon Auth routes under `/api/auth/**` are library-owned and not wrapped.
+- **Vercel correlation**: When deployed on Vercel, the ID automatically adopts Vercel's incoming `x-vercel-id` (if valid), allowing 1:1 cross-referencing directly in Vercel Function logs. Otherwise, it falls back to `x-request-id` or generates a cryptographically secure UUID (`node:crypto`).
+- **Response header**: `/api/health`, the cron route and the report export return it as `x-request-id`. The logo route deliberately does not, because its responses are cached publicly for a year and the header would be frozen into every cached copy.
+
+### Sentry alert rules (production)
+Configure the following 6 alert rules in the production Sentry project:
+1. **New issue in production**:
+   - Filter: `event.environment:production` AND `is:unresolved`
+   - Trigger: Alert on first seen / new unresolved issue.
+2. **Archival exhausted backlog**:
+   - Filter: `event.environment:production` AND `scope:archival-exhausted-summary`
+   - Trigger: Documents have reached maximum archival attempts (5) without succeeding. Requires operational triage.
+3. **Archival stale backlog**:
+   - Filter: `event.environment:production` AND `scope:archival-stale-pending`
+   - Trigger: after the nightly sweep, finalized documents are still pending/failed (under the attempt limit) more than 60 minutes after finalization. This is checked once a day at the end of the 20:00 UTC cron, so it reports what the sweep could not clear (deadline reached or renders failing); it is not a real-time alarm.
+4. **Rate limiter unavailable (fail-open or fail-closed)**:
+   - Filter: `event.environment:production` AND `scope:rate-limit-unavailable*` (logged by `lib/rate-limit/enforce.ts`).
+   - Trigger: Upstash Redis is unreachable or timing out during rate limit evaluation.
+5. **Health check degradation**:
+   - Filter: `event.environment:production` AND `scope:health-check`
+   - Trigger: `/api/health` dependency check failed (database or Redis unreachable or timing out).
+6. **Cron monitor missed or failed**:
+   - Filter: Sentry Cron Monitor `retry-invoice-archival` (registered with schedule `0 20 * * *` matching `vercel.json`).
+   - Trigger: Missed check-in or execution error / timeout. *(Note: Created automatically on the first check-in).*
+
+> **Note**: These monitors and alert rules are configured on launch day with the final Sentry account and chosen uptime provider.
+

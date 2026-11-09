@@ -1,12 +1,13 @@
 import * as Sentry from '@sentry/nextjs';
 import { db } from '@/lib/db/client';
 import {
+  ARCHIVAL_STALE_PENDING_MINUTES,
   ARCHIVAL_SWEEP_BATCH_SIZE,
   ARCHIVAL_SWEEP_CONCURRENCY,
   ARCHIVAL_SWEEP_DEADLINE_MS,
   type ArchivalKind,
 } from './archival-config';
-import { claimBatch, countExhausted } from './archival-claims';
+import { claimBatch, countExhausted, countStalePending } from './archival-claims';
 import { archiveClaimedDocument } from './archival-core';
 import { mapWithConcurrency } from '@/lib/async/map-with-concurrency';
 
@@ -17,6 +18,8 @@ export interface ArchivalSweepSummary {
   readonly skipped: number;
   readonly exhaustedInvoices: number;
   readonly exhaustedCreditNotes: number;
+  readonly staleInvoices: number;
+  readonly staleCreditNotes: number;
 }
 
 export async function runArchivalSweep(
@@ -79,6 +82,17 @@ export async function runArchivalSweep(
     });
   }
 
+  const staleInvoices = await countStalePending(db, 'invoice', ARCHIVAL_STALE_PENDING_MINUTES);
+  const staleCreditNotes = await countStalePending(db, 'credit_note', ARCHIVAL_STALE_PENDING_MINUTES);
+
+  if (staleInvoices > 0 || staleCreditNotes > 0) {
+    Sentry.captureMessage('Archival backlog: documents pending for over 1 hour', {
+      level: 'warning',
+      tags: { scope: 'archival-stale-pending' },
+      extra: { invoices: staleInvoices, creditNotes: staleCreditNotes },
+    });
+  }
+
   return {
     claimed: claimedCount,
     succeeded: succeededCount,
@@ -86,6 +100,8 @@ export async function runArchivalSweep(
     skipped: skippedCount,
     exhaustedInvoices,
     exhaustedCreditNotes,
+    staleInvoices,
+    staleCreditNotes,
   };
 }
 
