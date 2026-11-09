@@ -4,7 +4,7 @@ A GST billing and invoicing web application for Indian small businesses.
 
 ## Prerequisites
 
-- **Node.js** — Node 22+ (pinned in `.nvmrc`). If you have [nvm](https://github.com/nvm-sh/nvm) installed, run `nvm use` to switch to the correct version automatically.
+- **Node.js** — Node 24 (exact version pinned in `.nvmrc`; `package.json` engines is `24.x`, which is also what Vercel uses). If you have [nvm](https://github.com/nvm-sh/nvm) installed, run `nvm use` to switch to the correct version automatically.
 - **pnpm** — pnpm 11. Run `corepack enable` to ensure the correct package manager is active. Do not use npm or yarn.
 
 ## Local Setup
