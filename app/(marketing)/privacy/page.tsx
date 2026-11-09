@@ -4,6 +4,9 @@ import { SUPPORT_EMAIL } from '@/lib/config/contact'
 export const metadata: Metadata = {
   title: 'Privacy Policy | Bill Matrix',
   description: 'Privacy Policy and data protection practices for Bill Matrix.',
+  alternates: {
+    canonical: '/privacy',
+  },
 }
 
 export default function PrivacyPolicyPage() {

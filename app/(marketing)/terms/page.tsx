@@ -4,6 +4,9 @@ import { SUPPORT_EMAIL } from '@/lib/config/contact'
 export const metadata: Metadata = {
   title: 'Terms of Service | Bill Matrix',
   description: 'Terms of Service for Bill Matrix GST Invoicing & Compliance Platform.',
+  alternates: {
+    canonical: '/terms',
+  },
 }
 
 export default function TermsOfServicePage() {

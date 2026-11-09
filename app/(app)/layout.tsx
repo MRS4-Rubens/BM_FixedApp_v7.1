@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { AppSidebar } from '@/components/app/app-sidebar'
 import { AppTopbar } from '@/components/app/app-topbar'
@@ -5,6 +6,13 @@ import { getCurrentAppUser } from '@/lib/auth/session'
 import { isPlatformAdmin } from '@/lib/auth/admin'
 import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { buildLogoUrl } from '@/lib/storage/logo-url'
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export const dynamic = 'force-dynamic'
 

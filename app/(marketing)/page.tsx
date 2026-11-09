@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { HeroSection } from '@/components/landing/hero-section'
 import { LiveDashboard } from '@/components/landing/live-dashboard'
 import { SecurityBand } from '@/components/landing/security-band'
@@ -10,6 +11,12 @@ import { FaqSection } from '@/components/landing/faq-section'
 import { AuthTriggerButton } from '@/components/auth/trigger-button'
 import { Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { getRequestSession } from '@/lib/auth/request-session'
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+}
 
 export const dynamic = 'force-dynamic'
 
