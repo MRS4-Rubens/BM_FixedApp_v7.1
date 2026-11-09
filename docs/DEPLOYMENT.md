@@ -143,3 +143,10 @@ If any query returns a non-zero count, remediate legacy rows before migrating:
 - **Migration Details**: Migration `0026_fe001_invoice_display_prefs.sql` adds `invoice_display_prefs` to `businesses` (default `'{}'::jsonb`) and `display_prefs_snapshot` to `invoices` (nullable `jsonb`), each with `jsonb_typeof(...) = 'object'` check constraints.
 - **Idempotency & Zero Downtime**: Uses `ADD COLUMN IF NOT EXISTS` and `DROP CONSTRAINT IF EXISTS ... ADD CONSTRAINT ...` within a single transaction. Safe to run against live databases without locking tables.
 - **No Backfill Needed**: Pre-existing finalized invoices have `display_prefs_snapshot IS NULL`. The application layer (`resolveFinalizedDisplayPrefs`) deterministically maps `null` to statutory defaults.
+
+## Build configuration decisions (OPT-003)
+
+- TypeScript target ES2022 affects type-checking only; browser output is controlled by Next.js/SWC and its browserslist.
+- Node: .nvmrc is the exact version (local + CI); package.json engines "24.x" is what Vercel uses; a unit test keeps the majors equal. Upgrading Node = change both in one PR.
+- Images: plain <img> is deliberate (data/blob URLs, expiring signed URLs, print templates); no next/image, so no images config. If next/image is ever added for remote images, configure images.remotePatterns at that time.
+- Not used, on purpose: output: 'standalone' (only for self-hosting; we deploy on Vercel); Renovate (Dependabot already configured in .github/dependabot.yml); experimental.serverActions.allowedOrigins (only needed if a proxy/CDN in front of Vercel changes the Host header — re-check on launch day).
