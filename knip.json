@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "vitest": {
+    "config": [
+      "vitest.config.mts",
+      "vitest.realdb.config.mts"
+    ],
+    "entry": [
+      "tests/realdb/global-setup.ts",
+      "tests/**/*.test.ts"
+    ]
+  },
+  "ignore": [
+    "config/security-headers.d.mts",
+    "scripts/ci/audit-gate-core.d.mts"
+  ],
+  "ignoreDependencies": [
+    "@tanstack/react-query",
+    "postcss-load-config"
+  ],
+  "rules": {
+    "types": "off",
+    "nsTypes": "off"
+  }
+}

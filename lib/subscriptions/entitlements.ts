@@ -38,14 +38,14 @@ export const FREE_TIER_LIMITS = {
   teamUserLimit: 1,        // Owner only
 } as const;
 
-export const ESSENTIALS_TIER_LIMITS = {
+const ESSENTIALS_TIER_LIMITS = {
   invoiceMonthlyLimit: null, // Unlimited
   customerLimit: null,       // Unlimited
   productLimit: null,        // Unlimited
   teamUserLimit: 3,          // Owner + 2 Staff
 } as const;
 
-export const PROFESSIONAL_TIER_LIMITS = {
+const PROFESSIONAL_TIER_LIMITS = {
   invoiceMonthlyLimit: null, // Unlimited
   customerLimit: null,       // Unlimited
   productLimit: null,        // Unlimited

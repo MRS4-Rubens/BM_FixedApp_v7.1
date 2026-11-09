@@ -14,8 +14,7 @@ export interface SellerBankSnapshot {
   bankName: string | null;
 }
 
-export const SELLER_SNAPSHOT_SOURCES = ['captured_at_finalization', 'backfilled_from_profile'] as const;
-export type SellerSnapshotSource = (typeof SELLER_SNAPSHOT_SOURCES)[number];
+export type SellerSnapshotSource = 'captured_at_finalization' | 'backfilled_from_profile';
 
 /** Factory (fresh builders per table). COMP-001: frozen seller details of a finalized legal document. */
 export function sellerSnapshotColumns() {

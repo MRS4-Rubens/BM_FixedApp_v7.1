@@ -3,9 +3,9 @@ import { getRedis } from '@/lib/rate-limit/upstash';
 import { lazyLimiter, type RateLimiter } from '@/lib/rate-limit/lazy-limiter';
 
 export const DEFAULT_ACTION_LIMIT = 120;
-export const DEFAULT_ACTION_WINDOW = '60 s';
+const DEFAULT_ACTION_WINDOW = '60 s';
 export const PUBLIC_ASSET_LIMIT = 300;
-export const PUBLIC_ASSET_WINDOW = '60 s';
+const PUBLIC_ASSET_WINDOW = '60 s';
 const LIMITER_TIMEOUT_MS = 2000;
 
 /** Generous per-user, per-action ceiling applied by createAuthenticatedAction when an action has no explicit limiter. */

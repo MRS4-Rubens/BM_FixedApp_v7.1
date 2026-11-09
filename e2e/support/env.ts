@@ -54,7 +54,7 @@ function extractHostname(urlString: string, label: string): string {
   }
 }
 
-export function parseCsv(csv: string): string[] {
+function parseCsv(csv: string): string[] {
   return csv
     .split(',')
     .map((item) => item.trim().toLowerCase())

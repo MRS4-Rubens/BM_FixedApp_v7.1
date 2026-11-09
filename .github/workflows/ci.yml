@@ -76,6 +76,9 @@ jobs:
       - name: Lint (ratchet - problems may not increase)
         run: pnpm lint:ratchet
 
+      - name: Unused code (knip)
+        run: pnpm knip
+
       - name: Migration history check
         run: pnpm db:check
 

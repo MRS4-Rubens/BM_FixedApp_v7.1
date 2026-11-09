@@ -181,4 +181,3 @@ const hr = {
   margin: '20px 0',
 };
 
-export default SubscriptionRequestEmail;

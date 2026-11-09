@@ -52,7 +52,7 @@ function isAsciiDigit(byte: number): boolean {
 }
 
 /** Derives the real type from magic bytes. Never uses client-declared MIME or file names. */
-export function detectUploadType(buffer: Buffer): DetectedType | null {
+function detectUploadType(buffer: Buffer): DetectedType | null {
   if (buffer.length < MIN_BYTES) return null;
 
   // PNG: 8-byte signature followed by the IHDR chunk.

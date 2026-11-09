@@ -36,14 +36,14 @@ export function createStreamingWorkbook(stream: Writable): ExcelJS.stream.xlsx.W
 }
 
 /** How many data rows are written between pauses that let the zip encoder drain to the client. */
-export const ROWS_PER_YIELD = 2000;
+const ROWS_PER_YIELD = 2000;
 
 /**
  * Gives the event loop a turn so archiver can compress and flush the rows committed so far.
  * Without this, a synchronous loop over 100k rows would queue all of the sheet XML in memory
  * before a single byte reached the HTTP response.
  */
-export function yieldToEventLoop(): Promise<void> {
+function yieldToEventLoop(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve));
 }
 

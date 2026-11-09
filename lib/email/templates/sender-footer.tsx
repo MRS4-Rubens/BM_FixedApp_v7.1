@@ -39,5 +39,3 @@ const footerText = {
   marginTop: '12px',
 };
 
-export default SenderFooter;
-

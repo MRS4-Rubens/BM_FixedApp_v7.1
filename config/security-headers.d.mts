@@ -32,7 +32,6 @@ export declare function buildSentryCspReportUri(
 
 export declare function parseStorageOrigins(endpoint: string | undefined): string[];
 
-export declare function buildEnforcedCspBaseline(): string;
 
 export declare function buildAppCspPolicy(options: SecurityHeaderOptions): string;
 

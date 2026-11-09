@@ -1,10 +1,10 @@
 import { z } from 'zod';
 import { maxBase64Chars } from '@/lib/security/upload';
 
-export const FEEDBACK_CATEGORIES = ['bug', 'feature_request', 'ui_ux', 'general'] as const;
+const FEEDBACK_CATEGORIES = ['bug', 'feature_request', 'ui_ux', 'general'] as const;
 export type FeedbackCategory = (typeof FEEDBACK_CATEGORIES)[number];
 
-export const FEEDBACK_SEVERITIES = ['low', 'medium', 'critical'] as const;
+const FEEDBACK_SEVERITIES = ['low', 'medium', 'critical'] as const;
 export type FeedbackSeverity = (typeof FEEDBACK_SEVERITIES)[number];
 
 export const MAX_ATTACHMENT_COUNT = 4;
@@ -19,7 +19,7 @@ export const ALLOWED_MIME_TYPES = [
   'application/pdf',
 ] as const;
 
-export const feedbackAttachmentSchema = z.object({
+const feedbackAttachmentSchema = z.object({
   filename: z.string().min(1, 'File name is required').max(150, 'File name is too long'),
   contentBase64: z
     .string()
@@ -36,7 +36,7 @@ export const feedbackAttachmentSchema = z.object({
 
 export type FeedbackAttachment = z.infer<typeof feedbackAttachmentSchema>;
 
-export const feedbackDiagnosticsSchema = z.object({
+const feedbackDiagnosticsSchema = z.object({
   currentUrl: z.string().optional(),
   browser: z.string().optional(),
   os: z.string().optional(),

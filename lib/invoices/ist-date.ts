@@ -17,7 +17,7 @@ export function getIstDateParts(date: Date): IstDateParts {
   };
 }
 
-export const IST_TIME_ZONE = 'Asia/Kolkata';
+const IST_TIME_ZONE = 'Asia/Kolkata';
 
 /**
  * Human-readable date in India time, e.g. "7/11/2026" (en-IN default) or with `options`

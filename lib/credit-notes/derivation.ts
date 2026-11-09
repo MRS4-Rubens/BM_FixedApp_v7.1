@@ -3,7 +3,7 @@
  * Authoritative on the server; the client form imports it for an identical read-only preview.
  * All limits use integer milli-units (quantity x 1000); all money is integer paise.
  */
-export const QUANTITY_SCALE = 1000;
+const QUANTITY_SCALE = 1000;
 const MAX_QUANTITY_MILLI = 9_999_999_999; // numeric(10,3)
 
 export type CreditNoteRuleCode =

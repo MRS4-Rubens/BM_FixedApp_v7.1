@@ -62,7 +62,7 @@ export const PLAN_CONFIGS: Record<string, PlanDefinition> = {
   },
 };
 
-export const SHORT_MONTHS: Record<string, string> = {
+const SHORT_MONTHS: Record<string, string> = {
   january: 'Jan',
   february: 'Feb',
   march: 'Mar',

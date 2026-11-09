@@ -1,18 +1,18 @@
 import type { JsonValue } from './log';
 
 /** Values are recorded (statutory identity / payee fields). */
-export const PROFILE_AUDIT_VALUE_FIELDS = [
+const PROFILE_AUDIT_VALUE_FIELDS = [
   'legal_name', 'trade_name', 'gstin', 'registration_type', 'state_code',
   'bank_account_name', 'bank_ifsc', 'bank_name',
 ] as const;
 /** Only the FACT of change is recorded (personal data must not enter an immutable log). */
-export const PROFILE_AUDIT_PRESENCE_FIELDS = [
+const PROFILE_AUDIT_PRESENCE_FIELDS = [
   'pan', 'address_line1', 'address_line2', 'city', 'pincode', 'phone', 'email', 'alternate_phone', 'nature_of_business',
 ] as const;
 /** Recorded as last-4 only, under the key bank_account_last4. */
-export const PROFILE_AUDIT_MASKED_FIELD = 'bank_account_number' as const;
+const PROFILE_AUDIT_MASKED_FIELD = 'bank_account_number' as const;
 
-export const AUDITED_PROFILE_FIELDS = [
+const AUDITED_PROFILE_FIELDS = [
   ...PROFILE_AUDIT_VALUE_FIELDS,
   ...PROFILE_AUDIT_PRESENCE_FIELDS,
   PROFILE_AUDIT_MASKED_FIELD,

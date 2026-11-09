@@ -1,4 +1,4 @@
-export const MAX_SEARCH_LENGTH = 100;
+const MAX_SEARCH_LENGTH = 100;
 
 /** trim + collapse internal whitespace + cap length; empty -> null */
 export function normalizeSearchTerm(raw: string | null | undefined): string | null {

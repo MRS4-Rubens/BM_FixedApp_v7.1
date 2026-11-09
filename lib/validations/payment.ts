@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { parseRupeesToPaise } from '@/lib/money';
 import { isoDate } from '@/lib/validations/common';
 
-export const MAX_PAYMENT_RUPEES = 99_999_999.99; // sanity bound only; the overpayment rule is the real bound
+const MAX_PAYMENT_RUPEES = 99_999_999.99; // sanity bound only; the overpayment rule is the real bound
 
 export const recordPaymentSchema = z.object({
   invoice_id: z.string().uuid(),

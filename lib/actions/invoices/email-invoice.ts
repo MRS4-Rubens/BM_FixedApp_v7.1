@@ -14,7 +14,7 @@ import {
 } from '@/lib/email/send-guards';
 import { sendCustomerEmail } from '@/lib/email/send-customer-email';
 import { sanitizeEmailHeaderText } from '@/lib/email/send-policy';
-import InvoiceDeliveryEmail from '@/lib/email/templates/invoice-delivery-email';
+import { InvoiceDeliveryEmail } from '@/lib/email/templates/invoice-delivery-email';
 import {
   claimInvoiceEmailInTransaction,
   releaseInvoiceEmailClaim,

@@ -251,7 +251,7 @@ function parseAdminEnv(source: EnvSource): ParseOutcome<AdminEnv> {
 
 export const appEnv: EnvGroup<AppEnv> = defineGroup('app', parseAppEnv);
 
-export const databaseEnv: EnvGroup<DatabaseEnv> = defineGroup(
+const databaseEnv: EnvGroup<DatabaseEnv> = defineGroup(
   'database',
   fromSchema(
     'database',
@@ -265,7 +265,7 @@ export const databaseEnv: EnvGroup<DatabaseEnv> = defineGroup(
   ),
 );
 
-export const authEnv: EnvGroup<AuthEnv> = defineGroup(
+const authEnv: EnvGroup<AuthEnv> = defineGroup(
   'auth',
   fromSchema(
     'auth',
@@ -277,7 +277,7 @@ export const authEnv: EnvGroup<AuthEnv> = defineGroup(
   ),
 );
 
-export const cronEnv: EnvGroup<CronEnv> = defineGroup(
+const cronEnv: EnvGroup<CronEnv> = defineGroup(
   'cron',
   fromSchema('cron', z.object({ CRON_SECRET: secret() }), (data): CronEnv => data),
 );
@@ -288,7 +288,7 @@ export const adminEnv: EnvGroup<AdminEnv> = defineGroup('admin', parseAdminEnv);
 /* FEATURE groups (lazy; reported at boot, never thrown at boot)        */
 /* ------------------------------------------------------------------ */
 
-export const storageEnv: EnvGroup<StorageEnv> = defineGroup(
+const storageEnv: EnvGroup<StorageEnv> = defineGroup(
   'storage',
   fromSchema(
     'storage',
@@ -309,12 +309,12 @@ export const storageEnv: EnvGroup<StorageEnv> = defineGroup(
   ),
 );
 
-export const pdfEnv: EnvGroup<PdfEnv> = defineGroup(
+const pdfEnv: EnvGroup<PdfEnv> = defineGroup(
   'pdf',
   fromSchema('pdf', z.object({ HTML_TO_PDF_API_KEY: text() }), (data): PdfEnv => data),
 );
 
-export const emailEnv: EnvGroup<EmailEnv> = defineGroup(
+const emailEnv: EnvGroup<EmailEnv> = defineGroup(
   'email',
   fromSchema(
     'email',
@@ -332,7 +332,7 @@ export const emailEnv: EnvGroup<EmailEnv> = defineGroup(
   ),
 );
 
-export const rateLimitEnv: EnvGroup<RateLimitEnv> = defineGroup(
+const rateLimitEnv: EnvGroup<RateLimitEnv> = defineGroup(
   'rateLimit',
   fromSchema(
     'rateLimit',

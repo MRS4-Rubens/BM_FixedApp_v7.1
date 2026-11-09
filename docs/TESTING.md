@@ -118,3 +118,25 @@ Destructive concurrency tests clear and mutate tenant rows. To prevent catastrop
 | **M9** | AUTH-004| Remove duplicate-GSTIN (23505) mapping | `tests/realdb/auth004-gstin-uniqueness.test.ts` | KILLED |
 | **M10**| DB-007 | Comment out audit log trigger in migration | `tests/integration/db007-audit-log.test.ts` | KILLED |
 
+---
+
+## knip exceptions
+
+The repo enforces `knip` in CI (Quality gates) to detect dead code and unused files, dependencies, and exports. The following intentional exceptions are configured in `knip.json`:
+
+1. **Ignored Files (`ignore`)**:
+   - `config/security-headers.d.mts`: TypeScript declaration companion typing `config/security-headers.mjs` (imported by `next.config.mjs`, `lib/observability/sentry-config.ts`, and unit tests).
+   - `scripts/ci/audit-gate-core.d.mts`: TypeScript declaration companion typing `scripts/ci/audit-gate-core.mjs` (imported by audit scripts and unit tests).
+
+2. **Ignored Dependencies (`ignoreDependencies`)**:
+   - `@tanstack/react-query`: Required peer dependency of `@daveyplate/better-auth-*` via Neon Auth client packages (see `docs/security/dependencies.md`).
+   - `postcss-load-config`: Used exclusively as a JSDoc type import in `postcss.config.mjs`.
+
+3. **Rules (`rules`)**:
+   - `types: off` / `nsTypes: off`: Exporting Props, Result, and schema types across domain and UI modules is our established project convention. All other Knip rules remain strictly enabled.
+
+(No `ignoreBinaries` entry: knip 6 recognises `npx only-allow pnpm` in the `preinstall` script on its own.)
+
+Run `pnpm knip` locally before pushing; CI fails on any finding.
+
+
