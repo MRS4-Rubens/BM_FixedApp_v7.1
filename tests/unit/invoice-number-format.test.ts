@@ -243,33 +243,36 @@ describe('Invoice Number Formatting Engine (TEST-001)', () => {
     });
   });
 
-  describe('CHAR / F-NUM-1: Sequence Counter Limitation', () => {
-    it('CHAR F-NUM-1: resolveInvoiceNumber expands beyond width on overflow and allows non-positive sequences', () => {
-      // {SEQ:4} with sequence 10000 yields 5 digits (can breach 16-char rule in production)
-      const resOverflow = resolveInvoiceNumber('{SEQ:4}', {
+  describe('SPEC / F-NUM-1: Sequence Counter Limitation', () => {
+    it('SPEC F-NUM-1: resolveInvoiceNumber rejects non-positive or non-safe-integer sequences with RangeError', () => {
+      const baseParams = {
         invoiceDate: new Date('2026-03-05T10:00:00Z'),
         fyLabel: '2025-26',
-        sequenceValue: 10_000,
-      });
-      expect(resOverflow).toBe('10000');
+      };
 
-      // Sequence 0 pads to 0000
-      const resZero = resolveInvoiceNumber('{SEQ:4}', {
-        invoiceDate: new Date('2026-03-05T10:00:00Z'),
-        fyLabel: '2025-26',
-        sequenceValue: 0,
-      });
-      expect(resZero).toBe('0000');
+      // Non-positive integers
+      expect(() => resolveInvoiceNumber('{SEQ:4}', { ...baseParams, sequenceValue: -1 })).toThrow(RangeError);
+      expect(() => resolveInvoiceNumber('{SEQ:4}', { ...baseParams, sequenceValue: 0 })).toThrow(RangeError);
 
-      // Sequence -1 pads to 00-1
-      const resNeg = resolveInvoiceNumber('{SEQ:4}', {
-        invoiceDate: new Date('2026-03-05T10:00:00Z'),
-        fyLabel: '2025-26',
-        sequenceValue: -1,
-      });
-      expect(resNeg).toBe('00-1');
+      // Floats, NaN, and unsafe integers
+      expect(() => resolveInvoiceNumber('{SEQ:4}', { ...baseParams, sequenceValue: 1.5 })).toThrow(RangeError);
+      expect(() => resolveInvoiceNumber('{SEQ:4}', { ...baseParams, sequenceValue: NaN })).toThrow(RangeError);
+      expect(() => resolveInvoiceNumber('{SEQ:4}', { ...baseParams, sequenceValue: Number.MAX_SAFE_INTEGER + 1 })).toThrow(RangeError);
     });
 
-    it.todo('F-NUM-1: resolveInvoiceNumber rejects sequence overflow / non-positive sequence');
+    it('F-NUM-1: resolveInvoiceNumber resolves valid sequences and allows overflow beyond width', () => {
+      const baseParams = {
+        invoiceDate: new Date('2026-03-05T10:00:00Z'),
+        fyLabel: '2025-26',
+      };
+
+      // 1 and 99999 still resolve
+      expect(resolveInvoiceNumber('INV/{SEQ:4}', { ...baseParams, sequenceValue: 1 })).toBe('INV/0001');
+      expect(resolveInvoiceNumber('INV/{SEQ:4}', { ...baseParams, sequenceValue: 99999 })).toBe('INV/99999');
+
+      // {SEQ:3} with 1000 gives "1000" (overflow allowed)
+      expect(resolveInvoiceNumber('{SEQ:3}', { ...baseParams, sequenceValue: 1000 })).toBe('1000');
+      expect(resolveInvoiceNumber('{SEQ:4}', { ...baseParams, sequenceValue: 10_000 })).toBe('10000');
+    });
   });
 });

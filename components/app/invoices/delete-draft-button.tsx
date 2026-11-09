@@ -11,7 +11,7 @@ export interface DeleteDraftButtonProps {
   readonly invoiceId: string;
   readonly variant: 'icon' | 'button';
   readonly redirectTo?: string;
-  readonly onError?: (message: string) => void;
+  readonly onError: (message: string) => void;
 }
 
 export function DeleteDraftButton({
@@ -30,11 +30,7 @@ export function DeleteDraftButton({
         const result = await deleteInvoiceDraft({ id: invoiceId });
         if (!result.success) {
           const message = result.error.message || 'Failed to delete draft invoice.';
-          if (onError) {
-            onError(message);
-          } else {
-            window.alert(message);
-          }
+          onError(message);
           return;
         }
 
@@ -45,11 +41,7 @@ export function DeleteDraftButton({
         }
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Failed to delete draft invoice.';
-        if (onError) {
-          onError(message);
-        } else {
-          window.alert(message);
-        }
+        onError(message);
       }
     });
   };

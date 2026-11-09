@@ -1,4 +1,4 @@
-import { amountInWordsIndian } from '@/lib/pdf/number-to-words';
+import { amountInWordsFromPaise } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { getCreditNoteReasonLabel } from '@/lib/validations/credit-note';
@@ -298,10 +298,7 @@ export function CreditNotePrintView({ creditNote, printSize = 'A4' }: CreditNote
         <p className="leading-tight text-[13px]">
           <span className="font-bold text-black">Credit Amount in Words : </span>
           <span className="italic font-bold text-black">
-            {amountInWordsIndian(
-              Math.floor(creditNote.grand_total_paise / 100),
-              creditNote.grand_total_paise % 100
-            )}.
+            {amountInWordsFromPaise(creditNote.grand_total_paise)}.
           </span>
         </p>
         <p className="text-[11.5px] text-gray-700 leading-tight">

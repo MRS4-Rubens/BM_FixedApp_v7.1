@@ -25,6 +25,7 @@ import { VoidCreditNoteDialog } from './void-credit-note-dialog';
 import { finalizeCreditNote } from '@/lib/actions/credit-notes/finalize-credit-note';
 import { deleteCreditNoteDraft } from '@/lib/actions/credit-notes/delete-credit-note-draft';
 import { getArchivedCreditNotePdfUrl } from '@/lib/actions/credit-notes/get-archived-credit-note-pdf-url';
+import { openSignedPdf } from '@/lib/pdf/open-signed-pdf';
 import { useRouter } from 'next/navigation';
 import { formatPaiseAsInr } from '@/lib/money';
 import { computeNetBillPaise } from '@/lib/invoices/settlement';
@@ -81,10 +82,8 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
     setIsDownloading(true);
     setMessage(null);
     try {
-      const res = await getArchivedCreditNotePdfUrl({ id: creditNote.id });
-      if (res.success) {
-        window.open(res.data.url, '_blank');
-      } else {
+      const r = await openSignedPdf(() => getArchivedCreditNotePdfUrl({ id: creditNote.id }));
+      if (!r.ok) {
         // Fallback to browser print if not yet archived
         window.print();
       }
