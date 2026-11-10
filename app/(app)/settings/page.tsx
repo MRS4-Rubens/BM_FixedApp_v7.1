@@ -132,6 +132,7 @@ export default async function SettingsPage({
       usageStats={usageStats}
       identityLocked={identityLocked}
       nowMs={nowMs}
+      userRole={appUser.role}
     />
   );
 }

@@ -18,6 +18,8 @@ export const AUDIT_EVENTS = {
     'subscription_manual_override',
     'business_identity_changed',
     'business_identity_changed_by_admin',
+    'data_export',
+    'account_closure_requested',
   ],
   subscription_request: ['approve', 'reject'],
 } as const;
