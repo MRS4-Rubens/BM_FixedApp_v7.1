@@ -269,7 +269,7 @@
    },
    {
     "address": "J6",
-    "value": "SGST",
+    "value": "SGST/UTGST",
     "font": {
      "bold": true
     },
@@ -2403,7 +2403,7 @@
    },
    {
     "address": "G6",
-    "value": "SGST",
+    "value": "SGST/UTGST",
     "font": {
      "bold": true
     },
@@ -3034,7 +3034,7 @@
    },
    {
     "address": "G6",
-    "value": "SGST",
+    "value": "SGST/UTGST",
     "font": {
      "bold": true
     },
@@ -3689,7 +3689,7 @@
    },
    {
     "address": "A7",
-    "value": "Total SGST",
+    "value": "Total SGST/UTGST",
     "font": {
      "bold": true
     },

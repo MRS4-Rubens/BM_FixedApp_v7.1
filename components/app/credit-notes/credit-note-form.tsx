@@ -22,6 +22,7 @@ import { formatPaiseAsInr } from '@/lib/money';
 import { computeNetBillPaise } from '@/lib/invoices/settlement';
 import { CREDIT_NOTE_REASONS, type CreditNoteReasonCode } from '@/lib/validations/credit-note';
 import { formatIstDate } from '@/lib/invoices/ist-date';
+import { stateTaxLabel } from '@/lib/gst/indian-states';
 
 export interface OriginalInvoiceInfo {
   id: string;
@@ -132,8 +133,10 @@ export function CreditNoteForm({
     previouslyCreditedExactPaise,
   ]);
 
+  const sellerStateCode = originalInvoice.supplier_state_code || business.state_code;
+  const taxLabel = stateTaxLabel(sellerStateCode);
   const isIntraState =
-    (originalInvoice.supplier_state_code || business.state_code) ===
+    sellerStateCode ===
     (originalInvoice.place_of_supply_state_code || business.state_code);
 
   const subtotalRupees = preview.ok ? preview.totals.subtotalPaise / 100 : 0;
@@ -313,7 +316,7 @@ export function CreditNoteForm({
           <div>
             <span className="text-muted-foreground font-medium">Tax Region: </span>
             <span className="font-medium text-foreground">
-              {isIntraState ? 'Intra-State (CGST+SGST)' : 'Inter-State (IGST)'}
+              {isIntraState ? `Intra-State (CGST+${taxLabel})` : 'Inter-State (IGST)'}
             </span>
           </div>
         </div>
@@ -550,7 +553,7 @@ export function CreditNoteForm({
                 <span className="font-mono font-medium text-foreground">₹{cgstRupees.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>SGST:</span>
+                <span>{taxLabel}:</span>
                 <span className="font-mono font-medium text-foreground">₹{sgstRupees.toFixed(2)}</span>
               </div>
             </>

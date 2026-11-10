@@ -91,5 +91,40 @@ export function isValidStateCode(code: string | null | undefined): code is strin
   return typeof code === 'string' && VALID_STATE_CODES.has(code);
 }
 
+/**
+ * Union Territories WITHOUT a legislature under Section 1(2) of the UTGST Act, 2017:
+ * - 04 Chandigarh
+ * - 26 Dadra and Nagar Haveli and Daman and Diu
+ * - 31 Lakshadweep
+ * - 35 Andaman and Nicobar Islands
+ * - 38 Ladakh
+ *
+ * For intra-territory supplies originating from these jurisdictions, the state tax
+ * component is levied as Union Territory Goods and Services Tax (UTGST) instead of SGST
+ * pursuant to CGST Rule 46(h) and UTGST Act s. 1(2).
+ *
+ * Note: Delhi (07), Puducherry (34), and Jammu and Kashmir (01) have their own legislatures
+ * and levy State GST (SGST), keeping the standard CGST + SGST tax split.
+ */
+export const UTGST_STATE_CODES = ['04', '26', '31', '35', '38'] as const;
+
+export type UtgstStateCode = (typeof UTGST_STATE_CODES)[number];
+
+export type StateTaxLabel = 'SGST' | 'UTGST';
+
+const UTGST_STATE_CODE_SET: ReadonlySet<string> = new Set(UTGST_STATE_CODES);
+
+/**
+ * Returns 'UTGST' if the supplier's state code corresponds to a Union Territory without
+ * a legislature (04, 26, 31, 35, 38), else 'SGST' (default for states, UTs with legislature,
+ * unknown or missing codes).
+ */
+export function stateTaxLabel(stateCode: string | null | undefined): StateTaxLabel {
+  if (typeof stateCode === 'string' && UTGST_STATE_CODE_SET.has(stateCode)) {
+    return 'UTGST';
+  }
+  return 'SGST';
+}
+
 // Codes 25 and 28 are permanently discontinued (old Daman & Diu and old undivided Andhra Pradesh respectively) and are deliberately excluded from this list — a new GSTIN will never use them. This list is reference data, not user input; it should only ever change via an explicit future government notification, never guessed.
 

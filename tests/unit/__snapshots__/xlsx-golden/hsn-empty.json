@@ -587,7 +587,7 @@
    },
    {
     "address": "I6",
-    "value": "SGST (₹)",
+    "value": "SGST/UTGST (₹)",
     "font": {
      "bold": true,
      "color": {

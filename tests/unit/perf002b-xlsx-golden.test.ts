@@ -90,6 +90,20 @@ describe('PERF-002b streamed Excel exports match the recorded pre-streaming outp
     expect(schedule?.getCell('A2').value).toBe('Month');
   });
 
+  it('renders SGST/UTGST headers in Sales Register, HSN Summary, and GSTR-1', async () => {
+    const register = await loadWorkbook(await writeToBuffer((s) => writeSalesRegisterWorkbook(salesRegisterFixture, s)));
+    expect(register.getWorksheet('Sales Register')?.getCell('J6').value).toBe('SGST/UTGST');
+    expect(register.getWorksheet('HSN Summary')?.getCell('G6').value).toBe('SGST/UTGST');
+    expect(register.getWorksheet('Credit Notes')?.getCell('G6').value).toBe('SGST/UTGST');
+    expect(register.getWorksheet('Summary')?.getCell('A7').value).toBe('Total SGST/UTGST');
+
+    const hsn = await loadWorkbook(await writeToBuffer((s) => writeHsnWorkbook(gstr1Fixture, s)));
+    expect(hsn.getWorksheet('HSN Summary')?.getCell('I6').value).toBe('SGST/UTGST (₹)');
+
+    const gstr1 = await loadWorkbook(await writeToBuffer((s) => writeGstr1Workbook(gstr1Fixture, s)));
+    expect(gstr1.getWorksheet('GSTR-1 Summary')?.getCell('A15').value).toBe('State/UT Tax (SGST/UTGST)');
+  });
+
   it('streams a 2,000+ row sheet (crosses a yield boundary) without losing or reordering rows', async () => {
     const many = {
       ...gstr1Fixture,

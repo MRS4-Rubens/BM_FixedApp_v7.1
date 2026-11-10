@@ -4,7 +4,7 @@ import {
   getSupplyType,
 } from '@/lib/gst/calculate';
 import { GstCalculationError, MoneyLimitError } from '@/lib/gst/errors';
-import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
+import { INDIAN_GST_STATES, UTGST_STATE_CODES, stateTaxLabel } from '@/lib/gst/indian-states';
 import {
   oracleExclusive,
   oracleInclusive,
@@ -625,6 +625,85 @@ describe('GST Calculation Engine (TEST-001)', () => {
       expect(res.lineItems[0].taxableValuePaise).toBe(101);
     });
 
-    it.todo('F-GST-3: UTGST is not modeled for Union Territories without legislature');
+    describe('SPEC (F-GST-3 fixed / COMP-UTGST): UTGST label and calculation rules', () => {
+      it('stateTaxLabel maps UTs without legislature to UTGST and others to SGST', () => {
+        // UTs without legislature -> UTGST
+        for (const code of ['04', '26', '31', '35', '38']) {
+          expect(stateTaxLabel(code)).toBe('UTGST');
+        }
+
+        // UTs with legislature and states -> SGST
+        for (const code of ['07', '34', '01', '27', '29']) {
+          expect(stateTaxLabel(code)).toBe('SGST');
+        }
+
+        // null, undefined, unknown -> SGST
+        expect(stateTaxLabel(null)).toBe('SGST');
+        expect(stateTaxLabel(undefined)).toBe('SGST');
+        expect(stateTaxLabel('99')).toBe('SGST');
+        expect(stateTaxLabel('')).toBe('SGST');
+      });
+
+      it('calculateInvoiceTax for seller 04 / place of supply 04 (intra) returns identical paise split as seller 27/27', () => {
+        const lineItems = [
+          { quantity: 2, unitPricePaise: 50_000, taxRatePercentage: 18 },
+          { quantity: 1, unitPricePaise: 125_000, taxRatePercentage: 5 },
+          { quantity: 3.5, unitPricePaise: 20_000, taxRatePercentage: 12 },
+        ];
+
+        const utgstRes = calculateInvoiceTax({
+          sellerStateCode: '04',
+          placeOfSupplyStateCode: '04',
+          gstRateType: 'exclusive',
+          lineItems,
+        });
+
+        const sgstRes = calculateInvoiceTax({
+          sellerStateCode: '27',
+          placeOfSupplyStateCode: '27',
+          gstRateType: 'exclusive',
+          lineItems,
+        });
+
+        expect(utgstRes.supplyType).toBe('intra_state');
+        expect(sgstRes.supplyType).toBe('intra_state');
+        expect(utgstRes.subtotalPaise).toBe(sgstRes.subtotalPaise);
+        expect(utgstRes.totalCgstPaise).toBe(sgstRes.totalCgstPaise);
+        expect(utgstRes.totalSgstPaise).toBe(sgstRes.totalSgstPaise);
+        expect(utgstRes.totalIgstPaise).toBe(0);
+        expect(utgstRes.totalTaxPaise).toBe(sgstRes.totalTaxPaise);
+        expect(utgstRes.grandTotalPaise).toBe(sgstRes.grandTotalPaise);
+
+        // Verify line by line
+        for (let i = 0; i < lineItems.length; i++) {
+          expect(utgstRes.lineItems[i].taxableValuePaise).toBe(sgstRes.lineItems[i].taxableValuePaise);
+          expect(utgstRes.lineItems[i].cgstPaise).toBe(sgstRes.lineItems[i].cgstPaise);
+          expect(utgstRes.lineItems[i].sgstPaise).toBe(sgstRes.lineItems[i].sgstPaise);
+          expect(utgstRes.lineItems[i].igstPaise).toBe(0);
+          expect(utgstRes.lineItems[i].lineTotalPaise).toBe(sgstRes.lineItems[i].lineTotalPaise);
+        }
+      });
+
+      it('seller 04 -> place of supply 07 is inter-state (IGST only)', () => {
+        const res = calculateInvoiceTax({
+          sellerStateCode: '04',
+          placeOfSupplyStateCode: '07',
+          gstRateType: 'exclusive',
+          lineItems: [{ quantity: 1, unitPricePaise: 100_000, taxRatePercentage: 18 }],
+        });
+
+        expect(res.supplyType).toBe('inter_state');
+        expect(res.totalCgstPaise).toBe(0);
+        expect(res.totalSgstPaise).toBe(0);
+        expect(res.totalIgstPaise).toBe(18_000);
+      });
+
+      it('UTGST_STATE_CODES is a subset of INDIAN_GST_STATES codes', () => {
+        const allCodes = new Set(INDIAN_GST_STATES.map((s) => s.code));
+        for (const code of UTGST_STATE_CODES) {
+          expect(allCodes.has(code)).toBe(true);
+        }
+      });
+    });
   });
 });

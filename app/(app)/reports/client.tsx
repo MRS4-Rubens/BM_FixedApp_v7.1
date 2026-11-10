@@ -147,7 +147,7 @@ function ReportsChartTooltip({
           <div className="flex items-center justify-between gap-4">
             <span className="flex items-center gap-1.5 text-slate-300">
               <span className="size-2 rounded-full bg-emerald-400 shrink-0" />
-              SGST:
+              SGST/UTGST:
             </span>
             <span className="font-bold text-emerald-400 font-mono text-[12px]">
               {formatCurrency(item.total_sgst)}
@@ -209,7 +209,7 @@ const statutoryCards = [
     iconColor: 'text-emerald-700 dark:text-emerald-400',
     iconBg: 'bg-emerald-500/10',
     title: 'Sales Register (Detailed)',
-    description: 'Line-by-line breakdown including customer GSTIN, Place of Supply, taxable amounts, and CGST/SGST/IGST.',
+    description: 'Line-by-line breakdown including customer GSTIN, Place of Supply, taxable amounts, and CGST/SGST/UTGST/IGST.',
   },
   {
     type: 'hsn_summary',
@@ -615,7 +615,7 @@ export function ReportsClient({
                       />
                       <Bar
                         dataKey="total_sgst"
-                        name="SGST"
+                        name="SGST/UTGST"
                         stackId="b"
                         fill="url(#reportsSgstGradient)"
                         maxBarSize={maxBarSize}
@@ -667,7 +667,7 @@ export function ReportsClient({
                 </span>
                 <span className="inline-flex items-center gap-1.5 font-medium">
                   <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
-                  SGST: <strong className="text-foreground font-mono">{formatCurrency(totalSgst)}</strong>
+                  SGST/UTGST: <strong className="text-foreground font-mono">{formatCurrency(totalSgst)}</strong>
                 </span>
                 <span className="inline-flex items-center gap-1.5 font-medium">
                   <span className="size-2 rounded-full bg-purple-500 shrink-0" />

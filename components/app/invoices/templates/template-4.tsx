@@ -1,6 +1,6 @@
 import { amountInWordsFromPaise } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
-import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
+import { INDIAN_GST_STATES, stateTaxLabel } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 
@@ -30,9 +30,10 @@ const PRINT_STYLES = {
   spacingSection: 'mb-2',
 };
 
-export function InvoiceTemplate4({ invoice, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
+export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
   const { discEnabled, showHsn, enableFixedRows, fixedRowsCount } = displayPrefs;
   const isIntra = invoice.total_igst_paise === 0;
+  const taxLabel = stateTaxLabel(businessStateCode);
 
   const customerStateInfo = INDIAN_GST_STATES.find(s => s.code === invoice.place_of_supply_state_code);
   const customerStateName = customerStateInfo ? customerStateInfo.name : (invoice.place_of_supply_state_code || '—');
@@ -239,7 +240,7 @@ export function InvoiceTemplate4({ invoice, hasWatermark, displayPrefs }: Invoic
               {isIntra ? (
                 <>
                   <th colSpan={2} className="border-r border-slate-400 border-b border-slate-400 p-0.5 text-[10.5px] font-extrabold uppercase text-center w-24 bg-slate-200/80 text-slate-900 whitespace-nowrap">CGST</th>
-                  <th colSpan={2} className="border-r border-slate-400 border-b border-slate-400 p-0.5 text-[10.5px] font-extrabold uppercase text-center w-24 bg-slate-200/80 text-slate-900 whitespace-nowrap">SGST</th>
+                  <th colSpan={2} className="border-r border-slate-400 border-b border-slate-400 p-0.5 text-[10.5px] font-extrabold uppercase text-center w-24 bg-slate-200/80 text-slate-900 whitespace-nowrap">{taxLabel}</th>
                 </>
               ) : (
                 <th colSpan={2} className="border-r border-slate-400 border-b border-slate-400 p-0.5 text-[10.5px] font-extrabold uppercase text-center w-24 bg-slate-200/80 text-slate-900 whitespace-nowrap">IGST</th>
@@ -504,7 +505,7 @@ export function InvoiceTemplate4({ invoice, hasWatermark, displayPrefs }: Invoic
 
                           <div className="flex justify-between items-center px-2.5 py-[1px] border-b border-slate-200 bg-slate-50/40">
                             <div className="flex items-center gap-2 min-w-0 pr-2">
-                              <span className="text-[11px] font-bold text-slate-700 shrink-0">Add. SGST</span>
+                              <span className="text-[11px] font-bold text-slate-700 shrink-0">Add. {taxLabel}</span>
                               <div className="text-[9px] font-bold text-slate-700 flex flex-wrap items-center gap-1.5 whitespace-nowrap">
                                 {activeRates.length > 0 ? (
                                   activeRates.map((rate, i) => (

@@ -18,7 +18,7 @@ export const creditNoteLineItems = pgTable('credit_note_line_items', {
   taxable_value_paise: bigint('taxable_value_paise', { mode: 'number' }).notNull(),
   tax_rate_percentage: numeric('tax_rate_percentage', { precision: 5, scale: 2 }).notNull(),
   cgst_paise: bigint('cgst_paise', { mode: 'number' }).notNull().default(0),
-  sgst_paise: bigint('sgst_paise', { mode: 'number' }).notNull().default(0),
+  sgst_paise: bigint('sgst_paise', { mode: 'number' }).notNull().default(0), // Holds SGST or UTGST (see stateTaxLabel)
   igst_paise: bigint('igst_paise', { mode: 'number' }).notNull().default(0),
   line_total_paise: bigint('line_total_paise', { mode: 'number' }).notNull(),
   sort_order: integer('sort_order').notNull().default(0),

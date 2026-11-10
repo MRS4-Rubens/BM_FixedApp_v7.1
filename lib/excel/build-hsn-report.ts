@@ -67,7 +67,7 @@ export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable):
     { header: 'Tax Rate', key: 'rate', width: 12 },
     { header: 'Taxable Value (₹)', key: 'taxable', width: 18, style: { numFmt: currencyFormat } },
     { header: 'CGST (₹)', key: 'cgst', width: 16, style: { numFmt: currencyFormat } },
-    { header: 'SGST (₹)', key: 'sgst', width: 16, style: { numFmt: currencyFormat } },
+    { header: 'SGST/UTGST (₹)', key: 'sgst', width: 16, style: { numFmt: currencyFormat } },
     { header: 'IGST (₹)', key: 'igst', width: 16, style: { numFmt: currencyFormat } },
     { header: 'Total Tax (₹)', key: 'tax', width: 16, style: { numFmt: currencyFormat } },
     { header: 'Total Value (₹)', key: 'total', width: 18, style: { numFmt: currencyFormat } },

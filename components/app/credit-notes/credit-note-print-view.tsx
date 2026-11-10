@@ -1,6 +1,6 @@
 import { amountInWordsFromPaise } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
-import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
+import { INDIAN_GST_STATES, stateTaxLabel } from '@/lib/gst/indian-states';
 import { getCreditNoteReasonLabel } from '@/lib/validations/credit-note';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { buildLogoUrl } from '@/lib/storage/logo-url';
@@ -72,6 +72,7 @@ export function CreditNotePrintView({ creditNote, printSize = 'A4' }: CreditNote
   const buyerState = INDIAN_GST_STATES.find(s => s.code === buyerStateCode)?.name || buyerStateCode;
 
   const isIntraState = biz.state_code === buyerStateCode;
+  const taxLabel = stateTaxLabel(biz.state_code);
   const reasonLabel = getCreditNoteReasonLabel(creditNote.reason);
 
   const formattedDate = creditNote.issue_date
@@ -210,7 +211,7 @@ export function CreditNotePrintView({ creditNote, printSize = 'A4' }: CreditNote
             {isIntraState ? (
               <>
                 <th className="py-[3px] px-1.5 border-r border-black text-right w-16">CGST</th>
-                <th className="py-[3px] px-1.5 border-r border-black text-right w-16">SGST</th>
+                <th className="py-[3px] px-1.5 border-r border-black text-right w-16">{taxLabel}</th>
               </>
             ) : (
               <th className="py-[3px] px-1.5 border-r border-black text-right w-20">IGST</th>
@@ -270,7 +271,7 @@ export function CreditNotePrintView({ creditNote, printSize = 'A4' }: CreditNote
                 <span className="font-mono font-medium">{formatPaiseAsInr(creditNote.total_cgst_paise)}</span>
               </div>
               <div className="flex justify-between py-0.5">
-                <span className="text-gray-600 font-medium">Total SGST:</span>
+                <span className="text-gray-600 font-medium">Total {taxLabel}:</span>
                 <span className="font-mono font-medium">{formatPaiseAsInr(creditNote.total_sgst_paise)}</span>
               </div>
             </>
