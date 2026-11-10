@@ -1,4 +1,4 @@
-> **Status: planned — not implemented.** This is a future design (first run 1 April 2035). File paths below that do not exist yet (e.g. `lib/actions/archival/…`) are proposals.
+> **Status: DESIGN ONLY — PLANNED, NOT IMPLEMENTED.** The year-end close and purge described in this blueprint is a future design (target first execution window: 1 April 2035). File paths referenced below under `lib/actions/archival/*` are planned architectural proposals and do NOT exist in the codebase today.
 
 # Bill Matrix — Statutory Record Retention & Financial Year Archival Blueprint
 **Document Version:** 2.0 (Master Architecture, Legal Compliance & Technical Execution Manual)  
@@ -306,7 +306,7 @@ This reclaims 100% of the disk storage in **0.01 seconds** with zero dead tuples
 
 ## 8. Ready-to-Use Server Action Template with 8-Year Lock
 
-Copy-paste template for `lib/actions/archival/close-financial-year.ts`:
+Copy-paste template for `lib/actions/archival/close-financial-year.ts` (planned):
 
 ```typescript
 'use server';

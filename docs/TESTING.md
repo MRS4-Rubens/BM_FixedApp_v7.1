@@ -10,7 +10,7 @@ Bill Matrix runs three distinct test layers to guarantee both rapid developer fe
 
 | Layer | Command | Database Engine | Concurrency / Locking Mode | Purpose |
 |---|---|---|---|---|
-| **Unit & Pure Logic** | `pnpm test` (or `pnpm test:unit`) | None / Pure In-Memory | Single-process | Money math, GST state matrix, number formats, date policies, status transitions, URL guard. |
+| **Unit & Pure Logic** | `pnpm test` (or `pnpm exec vitest run`) | None / Pure In-Memory | Single-process | Money math, GST state matrix, number formats, date policies, status transitions, URL guard. |
 | **PGlite Integration** | `pnpm test:integration` | `@electric-sql/pglite` (WASM Postgres) | Single-connection in-memory | Statutory business rules, IDOR tenancy boundaries, profile isolation, credit note derivations, DB constraints/triggers. |
 | **Real-Postgres Integration** | `pnpm test:realdb` | Real PostgreSQL 17 (Container or Neon branch) | Multi-connection TCP pool | Lock contention, `FOR UPDATE` isolation, concurrent invoice finalization, void races, double-approval races, quota enforcement, failure injection. |
 
@@ -117,6 +117,40 @@ Destructive concurrency tests clear and mutate tenant rows. To prevent catastrop
 | **M8** | API-010 | Remove finalize-time quota check | `tests/realdb/api010-quota-trial.test.ts` | KILLED |
 | **M9** | AUTH-004| Remove duplicate-GSTIN (23505) mapping | `tests/realdb/auth004-gstin-uniqueness.test.ts` | KILLED |
 | **M10**| DB-007 | Comment out audit log trigger in migration | `tests/integration/db007-audit-log.test.ts` | KILLED |
+
+---
+
+## 8. Run tests with the CI environment
+
+In CI (`.github/workflows/ci.yml`, "Quality gates" job) the tests run with obviously fake placeholder values (e.g. `NEXT_PUBLIC_APP_URL=https://ci.example.invalid`, `NEXT_PUBLIC_SUPPORT_EMAIL=support@ci.example.invalid`) so no secrets are needed. Before pushing, run the suite once with that same `env:` block exported (without `CI=true`): a test that passes locally can fail in CI when it depends on a default value.
+
+**Contact Email Mocking Note**:
+Tests that assert on support or feedback contact emails (such as `NEXT_PUBLIC_SUPPORT_EMAIL` or `FEEDBACK_RECIPIENT_EMAIL`) must mock `@/lib/config/contact` directly:
+```typescript
+vi.mock('@/lib/config/contact', () => ({
+  SUPPORT_EMAIL: 'support@billmatrix.in',
+  FEEDBACK_RECIPIENT_EMAIL: 'support@billmatrix.in',
+}));
+```
+Relying on raw `process.env` values in tests causes failures across different local and CI environments.
+
+---
+
+## 9. Guard Tests (Trip-Prone Invariants)
+
+Bill Matrix maintains automated static AST and import-chain guard tests to prevent architectural erosion. When modifying code, be aware of the following tests that developers are most likely to trip:
+
+| Guard Test | Invariant Enforced | What Breaks It |
+|---|---|---|
+| `tests/unit/perf005-client-bundle-guards.test.ts` | Client bundle isolation | Importing `drizzle-orm`, `lib/db/schema`, `node:*`, or `lib/security/upload.ts` (directly or transitively) into a `'use client'` module. |
+| `tests/unit/debt003-split-guards.test.ts`, `tests/unit/debt003b-split-guards.test.ts` | Line limits for the DEBT-003 splits | Letting a split entry file (invoice form, checkout form, admin console, billing tab, sidebar) or any file in their split folders grow past its limit (300–400 lines; the exact limits are in the two tests). |
+| `tests/unit/use-server-exports.test.ts` | Next.js `'use server'` exports | Exporting anything other than functions (constants, Zod schemas, objects, types-as-values) from a `'use server'` file. |
+| `tests/unit/action-permissions.test.ts` | Action authorization coverage | Adding a Server Action in `lib/actions/` without registering its access category in `lib/auth/action-permissions.ts`. |
+| `tests/unit/fe005-guards.test.ts` | External UPI QR domain ban | Referencing external QR generation domains (e.g. `api.qrserver.com`) in `app/`, `components/`, or `lib/`. |
+| `tests/unit/p3-wrapup-guards.test.ts` | Native browser dialog ban | Using `window.alert()`, `window.confirm()`, or `window.prompt()` instead of `ConfirmDialog`. |
+| `tests/unit/opt002a-guards.test.ts` | DPDP retention policy | Altering statutory 8-year retention language in `app/(marketing)/privacy/page.tsx`. |
+| `tests/unit/clean003-docs-guards.test.ts` | Living documentation accuracy | Referencing non-existent repo paths, broken relative markdown links, or invalid pnpm commands in living docs. |
+| `pnpm knip` | Dead code & dependency audit | Leaving unused files, unreferenced exports/types, or unused dependencies in the codebase. |
 
 ---
 

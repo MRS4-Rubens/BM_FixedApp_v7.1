@@ -27,6 +27,15 @@ Migrations are NOT applied automatically. Use GitHub -> Actions -> "Production D
 - Branch ruleset on `main`: require a pull request and require the **Quality gates** check.
 - Repository secret `DATABASE_URL_UNPOOLED` (only needed for the migration workflow).
 
+## Environment variables
+
+The authoritative reference for every configuration variable is the table in [`README.md`](../README.md#environment-variables), which documents all variables in `.env.example`, their group, production requirement, and missing-variable behavior.
+
+Key deployment requirements:
+- **Production Variables**: Set in Vercel Project Settings -> Environment Variables (Production environment). Ensure `NEXT_PUBLIC_APP_URL` points to the canonical production URL (e.g. `https://app.billmatrix.in`).
+- **Direct Database Access**: `DATABASE_URL_UNPOOLED` must be configured as a GitHub Repository Secret for the manual production migration workflow (`.github/workflows/migrate-production.yml`).
+- **Staging & Previews**: Configured with isolated preview credentials as detailed in [`docs/e2e-staging-setup.md`](e2e-staging-setup.md).
+
 ## Database integrity guards (DB-001)
 - CHECK constraints reject negative money, zero/negative payments, non-positive quantities, and finalized invoices/credit notes missing their number, finalization time or date.
 - Triggers make FINALIZED invoices and credit notes immutable: only payment status, archive/PDF fields (`archival_claimed_at` on invoices; `archival_status, archival_attempts, archived_at, archival_claimed_at` on credit notes), email counters (invoices) and void/PDF fields (credit notes) may change; finalized records cannot be deleted; their line items cannot be inserted, updated or deleted. Drafts stay fully editable.
@@ -218,7 +227,7 @@ Configure the following 6 alert rules in the production Sentry project:
 - **Self-Serve**: The business owner downloads their complete JSON export directly from workspace Settings.
 - **Support-Assisted**: If a business owner cannot access their account and requests an export via support:
   - Verify identity out-of-band via registered email and GSTIN certificate.
-  - An operator can invoke the operational script `tsx scripts/ops/export-account.ts --business-id <id>` *(note: planned CLI helper; currently operators can query the database directly using `loadDataExport` or scoped SQL queries filtered by `business_id`)*.
+  - There is no operator export command. Preferred: help the owner regain access (password reset to the verified login email), then they use Settings → General → Download your data. If that is impossible, a developer can produce the identical file by calling `loadDataExport(db, businessId)` from `lib/account/data-export.ts` in a one-off, read-only script, and send it only to the verified owner.
 
 #### 2. Account closure
 Follow this checklist when processing an account closure request:
@@ -276,7 +285,10 @@ Follow this checklist when processing an account closure request:
   - In compliance mode, a protected object version cannot be overwritten or deleted by any user, including the root account or AWS/S3 access keys, until the retention period expires.
   - This satisfies statutory preservation requirements under Indian tax regulations.
 
-### Disaster recovery RPO / RTO targets
+### Disaster recovery RPO / RTO targets (to confirm at launch)
+
+These are targets, not guarantees: they depend on the Neon plan (PITR window) and backup schedule chosen on launch day. Confirm or adjust them then, and prove them in the first restore drill.
+
 - **RPO (Recovery Point Objective)**: **&le; 5 minutes**. Neon continuous WAL streaming ensures minimal data loss in any catastrophic zone failure.
 - **RTO (Recovery Time Objective)**: **&le; 1 hour**. Neon's copy-on-write branching enables instant database recovery, while Vercel allows immediate failover and re-deployment of application compute.
 
