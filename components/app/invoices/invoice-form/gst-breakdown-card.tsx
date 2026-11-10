@@ -1,6 +1,7 @@
 'use client';
 
 import { Percent } from 'lucide-react';
+import type { StateTaxLabel } from '@/lib/gst/indian-states';
 import { formatINR, type GstRateRow } from './form-calculations';
 
 const sectionTitleCls = "flex items-center gap-2 mb-2 pb-1.5 border-b border-border";
@@ -10,11 +11,13 @@ export function GstBreakdownCard({
   gstBreakdownMap,
   totalTaxable,
   taxResult,
+  taxLabel = 'SGST',
 }: {
   sortedGstRates: number[];
   gstBreakdownMap: Record<number, GstRateRow>;
   totalTaxable: number;
   taxResult: { totalCgstPaise: number; totalSgstPaise: number; totalIgstPaise: number } | null;
+  taxLabel?: StateTaxLabel;
 }) {
   const formatTaxBreakdown = (paise: number) => {
     if (paise === 0) {
@@ -36,7 +39,7 @@ export function GstBreakdownCard({
               <th className="px-3 py-1 text-left font-bold text-muted-foreground uppercase tracking-wider text-xs">GST Rate</th>
               <th className="px-3 py-1 text-right font-bold text-muted-foreground uppercase tracking-wider text-xs">Taxable Value</th>
               <th className="px-3 py-1 text-right font-bold text-muted-foreground uppercase tracking-wider text-xs">CGST</th>
-              <th className="px-3 py-1 text-right font-bold text-muted-foreground uppercase tracking-wider text-xs">SGST</th>
+              <th className="px-3 py-1 text-right font-bold text-muted-foreground uppercase tracking-wider text-xs">{taxLabel}</th>
               <th className="px-3 py-1 text-right font-bold text-muted-foreground uppercase tracking-wider text-xs">IGST</th>
             </tr>
           </thead>

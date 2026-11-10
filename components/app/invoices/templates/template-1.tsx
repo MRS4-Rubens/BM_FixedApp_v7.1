@@ -1,6 +1,6 @@
 import { amountInWordsFromPaise } from '@/lib/pdf/number-to-words';
 import { formatPaiseAsInr } from '@/lib/money';
-import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
+import { INDIAN_GST_STATES, stateTaxLabel } from '@/lib/gst/indian-states';
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import type { InvoiceLineItem } from './types';
@@ -52,6 +52,7 @@ export function InvoiceTemplate1({ invoice, businessStateCode, hasWatermark, dis
   const { showHsn, enableFixedRows, fixedRowsCount } = displayPrefs;
   const isIntra = invoice.total_igst_paise === 0;
   const supplyLabel = isIntra ? 'Intra-State' : 'Inter-State';
+  const taxLabel = stateTaxLabel(businessStateCode);
 
   const stateInfo = INDIAN_GST_STATES.find(s => s.code === businessStateCode);
   const businessStateName = stateInfo ? stateInfo.name : businessStateCode;
@@ -277,7 +278,7 @@ export function InvoiceTemplate1({ invoice, businessStateCode, hasWatermark, dis
                 <span className="font-mono font-black text-slate-950 whitespace-nowrap pl-3">{formatPaiseAsInr(invoice.total_cgst_paise)}</span>
               </div>
               <div className="flex justify-between py-[3px] px-3 border-b border-slate-300 bg-slate-50">
-                <span className="text-slate-800 font-bold">SGST</span>
+                <span className="text-slate-800 font-bold">{taxLabel}</span>
                 <span className="font-mono font-black text-slate-950 whitespace-nowrap pl-3">{formatPaiseAsInr(invoice.total_sgst_paise)}</span>
               </div>
             </>

@@ -33,3 +33,37 @@
 - Unit tests: `tests/unit/gst-thresholds.test.ts`
 - Integration tests: `tests/integration/comp002-gstr1-classification.test.ts`
 
+---
+
+## UTGST (Union Territory Goods and Services Tax) — Issue COMP-UTGST
+
+### 1. Statutory Basis & Scope
+
+- **Statutory basis:** UTGST Act, 2017 § 1(2) read with CGST Rules, 2017 Rule 46 (tax invoice requirements).
+- **Applicability:** Intra-territory supplies where the supplier's location (seller state code) is a **Union Territory without a legislature**:
+  - `04` — Chandigarh
+  - `26` — Dadra and Nagar Haveli and Daman and Diu
+  - `31` — Lakshadweep
+  - `35` — Andaman and Nicobar Islands
+  - `38` — Ladakh
+- **Union Territories with a Legislature (Retain SGST):**
+  - `07` — Delhi (National Capital Territory)
+  - `34` — Puducherry
+  - `01` — Jammu and Kashmir
+  These three territories have their own legislative assemblies and have enacted their own SGST Acts; their intra-state supplies are governed by SGST, not UTGST.
+- **Inter-State Supplies:** Any supply across state/UT borders (including from a UT without legislature to another state or UT) attracts Integrated Goods and Services Tax (IGST) exclusively under IGST Act § 5.
+
+### 2. Implementation Architecture: Label-Only Transformation
+
+- **Tax Maths Invariance:** The rate and paise amount of UTGST are exactly identical to SGST (half of the applicable GST rate for intra-state supplies). No tax maths, rounding rules, or calculation functions (`calculateInvoiceTax`) change.
+- **Database Storage Model:** The database schema is preserved without alteration (`pnpm db:generate` produces 0 migrations). The existing columns `total_sgst_paise` and `sgst_paise` across `invoices`, `credit_notes`, `invoice_line_items`, and `credit_note_line_items` persist both SGST and UTGST amounts.
+- **Single Source of Truth:**
+  - `lib/gst/indian-states.ts` exports `UTGST_STATE_CODES` and `stateTaxLabel(stateCode: string | null | undefined): StateTaxLabel`.
+  - Returns `'UTGST'` for codes in `UTGST_STATE_CODES`, otherwise defaults to `'SGST'`.
+- **Document & UI Resolution:**
+  - **Invoices (Templates 1–4):** Evaluated from the frozen seller snapshot `businessStateCode` (`seller.stateCode`).
+  - **Credit Notes (Print View):** Evaluated from `biz.state_code`.
+  - **Forms (Invoice Form & Credit Note Form):** Display dynamic labels `CGST + ${taxLabel}` and `{taxLabel}` based on the business profile or original invoice state.
+  - **Reports & Excel Exports:** Use neutral `'SGST/UTGST'` column headers and summary titles to correctly aggregate records across diverse state and UT profiles.
+
+

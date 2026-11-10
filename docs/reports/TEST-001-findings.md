@@ -10,7 +10,7 @@ This document records all discrepancies, edge cases, statutory ambiguities, and 
 |---|---|---|---|---|---|
 | **F-GST-1** | Intra-state tie-breaking & odd-paise split symmetry | `fixed-in-repo` | Medium | `tests/unit/gst-calculate.test.ts` | Tax Engine / CA |
 | **F-GST-2** | Floating-point imprecision in `quantity * unitPrice` (`1.005 * 100`) | `fixed-in-repo` | High | `tests/unit/gst-calculate.test.ts` | Core Engine |
-| **F-GST-3** | Compensation Cess application order vs taxable value | `scheduled after Phase 3` | Low | `tests/unit/gst-calculate.test.ts` | Product / CA |
+| **F-GST-3** | Compensation Cess application order vs taxable value (note: `it.todo` in test was UTGST, now `fixed-in-repo` under COMP-UTGST; Cess remains informational) | `informational` | Low | `tests/unit/gst-calculate.test.ts` | Product / CA |
 | **F-GST-4** | Legal rupee rounding at document vs line item level (CGST Act § 170) | `informational` | Medium | `tests/unit/round-to-rupee.test.ts` | Tax Compliance |
 | **F-NUM-1** | Format `{FY}` vs `{FYYYY}` in 16-character Rule 46(b) limit | `fixed-in-repo (P3-WRAPUP)` | Medium | `tests/unit/invoice-number-format.test.ts` | Settings UI |
 | **F-ENT-1** | Trial plan with NULL `trial_ends_at` fallback | `fixed-in-repo` | High | `tests/unit/entitlements.test.ts` | Subscriptions Team |
@@ -58,11 +58,13 @@ This document records all discrepancies, edge cases, statutory ambiguities, and 
 ---
 
 ### F-GST-3: Compensation Cess application order vs taxable value
-- **Status**: `informational`
+- **Status**: `informational` (Cess stays as documented; UTGST todo `fixed-in-repo` via COMP-UTGST)
 - **Severity**: Low
 - **Test File**: `tests/unit/gst-calculate.test.ts`
 - **Description**:
   Under the Goods and Services Tax (Compensation to States) Act 2017, Cess is levied on the taxable value of goods, completely parallel to CGST/SGST/IGST, not compounded on top of them. Currently, Bill Matrix models standard tax rates (0, 0.1, 0.25, 1, 1.5, 3, 5, 7.5, 12, 18, 28) and does not have an explicit separate Cess column.
+
+  *Note on UTGST (COMP-UTGST)*: The `it.todo('F-GST-3: UTGST is not modeled for Union Territories without legislature')` in `tests/unit/gst-calculate.test.ts` was resolved in Phase 4 under `COMP-UTGST`. UTGST display labelling for UTs without legislature (04, 26, 31, 35, 38) and invariant verification tests are now active in repo; Cess stays as documented.
 - **Suggested Next Action**: When Cess support is implemented in Phase 3, ensure it computes against line item `taxableAmountPaise` directly and does not cascade on CGST/SGST.
 
 ---

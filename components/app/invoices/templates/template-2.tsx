@@ -1,6 +1,6 @@
 import { amountInWordsFromPaise } from '@/lib/pdf/number-to-words';
 import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
-import { getStateAbbrByCode } from '@/lib/gst/indian-states';
+import { getStateAbbrByCode, stateTaxLabel } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 
@@ -26,9 +26,10 @@ const PRINT_STYLES = {
   spacingGrid: 'p-3',
 };
 
-export function InvoiceTemplate2({ invoice, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
+export function InvoiceTemplate2({ invoice, businessStateCode, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
   const { discEnabled, showHsn, enableFixedRows, fixedRowsCount } = displayPrefs;
   const isIntra = invoice.total_igst_paise === 0;
+  const taxLabel = stateTaxLabel(businessStateCode);
 
   const customerStateAbbr = getStateAbbrByCode(invoice.place_of_supply_state_code);
 
@@ -337,7 +338,7 @@ export function InvoiceTemplate2({ invoice, hasWatermark, displayPrefs }: Invoic
                           <tr className="border-b border-black bg-slate-50/50">
                             <td colSpan={2} className="py-[3px] px-1">
                               <div className="flex items-center gap-[6px]">
-                                <span className="shrink-0 font-bold">Add. SGST</span>
+                                <span className="shrink-0 font-bold">Add. {taxLabel}</span>
                                 <div className="text-[9px] font-semibold flex flex-wrap items-center gap-[4px] text-gray-700 whitespace-nowrap">
                                   {activeRates.length > 0 ? (
                                     activeRates.map((rate, i) => (

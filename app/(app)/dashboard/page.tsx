@@ -22,6 +22,8 @@ import { getRecentInvoices } from '@/lib/actions/reports/get-recent-invoices'
 import { getSalesByPeriod } from '@/lib/actions/reports/get-sales-by-period'
 import { getSalesByFinancialYear } from '@/lib/actions/reports/get-sales-by-financial-year'
 import { getCurrentAppUser } from '@/lib/auth/session'
+import { getCurrentBusiness } from '@/lib/auth/current-business'
+import { stateTaxLabel } from '@/lib/gst/indian-states'
 import { getCurrentFinancialYearRange } from '@/lib/reports/period'
 import { formatPaiseAsInr } from '@/lib/money'
 import { DashboardChart } from '@/components/app/dashboard-chart-lazy'
@@ -48,7 +50,8 @@ export default async function DashboardPage() {
   const startDateStr = `${startDateVal.getFullYear()}-${String(startDateVal.getMonth() + 1).padStart(2, '0')}-01`
   const endDateStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
 
-  const [statsRes, recentInvoicesRes, salesByPeriodRes, fySalesRes] = await Promise.all([
+  const [business, statsRes, recentInvoicesRes, salesByPeriodRes, fySalesRes] = await Promise.all([
+    getCurrentBusiness(),
     getDashboardStats({}),
     getRecentInvoices({ limit: 3 }), // Fetch latest 3 invoices to align with Quick Actions card height
     getSalesByPeriod({ startDate: startDateStr, endDate: endDateStr }),
@@ -59,6 +62,7 @@ export default async function DashboardPage() {
     return <div className="p-8 text-destructive font-semibold">Failed to load dashboard data.</div>
   }
 
+  const taxLabel = stateTaxLabel(business?.state_code)
   const stats = statsRes.data
   const recentInvoices = recentInvoicesRes.data
   const salesData = salesByPeriodRes.data
@@ -196,7 +200,7 @@ export default async function DashboardPage() {
             {[
               { label: 'Taxable Value', amount: currentMonthSales.subtotal, color: 'bg-indigo-500' },
               { label: 'CGST', amount: currentMonthSales.total_cgst, color: 'bg-emerald-500' },
-              { label: 'SGST', amount: currentMonthSales.total_sgst, color: 'bg-amber-500' },
+              { label: taxLabel, amount: currentMonthSales.total_sgst, color: 'bg-amber-500' },
               { label: 'IGST', amount: currentMonthSales.total_igst, color: 'bg-rose-500' },
             ].map((item) => (
               <div key={item.label} className="flex justify-between items-center py-1.5 border-b border-dashed border-border/40 last:border-0">

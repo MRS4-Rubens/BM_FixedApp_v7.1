@@ -1236,7 +1236,7 @@
    },
    {
     "address": "A15",
-    "value": "State/UT Tax (SGST)",
+    "value": "State/UT Tax (SGST/UTGST)",
     "font": {
      "name": "Arial"
     },

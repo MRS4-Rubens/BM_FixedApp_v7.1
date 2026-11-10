@@ -35,7 +35,7 @@ export const invoices = pgTable('invoices', {
   billing_address_snapshot: text('billing_address_snapshot'),
   subtotal_paise: bigint('subtotal_paise', { mode: 'number' }).notNull().default(0),
   total_cgst_paise: bigint('total_cgst_paise', { mode: 'number' }).notNull().default(0),
-  total_sgst_paise: bigint('total_sgst_paise', { mode: 'number' }).notNull().default(0),
+  total_sgst_paise: bigint('total_sgst_paise', { mode: 'number' }).notNull().default(0), // Holds SGST or UTGST (see stateTaxLabel)
   total_igst_paise: bigint('total_igst_paise', { mode: 'number' }).notNull().default(0),
   total_tax_paise: bigint('total_tax_paise', { mode: 'number' }).notNull().default(0),
   grand_total_paise: bigint('grand_total_paise', { mode: 'number' }).notNull().default(0),

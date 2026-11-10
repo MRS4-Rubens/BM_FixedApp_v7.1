@@ -12,6 +12,7 @@ import { canUseTemplate } from '@/lib/subscriptions/entitlements';
 import { DeleteDraftButton } from '@/components/app/invoices/delete-draft-button';
 import { useIsClient } from '@/lib/hooks/use-is-client';
 import { resolveDraftDisplayPrefs } from '@/lib/invoices/display-prefs';
+import { stateTaxLabel } from '@/lib/gst/indian-states';
 import type { CustomerOption } from '@/lib/pickers/types';
 import type { CurrentBusiness } from '@/lib/auth/current-business';
 import type { taxRates as taxRatesTable, financialYears as financialYearsTable } from '@/lib/db/schema';
@@ -72,6 +73,7 @@ export function InvoiceForm({
 
   const mounted = useIsClient();
   const displayPrefs = useMemo(() => resolveDraftDisplayPrefs(business?.invoice_display_prefs), [business?.invoice_display_prefs]);
+  const taxLabel = stateTaxLabel(business?.state_code);
 
   // A legacy unit from initialData may sit outside the enum until the user fixes it; invoiceDraftSchema validates on save.
   const defaultValues = {
@@ -337,6 +339,7 @@ export function InvoiceForm({
                 gstBreakdownMap={gstBreakdownMap}
                 totalTaxable={totalTaxable}
                 taxResult={taxResult}
+                taxLabel={taxLabel}
               />
               <TotalsSummaryCard
                 supplyType={supplyType}
@@ -349,6 +352,7 @@ export function InvoiceForm({
                 isFinalizing={isFinalizing}
                 onSaveDraft={onSaveDraft}
                 onFinalizeClick={onFinalizeClick}
+                taxLabel={taxLabel}
               />
             </div>
           </form>

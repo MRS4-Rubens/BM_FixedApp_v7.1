@@ -4,6 +4,7 @@ import { useFormContext } from 'react-hook-form';
 import { Receipt, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import type { StateTaxLabel } from '@/lib/gst/indian-states';
 import { formatINR } from './form-calculations';
 import type { InvoiceDraftInput } from '@/lib/validations/invoice';
 
@@ -20,6 +21,7 @@ export function TotalsSummaryCard({
   isFinalizing,
   onSaveDraft,
   onFinalizeClick,
+  taxLabel = 'SGST',
 }: {
   supplyType: 'intra_state' | 'inter_state';
   totalTaxable: number;
@@ -31,6 +33,7 @@ export function TotalsSummaryCard({
   isFinalizing: boolean;
   onSaveDraft: (data: InvoiceDraftInput) => void;
   onFinalizeClick: (data: InvoiceDraftInput) => void;
+  taxLabel?: StateTaxLabel;
 }) {
   const { handleSubmit, formState: { isSubmitting } } = useFormContext<InvoiceDraftInput>();
 
@@ -42,7 +45,7 @@ export function TotalsSummaryCard({
       </div>
       <div className="mb-1">
         <span className={cn('inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider border whitespace-nowrap', supplyType === 'intra_state' ? 'bg-success-subtle text-success-text border-success/20' : 'bg-blue-100/60 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 border-blue-200 dark:border-blue-900')}>
-          {supplyType === 'intra_state' ? 'Intra-state Supply (CGST + SGST)' : 'Inter-state Supply (IGST)'}
+          {supplyType === 'intra_state' ? `Intra-state Supply (CGST + ${taxLabel})` : 'Inter-state Supply (IGST)'}
         </span>
       </div>
       <div className="flex flex-col flex-1 justify-between mt-1">
@@ -63,7 +66,7 @@ export function TotalsSummaryCard({
               <div className="flex justify-between py-0.5">
                 <span className="text-muted-foreground font-semibold flex items-center gap-1.5 whitespace-nowrap">
                   <span className="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)] shrink-0" />
-                  SGST
+                  {taxLabel}
                 </span>
                 <span className="font-bold text-foreground whitespace-nowrap">{formatINR(totalSGST)}</span>
               </div>

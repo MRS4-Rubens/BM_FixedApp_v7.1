@@ -159,7 +159,7 @@ export async function writeGstr1Workbook(data: Gstr1ExportData, stream: Writable
 
   const taxBreakdown: [string, number][] = [
     ['Central Tax (CGST)', paiseToRupees(sum.totalCgstPaise)],
-    ['State/UT Tax (SGST)', paiseToRupees(sum.totalSgstPaise)],
+    ['State/UT Tax (SGST/UTGST)', paiseToRupees(sum.totalSgstPaise)],
     ['Integrated Tax (IGST)', paiseToRupees(sum.totalIgstPaise)],
     ['Total Tax Liability', paiseToRupees(sum.totalTaxPaise)]
   ];
