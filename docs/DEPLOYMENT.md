@@ -199,3 +199,84 @@ Configure the following 6 alert rules in the production Sentry project:
 
 > **Note**: These monitors and alert rules are configured on launch day with the final Sentry account and chosen uptime provider.
 
+## Data requests: export and account closure (OPT-002a)
+
+### How requests arrive
+- **Data Export**: Generated self-serve by business owners via `GET /api/account/export`. Each export logs an audit row with `action = 'data_export'` (`AUDIT_EVENTS.business.data_export`) inside `audit_log`.
+- **Account Closure**: Submitted self-serve by business owners via Settings → General → "Request account closure" modal. This creates an audit row with `action = 'account_closure_requested'` (`AUDIT_EVENTS.business.account_closure_requested`) containing the requester's IP, user agent, and optional reason, and automatically dispatches a notification email via Resend to `SUPPORT_EMAIL`.
+
+### SLAs and identity verification
+- **SLA**: Acknowledge and review closure requests within **5 business days**; complete operational processing within **30 days**.
+- **Verification before action**:
+  1. Verify the requester's email address matches the authenticated business owner (`users.role = 'owner'`).
+  2. Verify that the submitted confirmation GSTIN strictly matches the active business record (`businesses.gstin`).
+  3. Verify against `audit_log` to confirm the request timestamp and authenticity.
+
+### Operational workflows
+
+#### 1. Data export
+- **Self-Serve**: The business owner downloads their complete JSON export directly from workspace Settings.
+- **Support-Assisted**: If a business owner cannot access their account and requests an export via support:
+  - Verify identity out-of-band via registered email and GSTIN certificate.
+  - An operator can invoke the operational script `tsx scripts/ops/export-account.ts --business-id <id>` *(note: planned CLI helper; currently operators can query the database directly using `loadDataExport` or scoped SQL queries filtered by `business_id`)*.
+
+#### 2. Account closure
+Follow this checklist when processing an account closure request:
+1. **Prevent new activity**: Set the business subscription status to `suspended` (or `expired`) in the database so no new invoices or credit notes can be finalized:
+   ```sql
+   UPDATE businesses SET subscription_status = 'expired' WHERE id = '<business_id>';
+   ```
+2. **Send written acknowledgement**: Email the requester confirming receipt, stating the 30-day timeline and outlining statutory retention obligations.
+3. **Audit financial years & determine retention period**:
+   - Query all finalized invoices and credit notes for the business to identify their respective financial years:
+     ```sql
+     SELECT DISTINCT financial_year_id FROM invoices WHERE business_id = '<business_id>' AND lifecycle_status = 'finalized';
+     ```
+   - **8-Year Retention Rule**: Under Section 36 of the CGST Act, 2017 and the Indian Income-tax Act, records must be retained for at least 8 years after the end of the financial year. For example, records for FY 2025–26 (April 1, 2025 – March 31, 2026) must remain archived until **March 31, 2034**.
+   - **DO NOT DELETE** any `invoices`, `invoice_line_items`, `credit_notes`, `credit_note_line_items`, `payments`, `businesses`, or `customers` records linked to finalized documents until their legal retention date has passed.
+4. **Purge non-statutory data after 30 days**:
+   - Soft-delete or purge draft documents:
+     ```sql
+     DELETE FROM invoices WHERE business_id = '<business_id>' AND lifecycle_status = 'draft';
+     DELETE FROM credit_notes WHERE business_id = '<business_id>' AND lifecycle_status = 'draft';
+     ```
+   - Remove user memberships / unlink authentication identity:
+     ```sql
+     DELETE FROM users WHERE business_id = '<business_id>';
+     ```
+   - Clear custom assets (logo image files, signature images) from object storage (`IDrive e2` / R2).
+   - Purge non-retained ephemeral audit logs after retention expiry.
+5. **Close support ticket**: Log the internal support ticket resolution along with the exact `audit_log` entry ID of the closure request.
+
+---
+
+## Backup and restore (OPT-002)
+
+### Database backups (Neon Postgres)
+- **Continuous Point-in-Time Recovery (PITR)**:
+  - Neon automatic continuous WAL-based point-in-time recovery is enabled with a minimum **7-day retention window** on the production branch.
+  - Allows restoring the database to any millisecond within the past 7 days.
+- **Weekly Logical Backups (pg_dump)**:
+  - An automated scheduled GitHub Actions workflow (or external cron worker) takes a weekly logical snapshot using `pg_dump` with `--clean --if-exists --no-owner --no-privileges`.
+  - Encrypted dumps are offloaded to secondary cold storage in an S3-compatible bucket on IDrive e2.
+- **Quarterly Restoration Drill Checklist**:
+  1. Spin up a temporary Neon database branch from a specific PITR timestamp (e.g. 24 hours prior).
+  2. Point a staging/test environment at the temporary branch connection string.
+  3. Run validation gates:
+     ```bash
+     pnpm typecheck
+     pnpm exec vitest run tests/integration
+     ```
+  4. Run invariant audits: verify sequence counters (`invoice_number_counters`), tenant foreign keys, and audit log sequence continuity.
+  5. Tear down the temporary Neon branch after recording the drill outcome.
+
+### Archival PDF storage (IDrive e2)
+- **Object Lock Compliance Mode**:
+  - The production invoice PDF archive bucket is configured with S3 Object Lock in **Compliance Mode** with an **8-year retention policy**.
+  - In compliance mode, a protected object version cannot be overwritten or deleted by any user, including the root account or AWS/S3 access keys, until the retention period expires.
+  - This satisfies statutory preservation requirements under Indian tax regulations.
+
+### Disaster recovery RPO / RTO targets
+- **RPO (Recovery Point Objective)**: **&le; 5 minutes**. Neon continuous WAL streaming ensures minimal data loss in any catastrophic zone failure.
+- **RTO (Recovery Time Objective)**: **&le; 1 hour**. Neon's copy-on-write branching enables instant database recovery, while Vercel allows immediate failover and re-deployment of application compute.
+

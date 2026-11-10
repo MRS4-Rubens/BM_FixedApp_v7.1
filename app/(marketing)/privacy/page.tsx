@@ -36,16 +36,33 @@ export default function PrivacyPolicyPage() {
 
         <section className="space-y-2">
           <h2 className="text-lg font-bold text-zinc-900">3. Data Retention &amp; Deletion Requests</h2>
-          <p>
-            In accordance with the Digital Personal Data Protection (DPDP) Act and Indian GST record-keeping requirements, you may export your data or request account deletion at any time from your workspace settings or by contacting{' '}
-            <a
-              href={`mailto:${SUPPORT_EMAIL}`}
-              className="font-semibold text-indigo-600 hover:underline"
-            >
-              {SUPPORT_EMAIL}
-            </a>
-            .
-          </p>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>
+              <strong>Statutory records:</strong> invoices, credit notes, payment records and the business and customer
+              details shown on them are kept for at least 8 years after the end of the financial year they belong to, as
+              required by Indian GST, income-tax and company law (longer if a tax proceeding about that year is pending).
+              They are stored in a write-protected archive and deleted after the retention period ends.
+            </li>
+            <li>
+              <strong>Everything else</strong> (your login account, team members, product catalogue, customers that never
+              appeared on an invoice, logo and subscription payment screenshots) is erased within 30 days after your
+              workspace is closed.
+            </li>
+            <li>
+              <strong>Export:</strong> business owners can download their data from
+              Settings → General → Download your data.
+            </li>
+            <li>
+              <strong>Closure:</strong> request it from Settings → General → Request account closure, or email{' '}
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className="font-semibold text-indigo-600 hover:underline"
+              >
+                {SUPPORT_EMAIL}
+              </a>
+              .
+            </li>
+          </ul>
         </section>
       </div>
     </main>

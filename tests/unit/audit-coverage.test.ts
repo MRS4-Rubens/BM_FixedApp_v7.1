@@ -150,6 +150,9 @@ describe('audit coverage and architectural invariants (source scan)', () => {
     const subOverrideSrc = readProjectFile('lib/actions/subscriptions/update-business-subscription.ts');
     expect(subOverrideSrc).toContain("entityType: 'business'");
     expect(subOverrideSrc).toContain("action: 'subscription_manual_override'");
+
+    expect(AUDIT_EVENTS.business).toContain('data_export');
+    expect(AUDIT_EVENTS.business).toContain('account_closure_requested');
   });
 });
 

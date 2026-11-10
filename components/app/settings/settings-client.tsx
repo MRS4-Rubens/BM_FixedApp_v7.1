@@ -17,9 +17,9 @@ import { InvoiceSettingsForm } from './invoice-settings-form';
 import { BillingTab, type SubscriptionHistoryItem } from './billing-tab';
 import { LogoUploadCard } from './logo-upload-card';
 import { UserFeedbackForm } from './user-feedback-form';
+import { AccountDataSection } from './account-data-section';
 import type { businesses } from '@/lib/db/schema';
-import { SUPPORT_EMAIL } from '@/lib/config/contact';
-import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import type { AppRole } from '@/lib/auth/rbac';
 
 interface SettingsClientProps {
   business: typeof businesses.$inferSelect | null;
@@ -37,6 +37,7 @@ interface SettingsClientProps {
   identityLocked?: boolean;
   /** Request render time from the server page, forwarded to BillingTab. */
   nowMs: number;
+  userRole?: AppRole;
 }
 
 const navItems = [
@@ -69,6 +70,7 @@ export function SettingsClient({
   usageStats,
   identityLocked = false,
   nowMs,
+  userRole = 'owner',
 }: SettingsClientProps) {
   const resolveInitialTab = (): NavItem => {
     if (initialTab) {
@@ -102,17 +104,8 @@ export function SettingsClient({
   };
 
   const [active, setActive] = useState<NavItem>(resolveInitialTab);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
-  const handleConfirmDelete = () => {
-    const subject = encodeURIComponent(
-      `Account Deletion Request - ${business?.legal_name || 'Bill Matrix Workspace'}`
-    );
-    const body = encodeURIComponent(
-      `Please initiate permanent deletion for my business account (${business?.legal_name || 'N/A'}, ID: ${business?.id || 'N/A'}).`
-    );
-    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
-  };
+  const isOwner = userRole === 'owner';
 
   return (
     <div className="space-y-6">
@@ -217,31 +210,7 @@ export function SettingsClient({
             <div className="space-y-6">
               <LogoUploadCard business={business} />
 
-              <div className="rounded-xl border border-border bg-card px-5 py-4 sm:px-6 sm:py-5">
-                <h2 className="mb-1 text-xl font-bold font-heading text-foreground uppercase">General</h2>
-                <p className="mb-4 text-sm sm:text-base text-muted-foreground font-medium">
-                  Account-level preferences.
-                </p>
-
-                <div>
-                  <h3 className="mb-2 text-base font-bold text-foreground uppercase tracking-wide">
-                    Danger Zone
-                  </h3>
-                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-                    <p className="text-base font-bold text-foreground">Delete Business Account</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Permanently delete this business and all its data. This cannot be undone.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteConfirmOpen(true)}
-                      className="mt-3 rounded-lg border border-destructive/50 px-4 py-2 text-sm font-bold text-red-700 transition-colors hover:bg-destructive/10 cursor-pointer shadow-xs"
-                    >
-                      Delete Business Account
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <AccountDataSection isOwner={isOwner} />
             </div>
           )}
 
@@ -275,16 +244,6 @@ export function SettingsClient({
             )}
         </div>
       </div>
-
-      <ConfirmDialog
-        open={deleteConfirmOpen}
-        onOpenChange={setDeleteConfirmOpen}
-        title="Delete Business Account?"
-        description="To protect statutory GST records against accidental loss, business account deletion requests are verified by support. Proceed to send a deletion request?"
-        confirmLabel="Send deletion request"
-        tone="destructive"
-        onConfirm={handleConfirmDelete}
-      />
     </div>
   );
 }
