@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// CI sets NEXT_PUBLIC_SUPPORT_EMAIL to a placeholder; pin the recipient so the test does not depend on the environment
+// (same approach as tests/unit/debt003b-markup-characterization.test.ts).
+vi.mock('@/lib/config/contact', () => ({
+  SUPPORT_EMAIL: 'support@billmatrix.in',
+  FEEDBACK_RECIPIENT_EMAIL: 'support@billmatrix.in',
+}));
+
 const mockGetCurrentAppUser = vi.fn();
 vi.mock('@/lib/auth/session', () => ({
   getCurrentAppUser: () => mockGetCurrentAppUser(),
