@@ -13,9 +13,16 @@ This app uses Next.js Server Actions as the default way pages talk to the backen
 | `app/(marketing)`, `app/(auth)`, `app/(app)`, `app/(admin)` | Page routes, grouped by access level. Not modified by backend phases except to wire in real data. | Existing (v0) |
 | `app/api/` | Route Handlers for true external HTTP endpoints only (webhooks, health checks). Rare — most things are Server Actions instead. | Phase 1 (empty), used starting Phase 16+ |
 | `lib/db/` | Drizzle ORM schema (`lib/db/schema/`) and the database client. The single source of truth for the data model. | Phase 2 |
-| `scripts/` | CI, staging and benchmark scripts (scripts/ci, scripts/perf). One-off data scripts go in scripts/ops/ when needed; they must be idempotent and deleted after use. | Phase 8 |
+| `scripts/` | CI, staging and benchmark scripts (`scripts/ci`, `scripts/perf`). One-off data scripts go in `scripts/ops/` when needed; they must be idempotent and deleted after use. | Phase 8 |
+| `scripts/perf/` | Performance benchmark harnesses (`export-benchmark.ts`) and first-load JS bundle measurement (`first-load-js.mjs`). | Phase 8 / Phase 4 (PERF-002, PERF-005) |
 | `lib/auth/` | Neon Auth / Better Auth setup and session helpers. | Phase 3 |
-| `lib/actions/` | Server Actions, grouped into one subfolder per business domain (`customers/`, `products/`, `invoices/`, `credit-notes/`, `payments/`, `reports/`, `business/`). Each domain folder contains the create/read/update actions for that domain. `_shared/` holds the common wrapper every action uses for validation and error handling — see Phase 4. | Phase 4 (`_shared`), then per domain in later phases |
+| `lib/account/` | DPDP data export loader (`data-export.ts`: business-scoped JSON, storage keys / archival internals / auth ids omitted). The closure request action lives in `lib/actions/account/request-account-closure.ts`. | Phase 4 (OPT-002a) |
+| `lib/audit/` | Append-only audit trail logger (`log.ts`), request context extractor (`request-context.ts`), and profile diff generator (`profile-diff.ts`). | Phase 4 (DB-007) |
+| `lib/business/` | Business profile helpers, logo resolution, and statutory identity lock checks. | Phase 5 & Phase 4 (AUTH-004) |
+| `lib/config/` | App-wide static configuration (`contact.ts` for support & feedback recipient emails, `payee.ts` for admin UPI & bank payee details). | Phase 4 |
+| `lib/credit-notes/` | Pure credit-note maths (`derivation.ts`: remaining creditable quantities/amounts, statutory rupee rounding). Transactional finalize/void logic lives in the server actions under `lib/actions/credit-notes/`. | Phase 12 |
+| `lib/hooks/` | Reusable React client hooks (`use-is-client.ts`). | Phase 4 (FE-002) |
+| `lib/actions/` | Server Actions, grouped into one subfolder per business domain (`customers/`, `products/`, `invoices/`, `credit-notes/`, `payments/`, `reports/`, `business/`, `account/`). Each domain folder contains the create/read/update actions for that domain. `_shared/` holds the common wrapper every action uses for validation and error handling — see Phase 4. | Phase 4 (`_shared`), then per domain in later phases |
 | `lib/validations/` | Zod schemas that validate input before it reaches a Server Action. One file per domain, matching `lib/actions/`. | Phase 5 onward |
 | `lib/gst/` | The GST tax calculation engine — pure functions only, no database or UI code. This is the most important folder in the app for correctness; keep it isolated and testable. | Phase 8 |
 | `lib/gst/units.ts` | The official, government-fixed list of GST Unit Quantity Codes (UQC), used for product unit-of-measurement selection and (in later phases) invoice line items. This is a closed list — do not add codes that aren't officially recognized by CBIC. | Phase 7 |
@@ -25,15 +32,23 @@ This app uses Next.js Server Actions as the default way pages talk to the backen
 | `lib/actions/credit-notes/` | Server Actions for Credit Notes (create draft, finalize, list, get, delete draft). Numbering strictly adheres to CGST Rule 53 (<= 16 chars, FY-aware, sequential). | Phase 12 |
 | `lib/actions/reports/` | Reporting and dashboard stat Server Actions. Figures factor in finalized credit notes. | Phase 14 & Phase 12 |
 | `lib/reports/period.ts` | Centralized logic for computing date ranges (This Month, Financial Year). Shared groundwork to ensure Phase 15's Excel export logic reuses exact same bounds. | Phase 14 |
-| `lib/pdf/` | Currently contains `number-to-words.ts` and `html-to-pdf-provider.ts` (swappable CustomJS API for external PDF rendering). | Phase 10 & 11 |
-| `lib/storage/` | iDrive e2 (S3-compatible) client for archiving finalized invoice and credit note PDFs, and orchestration logic. | Phase 11 & Phase 12 |
-| `lib/security/` | Token and signature generation (e.g. HMAC-SHA256 tokens for external route access). | Phase 11 |
+| `lib/pdf/` | Currently contains `number-to-words.ts`, `open-signed-pdf.ts`, `archival-html.ts`, `archival-document.ts`, and `html-to-pdf-provider.ts` (swappable CustomJS API for external PDF rendering). | Phase 10 & 11 / Phase 4 (P3-WRAPUP) |
+| `lib/storage/` | iDrive e2 (S3-compatible) client for archiving finalized invoice and credit note PDFs, archival claim orchestration, and Sentry cron monitor integration. | Phase 11 & Phase 12 / Phase 4 (OPT-001) |
+| `lib/security/` | Upload validation with magic-byte checks and storage keys (`upload.ts`, server-only: uses `node:crypto`), the browser-safe size helper (`upload-limits.ts`), and signed tokens. | Phase 11 / Phase 4 (SEC-002, PERF-005) |
 | `lib/excel/` | ExcelJS-based export logic for the monthly ITR/GST export. Populates Sales Register and GSTR-1 CDNR sheets with finalized credit notes. | Phase 15 & Phase 12 |
 | `lib/email/` | Resend client (`lib/email/`) and email templates (`lib/email/templates/`). Note that email attachments always come from Phase 11's archived PDF (never generated fresh). This makes the archival step in Phase 11 a hard dependency for emailing invoices. | Phase 16 |
-| `lib/rate-limit/` | Upstash Redis-based rate limiting, applied to sensitive Server Actions. | Phase 17 |
+| `lib/rate-limit/` | Upstash Redis-based rate limiting, applied to sensitive Server Actions and export routes. | Phase 17 |
 | `lib/money.ts` | Shared money utilities: paise↔rupee conversion (rupeesToPaise, paiseToRupees) and Indian currency formatting (formatPaiseAsInr). All monetary amounts in this app are stored as integer paise — this file is the single source of truth for converting between storage and display. Used by product pricing (Phase 7) and will be used by the GST tax engine and invoice line items (Phase 8+). | Phase 7 |
+| `lib/observability/` | Observability utilities: request context via `AsyncLocalStorage` (`request-context.ts`), shallow health probe (`health.ts`), Sentry runtime config (`sentry-config.ts`), and PII/data redaction (`sentry-redaction.ts`). | Phase 18 / Phase 4 (OPT-001) |
+| `lib/pagination/` | Keyset (seek) pagination cursor encoding/decoding and validation (`keyset.ts`). | Phase 4 (PERF-001) |
+| `lib/payments/` | Payment status recalculation, UPI URI builder (`upi-intent.ts`), and server-side SVG QR code generator (`upi-qr.ts`). | Phase 13 / Phase 4 (FE-005) |
+| `lib/pickers/` | Customer and product picker types and search query helpers (`types.ts`). | Phase 4 (PERF-001) |
+| `lib/seo/` | Canonical routing tables (`routes.ts`) defining public marketing paths, private app prefixes, and site origin resolution for metadata/robots/sitemap. | Phase 4 (FE-006) |
+| `lib/subscriptions/` | Entitlements, plan pricing, trial calculations, directory counts, and subscription claim error classification. | Phase 4 (API-010, DB-005) |
+| `lib/time/` | Request-time capture helper (`request-time.ts`) for hydration parity across dynamic time displays. | Phase 4 (FE-002) |
 | `types/` | Shared TypeScript types used across more than one domain (e.g., a shared `Money` or `TaxBreakdown` type). Domain-specific types that are only used within one folder can stay local to that folder instead. | Phase 2 onward |
 | `components/` | UI components (existing, from v0). Not restructured by backend phases. | Existing (v0) |
+| `components/app/settings/account-data-section.tsx` | Client component under Settings -> General managing DPDP data export downloads and account-closure request dialog. | Phase 4 (OPT-002a) |
 
 ## Naming conventions
 
@@ -174,9 +189,15 @@ The public logo image route is protected by `publicAssetLimiter`:
 - **Direct `checkRateLimit` callers in Route Handlers**: `/api/reports/export` still invokes `checkRateLimit` directly without passing through `enforceRateLimit`, meaning it lacks throttled outage logging and formal `fail-open` fallback.
 - **Shared Limiter Prefix**: `send-payment-reminder` uses key prefix `'payment-reminder'`, isolated from `'email-invoice'`.
 
-## Monitoring & Logging (established Phase 18, hardened ARCH-005)
+## Monitoring & Logging (established Phase 18, hardened ARCH-005, extended OPT-001)
 
 Sentry is the live observability implementation behind `lib/actions/_shared/logger.ts`'s `logError()` function and application request monitoring.
+- **Request IDs (`AsyncLocalStorage`)**: `lib/observability/request-context.ts` exports `runWithRequestId`, `currentRequestId` and `requestIdFromHeaders` (Vercel's `x-vercel-id` if it matches `^[A-Za-z0-9:_-]{1,128}$`, else a valid `x-request-id`, else `randomUUID()`). Every server action runs inside it via `runValidatedHandler` (`lib/actions/_shared/create-action.ts`), and so do our API routes (`/api/health`, `/api/cron/retry-invoice-archival`, `/api/reports/export`, `/api/account/export`, `/api/business/[id]/logo`). The library-owned `/api/auth/**` routes are not wrapped.
+- **Structured server logging**: `logError` / `logWarn` in `lib/actions/_shared/logger.ts` write one JSON line per event with a `requestId` field when a request context exists.
+- **Sentry tagging**: `logError` adds the tag `request_id` to captured events; `logWarn` adds `requestId` to the breadcrumb data.
+- **Health endpoint**: `GET /api/health` (`app/api/health/route.ts`, logic in `lib/observability/health.ts` -> `getHealthStatus()`) runs `select 1` and an Upstash `ping` in parallel with 3 s timeouts, caches the result for 10 s, and returns 200 `{"status":"ok","checks":{"database":"ok","redis":"ok"}}` or 503 with `"status":"error"` and the failing check marked `"error"`. No error text, hostnames or versions are exposed.
+- **Cron monitoring**: the archival cron wraps the sweep in `Sentry.withMonitor(ARCHIVAL_CRON_MONITOR_SLUG, ..., ARCHIVAL_CRON_MONITOR_CONFIG)` (`lib/storage/archival-monitor.ts`; slug `retry-invoice-archival`, crontab `0 20 * * *` UTC, check-in margin 30 min, max runtime 10 min). It only checks in after the `CRON_SECRET` check passes; `tests/unit/opt001-cron-monitor.test.ts` keeps the schedule equal to `vercel.json`.
+- **Stale-archive warning**: at the end of each sweep, `lib/storage/archival-sweep.ts` counts finalized documents still pending/failed (under the attempt limit) more than `ARCHIVAL_STALE_PENDING_MINUTES` (60) after finalization and sends a Sentry warning tagged `scope: archival-stale-pending`. It runs once a day with the cron; it is not a real-time alarm.
 - **Request Error Capture (`onRequestError`)**: `instrumentation.ts` exports `onRequestError = Sentry.captureRequestError`, automatically capturing unhandled errors from React Server Components (RSC) rendering, Route Handlers, and proxy routing into Sentry.
 - **Per-Runtime Initialization**: Sentry configuration is resolved via `lib/observability/sentry-config.ts` separately for each runtime (`nodejs`, `edge`, and `client`). Server runtimes prefer `SENTRY_DSN` with a fallback to `NEXT_PUBLIC_SENTRY_DSN`; the client uses `NEXT_PUBLIC_SENTRY_DSN` exclusively. Each runtime attaches a runtime tag (`initialScope: { tags: { runtime } }`). `environment` and `release` are resolved from Vercel metadata (`VERCEL_ENV`, `VERCEL_GIT_COMMIT_SHA`) or fallback to `NODE_ENV`.
 - **Sensitive Data Scrubber (Edge-Safe)**: All events pass through `beforeSend` and `beforeSendTransaction` using `scrubSentryEvent` from `lib/observability/sentry-redaction.ts`. It performs case-insensitive key-based redaction for PII/secrets (GSTIN, email, phone, account numbers, IFSC, UTR, PAN, UPI, passwords, tokens, auth headers) and ordered value-based pattern replacement on free text (emails, GSTIN, IFSC, PAN, Bearer tokens, query param secrets). It features ancestor-based cycle detection, depth capping (12), and fails closed (drops the event on scrubber failure rather than throwing into the request path). Structural Sentry fields and numeric business fields (e.g. `*_paise`) survive unscrubbed.
@@ -883,4 +904,127 @@ To maintain high responsiveness and strict bounded memory consumption under larg
 - Drizzle renders a column in a select WITHOUT its table name (`"id"`, `"business_id"`). Inside a raw `(select ... where x = ${table.col})` the bare name binds to the INNER table, silently breaking the correlation. Before PERF-002 this made the dashboard ignore every payment and credit note (outstanding/overdue overstated) and the admin directory show 0 invoices and 0 users for every business.
 - `tests/unit/perf002-sql-guards.test.ts` fails on any `sql` template containing `(select` plus a `${table.column}` interpolation. Use grouped derived tables (`db.select(...).groupBy(...).as('alias')` + `leftJoin`) or explicit SQL aliases.
 
+## Production metadata & SEO (FE-006)
 
+- **What exists**:
+  - `lib/seo/routes.ts`:
+    - `PUBLIC_MARKETING_PATHS` = `/`, `/privacy`, `/terms`;
+    - `PRIVATE_PATH_PREFIXES` = every `proxy.ts` matcher prefix plus `/api`, `/login`, `/signup`;
+    - `siteOrigin()`, which reads `NEXT_PUBLIC_APP_URL`;
+    - `isIndexableDeployment()`, true only when `VERCEL_ENV === 'production'`.
+  - `app/robots.ts` and `app/sitemap.ts`. On production they allow only the public paths and list them in the sitemap. On every other deployment they return `Disallow: /` and an empty sitemap.
+  - `app/manifest.ts`.
+  - `app/opengraph-image.tsx` and `app/twitter-image.tsx`: 1200×630 preview images with no external fonts.
+  - Per-page canonical links.
+  - `robots: { index: false, follow: false }` in the `(app)`, `(admin)` and `(auth)` layouts.
+  - The root layout reads the site address at build time, so `next build` needs `NEXT_PUBLIC_APP_URL`. CI uses a placeholder.
+- **Rules**:
+  - A new protected top-level route goes into the `proxy.ts` matcher, and `PRIVATE_PATH_PREFIXES` must then list it.
+  - Never hard-code the domain; use `siteOrigin()`.
+  - No `dangerouslySetInnerHTML` in `app/` or `components/`.
+- **Enforced by**:
+  - `tests/unit/fe006-seo-routes.test.ts` (keeps the matcher and the prefixes in sync);
+  - `tests/unit/fe006-metadata-routes.test.ts`;
+  - `tests/unit/fe006-metadata-guards.test.ts`.
+
+## Client bundle hygiene & lazy loading (PERF-005)
+
+- **What exists**:
+  - **Browser-safe helpers split out of server modules:**
+    - `lib/security/upload-limits.ts` (`maxBase64Chars`). The client Zod schemas use it instead of `lib/security/upload.ts`.
+    - `lib/invoices/list-period.ts` (`defaultListPeriod`). The invoices client uses it instead of the drizzle-based `lib/invoices/list-filters.ts`.
+  - **Lazy loading with `next/dynamic` (`ssr: false`):**
+    - `components/app/dashboard-chart-lazy.tsx` loads recharts, with a placeholder of the same height.
+    - `components/app/invoices/invoice-form/invoice-preview-modal-lazy.tsx` loads all four print templates. It is rendered only while the preview or its upgrade prompt is open.
+  - **Auth client:** the Neon auth client is imported inside `handleSignOut` in `components/app/app-sidebar.tsx`.
+  - **Measuring:** `pnpm perf:first-load` (`scripts/perf/first-load-js.mjs`) prints gzip first-load JS per route after a build. It does not enforce budgets.
+- **Rules**:
+  - A `'use client'` file must never import, directly or transitively, any of: `drizzle-orm`, `lib/db/schema`, `node:*`, a database driver, or `lib/security/upload.ts`.
+  - Put shared pure helpers in a dependency-free module.
+  - Load heavy, rarely used UI (charts, print previews) lazily.
+- **Enforced by**: `tests/unit/perf005-client-bundle-guards.test.ts`, which fails with the full import chain.
+
+## Health endpoint, request IDs & cron monitoring (OPT-001)
+
+The details are in "Monitoring & Logging" above. The alert rules and uptime monitor are listed in `docs/DEPLOYMENT.md` ("Monitoring & alerting") and are created on launch day.
+- **Rules**:
+  - New API routes we own wrap their handler in `runWithRequestId(requestIdFromHeaders(request.headers), ...)`.
+  - Do not set `x-request-id` on publicly cached responses (see the logo route).
+  - `/api/health` stays a cheap probe.
+- **Enforced by**:
+  - `tests/unit/opt001-request-context.test.ts`;
+  - `tests/unit/opt001-health.test.ts`;
+  - `tests/unit/opt001-cron-monitor.test.ts`;
+  - `tests/unit/opt001-archival-sweep.test.ts`;
+  - `tests/integration/api008-archival-claims.test.ts` (the stale-archive query).
+
+## Data export & account closure requests (OPT-002a)
+
+- **What exists**:
+  - **Data export:** `GET /api/account/export` (`app/api/account/export/route.ts`).
+    - Owner only, rate limited by `exportLimiter`, and audited as `business/data_export`.
+    - Allowed even when the subscription has lapsed.
+    - Returns pretty-printed JSON built by `lib/account/data-export.ts`: the business, users, customers, products, financial years, invoices and credit notes (each with nested line items), payments and subscription requests.
+    - Storage-key columns, archival internals and `auth_user_id` are omitted. `audit_log` and the invoice counters are not exported.
+  - **Closure request:** `requestAccountClosureAction` (`lib/actions/account/request-account-closure.ts`).
+    - Owner only, rate limited by `sensitiveActionLimiter`, and requires the owner to type the GSTIN.
+    - Refuses a second request within 30 days.
+    - Writes `business/account_closure_requested` to `audit_log`, then emails `SUPPORT_EMAIL`. An email failure is logged, not fatal.
+  - **UI:** `components/app/settings/account-data-section.tsx` (Settings → General).
+  - **Privacy policy:** section 3 states the retention rules.
+- **Rules**:
+  - Closure never deletes data in code. Support processes it by hand, following the runbook in `docs/DEPLOYMENT.md`.
+  - Statutory records are kept for 8 years after their financial year.
+  - Any new table holding business data must be added to the export, and any new secret-like column to the export's omission rules.
+- **Enforced by**:
+  - `tests/unit/opt002a-data-export.test.ts`;
+  - `tests/integration/opt002a-data-export.test.ts` (tenant isolation);
+  - `tests/unit/opt002a-export-route.test.ts`;
+  - `tests/unit/opt002a-account-closure.test.ts`;
+  - `tests/unit/opt002a-guards.test.ts`.
+
+## UTGST labels (COMP-UTGST)
+
+- **What exists**:
+  - `lib/gst/indian-states.ts` exports `UTGST_STATE_CODES` and `stateTaxLabel(code)`, which returns `'UTGST'` or `'SGST'`.
+    - The codes are `04`, `26`, `31`, `35` and `38`: the Union Territories without a legislature.
+    - Delhi, Puducherry and J&K keep SGST.
+  - The maths and stored values are unchanged: the `sgst_*` columns hold either SGST or UTGST.
+  - **Where the label comes from:**
+    - Invoice templates 1–4 and `components/app/credit-notes/credit-note-print-view.tsx` use the seller state the document already uses (the frozen seller snapshot for finalized documents).
+    - The invoice form cards, the credit-note form and the dashboard use the business state.
+    - Reports and Excel headers use the neutral "SGST/UTGST".
+- **Rule**: never hard-code "SGST" as the label of the state-tax half on a document or money screen; use `stateTaxLabel(sellerStateCode)`.
+- **Enforced by**:
+  - `tests/unit/comp-utgst-documents.test.ts`;
+  - `tests/unit/gst-calculate.test.ts`;
+  - `tests/unit/perf002b-xlsx-golden.test.ts` (Excel headers).
+
+  See also `docs/GST_COMPLIANCE_NOTES.md`.
+
+## PDF downloads & no native dialogs (P3-WRAPUP)
+
+- **What exists**:
+  - `openSignedPdf(getUrl, fallbackMessage)` in `lib/pdf/open-signed-pdf.ts` opens the new tab synchronously inside the click, then navigates it to the signed URL. On failure it closes the tab and returns an error message. This stops popup blockers from swallowing downloads.
+  - `components/ui/confirm-dialog.tsx` (built on `@base-ui/react/alert-dialog`) replaces native confirmations.
+- **Rules**:
+  - Never call `window.alert`, `window.confirm` or `window.prompt`; use `ConfirmDialog` or an inline message.
+  - Open signed PDFs with `openSignedPdf`.
+- **Enforced by**: `tests/unit/p3-wrapup-guards.test.ts`.
+
+## Unused code gate (CLEAN-001)
+
+- **What exists**: `knip.json`, and the blocking "Unused code (knip)" step in the CI "Quality gates" job. Documented exceptions are in `docs/TESTING.md` ("knip exceptions").
+- **Rules**:
+  - `pnpm knip` must report nothing.
+  - Delete unused code. If something must stay, add it to `knip.json` and give the reason in `docs/TESTING.md`.
+- **Enforced by**: CI (`pnpm knip`).
+
+## Build decisions (OPT-003)
+
+- `tsconfig.json` targets ES2022. This affects type-checking only; browser output is controlled by Next.js/SWC.
+- Node is pinned in two places:
+  - `.nvmrc` has the exact version;
+  - `package.json` engines is `24.x`, which is what Vercel uses.
+- The rationale and the deliberately unused options are in `docs/DEPLOYMENT.md` ("Build configuration decisions (OPT-003)").
+- `tests/unit/opt003-build-hygiene.test.ts` keeps these settings in place.
