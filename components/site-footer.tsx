@@ -1,112 +1,90 @@
-'use client'
-
 import Link from 'next/link'
-import { ArrowUpRight } from 'lucide-react'
+import { InvoiceBizFolioLogo } from '@/components/brand/invoice-bizfolio-logo'
+import { BRAND_NAME } from '@/lib/config/brand'
+import { ArrowUpRight, Mail } from 'lucide-react'
+import { SUPPORT_EMAIL } from '@/lib/config/contact'
+
+const navigation = [
+  { href: '/#features', label: 'GST invoicing engine' },
+  { href: '/#dashboard', label: 'Live tax simulator' },
+  { href: '/#calculator', label: 'ROI calculator' },
+  { href: '/#pricing', label: 'Pricing plans' },
+]
+
+const solutions = [
+  'Retail & wholesale',
+  'E-commerce & D2C brands',
+  'Manufacturing & export',
+  'IT & professional services',
+  'Chartered accountants',
+]
+
+const linkStyle = 'rounded-sm transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-300'
+const headingStyle = 'mb-2.5 text-sm font-bold uppercase tracking-wide text-white'
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-slate-800 bg-[#0A0E1A] text-slate-400 text-xs py-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 pb-14 border-b border-slate-800/80">
-          {/* Brand Col (2 cols on desktop) */}
-          <div className="col-span-2 space-y-4">
-            <Link href="#" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-md">
-                B
-              </div>
-              <span className="font-extrabold text-lg text-white tracking-tight">
-                Bill<span className="text-indigo-400">Matrix</span>
+    <footer className="border-t border-indigo-300/15 bg-[radial-gradient(ellipse_at_top_left,#171a31_0%,#0a0e1a_58%)] px-5 pt-8 pb-[calc(6rem+env(safe-area-inset-bottom))] text-slate-300 sm:px-8 md:pb-6 lg:pt-10">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-6 border-b border-slate-700/70 pb-6 sm:grid-cols-3 lg:grid-cols-[2fr_1fr_1fr_1fr] lg:gap-x-7">
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
+            <Link href="/" className={`inline-flex items-center gap-2.5 ${linkStyle}`}>
+              <InvoiceBizFolioLogo variant="icon" decorative className="w-9" />
+              <span className="text-xl font-bold tracking-tight text-white">
+                Invoice <span className="text-orange-300">BizFolio</span>
               </span>
             </Link>
-            <p className="text-slate-400 text-xs leading-relaxed max-w-sm">
-              The modern GST invoicing and tax automation stack for high-growth Indian businesses, traders, and founders.
+            <p className="mt-3 max-w-sm text-base leading-relaxed text-slate-300">
+              GST invoicing, payment tracking, and sales reporting for Indian businesses, traders, and founders.
             </p>
-
-            {/* System Status Pill */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>All Systems Operational • 99.99% Uptime</span>
-            </div>
+            <Link href="/#pricing" className={`mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-950/70 px-3 py-1 text-sm font-semibold text-emerald-200 ${linkStyle}`}>
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-emerald-400" />
+              Free plan available
+            </Link>
           </div>
 
-          {/* Product Col */}
-          <div className="space-y-3">
-            <div className="font-bold text-slate-200 uppercase tracking-wider text-[11px]">Product</div>
-            <ul className="space-y-2.5">
+          <nav aria-label="Product">
+            <h2 className={headingStyle}>Product</h2>
+            <ul className="space-y-1.5 text-base leading-snug text-slate-400">
+              {navigation.map(({ href, label }) => (
+                <li key={href}><Link href={href} className={linkStyle}>{label}</Link></li>
+              ))}
               <li>
-                <Link href="#features" className="hover:text-white transition">GST Invoicing Engine</Link>
-              </li>
-              <li>
-                <Link href="#dashboard" className="hover:text-white transition">Live Tax Simulator</Link>
-              </li>
-              <li>
-                <Link href="#calculator" className="hover:text-white transition">ROI Calculator</Link>
-              </li>
-              <li>
-                <Link href="#pricing" className="hover:text-white transition">Pricing Plans</Link>
-              </li>
-              <li>
-                <Link href="/dashboard" className="text-indigo-400 hover:text-indigo-300 transition font-semibold flex items-center gap-1">
-                  <span>Merchant Portal</span>
-                  <ArrowUpRight className="w-3 h-3" />
+                <Link href="/dashboard" className={`inline-flex items-center gap-1 font-semibold text-indigo-300 ${linkStyle}`}>
+                  Merchant portal
+                  <ArrowUpRight aria-hidden="true" className="size-3.5 shrink-0" />
                 </Link>
               </li>
             </ul>
-          </div>
+          </nav>
 
-          {/* Solutions Col */}
-          <div className="space-y-3">
-            <div className="font-bold text-slate-200 uppercase tracking-wider text-[11px]">Solutions</div>
-            <ul className="space-y-2.5">
-              <li>
-                <span className="text-slate-400">Retail & Wholesale Depots</span>
-              </li>
-              <li>
-                <span className="text-slate-400">E-Commerce & D2C Brands</span>
-              </li>
-              <li>
-                <span className="text-slate-400">Manufacturing & Export</span>
-              </li>
-              <li>
-                <span className="text-slate-400">IT & Professional Services</span>
-              </li>
-              <li>
-                <span className="text-slate-400">Chartered Accountants</span>
-              </li>
+          <div>
+            <h2 className={headingStyle}>Solutions</h2>
+            <ul className="space-y-1.5 text-base leading-snug text-slate-400">
+              {solutions.map(solution => <li key={solution}>{solution}</li>)}
             </ul>
           </div>
 
-          {/* Compliance & Contact */}
-          <div className="space-y-3">
-            <div className="font-bold text-slate-200 uppercase tracking-wider text-[11px]">Trust & Support</div>
-            <ul className="space-y-2.5">
-              <li>
-                <span className="text-slate-400">256-Bit Bank Encryption</span>
-              </li>
-              <li>
-                <span className="text-slate-400">MeitY Indian Data Residency</span>
-              </li>
-              <li>
-                <a href="mailto:support@billmatrix.in" className="hover:text-white transition">support@billmatrix.in</a>
-              </li>
-              <li>
-                <span className="text-slate-400">Mon–Sat 9AM–7PM IST</span>
-              </li>
-              <li>
-                <span className="text-slate-400">Bengaluru, Karnataka, India</span>
-              </li>
+          <div className="col-span-2 min-w-0 sm:col-span-1">
+            <h2 className={headingStyle}>Trust &amp; support</h2>
+            <ul className="mb-1.5 space-y-1.5 text-base leading-snug text-slate-400">
+              <li>Encrypted connections</li>
+              <li>Private business workspaces</li>
             </ul>
+            <a href={`mailto:${SUPPORT_EMAIL}`} className={`inline-flex max-w-full items-center gap-1.5 text-base text-indigo-300 ${linkStyle}`}>
+              <Mail aria-hidden="true" className="size-4 shrink-0" />
+              <span className="wrap-anywhere">{SUPPORT_EMAIL}</span>
+            </a>
+            <p className="mt-1.5 text-sm text-slate-400">Bengaluru, Karnataka, India</p>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
-          <div>
-            © {new Date().getFullYear()} Bill Matrix Technologies Private Limited. All rights reserved.
-          </div>
-          <div className="flex items-center gap-1">
-            <span>Engineered with precision in Bengaluru, India 🇮🇳</span>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-3.5 text-sm leading-relaxed text-slate-400">
+          <p>© {new Date().getFullYear()} {BRAND_NAME}. All rights reserved.</p>
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-4 gap-y-1 text-slate-300">
+            <Link href="/privacy" className={linkStyle}>Privacy policy</Link>
+            <Link href="/terms" className={linkStyle}>Terms of service</Link>
+          </nav>
         </div>
       </div>
     </footer>

@@ -904,6 +904,12 @@ To maintain high responsiveness and strict bounded memory consumption under larg
 - Drizzle renders a column in a select WITHOUT its table name (`"id"`, `"business_id"`). Inside a raw `(select ... where x = ${table.col})` the bare name binds to the INNER table, silently breaking the correlation. Before PERF-002 this made the dashboard ignore every payment and credit note (outstanding/overdue overstated) and the admin directory show 0 invoices and 0 users for every business.
 - `tests/unit/perf002-sql-guards.test.ts` fails on any `sql` template containing `(select` plus a `${table.column}` interpolation. Use grouped derived tables (`db.select(...).groupBy(...).as('alias')` + `leftJoin`) or explicit SQL aliases.
 
+## Social sign-in previews
+
+The public Sign In and Sign Up modals intentionally show Google, LinkedIn, and Microsoft 365 as interactive previews. Preserve these buttons during UI maintenance. Activating one keeps the current form and its values in place and announces a provider-specific coming-soon message for five seconds. A new click restarts the timer. Closing the dialog or switching forms clears it.
+
+Email and password are the available authentication method. Enable social authentication only as a separate implementation with provider configuration and verified sign-in, sign-up, and account-linking flows.
+
 ## Production metadata & SEO (FE-006)
 
 - **What exists**:

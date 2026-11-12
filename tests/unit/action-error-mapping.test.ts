@@ -57,7 +57,7 @@ describe('action-error-mapping', () => {
       expect(mapped?.code).toBe('DUPLICATE_GSTIN');
       expect(mapped?.fieldErrors).toEqual({
         gstin: [
-          'This GSTIN is already registered with another Bill Matrix account. Check the number or contact support.',
+          'This GSTIN is already registered with another Invoice BizFolio account. Check the number or contact support.',
         ],
       });
       expect(mapped?.message).not.toContain(DB_CONSTRAINTS.BUSINESSES_GSTIN_UNIQUE);

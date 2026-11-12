@@ -341,7 +341,7 @@ export function UserFeedbackForm() {
       case 'ui_ux':
         return 'Which screen, form, or button can be improved? What visual change or layout adjustment would make it easier to use?';
       case 'general':
-        return 'Share your overall experience, thoughts on Bill Matrix, or what you enjoy most about using the platform...';
+        return 'Share your overall experience, thoughts on Invoice BizFolio, or what you enjoy most about using the platform...';
     }
   };
 
@@ -359,7 +359,7 @@ export function UserFeedbackForm() {
           Thank you for taking the time to share your feedback. Your notes and diagnostic details have been sent directly to the development inbox (<span className="font-semibold text-foreground">{SUPPORT_EMAIL}</span>).
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          We review all submissions carefully to make Bill Matrix better for every business.
+          We review all submissions carefully to make Invoice BizFolio better for every business.
         </p>
 
         <div className="mt-6 flex justify-center">

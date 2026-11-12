@@ -105,7 +105,7 @@ export const sendFeedbackAction = createAuthenticatedAction(
         from: fromEmail,
         to: recipientEmail,
         replyTo: replyToAddress,
-        subject: `[Bill Matrix Feedback - ${categoryLabel}] ${input.title}`,
+        subject: `[Invoice BizFolio Feedback - ${categoryLabel}] ${input.title}`,
         react: FeedbackNotificationEmail({
           category: input.category,
           categoryLabel,
@@ -113,7 +113,7 @@ export const sendFeedbackAction = createAuthenticatedAction(
           rating: input.rating,
           title: input.title,
           description: input.description,
-          userName: appUser.display_name || 'Bill Matrix User',
+          userName: appUser.display_name || 'Invoice BizFolio User',
           userEmail,
           userRole: appUser.role,
           businessName,

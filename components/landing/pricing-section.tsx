@@ -37,26 +37,26 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
   const proPrice = formatPlanPrice('professional', cycle)
 
   return (
-    <section id="pricing" className="py-24 px-6 relative overflow-hidden">
+    <section id="pricing" aria-labelledby="pricing-heading" className="scroll-mt-24 px-5 py-8 sm:px-8 sm:py-10 relative overflow-hidden">
       <div className="orb orb-3"></div>
       <div className="max-w-6xl mx-auto relative z-10">
-        <div className="text-center mb-16">
-          <span className="reveal in inline-block text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-5 tracking-wide uppercase">
+        <div className="text-center mb-7 sm:mb-8">
+          <span className="reveal in inline-block text-xs font-bold text-amber-900 bg-amber-50 border border-amber-200 rounded-full px-3 py-1 mb-2 tracking-wide uppercase">
             <svg className="w-4 h-4 inline mr-1.5">
               <use href="#diamond" />
             </svg>{' '}
             Simple Pricing
           </span>
-          <h2 className="reveal in text-4xl md:text-5xl font-bold heading">Fair pricing, built for growth</h2>
-          <p className="reveal in text-zinc-500 mt-4 text-lg">
+          <h2 id="pricing-heading" className="reveal in text-3xl sm:text-4xl font-bold heading">Fair pricing, built for growth</h2>
+          <p className="reveal in text-zinc-600 mt-2 text-base sm:text-lg">
             Start free, upgrade when you need to. No hidden charges.
           </p>
 
           {/* Billing Cycle Toggle */}
-          <div className="reveal in inline-flex items-center gap-2 bg-zinc-100 p-1 rounded-full mt-10">
+          <div role="group" aria-label="Billing cycle" className="reveal in inline-flex items-center gap-1 border border-slate-200 bg-slate-100 p-1 rounded-full mt-4">
             <button
-              onClick={() => setBillingCycle('monthly')}
-              className={`px-6 py-2 rounded-full text-sm font-semibold transition cursor-pointer ${
+              type="button" aria-pressed={billingCycle === 'monthly'} onClick={() => setBillingCycle('monthly')}
+              className={`min-h-10 px-3.5 sm:px-4 rounded-full text-base font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer ${
                 billingCycle === 'monthly'
                   ? 'bg-white text-zinc-900 shadow'
                   : 'text-zinc-600 hover:text-zinc-900'
@@ -65,36 +65,36 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               Monthly
             </button>
             <button
-              onClick={() => setBillingCycle('annual')}
-              className={`px-6 py-2 rounded-full text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer ${
+              type="button" aria-pressed={billingCycle === 'annual'} onClick={() => setBillingCycle('annual')}
+              className={`min-h-10 px-3.5 sm:px-4 rounded-full text-base font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 inline-flex items-center gap-1.5 cursor-pointer ${
                 billingCycle === 'annual'
                   ? 'bg-white text-zinc-900 shadow'
                   : 'text-zinc-600 hover:text-zinc-900'
               }`}
             >
               Annual
-              <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded">
+              <span className="whitespace-nowrap text-xs text-emerald-800 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
                 Save {essPrice.savingsPercent}%
               </span>
             </button>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 items-stretch max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-5 md:gap-3 xl:gap-4 items-stretch">
           {/* Plan 1: Free */}
-          <div className="reveal in card-hover bg-white border border-zinc-200 rounded-3xl p-8 flex flex-col justify-between hover:border-zinc-300">
+          <div className="reveal in card-hover bg-white border border-zinc-200 rounded-2xl p-4 lg:p-5 flex flex-col justify-between hover:border-zinc-300">
             <div>
-              <div className="font-semibold text-zinc-500 text-xs uppercase tracking-wide">{freePlan.name}</div>
-              <div className="mt-4 flex items-baseline gap-1">
+              <div className="font-semibold text-zinc-500 text-sm uppercase tracking-wide">{freePlan.name}</div>
+              <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-5xl font-bold heading text-zinc-900">₹0</span>
-                <span className="text-zinc-600 text-sm">/mo</span>
+                <span className="text-zinc-600 text-base">/mo</span>
               </div>
-              <p className="text-zinc-500 text-sm mt-3">{freePlan.tagline}</p>
-              <div className="border-t border-zinc-100 my-6"></div>
-              <ul className="space-y-3.5 text-zinc-600 text-sm">
+              <p className="text-zinc-600 text-sm mt-1.5">{freePlan.tagline}</p>
+              <div className="border-t border-zinc-100 my-3.5"></div>
+              <ul className="space-y-2 text-zinc-700 text-base leading-snug">
                 {freePlan.features.map((feat, idx) => (
-                  <li key={idx} className="flex items-center gap-2.5">
-                    <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
+                  <li key={idx} className="flex items-start gap-2">
+                    <svg aria-hidden="true" className="mt-0.5 w-4 h-4 shrink-0">
                       <use href="#check-circle" />
                     </svg>
                     <span>{feat.label}</span>
@@ -103,45 +103,45 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               </ul>
             </div>
             <button
-              onClick={() => handlePlanSelect('free')}
-              className="block w-full text-center border-2 border-zinc-200 hover:border-indigo-600 hover:text-indigo-600 text-zinc-700 font-semibold py-3.5 rounded-xl transition mt-8 text-sm cursor-pointer"
+              type="button" onClick={() => handlePlanSelect('free')}
+              className="block w-full text-center border-2 border-zinc-200 hover:border-indigo-600 hover:text-indigo-600 text-zinc-700 font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base cursor-pointer"
             >
               Start Free
             </button>
           </div>
 
           {/* Plan 2: Essentials (Popular) */}
-          <div className="reveal in card-hover bg-white border-2 border-indigo-600 rounded-3xl p-8 flex flex-col justify-between relative shadow-xl shadow-indigo-100/50">
-            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-xs px-4 py-1 rounded-full uppercase tracking-wider shadow">
+          <div className="reveal in card-hover bg-white border-2 border-indigo-600 rounded-2xl p-4 lg:p-5 flex flex-col justify-between relative shadow-xl shadow-indigo-100/50">
+            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 border border-amber-300 bg-amber-100 text-amber-950 font-bold text-xs px-4 py-1 rounded-full uppercase tracking-wider shadow">
               Most Popular
             </span>
             <div>
-              <div className="font-semibold text-indigo-600 text-xs uppercase tracking-wide mt-2">
+              <div className="font-semibold text-indigo-600 text-sm uppercase tracking-wide">
                 {essentialsPlan.name}
               </div>
-              <div className="mt-4 flex items-baseline gap-1">
+              <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-5xl font-bold heading text-zinc-900">
                   {essPrice.headline}
                 </span>
-                <span className="text-zinc-600 text-sm">/mo</span>
+                <span className="text-zinc-600 text-base">/mo</span>
               </div>
-              <p className="text-zinc-500 text-sm mt-3">
+              <p className="text-zinc-600 text-sm mt-1.5">
                 {essPrice.note}
               </p>
-              <div className="border-t border-indigo-100 my-6"></div>
-              <ul className="space-y-3.5 text-zinc-600 text-sm">
+              <div className="border-t border-indigo-100 my-3.5"></div>
+              <ul className="space-y-2 text-zinc-700 text-base leading-snug">
                 {essentialsPlan.features.map((feat, idx) => (
                   feat.status === 'included' ? (
-                    <li key={idx} className="flex items-center gap-2.5">
-                      <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
+                    <li key={idx} className="flex items-start gap-2">
+                      <svg aria-hidden="true" className="mt-0.5 w-4 h-4 shrink-0">
                         <use href="#check-circle" />
                       </svg>
                       <span className={idx === 0 ? "font-medium text-zinc-800" : ""}>{feat.label}</span>
                     </li>
                   ) : (
-                    <li key={idx} className="flex items-center gap-2.5 text-zinc-600">
+                    <li key={idx} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-zinc-700">
                       <span>{feat.label}</span>
-                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                      <span className="text-xs font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200 px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0">
                         Coming soon
                       </span>
                     </li>
@@ -150,47 +150,47 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               </ul>
             </div>
             <button
-              onClick={() => handlePlanSelect('essentials')}
-              className="block w-full text-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold py-3.5 rounded-xl transition mt-8 text-sm glow-btn cursor-pointer"
+              type="button" onClick={() => handlePlanSelect('essentials')}
+              className="block w-full text-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base glow-btn cursor-pointer"
             >
               Get Started →
             </button>
           </div>
 
           {/* Plan 3: Professional */}
-          <div className="reveal in card-hover bg-white border border-zinc-200 rounded-3xl p-8 flex flex-col justify-between hover:border-zinc-300 relative">
+          <div className="reveal in card-hover bg-white border border-zinc-200 rounded-2xl p-4 lg:p-5 flex flex-col justify-between hover:border-zinc-300 relative">
             <div>
-              <div className="flex items-center justify-between">
-                <div className="font-semibold text-zinc-500 text-xs uppercase tracking-wide">
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                <div className="font-semibold text-zinc-500 text-sm uppercase tracking-wide">
                   {professionalPlan.name}
                 </div>
-                <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-600 border border-zinc-200 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-semibold bg-zinc-100 text-zinc-600 border border-zinc-200 px-1.5 py-0.5 rounded-md">
                   Coming soon
                 </span>
               </div>
-              <div className="mt-4 flex items-baseline gap-1">
+              <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-5xl font-bold heading text-zinc-900">
                   {proPrice.headline}
                 </span>
-                <span className="text-zinc-600 text-sm">/mo</span>
+                <span className="text-zinc-600 text-base">/mo</span>
               </div>
-              <p className="text-zinc-500 text-sm mt-3">
+              <p className="text-zinc-600 text-sm mt-1.5">
                 {proPrice.note}
               </p>
-              <div className="border-t border-zinc-100 my-6"></div>
-              <ul className="space-y-3.5 text-zinc-600 text-sm">
+              <div className="border-t border-zinc-100 my-3.5"></div>
+              <ul className="space-y-2 text-zinc-700 text-base leading-snug">
                 {professionalPlan.features.map((feat, idx) => (
                   feat.status === 'included' ? (
-                    <li key={idx} className="flex items-center gap-2.5">
-                      <svg className="w-4 h-4 text-emerald-500 flex-shrink-0">
+                    <li key={idx} className="flex items-start gap-2">
+                      <svg aria-hidden="true" className="mt-0.5 w-4 h-4 shrink-0">
                         <use href="#check-circle" />
                       </svg>
                       <span className="font-medium text-zinc-800">{feat.label}</span>
                     </li>
                   ) : (
-                    <li key={idx} className="flex items-center gap-2.5 text-zinc-600">
+                    <li key={idx} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-zinc-700">
                       <span>{feat.label}</span>
-                      <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 text-zinc-700 border border-zinc-200 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                      <span className="text-xs font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200 px-1.5 py-0.5 rounded-md whitespace-nowrap shrink-0">
                         Coming soon
                       </span>
                     </li>
@@ -200,7 +200,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
             </div>
             <button
               disabled
-              className="block w-full text-center border-2 border-zinc-200 bg-zinc-50 text-zinc-600 font-semibold py-3.5 rounded-xl transition mt-8 text-sm cursor-not-allowed"
+              className="block w-full text-center border-2 border-zinc-200 bg-zinc-50 text-zinc-600 font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base cursor-not-allowed"
             >
               Coming soon
             </button>

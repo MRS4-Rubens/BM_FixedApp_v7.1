@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { Text } from '@react-email/components';
+import { BRAND_NAME } from '@/lib/config/brand';
 
 export interface SenderBusinessInfo {
   readonly legalName: string;
@@ -25,7 +26,7 @@ export function SenderFooter({
     <Text style={footerText}>
       Sent on behalf of {legalName}
       {gstinPart}
-      {cityPart}.{contactPart} Delivered via Bill Matrix. If you believe you received this in error,
+      {cityPart}.{contactPart} Delivered via {BRAND_NAME}. If you believe you received this in error,
       reply to this e-mail to let {legalName} know.
     </Text>
   );

@@ -1,56 +1,84 @@
+'use client'
+
+import { Rocket } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+
+const steps = [
+  {
+    title: 'Set up your business',
+    description: 'Enter your GSTIN and business details once. Invoice BizFolio checks the GSTIN format.',
+    accent: 'from-rose-500 to-pink-600 ring-rose-200',
+    pulse: 'motion-safe:animate-[pulseRingRose_2s_ease-out_2]',
+  },
+  {
+    title: 'Add customers & products',
+    description: 'Save customer and product details once and reuse them on every invoice.',
+    accent: 'from-amber-600 to-orange-600 ring-amber-200',
+    pulse: 'motion-safe:animate-[pulseRingAmber_2s_ease-out_2]',
+  },
+  {
+    title: 'Invoice & share',
+    description: 'Choose a customer and items, finalize the invoice, then email the PDF or share it on WhatsApp.',
+    accent: 'from-emerald-600 to-teal-600 ring-emerald-200',
+    pulse: 'motion-safe:animate-[pulseRingEmerald_2s_ease-out_2]',
+  },
+  {
+    title: 'Track payments',
+    description: 'Record payments, check outstanding balances, and send reminders.',
+    accent: 'from-indigo-600 to-violet-600 ring-indigo-200',
+    pulse: 'motion-safe:animate-[pulseRingIndigo_2s_ease-out_2]',
+  },
+]
+
 export function HowItWorks() {
+  const listRef = useRef<HTMLOListElement>(null)
+  const [pulseSteps, setPulseSteps] = useState(false)
+
+  useEffect(() => {
+    const list = listRef.current
+    if (!list || !('IntersectionObserver' in window)) return
+
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      setPulseSteps(true)
+      observer.disconnect()
+    }, { threshold: 0.25 })
+    observer.observe(list)
+    return () => observer.disconnect()
+  }, [])
+
   return (
-    <section id="how" className="py-24 px-6 max-w-6xl mx-auto">
-      <div className="text-center mb-16">
-        <span className="reveal in inline-block text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-5 tracking-wide uppercase">
-          🚀 Get Started
-        </span>
-        <h2 className="reveal in text-4xl md:text-5xl font-bold heading">Ready in four simple steps</h2>
-        <p className="reveal in text-zinc-500 mt-4 text-lg">
-          No configuration headaches. No code. <span className="text-zinc-700 font-medium">Just results.</span>
-        </p>
-      </div>
-
-      <div className="grid md:grid-cols-4 gap-8 relative">
-        <div className="reveal in text-center relative group">
-          <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold mx-auto mb-6 pulse-ring-rose transition-all duration-300 shadow-md hover:scale-110">
-            1
-          </div>
-          <h3 className="font-semibold text-lg heading">Set up your business</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Enter your GSTIN and business details once; we validate the GSTIN format.
+    <section id="how" aria-labelledby="how-heading" className="scroll-mt-24 px-5 py-8 sm:px-8 sm:py-10">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-7 text-center sm:mb-9">
+          <p className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-800">
+            <Rocket aria-hidden="true" className="size-3.5" />
+            Get started
+          </p>
+          <h2 id="how-heading" className="text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-5xl">
+            Ready in four simple steps
+          </h2>
+          <p className="mt-1.5 text-base leading-relaxed text-slate-700 sm:text-lg">
+            From setting up your business to tracking payments.
           </p>
         </div>
 
-        <div className="reveal in text-center relative group">
-          <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold mx-auto mb-6 pulse-ring-amber transition-all duration-300 shadow-md hover:scale-110">
-            2
-          </div>
-          <h3 className="font-semibold text-lg heading">Add customers & products</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Save them once and reuse them on every invoice.
-          </p>
-        </div>
-
-        <div className="reveal in text-center relative group">
-          <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 text-white rounded-2xl flex items-center justify-center text-xl font-bold mx-auto mb-6 pulse-ring-emerald transition-all duration-300 shadow-md hover:scale-110">
-            3
-          </div>
-          <h3 className="font-semibold text-lg heading">Invoice & share</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Pick a customer and items, finalize, then e-mail the PDF or share on WhatsApp.
-          </p>
-        </div>
-
-        <div className="reveal in text-center relative group">
-          <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-2xl flex items-center justify-center text-xl font-bold mx-auto mb-6 pulse-ring-indigo transition-all duration-300 shadow-md hover:scale-110">
-            4
-          </div>
-          <h3 className="font-semibold text-lg heading">Track payments</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Record payments, see what is outstanding, and send reminders in one click.
-          </p>
-        </div>
+        <ol ref={listRef} role="list" className="grid gap-5 sm:grid-cols-2 sm:gap-7 lg:grid-cols-4 lg:gap-5">
+          {steps.map(({ title, description, accent, pulse }, index) => (
+            <li key={title} className="flex items-start gap-4 sm:flex-col sm:items-center sm:text-center">
+              <span aria-hidden="true" className="relative grid size-11 shrink-0 place-items-center rounded-xl sm:size-14 sm:rounded-2xl">
+                <span className={`pointer-events-none absolute inset-0 rounded-[inherit] ${pulseSteps ? pulse : ''}`} />
+                <span className={`relative grid size-full place-items-center rounded-[inherit] bg-linear-to-br text-xl font-bold leading-none text-white ring-2 sm:text-2xl ${accent}`}>
+                  {index + 1}
+                </span>
+              </span>
+              <div>
+                <h3 className="text-lg font-medium leading-tight tracking-tight text-slate-950 sm:text-xl">{title}</h3>
+                <p className="mt-1 text-base leading-snug text-slate-600">{description}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   )

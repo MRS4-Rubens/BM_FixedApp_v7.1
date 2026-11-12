@@ -1,55 +1,56 @@
+import { ChevronDown, CircleHelp } from 'lucide-react'
+
+const questions = [
+  {
+    question: 'How long does onboarding take?',
+    answer: 'Sign up, enter your business details and GSTIN, and start invoicing in a few minutes.',
+  },
+  {
+    question: 'Can I export data for my CA?',
+    answer: 'Yes. In Reports, you can download a sales report in Excel and share it with your CA. Excel exports are available on Essentials Pro and during the free trial.',
+  },
+  {
+    question: 'Is my business data secure?',
+    answer: 'HTTPS encrypts traffic, and our database and storage providers encrypt data at rest. Each business can access only its own records.',
+  },
+  {
+    question: 'Is WhatsApp sharing free?',
+    answer: 'WhatsApp invoice sharing is included with Essentials Pro and during the free trial.',
+  },
+]
+
 export function FaqSection() {
   return (
-    <section id="faq" className="py-24 px-6 max-w-4xl mx-auto border-t border-zinc-100">
-      <div className="text-center mb-16">
-        <span className="reveal in inline-block text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-5 tracking-wide uppercase">
-          <svg className="w-4 h-4 inline mr-1.5">
-            <use href="#question" />
-          </svg>{' '}
-          FAQ
-        </span>
-        <h2 className="reveal in text-4xl md:text-5xl font-bold heading">Frequently asked questions</h2>
-        <p className="reveal in text-zinc-500 mt-4 text-lg">Got questions? We&apos;ve got answers.</p>
-      </div>
+    <section id="faq" aria-labelledby="faq-heading" className="scroll-mt-24 border-t border-stone-200/80 bg-[#fcfaf6] px-5 py-8 sm:px-8 sm:py-10">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-4 text-center sm:mb-5">
+          <p className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700">
+            <CircleHelp aria-hidden="true" className="size-3.5" />
+            FAQ
+          </p>
+          <h2 id="faq-heading" className="text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-4xl">
+            Frequently asked questions
+          </h2>
+          <p className="mt-1.5 text-base leading-relaxed text-slate-600 sm:text-lg">
+            Quick answers about setup, reports, data security, and invoice sharing.
+          </p>
+        </div>
 
-      <div className="reveal in space-y-4">
-        <details className="group bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-300 transition-all [&_summary::-webkit-details-marker]:hidden">
-          <summary className="flex justify-between items-center font-semibold text-zinc-800 cursor-pointer list-none text-base heading">
-            How long does onboarding take?
-            <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
-          </summary>
-          <p className="text-zinc-500 text-sm mt-3 leading-relaxed">
-            Sign up, enter your business details and GSTIN, and start invoicing in a few minutes.
-          </p>
-        </details>
-        <details className="group bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-300 transition-all [&_summary::-webkit-details-marker]:hidden">
-          <summary className="flex justify-between items-center font-semibold text-zinc-800 cursor-pointer list-none text-base heading">
-            Can I export data for my CA?
-            <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
-          </summary>
-          <p className="text-zinc-500 text-sm mt-3 leading-relaxed">
-            Yes. Our auto-export tool compiles all sales invoices, client registries, and tax components into standard
-            ITR-compliant Excel spreadsheets that CAs can consume instantly.
-          </p>
-        </details>
-        <details className="group bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-300 transition-all [&_summary::-webkit-details-marker]:hidden">
-          <summary className="flex justify-between items-center font-semibold text-zinc-800 cursor-pointer list-none text-base heading">
-            Is my business data secure?
-            <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
-          </summary>
-          <p className="text-zinc-500 text-sm mt-3 leading-relaxed">
-            All traffic is encrypted with HTTPS, and our database and storage providers encrypt data at rest. Each business can only access its own records.
-          </p>
-        </details>
-        <details className="group bg-white border border-zinc-200 rounded-2xl p-5 hover:border-zinc-300 transition-all [&_summary::-webkit-details-marker]:hidden">
-          <summary className="flex justify-between items-center font-semibold text-zinc-800 cursor-pointer list-none text-base heading">
-            Is WhatsApp sharing free?
-            <span className="text-zinc-400 group-open:rotate-180 transition-transform">▼</span>
-          </summary>
-          <p className="text-zinc-500 text-sm mt-3 leading-relaxed">
-            WhatsApp sharing is included in Essentials Pro and during the free trial. There are no per-message charges.
-          </p>
-        </details>
+        <div className="divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white p-1 shadow-xs">
+          {questions.map(({ question, answer }) => (
+            <details key={question} className="group px-1.5 py-1 sm:px-2">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-2.5 py-2 text-lg font-medium leading-snug text-slate-950 transition-colors hover:bg-stone-50 group-open:bg-stone-100 group-open:text-stone-950 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-indigo-600 sm:px-3.5 sm:text-xl [&::-webkit-details-marker]:hidden">
+                {question}
+                <span className="grid size-7 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 group-open:border-stone-300 group-open:text-stone-800">
+                  <ChevronDown aria-hidden="true" className="size-4 group-open:rotate-180 motion-safe:transition-transform" />
+                </span>
+              </summary>
+              <p className="max-w-3xl px-2.5 pb-2.5 pt-2 text-base leading-relaxed text-slate-600 sm:px-3.5">
+                {answer}
+              </p>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   )

@@ -8,7 +8,7 @@ export const BUSINESS_PROFILE_MAPPINGS: readonly PgConstraintMapping[] = [
     sqlState: UNIQUE_VIOLATION,
     constraint: DB_CONSTRAINTS.BUSINESSES_GSTIN_UNIQUE,
     code: 'DUPLICATE_GSTIN',
-    message: 'This GSTIN is already registered with another Bill Matrix account. Check the number or contact support.',
+    message: 'This GSTIN is already registered with another Invoice BizFolio account. Check the number or contact support.',
     field: 'gstin',
   },
 ];

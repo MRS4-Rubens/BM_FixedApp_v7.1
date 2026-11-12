@@ -1,5 +1,6 @@
 import type { Writable } from 'node:stream';
 import ExcelJS from 'exceljs';
+import { BRAND_NAME } from '@/lib/config/brand';
 
 /**
  * A function that writes one complete .xlsx file into `stream` and resolves once the
@@ -30,7 +31,7 @@ export function createStreamingWorkbook(stream: Writable): ExcelJS.stream.xlsx.W
     // weaker and made a 100k-line GSTR-1 file ~25% larger for no memory benefit.
     zip: { zlib: { level: 6 } },
   });
-  workbook.creator = 'Bill Matrix';
+  workbook.creator = BRAND_NAME;
   workbook.created = new Date();
   return workbook;
 }

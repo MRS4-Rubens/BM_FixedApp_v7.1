@@ -400,7 +400,7 @@ export function InvoiceFormatGuideModal({
                   : preset.format;
 
                 const effectiveDescription = !canCustomize && preset.id === 'standard-b2b'
-                  ? 'Free tier default series with Bill Matrix Application (BMA) prefix. Resets to 0001 on April 1 every Financial Year.'
+                  ? 'Free tier default series with the standard BMA prefix. Resets to 0001 on April 1 every Financial Year.'
                   : preset.description;
 
                 let sampleOutput = '';

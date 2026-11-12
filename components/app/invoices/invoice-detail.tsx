@@ -129,7 +129,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
 
     const customerPhone = (invoice.customer_phone as string) || invoice.customer?.phone || null
     const customerName = (invoice.billing_name_snapshot as string) || (invoice.customer_name as string) || null
-    const businessName = (invoice.business_name as string) || (business?.trade_name || business?.legal_name || 'Bill Matrix Merchant')
+    const businessName = (invoice.business_name as string) || (business?.trade_name || business?.legal_name || 'Invoice BizFolio Merchant')
 
     const shareUrl = generateWhatsAppInvoiceUrl({
       customerName,

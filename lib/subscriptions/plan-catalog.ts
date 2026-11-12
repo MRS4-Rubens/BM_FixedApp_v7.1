@@ -1,5 +1,5 @@
 /**
- * Plan Catalog & Feature Matrix for Bill Matrix
+ * Plan Catalog & Feature Matrix for Invoice BizFolio
  *
  * Single source of truth for user-facing plan definitions, taglines,
  * feature availability (included vs coming_soon), and pricing presentation.
@@ -36,7 +36,7 @@ export const PLAN_CATALOG: Record<PlanTier, PlanCatalogEntry> = {
       { label: 'GST invoices and credit notes', status: 'included' },
       { label: 'E-mail invoices (PDF) and payment reminders', status: 'included' },
       { label: 'Payment tracking and sales reports', status: 'included' },
-      { label: 'Bill Matrix watermark on invoices', status: 'included' },
+      { label: 'Invoice BizFolio watermark on invoices', status: 'included' },
     ],
   },
   trial: {

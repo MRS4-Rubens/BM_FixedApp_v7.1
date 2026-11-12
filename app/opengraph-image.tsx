@@ -1,51 +1,37 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
+import { BRAND_TAGLINE, BRAND_TITLE } from '@/lib/config/brand';
 
-export const alt = 'Bill Matrix — Smart GST Invoicing for Indian Businesses';
+export const alt = BRAND_TITLE;
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-export default function Image() {
+export default async function Image() {
+  const logo = await readFile(join(process.cwd(), 'public/branding/invoice-bizfolio-primary-preview.png'));
+  const logoSource = `data:image/png;base64,${logo.toString('base64')}`;
+
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          justifyContent: 'center',
-          backgroundColor: '#1e2a4a',
-          padding: '80px',
-        }}
-      >
-        <div
-          style={{
-            color: '#ffffff',
-            fontSize: 72,
-            fontWeight: 700,
-            marginBottom: 24,
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Bill Matrix
-        </div>
-        <div
-          style={{
-            color: '#cbd5e1',
-            fontSize: 32,
-            fontWeight: 400,
-            lineHeight: 1.4,
-            maxWidth: '900px',
-          }}
-        >
-          Smart GST Invoicing for Indian Businesses
+      <div style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        borderTop: '16px solid #880019',
+        backgroundColor: '#fcfaf6',
+        padding: '80px',
+      }}>
+        {/* ImageResponse embeds the PNG bytes directly into the preview. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logoSource} alt="" width={840} height={174} />
+        <div style={{ color: '#292524', fontSize: 35, marginTop: 24 }}>
+          {BRAND_TAGLINE}
         </div>
       </div>
     ),
-    {
-      ...size,
-    },
+    size,
   );
 }
-

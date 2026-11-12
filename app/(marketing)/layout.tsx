@@ -34,13 +34,13 @@ export default function MarketingLayout({
 
         {/* STICKY MOBILE CTA */}
         <div
-          className={`fixed bottom-0 inset-x-0 md:hidden bg-white/90 backdrop-blur-xl border-t border-zinc-200 p-4 transition-transform duration-500 z-40 ${
+          className={`fixed bottom-0 inset-x-0 md:hidden bg-[#fcfaf6]/95 backdrop-blur-xl border-t border-stone-200 p-4 transition-transform duration-500 z-40 ${
             showStickyCta ? 'translate-y-0' : 'translate-y-full'
           }`}
         >
           <AuthTriggerButton
             mode="signup"
-            className="block w-full text-center bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold py-3.5 rounded-full glow-btn text-lg cursor-pointer"
+            className="block w-full text-center bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-3.5 rounded-full shadow-sm transition-colors text-lg cursor-pointer"
           >
             Start free — no card needed →
           </AuthTriggerButton>

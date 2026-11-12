@@ -1,111 +1,83 @@
+import { ChartNoAxesColumnIncreasing, FileSpreadsheet, FolderOpen, MessageCircle, Receipt, ReceiptText, Smartphone, Sparkles } from 'lucide-react'
+
+const features = [
+  {
+    icon: ReceiptText,
+    title: 'GST-compliant invoicing',
+    description: 'Create invoices with automatic CGST, SGST, or IGST calculations, HSN codes, and GST-ready templates.',
+    accent: 'from-indigo-600 to-indigo-800',
+    wide: true,
+  },
+  {
+    icon: FileSpreadsheet,
+    title: 'ITR-ready Excel export',
+    description: 'Download a sales report in Excel to prepare your income tax filing or share with your CA.',
+    accent: 'from-amber-700 to-orange-700',
+  },
+  {
+    icon: ChartNoAxesColumnIncreasing,
+    title: 'Sales analytics',
+    description: 'Track sales and revenue across reporting periods.',
+    accent: 'from-emerald-600 to-emerald-800',
+  },
+  {
+    icon: FolderOpen,
+    title: 'Products & customers',
+    description: 'Save product and customer details once, then reuse them on new invoices.',
+    accent: 'from-violet-600 to-purple-800',
+  },
+  {
+    icon: Receipt,
+    title: 'Credit notes & payments',
+    description: 'Issue GST credit notes and record full or partial payments against invoices.',
+    accent: 'from-rose-600 to-pink-800',
+  },
+  {
+    icon: MessageCircle,
+    title: 'Invoice sharing & reminders',
+    description: 'Email invoice PDFs, share invoices over WhatsApp, and send payment reminders.',
+    accent: 'from-sky-600 to-blue-800',
+    wide: true,
+  },
+  {
+    icon: Smartphone,
+    title: 'Desktop, tablet & mobile',
+    description: 'Manage your billing from any of your devices.',
+    accent: 'from-teal-600 to-cyan-800',
+  },
+]
+
 export function FeaturesSection() {
   return (
-    <section id="features" className="py-24 px-6 max-w-6xl mx-auto">
-      <div className="text-center mb-16">
-        <span className="reveal in inline-block text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-5 tracking-wide uppercase">
-          <svg className="w-4 h-4 inline mr-1.5">
-            <use href="#sparkle" />
-          </svg>{' '}
-          Features
-        </span>
-        <h2 className="reveal in text-4xl md:text-5xl font-bold heading">Everything your business needs</h2>
-        <p className="reveal in text-zinc-500 mt-4 text-lg">
-          From first invoice to final filing — <span className="text-zinc-700 font-medium">one platform.</span>
-        </p>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-5">
-        {/* Card 1 */}
-        <div className="reveal in card-hover bento-card md:col-span-2 bg-white border border-zinc-200 rounded-3xl p-8 animated-border">
-          <div className="w-14 h-14 bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl flex items-center justify-center mb-5 icon-bounce text-white">
-            <svg className="w-8 h-8">
-              <use href="#invoice" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-xl heading">GST-Compliant Invoicing</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Auto-calculated CGST/SGST/IGST, HSN codes, and formats aligned with Indian GST rules —{' '}
-            <span className="text-zinc-700 font-medium">zero manual errors, every single time.</span>
+    <section id="features" aria-labelledby="features-heading" className="scroll-mt-24 bg-[#fcfaf6] px-5 py-8 sm:px-8 sm:py-10">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-4 text-center sm:mb-5">
+          <p className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-stone-100 px-2.5 py-1 text-xs font-semibold text-stone-700">
+            <Sparkles aria-hidden="true" className="size-3.5" />
+            Features
+          </p>
+          <h2 id="features-heading" className="text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-4xl">
+            Everything your business needs
+          </h2>
+          <p className="mt-1.5 text-base leading-relaxed text-slate-700 sm:text-lg">
+            From first invoice to final filing — <strong className="font-bold text-slate-950">one platform.</strong>
           </p>
         </div>
 
-        {/* Card 2 */}
-        <div className="reveal in card-hover bento-card bg-white border border-zinc-200 rounded-3xl p-8 animated-border">
-          <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center mb-5 icon-bounce text-white">
-            <svg className="w-8 h-8">
-              <use href="#lightning" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-xl heading">One-Click ITR Export</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Filing-ready data in seconds — no spreadsheets, no CA back-and-forth.
-          </p>
-        </div>
-
-        {/* Card 3 */}
-        <div className="reveal in card-hover bento-card bg-white border border-zinc-200 rounded-3xl p-8 animated-border">
-          <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mb-5 icon-bounce text-white">
-            <svg className="w-8 h-8">
-              <use href="#bar-chart" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-xl heading">Live Sales Analytics</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Daily, monthly & annual revenue trends — always up to date.
-          </p>
-        </div>
-
-        {/* Card 4 */}
-        <div className="reveal in card-hover bento-card bg-white border border-zinc-200 rounded-3xl p-8 animated-border">
-          <div className="w-14 h-14 bg-gradient-to-br from-violet-500 to-purple-500 rounded-2xl flex items-center justify-center mb-5 icon-bounce text-white">
-            <svg className="w-8 h-8">
-              <use href="#folder" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-xl heading">Master Data Hub</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Manage products & customers once, reuse everywhere.
-          </p>
-        </div>
-
-        {/* Card 5 */}
-        <div className="reveal in card-hover bento-card bg-white border border-zinc-200 rounded-3xl p-8 animated-border">
-          <div className="w-14 h-14 bg-gradient-to-br from-rose-500 to-pink-500 rounded-2xl flex items-center justify-center mb-5 icon-bounce text-white">
-            <svg className="w-8 h-8">
-              <use href="#invoice" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-xl heading">Credit Notes & Payments</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed font-normal">
-            Issue GST credit notes and record full or part payments against every invoice.
-          </p>
-        </div>
-
-        {/* Card 6 */}
-        <div className="reveal in card-hover bento-card md:col-span-2 bg-white border border-zinc-200 rounded-3xl p-8 animated-border">
-          <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center mb-5 icon-bounce text-white">
-            <svg className="w-8 h-8">
-              <use href="#chat-bubble" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-xl heading">Email & WhatsApp Sharing + Payment Tracking</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Send invoices by e-mail (with PDF) or WhatsApp, record payments, and send a payment reminder in one click.
-          </p>
-        </div>
-
-        {/* Card 7 */}
-        <div className="reveal in card-hover bento-card bg-white border border-zinc-200 rounded-3xl p-8 animated-border">
-          <div className="w-14 h-14 bg-gradient-to-br from-sky-500 to-indigo-500 rounded-2xl flex items-center justify-center mb-5 icon-bounce text-white">
-            <svg className="w-8 h-8">
-              <use href="#smartphone" />
-            </svg>
-          </div>
-          <h3 className="font-semibold text-xl heading">Works Everywhere</h3>
-          <p className="text-zinc-500 text-sm mt-2 leading-relaxed">
-            Desktop, tablet & mobile — fully responsive.
-          </p>
-        </div>
+        <ul className="grid gap-2.5 md:grid-cols-3 md:gap-3">
+          {features.map(({ icon: Icon, title, description, accent, wide }) => (
+            <li
+              key={title}
+              className={`grid min-w-0 grid-cols-[auto_minmax(0,1fr)] content-start items-center gap-x-3 gap-y-2.5 rounded-2xl border border-stone-200 bg-white p-3.5 shadow-xs transition-[border-color,box-shadow,translate] duration-200 hover:border-stone-300 hover:shadow-[0_8px_22px_-12px_#57534e40] motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none md:p-4 ${wide ? 'md:col-span-2' : ''}`}
+            >
+              <span className={`grid size-10 place-items-center rounded-xl border border-black/10 bg-linear-to-br text-white shadow-[inset_0_1px_0_#ffffff38,0_2px_4px_#0f172a20] ${accent}`}>
+                <Icon aria-hidden="true" className="size-5" />
+              </span>
+              <h3 className="text-lg font-normal leading-tight tracking-tight text-slate-950 sm:text-[1.3125rem]">{title}</h3>
+              <p className="col-span-2 text-base leading-snug text-slate-600">{description}</p>
+            </li>
+          ))}
+        </ul>
       </div>
     </section>
   )

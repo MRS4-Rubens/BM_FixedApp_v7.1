@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Lora, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { SentryInit } from '@/components/sentry-init'
+import { BRAND_DESCRIPTION, BRAND_NAME, BRAND_THEME_COLOR, BRAND_TITLE } from '@/lib/config/brand'
 import { siteOrigin, isIndexableDeployment } from '@/lib/seo/routes'
 
 const lora = Lora({
@@ -16,37 +17,34 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
-const DEFAULT_TITLE = 'Bill Matrix — Smart GST Invoicing for Indian Businesses'
-const DEFAULT_DESCRIPTION =
-  'Bill Matrix is a GST invoicing and business-management platform built for small and medium businesses across India.'
-
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin()),
-  applicationName: 'Bill Matrix',
+  applicationName: BRAND_NAME,
   title: {
-    default: DEFAULT_TITLE,
-    template: '%s | Bill Matrix',
+    default: BRAND_TITLE,
+    template: `%s | ${BRAND_NAME}`,
   },
-  description: DEFAULT_DESCRIPTION,
+  description: BRAND_DESCRIPTION,
   icons: {
     icon: [
+      { url: '/favicon.ico', type: 'image/x-icon', sizes: '16x16 32x32 48x48' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
       { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
     ],
     apple: '/apple-icon.png',
   },
   openGraph: {
     type: 'website',
-    siteName: 'Bill Matrix',
+    siteName: BRAND_NAME,
     locale: 'en_IN',
-    title: DEFAULT_TITLE,
-    description: DEFAULT_DESCRIPTION,
+    title: BRAND_TITLE,
+    description: BRAND_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    title: DEFAULT_TITLE,
-    description: DEFAULT_DESCRIPTION,
+    title: BRAND_TITLE,
+    description: BRAND_DESCRIPTION,
   },
   robots: isIndexableDeployment()
     ? { index: true, follow: true }
@@ -55,7 +53,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   colorScheme: 'light',
-  themeColor: '#1e2a4a',
+  themeColor: BRAND_THEME_COLOR,
 }
 
 export default function RootLayout({

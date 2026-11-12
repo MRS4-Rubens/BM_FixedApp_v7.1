@@ -67,7 +67,7 @@ export const FeedbackNotificationEmail = ({
         <Container style={container}>
           {/* Header Banner */}
           <Section style={headerSection}>
-            <Text style={headerEyebrow}>BILL MATRIX USER FEEDBACK &amp; BUG REPORT</Text>
+            <Text style={headerEyebrow}>INVOICE BIZFOLIO USER FEEDBACK &amp; BUG REPORT</Text>
             <Heading style={headerTitle}>{title}</Heading>
 
             <div style={{ marginTop: '12px' }}>
@@ -217,7 +217,7 @@ export const FeedbackNotificationEmail = ({
 
           <Section style={footerSection}>
             <Text style={footerText}>
-              Sent automatically by Bill Matrix Application Dispatch.
+              Sent automatically by Invoice BizFolio Application Dispatch.
               <br />
               Recipient configured: {FEEDBACK_RECIPIENT_EMAIL}
             </Text>

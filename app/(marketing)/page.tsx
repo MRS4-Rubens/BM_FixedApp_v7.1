@@ -9,7 +9,7 @@ import { ComparisonTable } from '@/components/landing/comparison-table'
 import { PricingSection } from '@/components/landing/pricing-section'
 import { FaqSection } from '@/components/landing/faq-section'
 import { AuthTriggerButton } from '@/components/auth/trigger-button'
-import { Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, CheckCircle2 } from 'lucide-react'
 import { getRequestSession } from '@/lib/auth/request-session'
 
 export const metadata: Metadata = {
@@ -145,47 +145,33 @@ export default async function MarketingHomePage() {
       <PricingSection isLoggedIn={isLoggedIn} />
       <FaqSection />
 
-      {/* Modern High-Conversion Bottom CTA Banner */}
-      <section className="py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto w-full">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-950 p-10 sm:p-16 text-center text-white shadow-2xl border border-indigo-500/20">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
-          <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none translate-y-1/2 -translate-x-1/3"></div>
-
-          <div className="relative z-10 max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-semibold uppercase tracking-wider mb-6">
-              <Sparkles className="w-3.5 h-3.5" />
-              Get Started in Under 3 Minutes
-            </div>
-
-            <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight heading">
-              Start invoicing smarter today with Bill Matrix
+      <section aria-labelledby="signup-heading" className="px-5 pb-8 pt-3 sm:px-8 sm:pb-10 sm:pt-4">
+        <div className="mx-auto max-w-6xl rounded-3xl border border-emerald-400/15 bg-[radial-gradient(ellipse_at_top_left,#244038_0%,transparent_68%),linear-gradient(135deg,#202624,#151817)] px-4 py-6 text-center text-white shadow-[0_18px_40px_-25px_#15231c65] sm:px-8 sm:py-8">
+          <div className="mx-auto max-w-3xl">
+            <h2 id="signup-heading" className="text-balance text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
+              Start invoicing with <span className="whitespace-nowrap text-emerald-200">Invoice BizFolio</span>
             </h2>
-            
-            <p className="mt-4 text-slate-300 text-base sm:text-lg max-w-xl mx-auto leading-relaxed">
-              Create GST invoices, share them on WhatsApp and e-mail, and export filing-ready reports.
+
+            <p className="mx-auto mt-2 max-w-2xl text-pretty text-base leading-relaxed text-slate-200 sm:text-xl">
+              Create GST invoices, share them with customers, and keep your sales records ready for reporting.
             </p>
 
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <AuthTriggerButton
-                mode="signup"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-white text-indigo-950 font-bold px-8 py-4 rounded-xl hover:bg-indigo-50 transition-all shadow-xl text-base group cursor-pointer"
-              >
-                <span>Claim Free Account — No Card Needed</span>
-                <ArrowRight className="w-4 h-4 text-indigo-700 group-hover:translate-x-1 transition-transform" />
-              </AuthTriggerButton>
-            </div>
+            <AuthTriggerButton
+              mode="signup"
+              className="group mt-4 inline-flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-5 py-2.5 text-lg font-semibold text-indigo-950 shadow-sm transition-colors hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-200 sm:w-auto"
+            >
+              Create a free account
+              <ArrowRight aria-hidden="true" className="size-4 shrink-0 text-indigo-700 motion-safe:transition-transform motion-safe:group-hover:translate-x-0.5" />
+            </AuthTriggerButton>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-medium text-indigo-200">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Free forever tier
-              </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> GSTIN format validation
-              </span>
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Cancel anytime
-              </span>
-            </div>
+            <ul className="mt-3.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-sm font-medium text-slate-200">
+              {['Free forever plan', 'No credit card', 'GSTIN format validation'].map(benefit => (
+                <li key={benefit} className="inline-flex items-center gap-1.5">
+                  <CheckCircle2 aria-hidden="true" className="size-4 shrink-0 text-emerald-300" />
+                  {benefit}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>

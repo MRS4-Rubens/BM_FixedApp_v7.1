@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useActionState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
+import { InvoiceBizFolioLogo } from '@/components/brand/invoice-bizfolio-logo'
 import {
   Eye,
   EyeOff,
@@ -18,6 +19,8 @@ import { loginAction } from '@/app/(auth)/login/actions'
 import { signupAction } from '@/app/(auth)/signup/actions'
 import { SUPPORT_EMAIL } from '@/lib/config/contact'
 import { useIsClient } from '@/lib/hooks/use-is-client'
+
+const socialButtonClass = 'flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-stone-200 bg-white px-1 py-1.5 text-xs font-medium whitespace-nowrap text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 min-[400px]:flex-row min-[400px]:gap-1.5 sm:text-sm'
 
 export function AuthenticationModal() {
   const { isOpen, mode, openLogin, openSignup, closeModal } = useAuthModal()
@@ -165,7 +168,7 @@ export function AuthenticationModal() {
   return createPortal(
     <div
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-zinc-950/60 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/55 backdrop-blur-sm"
       aria-modal="true"
       role="dialog"
       aria-labelledby="auth-modal-title"
@@ -177,7 +180,7 @@ export function AuthenticationModal() {
           maxWidth: mode === 'login' ? '460px' : '520px',
           scrollbarWidth: 'none',
         }}
-        className={`relative w-full mx-auto bg-white border border-zinc-200/90 shadow-2xl rounded-3xl p-5 sm:p-7 flex flex-col items-center max-h-[92dvh] overflow-y-auto ${
+        className={`relative w-full mx-auto bg-[#fffefc] border border-stone-200 shadow-2xl rounded-2xl p-4 sm:p-5 flex flex-col items-center max-h-[92dvh] overflow-y-auto ${
           shake ? 'animate-shake' : ''
         }`}
       >
@@ -186,31 +189,24 @@ export function AuthenticationModal() {
           onClick={closeModal}
           type="button"
           aria-label="Close dialog"
-          className="absolute right-4 top-4 rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 transition cursor-pointer"
+          className="absolute right-4 top-4 rounded-full p-2 text-slate-500 hover:bg-zinc-100 hover:text-zinc-700 transition cursor-pointer"
         >
           <X className="size-5" />
         </button>
 
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center w-full mb-4">
-          <div className="flex items-center gap-2.5 mb-2">
-            <span className="flex size-8 sm:size-9 items-center justify-center rounded-xl bg-indigo-600 font-bold text-white text-base shadow-md shadow-indigo-200">
-              B
-            </span>
-            <span className="font-bold text-lg tracking-tight text-zinc-900">
-              Bill Matrix
-            </span>
-          </div>
+        <div className="flex flex-col items-center text-center w-full mb-3">
+          <InvoiceBizFolioLogo className="mb-2 w-44" />
 
           <h2
             id="auth-modal-title"
             className="text-2xl sm:text-3xl font-bold text-zinc-950 tracking-tight"
           >
-            {mode === 'login' ? 'Welcome back' : 'Create your account'}
+            {mode === 'login' ? 'Welcome back!' : 'Create your account'}
           </h2>
-          <p className="mt-1 text-sm sm:text-base text-zinc-600">
+          <p className="mt-1 text-sm sm:text-base text-slate-600">
             {mode === 'login'
-              ? 'Welcome back! Please enter your details.'
+              ? 'Sign in to your Invoice BizFolio account.'
               : 'Start your 14-day free trial. No credit card required.'}
           </p>
         </div>
@@ -235,24 +231,24 @@ export function AuthenticationModal() {
 
         {/* LOGIN FORM */}
         {mode === 'login' && (
-          <form className="w-full space-y-3.5" action={loginFormAction}>
+          <form className="w-full space-y-2.5" action={loginFormAction}>
             {/* Email Field */}
             <div>
               <label
-                className="mb-1.5 block text-sm font-semibold text-zinc-700"
+                className="mb-1.5 block text-base font-medium text-slate-900"
                 htmlFor="login-email"
               >
                 Email
               </label>
               <div className="relative flex items-center">
-                <Mail className="absolute left-3.5 size-4.5 text-zinc-400 pointer-events-none" />
+                <Mail className="absolute left-3.5 size-4.5 text-slate-500 pointer-events-none" />
                 <input
                   id="login-email"
                   type="email"
                   name="email"
                   placeholder="you@company.com"
                   style={{ paddingLeft: '2.75rem' }}
-                  className="w-full h-11 rounded-xl border border-zinc-200 bg-zinc-50/50 hover:bg-white focus:bg-white pr-3.5 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
+                  className="w-full h-11 rounded-xl border border-stone-200 bg-stone-50/70 hover:bg-white focus:bg-white pr-3.5 text-base text-zinc-900 placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
                   required
                 />
               </div>
@@ -262,43 +258,46 @@ export function AuthenticationModal() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label
-                  className="text-sm font-semibold text-zinc-700"
+                  className="text-base font-medium text-slate-900"
                   htmlFor="login-password"
                 >
                   Password
                 </label>
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}?subject=Password%20Reset%20Request%20-%20Bill%20Matrix`}
-                  className="text-sm font-medium text-indigo-600 hover:text-indigo-700 hover:underline transition"
-                >
-                  Forgot password?
-                </a>
+
               </div>
               <div className="relative flex items-center">
-                <Lock className="absolute left-3.5 size-4.5 text-zinc-400 pointer-events-none" />
+                <Lock className="absolute left-3.5 size-4.5 text-slate-500 pointer-events-none" />
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   placeholder="••••••••"
                   style={{ paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
-                  className="w-full h-11 rounded-xl border border-zinc-200 bg-zinc-50/50 hover:bg-white focus:bg-white text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
+                  className="w-full h-11 rounded-xl border border-stone-200 bg-stone-50/70 hover:bg-white focus:bg-white text-base text-zinc-900 placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-3 text-zinc-400 hover:text-zinc-700 transition cursor-pointer p-1"
+                  className="absolute right-3 text-slate-500 hover:text-zinc-700 transition cursor-pointer p-1"
                 >
                   {showPassword ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
                 </button>
+              </div>
+              <div className="mt-1.5 flex justify-end">
+                <a
+                  href={`mailto:${SUPPORT_EMAIL}?subject=Password%20Reset%20Request%20-%20Invoice%20BizFolio`}
+                  className="text-sm font-medium text-indigo-700 hover:text-indigo-900 hover:underline transition"
+                >
+                  Forgot password?
+                </a>
               </div>
             </div>
 
             {/* Remember Me */}
             <div className="flex items-center justify-between pt-0.5">
-              <label htmlFor="login-remember-me" className="flex items-center gap-2.5 text-sm text-zinc-600 select-none cursor-pointer">
+              <label htmlFor="login-remember-me" className="flex items-center gap-2.5 text-sm text-slate-600 select-none cursor-pointer">
                 <input
                   id="login-remember-me"
                   type="checkbox"
@@ -313,7 +312,7 @@ export function AuthenticationModal() {
             <button
               type="submit"
               disabled={loginPending}
-              className="w-full h-11 sm:h-12 inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-base transition-all shadow-md shadow-indigo-100 hover:shadow-lg hover:shadow-indigo-200 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99] cursor-pointer mt-1"
+              className="w-full h-11 sm:h-12 inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-base transition-all shadow-sm disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99] cursor-pointer mt-1"
             >
               {loginPending ? (
                 <span className="flex items-center gap-2">
@@ -340,7 +339,7 @@ export function AuthenticationModal() {
             </button>
 
             {/* Switch to Signup */}
-            <p className="text-center text-sm sm:text-base text-zinc-600 pt-1.5">
+            <p className="text-center text-sm sm:text-base text-slate-600 pt-1.5">
               Don&apos;t have an account?{' '}
               <button
                 type="button"
@@ -348,7 +347,7 @@ export function AuthenticationModal() {
                   e.preventDefault()
                   openSignup()
                 }}
-                className="font-bold text-indigo-600 hover:text-indigo-700 hover:underline transition cursor-pointer"
+                className="font-bold text-indigo-700 hover:text-indigo-900 hover:underline transition cursor-pointer"
               >
                 Sign up free
               </button>
@@ -358,62 +357,62 @@ export function AuthenticationModal() {
 
         {/* SIGNUP FORM */}
         {mode === 'signup' && (
-          <form className="w-full space-y-3" action={signupFormAction}>
+          <form className="w-full space-y-2.5" action={signupFormAction}>
             {/* Row 1: Owner Name */}
             <div>
               <label
-                className="mb-1 block text-sm font-semibold text-zinc-700"
+                className="mb-1 block text-base font-medium text-slate-900"
                 htmlFor="signup-owner"
               >
-                Full Name <span className="text-rose-500">*</span>
+                Full name <span className="text-rose-700">*</span>
               </label>
               <div className="relative flex items-center">
-                <User className="absolute left-3.5 size-4.5 text-zinc-400 pointer-events-none" />
+                <User className="absolute left-3.5 size-4.5 text-slate-500 pointer-events-none" />
                 <input
                   id="signup-owner"
                   type="text"
                   name="ownerName"
                   placeholder="Rajesh Mehta"
                   style={{ paddingLeft: '2.75rem' }}
-                  className="w-full h-10.5 rounded-xl border border-zinc-200 bg-zinc-50/50 hover:bg-white focus:bg-white pr-3.5 text-sm sm:text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
+                  className="w-full h-10.5 rounded-xl border border-stone-200 bg-stone-50/70 hover:bg-white focus:bg-white pr-3.5 text-base text-slate-950 placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
                   required
                 />
               </div>
             </div>
 
-            {/* Row 2: Email Address */}
+            {/* Row 2: Email address */}
             <div>
               <label
-                className="mb-1 block text-sm font-semibold text-zinc-700"
+                className="mb-1 block text-base font-medium text-slate-900"
                 htmlFor="signup-email"
               >
-                Email Address <span className="text-rose-500">*</span>
+                Email address <span className="text-rose-700">*</span>
               </label>
               <div className="relative flex items-center">
-                <Mail className="absolute left-3.5 size-4.5 text-zinc-400 pointer-events-none" />
+                <Mail className="absolute left-3.5 size-4.5 text-slate-500 pointer-events-none" />
                 <input
                   id="signup-email"
                   type="email"
                   name="email"
                   placeholder="you@company.com"
                   style={{ paddingLeft: '2.75rem' }}
-                  className="w-full h-10.5 rounded-xl border border-zinc-200 bg-zinc-50/50 hover:bg-white focus:bg-white pr-3.5 text-sm sm:text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
+                  className="w-full h-10.5 rounded-xl border border-stone-200 bg-stone-50/70 hover:bg-white focus:bg-white pr-3.5 text-base text-slate-950 placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
                   required
                 />
               </div>
             </div>
 
-            {/* Row 3: Password + Confirm Password */}
+            {/* Row 3: Password + Confirm password */}
             <div className="grid gap-3.5 sm:grid-cols-2">
               <div>
                 <label
-                  className="mb-1 block text-sm font-semibold text-zinc-700"
+                  className="mb-1 block text-base font-medium text-slate-900"
                   htmlFor="signup-pass"
                 >
-                  Password <span className="text-rose-500">*</span>
+                  Password <span className="text-rose-700">*</span>
                 </label>
                 <div className="relative flex items-center">
-                  <Lock className="absolute left-3.5 size-4.5 text-zinc-400 pointer-events-none" />
+                  <Lock className="absolute left-3.5 size-4.5 text-slate-500 pointer-events-none" />
                   <input
                     id="signup-pass"
                     type={showPassword ? 'text' : 'password'}
@@ -422,14 +421,14 @@ export function AuthenticationModal() {
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     style={{ paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
-                    className="w-full h-10.5 rounded-xl border border-zinc-200 bg-zinc-50/50 hover:bg-white focus:bg-white text-sm sm:text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
+                    className="w-full h-10.5 rounded-xl border border-stone-200 bg-stone-50/70 hover:bg-white focus:bg-white text-base text-slate-950 placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    className="absolute right-3 text-zinc-400 hover:text-zinc-700 transition cursor-pointer p-1"
+                    className="absolute right-3 text-slate-500 hover:text-zinc-700 transition cursor-pointer p-1"
                   >
                     {showPassword ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
                   </button>
@@ -438,27 +437,27 @@ export function AuthenticationModal() {
 
               <div>
                 <label
-                  className="mb-1 block text-sm font-semibold text-zinc-700"
+                  className="mb-1 block text-base font-medium text-slate-900"
                   htmlFor="signup-confirm"
                 >
-                  Confirm Password <span className="text-rose-500">*</span>
+                  Confirm password <span className="text-rose-700">*</span>
                 </label>
                 <div className="relative flex items-center">
-                  <Lock className="absolute left-3.5 size-4.5 text-zinc-400 pointer-events-none" />
+                  <Lock className="absolute left-3.5 size-4.5 text-slate-500 pointer-events-none" />
                   <input
                     id="signup-confirm"
                     type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
                     placeholder="••••••••"
                     style={{ paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
-                    className="w-full h-10.5 rounded-xl border border-zinc-200 bg-zinc-50/50 hover:bg-white focus:bg-white text-sm sm:text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
+                    className="w-full h-10.5 rounded-xl border border-stone-200 bg-stone-50/70 hover:bg-white focus:bg-white text-base text-slate-950 placeholder:text-slate-500 focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 transition"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                    className="absolute right-3 text-zinc-400 hover:text-zinc-700 transition cursor-pointer p-1"
+                    className="absolute right-3 text-slate-500 hover:text-zinc-700 transition cursor-pointer p-1"
                   >
                     {showConfirmPassword ? <EyeOff className="size-4.5" /> : <Eye className="size-4.5" />}
                   </button>
@@ -470,7 +469,7 @@ export function AuthenticationModal() {
             {passwordInput && (
               <div className="pt-0.5">
                 <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-zinc-600">Strength</span>
+                  <span className="text-slate-600">Strength</span>
                   <span className="font-bold uppercase tracking-wider text-zinc-700">
                     {strengthLabel}
                   </span>
@@ -498,13 +497,13 @@ export function AuthenticationModal() {
               />
               <label
                 htmlFor="terms"
-                className="text-xs sm:text-sm text-zinc-600 leading-normal select-none cursor-pointer"
+                className="text-sm text-slate-600 leading-normal select-none cursor-pointer"
               >
                 I agree to the{' '}
                 <Link
                   href="/terms"
                   target="_blank"
-                  className="text-indigo-600 font-medium hover:underline"
+                  className="text-indigo-700 font-medium hover:underline"
                 >
                   Terms of Service
                 </Link>{' '}
@@ -512,7 +511,7 @@ export function AuthenticationModal() {
                 <Link
                   href="/privacy"
                   target="_blank"
-                  className="text-indigo-600 font-medium hover:underline"
+                  className="text-indigo-700 font-medium hover:underline"
                 >
                   Privacy Policy
                 </Link>
@@ -523,7 +522,7 @@ export function AuthenticationModal() {
             <button
               type="submit"
               disabled={signupPending}
-              className="w-full h-10.5 sm:h-11 inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm sm:text-base transition-all shadow-md shadow-indigo-100 hover:shadow-lg hover:shadow-indigo-200 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99] cursor-pointer mt-1"
+              className="w-full h-10.5 sm:h-11 inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-sm sm:text-base transition-all shadow-sm disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99] cursor-pointer mt-1"
             >
               {signupPending ? (
                 <span className="flex items-center gap-2">
@@ -550,7 +549,7 @@ export function AuthenticationModal() {
             </button>
 
             {/* Switch to Login */}
-            <p className="text-center text-xs sm:text-sm text-zinc-600 pt-1">
+            <p className="text-center text-sm text-slate-600 pt-1">
               Already have an account?{' '}
               <button
                 type="button"
@@ -558,15 +557,76 @@ export function AuthenticationModal() {
                   e.preventDefault()
                   openLogin()
                 }}
-                className="font-bold text-indigo-600 hover:text-indigo-700 hover:underline transition cursor-pointer"
+                className="font-bold text-indigo-700 hover:text-indigo-900 hover:underline transition cursor-pointer"
               >
                 Sign in
               </button>
             </p>
           </form>
         )}
+        <SocialSignInPreview key={mode} />
       </div>
     </div>,
     document.body
+  )
+}
+
+function SocialSignInPreview() {
+  const [provider, setProvider] = useState<string | null>(null)
+  const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (dismissTimer.current !== null) clearTimeout(dismissTimer.current)
+  }, [])
+
+  function showPreview(name: string) {
+    if (dismissTimer.current !== null) clearTimeout(dismissTimer.current)
+    setProvider(name)
+    dismissTimer.current = setTimeout(() => {
+      setProvider(null)
+      dismissTimer.current = null
+    }, 5000)
+  }
+
+  return (
+    <div className="mt-3 w-full">
+      <p className="mb-2 flex items-center gap-2 text-center text-sm font-medium text-slate-600 before:h-px before:flex-1 before:bg-stone-200 after:h-px after:flex-1 after:bg-stone-200">
+        Continue Sign-in using
+      </p>
+      <div className="grid grid-cols-3 gap-1.5">
+        <button type="button" onClick={() => showPreview('Google')} className={socialButtonClass}>
+          <svg aria-hidden="true" viewBox="0 0 48 48" className="size-4 shrink-0">
+            <path fill="#4285F4" d="M43.61 24.46c0-1.36-.12-2.67-.34-3.93H24v7.44h11.02a9.42 9.42 0 0 1-4.09 6.18v5.14h6.61c3.87-3.57 6.07-8.83 6.07-14.83Z" />
+            <path fill="#34A853" d="M24 44c5.51 0 10.13-1.82 13.54-4.71l-6.61-5.14c-1.83 1.22-4.17 1.94-6.93 1.94-5.33 0-9.85-3.6-11.47-8.44H5.71v5.3A20 20 0 0 0 24 44Z" />
+            <path fill="#FBBC05" d="M12.53 27.65a12 12 0 0 1 0-7.3v-5.3H5.71a20 20 0 0 0 0 17.9l6.82-5.3Z" />
+            <path fill="#EA4335" d="M24 11.91c3 0 5.69 1.03 7.81 3.05l5.86-5.86C34.12 5.79 29.51 4 24 4A20 20 0 0 0 5.71 15.05l6.82 5.3C14.15 15.51 18.67 11.91 24 11.91Z" />
+          </svg>
+          Google
+        </button>
+        <button type="button" onClick={() => showPreview('LinkedIn')} className={socialButtonClass}>
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 shrink-0">
+            <rect width="24" height="24" rx="2" fill="#0A66C2" />
+            <path fill="#fff" d="M4 9h3.5v11H4zm1.75-5a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM10 9h3.3v1.5h.05c.46-.87 1.58-1.8 3.25-1.8 3.48 0 4.12 2.28 4.12 5.24V20h-3.45v-5.37c0-1.28-.02-2.93-1.78-2.93-1.79 0-2.06 1.4-2.06 2.84V20H10z" />
+          </svg>
+          LinkedIn
+        </button>
+        <button type="button" onClick={() => showPreview('Microsoft 365')} className={socialButtonClass}>
+          <svg aria-hidden="true" viewBox="0 0 23 23" className="size-4 shrink-0">
+            <path fill="#F25022" d="M0 0h11v11H0z" />
+            <path fill="#7FBA00" d="M12 0h11v11H12z" />
+            <path fill="#00A4EF" d="M0 12h11v11H0z" />
+            <path fill="#FFB900" d="M12 12h11v11H12z" />
+          </svg>
+          Microsoft 365
+        </button>
+      </div>
+      <div role="status">
+        {provider && (
+          <p className="mt-2 text-center text-sm leading-snug text-slate-600">
+            {provider} sign-in is coming soon. Continue with email and password.
+          </p>
+        )}
+      </div>
+    </div>
   )
 }

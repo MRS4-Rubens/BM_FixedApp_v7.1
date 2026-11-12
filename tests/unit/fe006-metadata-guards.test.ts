@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { BRAND_NAME } from '@/lib/config/brand';
 
 describe('FE-006: Production Metadata, SEO Hygiene & Security Guards', () => {
   const rootDir = process.cwd();
@@ -76,7 +77,8 @@ describe('FE-006: Production Metadata, SEO Hygiene & Security Guards', () => {
     // Asserts openGraph is defined with required fields
     expect(content).toContain('openGraph:');
     expect(content).toMatch(/type:\s*['"]website['"]/);
-    expect(content).toMatch(/siteName:\s*['"]Bill Matrix['"]/);
+    expect(content).toMatch(/siteName:\s*BRAND_NAME/);
+    expect(BRAND_NAME).toBe('Invoice BizFolio');
     expect(content).toMatch(/locale:\s*['"]en_IN['"]/);
 
     // Asserts twitter is defined with summary_large_image

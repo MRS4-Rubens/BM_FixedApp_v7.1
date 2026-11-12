@@ -2,6 +2,7 @@
 
 import type { RefObject, Dispatch, SetStateAction } from 'react'
 import Link from 'next/link'
+import { InvoiceBizFolioLogo } from '@/components/brand/invoice-bizfolio-logo'
 import { X, ChevronsUpDown, Settings, CreditCard, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { mainNav, accountNav, adminNavItem } from './nav-items'
@@ -59,24 +60,7 @@ export function MobileDrawer({
 
         {/* Brand Header with Close Button */}
         <div className="brand flex items-center justify-between border-b border-border/40 px-3.5 py-3.5 gap-2 relative z-10">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="logo flex size-8.5 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-600 font-extrabold text-white text-base shadow-[0_4px_14px_rgba(99,102,241,0.35)] border border-white/20 select-none">
-              B
-            </div>
-            <div className="flex flex-col leading-tight overflow-hidden whitespace-nowrap">
-              <div className="flex items-center gap-1">
-                <span className="text-[14.5px] font-black tracking-tight text-foreground">
-                  Bill
-                </span>
-                <span className="text-[14.5px] font-black tracking-tight bg-gradient-to-r from-indigo-500 via-purple-500 to-violet-600 bg-clip-text text-transparent">
-                  Matrix
-                </span>
-              </div>
-              <span className="text-[9px] font-extrabold text-muted-foreground uppercase tracking-[0.16em] mt-0.5">
-                GST Invoicing Suite
-              </span>
-            </div>
-          </div>
+          <InvoiceBizFolioLogo href="/dashboard" className="w-40" />
 
           <button
             type="button"

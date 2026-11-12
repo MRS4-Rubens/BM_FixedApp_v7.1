@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useId, useRef } from 'react'
 import Link from 'next/link'
-
+import { Activity as ActivityIcon, ArrowUpRight, Bell, Clock, FilePlus, FileSpreadsheet, IndianRupee, MessageCircle, Pause, Play, RefreshCw, ShieldCheck, TrendingUp } from 'lucide-react'
 
 export interface Activity {
   id: number
@@ -36,11 +36,30 @@ const baseRevenuePoints = [
   { x: 600, y: 10 }
 ]
 
+const activityColors = {
+  emerald: 'bg-emerald-50 text-emerald-700',
+  indigo: 'bg-indigo-50 text-indigo-700',
+  amber: 'bg-amber-50 text-amber-800',
+  violet: 'bg-violet-50 text-violet-700',
+}
+const quickActions = [
+  { label: 'New invoice', href: '/invoices/new', icon: FilePlus },
+  { label: 'ITR export', href: '/reports', icon: FileSpreadsheet },
+  { label: 'Share from invoices', href: '/invoices', icon: MessageCircle },
+]
+const controlStyle = 'inline-flex min-h-10 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-sm font-semibold text-slate-700 transition-colors hover:border-teal-200 hover:bg-teal-50 hover:text-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700'
+
 export function LiveDashboard() {
   const containerRef = useRef<HTMLElement | null>(null)
   const [isInView, setIsInView] = useState(false)
   const [isPageVisible, setIsPageVisible] = useState(true)
-  const isActive = isInView && isPageVisible
+  const [paused, setPaused] = useState(false)
+  const isActive = isInView && isPageVisible && !paused
+  const areaGradient = useId()
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => {
+    if (refreshTimer.current !== null) clearTimeout(refreshTimer.current)
+  }, [])
 
   useEffect(() => {
     const el = containerRef.current
@@ -175,7 +194,7 @@ export function LiveDashboard() {
         desc: dummy.desc
       }
       setActivityIdCounter(prev => prev + 1)
-      setActivities(prev => [newAct, ...prev.slice(0, 5)])
+      setActivities(prev => [newAct, ...prev.filter(activity => activity.strong !== newAct.strong)].slice(0, 4))
     }, 8000)
 
     return () => clearInterval(activityInterval)
@@ -189,286 +208,159 @@ export function LiveDashboard() {
 
     // Vary values instantly
     varyChartPoints()
-    setInvoicesToday(prev => prev + Math.floor(Math.random() * 3) - 1)
-    setRevenue(prev => parseFloat((prev + (Math.random() * 0.2 - 0.1)).toFixed(1)))
-    setFollowups(prev => prev + Math.floor(Math.random() * 3) - 1)
-    setWeekRevenue(prev => parseFloat((prev + (Math.random() * 0.3 - 0.15)).toFixed(1)))
+    setInvoicesToday(prev => Math.max(0, prev + Math.floor(Math.random() * 3) - 1))
+    setRevenue(prev => Math.max(0, parseFloat((prev + (Math.random() * 0.2 - 0.1)).toFixed(1))))
+    setFollowups(prev => Math.max(0, prev + Math.floor(Math.random() * 3) - 1))
+    setWeekRevenue(prev => Math.max(0, parseFloat((prev + (Math.random() * 0.3 - 0.15)).toFixed(1))))
 
-    setTimeout(() => {
+    if (refreshTimer.current !== null) clearTimeout(refreshTimer.current)
+    refreshTimer.current = setTimeout(() => {
       setRefreshSpin(false)
+      refreshTimer.current = null
     }, 600)
   }
 
-  // Create SVG points strings
-  const lineStr = chartPoints.map(p => `${p.x},${p.y}`).join(' ')
-  const areaStr = `0,60 ${lineStr} 600,60`
+  const linePoints = chartPoints.map(({ x, y }) => `${x},${y}`).join(' ')
+  const metrics = [
+    { label: 'Invoices today', value: invoicesToday, icon: FilePlus, pulse: pulseInvoices },
+    { label: 'Revenue today', value: `₹${revenue.toFixed(1)}L`, icon: IndianRupee, pulse: pulseRevenue },
+    { label: 'Compliance', value: 'GST ready', icon: ShieldCheck, color: 'text-emerald-700' },
+    { label: 'Follow-ups', value: followups, icon: Bell, pulse: pulseFollowups },
+    { label: 'Revenue this week', value: `₹${weekRevenue.toFixed(1)}L`, icon: TrendingUp, pulse: pulseWeekRevenue },
+  ]
 
   return (
-    <section ref={containerRef} id="dashboard" className="py-16 px-6 bg-gradient-to-b from-white to-slate-50 border-y border-zinc-100">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-10">
-          <span className="reveal in inline-block text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-full px-4 py-1.5 mb-5 tracking-wide uppercase">
-            <svg className="w-4 h-4 inline mr-1.5">
-              <use href="#bar-chart" />
-            </svg>{' '}
-            Live Demo
-          </span>
-          <h2 className="reveal in text-4xl md:text-5xl font-bold heading">
-            See Bill Matrix <span className="text-indigo-600">in action</span>
+    <section
+      ref={containerRef}
+      id="dashboard"
+      aria-labelledby="demo-heading"
+      className="scroll-mt-24 border-y border-teal-100/80 bg-linear-to-b from-white to-[#eff7f5] px-5 py-8 sm:px-8 sm:py-10"
+    >
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-5 text-center sm:mb-6">
+          <p className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-teal-100 bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-800">
+            <ActivityIcon aria-hidden="true" className="size-3.5" />
+            Live demo
+          </p>
+          <h2 id="demo-heading" className="text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-4xl">
+            See Invoice BizFolio <span className="text-teal-800">in action</span>
           </h2>
-          <p className="reveal in text-zinc-500 mt-3">
-            Every element below updates just like the real dashboard — dynamically and in real time.
+          <p className="mx-auto mt-2 max-w-xl text-pretty text-sm leading-relaxed text-slate-700 sm:text-base">
+            Watch sample invoices, revenue, and activity update in real time.
           </p>
         </div>
 
-        {/* MAIN DASHBOARD CARD */}
-        <div className="reveal in max-w-5xl mx-auto bg-white border border-zinc-200 rounded-3xl p-6 md:p-8 shadow-2xl shadow-indigo-100/50 float-slow">
-          {/* Dashboard Header */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-            <div className="flex items-center gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-xl heading">Business Snapshot</span>
-                  <span className="rounded-full bg-slate-100 border border-slate-300 text-slate-600 px-2 py-0.5 text-xs font-semibold">
-                    Sample data
-                  </span>
-                </div>
-                <div className="text-xs text-zinc-600 flex items-center gap-2 mt-0.5">
-                  <svg className="w-3.5 h-3.5">
-                    <use href="#clock" />
-                  </svg>
-                  <span>{relativeTime}</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleRefresh}
-                className="p-2 rounded-full hover:bg-indigo-50 transition group"
-                title="Refresh data"
-              >
-                <svg
-                  className={`w-5 h-5 text-zinc-400 group-hover:text-indigo-600 transition-transform duration-500 ${
-                    refreshSpin ? 'rotate-360' : ''
-                  }`}
-                  style={{ transform: refreshSpin ? 'rotate(360deg)' : undefined, transition: refreshSpin ? 'transform 0.6s' : undefined }}
-                >
-                  <use href="#refresh" />
-                </svg>
-              </button>
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-4 py-2 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live
-              </div>
-            </div>
-          </div>
-
-          {/* KPI Cards Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-6">
-            <div className="bg-gradient-to-br from-slate-50 to-indigo-50 border border-slate-200 rounded-2xl p-4 text-center hover:border-indigo-300 transition-all group">
-              <svg className="w-5 h-5 text-indigo-400 mx-auto mb-1">
-                <use href="#invoice" />
-              </svg>
-              <div
-                className={`text-2xl md:text-3xl font-bold heading text-zinc-800 ${
-                  pulseInvoices ? 'scale-105 opacity-80' : 'live-value'
-                } transition-all duration-300`}
-              >
-                {invoicesToday}
-              </div>
-              <div className="text-xs text-zinc-500 mt-1.5 font-medium">Invoices Today</div>
-            </div>
-            <div className="bg-gradient-to-br from-slate-50 to-violet-50 border border-slate-200 rounded-2xl p-4 text-center hover:border-violet-300 transition-all group">
-              <svg className="w-5 h-5 text-violet-400 mx-auto mb-1">
-                <use href="#dollar" />
-              </svg>
-              <div
-                className={`text-2xl md:text-3xl font-bold heading text-zinc-800 ${
-                  pulseRevenue ? 'scale-105 opacity-80' : 'live-value'
-                } transition-all duration-300`}
-              >
-                ₹{revenue}L
-              </div>
-              <div className="text-xs text-zinc-500 mt-1.5 font-medium">Revenue</div>
-            </div>
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 text-center hover:border-emerald-400 transition-all group">
-              <svg className="w-5 h-5 text-emerald-500 mx-auto mb-1">
-                <use href="#shield" />
-              </svg>
-              <div className="text-xl md:text-2xl font-bold heading text-emerald-700">GST Ready</div>
-              <div className="text-xs text-zinc-500 mt-1.5 font-medium">Compliance</div>
-            </div>
-            <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 text-center hover:border-amber-400 transition-all group">
-              <svg className="w-5 h-5 text-amber-500 mx-auto mb-1">
-                <use href="#bell" />
-              </svg>
-              <div
-                className={`text-2xl md:text-3xl font-bold heading text-amber-800 ${
-                  pulseFollowups ? 'scale-105 opacity-80' : 'live-value'
-                } transition-all duration-300`}
-              >
-                {followups}
-              </div>
-              <div className="text-xs text-zinc-500 mt-1.5 font-medium">Follow-ups</div>
-            </div>
-            <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-slate-50 to-rose-50 border border-slate-200 rounded-2xl p-4 text-center hover:border-rose-300 transition-all group">
-              <svg className="w-5 h-5 text-rose-400 mx-auto mb-1">
-                <use href="#trending-up" />
-              </svg>
-              <div
-                className={`text-2xl md:text-3xl font-bold heading text-zinc-800 ${
-                  pulseWeekRevenue ? 'scale-105 opacity-80' : 'live-value'
-                } transition-all duration-300`}
-              >
-                ₹{weekRevenue}L
-              </div>
-              <div className="text-xs text-zinc-500 mt-1.5 font-medium">This Week</div>
-            </div>
-          </div>
-
-          {/* Revenue Chart (Interactive sparkline) */}
-          <div className="bg-gradient-to-r from-indigo-50 via-violet-50 to-pink-50 rounded-2xl p-5 mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold text-zinc-600 heading">Revenue Trend (Today)</span>
-              <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
-                <svg className="w-4 h-4">
-                  <use href="#trending-up" />
-                </svg>{' '}
-                +12.4%
-              </span>
-            </div>
-            <svg viewBox="0 0 600 80" className="w-full h-20">
-              {/* Grid lines */}
-              <line x1="0" y1="60" x2="600" y2="60" stroke="#e5e7eb" strokeWidth="0.5" strokeDasharray="4" />
-              <line x1="0" y1="30" x2="600" y2="30" stroke="#e5e7eb" strokeWidth="0.5" strokeDasharray="4" />
-              {/* Animated line */}
-              <polyline
-                id="revenueLine"
-                fill="none"
-                stroke="url(#chartGrad)"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                points={lineStr}
-                className="transition-all duration-1000 ease-in-out"
-              />
-              {/* Area under line */}
-              <polygon
-                id="revenueArea"
-                fill="url(#areaGrad)"
-                opacity="0.3"
-                points={areaStr}
-                className="transition-all duration-1000 ease-in-out"
-              />
-              <defs>
-                <linearGradient id="chartGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#6366f1" />
-                  <stop offset="50%" stopColor="#a855f7" />
-                  <stop offset="100%" stopColor="#ec4899" />
-                </linearGradient>
-                <linearGradient id="areaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#ec4899" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <div className="flex justify-between text-xs text-zinc-600 mt-1">
-              <span>8 AM</span>
-              <span>10 AM</span>
-              <span>12 PM</span>
-              <span>2 PM</span>
-              <span>4 PM</span>
-              <span>6 PM</span>
-              <span>Now</span>
-            </div>
-          </div>
-
-          {/* Activity Feed + Quick Actions */}
-          <div className="grid md:grid-cols-3 gap-4">
-            {/* Recent Activity Feed */}
-            <div className="md:col-span-2 bg-zinc-50 rounded-2xl p-5">
-              <h4 className="text-sm font-semibold heading text-zinc-700 mb-4 flex items-center gap-2">
-                <svg className="w-4 h-4 text-indigo-500">
-                  <use href="#bell" />
-                </svg>{' '}
-                Recent Activity
-              </h4>
-              <div className="space-y-3" id="activityFeed">
-                {activities.map(activity => (
-                  <div
-                    key={activity.id}
-                    className="flex items-start gap-3 text-sm activity-item transform translate-y-0 opacity-100 transition-all duration-500"
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                        activity.color === 'emerald'
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : activity.color === 'indigo'
-                          ? 'bg-indigo-100 text-indigo-600'
-                          : activity.color === 'amber'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-violet-100 text-violet-600'
-                      }`}
-                    >
-                      <svg className="w-4 h-4">
-                        <use href={activity.icon} />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-zinc-700">{activity.before}<span className="font-semibold text-zinc-800">{activity.strong}</span>{activity.after}</p>
-                      <p className="text-xs text-zinc-600">
-                        {activity.desc} · {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Stats & Actions */}
-            <div className="space-y-4">
-              <div className="bg-indigo-50 rounded-2xl p-5">
-                <h4 className="text-sm font-semibold heading text-indigo-700 mb-3">Quick Actions</h4>
-                <div className="space-y-2">
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 transition bg-white rounded-xl p-2.5 shadow-sm"
-                  >
-                    <svg className="w-4 h-4">
-                      <use href="#invoice" />
-                    </svg>{' '}
-                    New Invoice
-                  </Link>
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 transition bg-white rounded-xl p-2.5 shadow-sm"
-                  >
-                    <svg className="w-4 h-4">
-                      <use href="#lightning" />
-                    </svg>{' '}
-                    ITR Export
-                  </Link>
-                  <Link
-                    href="/dashboard"
-                    className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 transition bg-white rounded-xl p-2.5 shadow-sm"
-                  >
-                    <svg className="w-4 h-4">
-                      <use href="#chat-bubble" />
-                    </svg>{' '}
-                    WhatsApp Share
-                  </Link>
-                </div>
-              </div>
-              <div className="bg-amber-50 rounded-2xl p-5 relative overflow-hidden">
-                <h4 className="text-sm font-semibold heading text-amber-700 mb-2">Payment Due</h4>
-                <div className="text-2xl font-bold text-zinc-800 heading">₹1.2L</div>
-                <p className="text-xs text-zinc-500">6 invoices pending</p>
-                <span className="absolute -bottom-2 -right-2 text-5xl opacity-10">
-                  <svg className="w-16 h-16">
-                    <use href="#dollar" />
-                  </svg>
+        <div className="rounded-3xl border border-teal-100 bg-white p-3 shadow-[0_20px_55px_-40px_#134e4a45] sm:p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 border-b border-slate-200 pb-3 sm:mb-4">
+            <div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h3 className="text-lg font-bold tracking-tight text-slate-950 sm:text-xl">Business snapshot</h3>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
+                  Sample data
                 </span>
               </div>
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-600">
+                <Clock aria-hidden="true" className="size-3.5" />
+                Last refreshed: {relativeTime.toLowerCase()}
+              </p>
             </div>
+
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <span role="status" className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${paused ? 'bg-slate-100 text-slate-700' : 'bg-emerald-50 text-emerald-800'}`}>
+                <span aria-hidden="true" className={`size-1.5 rounded-full ${paused ? 'bg-slate-500' : 'bg-emerald-600'}`} />
+                {paused ? 'Paused' : 'Live'}
+              </span>
+              <button type="button" onClick={() => setPaused(value => !value)} className={controlStyle}>
+                {paused ? <Play aria-hidden="true" className="size-3.5" /> : <Pause aria-hidden="true" className="size-3.5" />}
+                {paused ? 'Resume' : 'Pause'}
+              </button>
+              <button type="button" onClick={handleRefresh} className={controlStyle}>
+                <RefreshCw aria-hidden="true" className={`size-3.5 motion-safe:transition-transform motion-safe:duration-500 ${refreshSpin ? 'motion-safe:rotate-180' : ''}`} />
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <dl className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-5 sm:mb-4 sm:gap-2.5">
+            {metrics.map(({ label, value, icon: Icon, color, pulse }, index) => (
+              <div key={label} className={`min-w-0 rounded-xl border border-slate-200 bg-slate-50/70 px-2.5 py-2 sm:px-3 sm:py-2.5 ${index === metrics.length - 1 ? 'col-span-2 md:col-span-1' : ''}`}>
+                <dt className="flex items-center gap-1.5 text-xs font-medium leading-snug text-slate-700 sm:text-sm">
+                  <Icon aria-hidden="true" className={`size-3.5 shrink-0 ${color ?? 'text-teal-700'}`} />
+                  {label}
+                </dt>
+                <dd className={`mt-1 text-xl font-bold leading-tight tracking-tight tabular-nums transition-colors sm:text-2xl ${color ?? (pulse ? 'text-teal-800' : 'text-slate-950')}`}>
+                  {value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="grid gap-3 lg:grid-cols-[1.25fr_1fr] sm:gap-4">
+            <figure className="flex min-w-0 flex-col rounded-2xl border border-teal-100 bg-linear-to-b from-teal-50/70 to-white p-3 sm:p-4">
+              <figcaption className="flex flex-wrap items-baseline justify-between gap-1">
+                <span className="text-base font-bold text-slate-950">Revenue trend</span>
+                <span className="text-xs font-medium text-slate-600">Today</span>
+              </figcaption>
+              <svg aria-hidden="true" viewBox="0 0 600 80" preserveAspectRatio="none" className="mt-3 min-h-24 w-full flex-1 sm:min-h-32">
+                <defs>
+                  <linearGradient id={areaGradient} x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#0d9488" stopOpacity="0.28" />
+                    <stop offset="100%" stopColor="#0d9488" stopOpacity="0.02" />
+                  </linearGradient>
+                </defs>
+                {[18, 38, 58, 78].map(y => (
+                  <line key={y} x1="0" y1={y} x2="600" y2={y} stroke="#b8dcd6" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" />
+                ))}
+                <polygon fill={`url(#${areaGradient})`} points={`0,80 ${linePoints} 600,80`} />
+                <polyline fill="none" stroke="#0f766e" strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" points={linePoints} />
+              </svg>
+              <div aria-hidden="true" className="mt-2 flex justify-between text-xs text-slate-600">
+                <span>8 AM</span>
+                <span>10 AM</span>
+                <span>Noon</span>
+                <span>2 PM</span>
+                <span>4 PM</span>
+                <span>6 PM</span>
+                <span>Now</span>
+              </div>
+            </figure>
+
+            <div className="min-w-0 rounded-2xl border border-slate-200 p-3 sm:p-4">
+              <h4 className="mb-1 text-base font-bold text-slate-950">Recent activity</h4>
+              <ul id="activityFeed" className="divide-y divide-slate-100">
+                {activities.map(activity => (
+                  <li key={activity.id} className="flex items-center gap-2 py-1.5 text-sm leading-snug">
+                    <span className={`grid size-7 shrink-0 place-items-center rounded-lg ${activityColors[activity.color]}`}>
+                      <svg aria-hidden="true" className="size-3.5">
+                        <use href={activity.icon} />
+                      </svg>
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-zinc-700">{activity.before}<span className="font-semibold text-zinc-800">{activity.strong}</span>{activity.after}</p>
+                      <p className="mt-0.5 text-xs text-slate-600">{activity.desc} · {activity.time}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-3 grid gap-2.5 sm:mt-4 sm:gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-teal-100 bg-teal-50/60 p-2.5">
+              <h4 className="basis-full px-1 text-sm font-bold text-teal-950 sm:basis-auto">Quick actions</h4>
+              {quickActions.map(({ label, href, icon: Icon }) => (
+                <Link key={href} href={href} className={controlStyle}>
+                  <Icon aria-hidden="true" className="size-3.5 text-teal-800" />
+                  {label}
+                  <ArrowUpRight aria-hidden="true" className="size-3 text-teal-800" />
+                </Link>
+              ))}
+            </div>
+            <dl className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 rounded-xl border border-amber-200/70 bg-amber-50 px-3 py-2.5 lg:items-center">
+              <dt className="text-sm font-semibold text-amber-900">Payment due</dt>
+              <dd className="text-lg font-bold leading-tight tabular-nums text-slate-950">₹1.2L</dd>
+              <dd className="text-xs text-slate-700">6 invoices pending</dd>
+            </dl>
           </div>
         </div>
       </div>

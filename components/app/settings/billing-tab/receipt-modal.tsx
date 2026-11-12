@@ -42,7 +42,7 @@ export function ReceiptModal({
             <div className="inline-flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-extrabold text-lg mb-2 shadow-xs">
               B
             </div>
-            <h4 className="text-lg font-extrabold text-slate-900 font-heading">BILL MATRIX</h4>
+            <h4 className="text-lg font-extrabold text-slate-900 font-heading">INVOICE BIZFOLIO</h4>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
               Subscription Payment Voucher
             </p>

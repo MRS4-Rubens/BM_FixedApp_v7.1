@@ -55,7 +55,7 @@ const getPageTitleAndPlaceholder = (pathname: string): { title: string; placehol
   if (pathname.startsWith('/admin')) {
     return { title: 'Admin Console', placeholder: 'Search platform records, businesses, UTRs...' }
   }
-  return { title: 'Bill Matrix', placeholder: 'Search...' }
+  return { title: 'Invoice BizFolio', placeholder: 'Search...' }
 }
 
 export function AppTopbar() {
@@ -225,7 +225,7 @@ export function AppTopbar() {
 
                 {/* 2. Direct Email Inquiries */}
                 <a
-                  href={`mailto:${SUPPORT_EMAIL}?subject=Support%20Request%20-%20Bill%20Matrix`}
+                  href={`mailto:${SUPPORT_EMAIL}?subject=Support%20Request%20-%20Invoice%20BizFolio`}
                   onClick={() => setHelpOpen(false)}
                   className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-foreground/80 hover:text-foreground hover:bg-accent/80 transition-all group cursor-pointer border border-transparent hover:border-border/60"
                 >

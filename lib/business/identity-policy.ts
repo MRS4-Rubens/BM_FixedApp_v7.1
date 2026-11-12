@@ -40,7 +40,7 @@ export function isGstinUniqueViolation(error: unknown): boolean {
 }
 
 export function buildGstinTakenMessage(): string {
-  return 'This GSTIN is already registered on Bill Matrix. If you own it, contact support with proof of ownership.';
+  return 'This GSTIN is already registered on Invoice BizFolio. If you own it, contact support with proof of ownership.';
 }
 
 export function buildIdentityLockedMessage(supportEmail: string): string {

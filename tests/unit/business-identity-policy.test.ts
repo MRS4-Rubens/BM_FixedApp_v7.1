@@ -102,7 +102,7 @@ describe('AUTH-004: Business Identity Policy Unit Tests', () => {
   describe('message builders', () => {
     it('builds canonical duplicate GSTIN message', () => {
       expect(buildGstinTakenMessage()).toBe(
-        'This GSTIN is already registered on Bill Matrix. If you own it, contact support with proof of ownership.',
+        'This GSTIN is already registered on Invoice BizFolio. If you own it, contact support with proof of ownership.',
       );
     });
 
