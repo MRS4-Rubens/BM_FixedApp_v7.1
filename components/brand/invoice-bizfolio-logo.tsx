@@ -1,4 +1,3 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { BRAND_NAME } from '@/lib/config/brand'
 import { cn } from '@/lib/utils'
@@ -15,12 +14,15 @@ export function InvoiceBizFolioLogo({ variant = 'compact', className, href, deco
   href?: '/' | '/dashboard'
   decorative?: boolean
 }) {
+  // Plain <img> on purpose (OPT-003: no next/image in this project). Static SVGs need no
+  // optimisation; width/height reserve the space so the logo causes no layout shift.
   const logo = (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       {...logos[variant]}
       alt={decorative || href ? '' : BRAND_NAME}
+      decoding="async"
       className={cn('block h-auto max-w-full object-contain', className)}
-      unoptimized
     />
   )
 

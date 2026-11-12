@@ -19,6 +19,8 @@ interface LintBaseline {
 interface LintTotals {
   errors: number;
   warnings: number;
+  /** One line per problem ("file:line rule message"), printed when the ratchet fails. */
+  problems: string[];
 }
 
 const BASELINE_PATH = join(process.cwd(), 'scripts', 'ci', 'lint-baseline.json');
@@ -61,14 +63,21 @@ function runEslint(): LintTotals {
   }
   let errors = 0;
   let warnings = 0;
+  const problems: string[] = [];
   for (const file of parsed as unknown[]) {
     if (!isRecord(file) || !isNonNegativeInteger(file.errorCount) || !isNonNegativeInteger(file.warningCount)) {
       throw new Error('Unexpected ESLint result entry shape.');
     }
     errors += file.errorCount;
     warnings += file.warningCount;
+    const filePath = typeof file.filePath === 'string' ? file.filePath.replace(process.cwd(), '.') : '?';
+    for (const message of Array.isArray(file.messages) ? file.messages : []) {
+      if (!isRecord(message)) continue;
+      const level = message.severity === 2 ? 'error' : 'warning';
+      problems.push(`${filePath}:${String(message.line ?? '?')} ${level} ${String(message.ruleId ?? '(no rule)')} ${String(message.message ?? '')}`);
+    }
   }
-  return { errors, warnings };
+  return { errors, warnings, problems };
 }
 
 function main(): number {
@@ -79,12 +88,13 @@ function main(): number {
 
   if (current.errors > baseline.errors || current.warnings > baseline.warnings) {
     console.error('\nFAIL: lint problems increased above the baseline. Fix the new problems (do not raise the baseline).');
+    console.error(current.problems.slice(0, 50).join('\n'));
     return 1;
   }
 
   const improved = current.errors < baseline.errors || current.warnings < baseline.warnings;
   if (improved && UPDATE_MODE) {
-    writeFileSync(BASELINE_PATH, `${JSON.stringify(current, null, 2)}\n`);
+    writeFileSync(BASELINE_PATH, `${JSON.stringify({ errors: current.errors, warnings: current.warnings }, null, 2)}\n`);
     console.log('\nBaseline lowered. Commit scripts/ci/lint-baseline.json.');
   } else if (improved) {
     console.log('\nPASS (improved). Run `pnpm lint:ratchet --update` and commit the lowered baseline.');

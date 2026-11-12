@@ -6,15 +6,16 @@ import { useEffect, useRef, useState } from 'react'
 import { useAuthModal } from '@/components/auth/auth-modal-context'
 
 const benefits = ['Free forever plan', 'No credit card', 'Setup in 5 minutes']
-const sampleMetrics = [
-  { target: 10000, prefix: '', suffix: '+', label: 'Businesses', color: 'text-stone-900', decimals: 0 },
-  { target: 500, prefix: '₹', suffix: 'Cr+', label: 'Invoiced', color: 'text-stone-900', decimals: 0 },
-  { target: 99.9, prefix: '', suffix: '%', label: 'Compliance', color: 'text-emerald-700', decimals: 1 },
+// Product facts only (never usage numbers we cannot prove). Each one is checked by
+// tests/unit/landing-trust-guards.test.ts against the code it describes.
+const productFacts = [
+  { target: 0, prefix: '₹', label: 'To start (free plan)', color: 'text-stone-900' },
+  { target: 36, prefix: '', label: 'States & UTs covered', color: 'text-stone-900' },
+  { target: 4, prefix: '', label: 'GST & ITR Excel reports', color: 'text-emerald-700' },
 ]
-const wholeNumber = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 })
 const focusRing = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-indigo-600'
 
-function SampleMetrics() {
+function ProductFacts() {
   const strip = useRef<HTMLDivElement>(null)
   const [progress, setProgress] = useState(1)
 
@@ -48,18 +49,17 @@ function SampleMetrics() {
 
   return (
     <div ref={strip} className="mt-4 max-w-lg rounded-xl border border-stone-200 bg-white/80">
-      <p className="px-2 pt-2 text-center text-xs font-medium text-slate-600">Illustrative figures</p>
-      <dl className="grid grid-cols-3 divide-x divide-stone-200 pb-3 pt-2">
-        {sampleMetrics.map(({ target, prefix, suffix, label, color, decimals }) => {
-          const current = decimals ? (target * progress).toFixed(decimals) : wholeNumber.format(target * progress)
-          const total = decimals ? target.toFixed(decimals) : wholeNumber.format(target)
+      <dl className="grid grid-cols-3 divide-x divide-stone-200 py-3">
+        {productFacts.map(({ target, prefix, label, color }) => {
+          // Whole numbers only, so the count-up never shows odd in-between values.
+          const current = Math.round(target * progress)
 
           return (
             <div key={label} className="flex flex-col gap-1 px-1 text-center">
               <dt className="text-sm leading-tight font-medium text-slate-700">{label}</dt>
               <dd className={`order-first whitespace-nowrap text-[clamp(1rem,5vw,1.875rem)] leading-none font-bold tracking-tight tabular-nums ${color}`}>
-                <span aria-hidden="true">{prefix}{current}{suffix}</span>
-                <span className="sr-only">{prefix}{total}{suffix}</span>
+                <span aria-hidden="true">{prefix}{current}</span>
+                <span className="sr-only">{prefix}{target}</span>
               </dd>
             </div>
           )
@@ -167,7 +167,7 @@ export function HeroSection() {
             <span className="absolute inset-0 rounded-full bg-emerald-400/75 motion-safe:animate-[ping_1.4s_ease-out_3_forwards] motion-reduce:hidden" />
             <span className="relative size-2 rounded-full bg-emerald-600 shadow-[0_0_8px_#10b981a6]" />
           </span>
-          GSTR-1 auto-export is live
+          GSTR-1 Excel export is live
         </p>
       </div>
       <div className="mx-auto grid max-w-6xl gap-7 lg:grid-cols-[1.18fr_1fr] lg:items-end lg:gap-8">
@@ -213,7 +213,7 @@ export function HeroSection() {
             ))}
           </ul>
 
-          <SampleMetrics />
+          <ProductFacts />
         </div>
 
         <InvoicePreview />

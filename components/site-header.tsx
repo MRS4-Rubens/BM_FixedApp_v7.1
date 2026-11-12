@@ -29,8 +29,8 @@ export function SiteHeader({ scrolled }: SiteHeaderProps) {
       id="nav"
       className={`fixed top-0 inset-x-0 z-50 transition-[background-color,box-shadow] duration-300 ${
         scrolled
-          ? 'bg-[#fcfaf6]/95 backdrop-blur-xl shadow-[0_4px_16px_#2925240d] border-b border-stone-200 py-2.5'
-          : 'bg-[#fcfaf6]/90 backdrop-blur-xl border-b border-stone-200/70 py-2.5'
+          ? 'bg-[#fcfaf6f2] backdrop-blur-xl shadow-[0_4px_16px_#2925240d] border-b border-stone-200 py-2.5'
+          : 'bg-[#fcfaf6e6] backdrop-blur-xl border-b border-stone-200/70 py-2.5'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
@@ -89,7 +89,7 @@ export function SiteHeader({ scrolled }: SiteHeaderProps) {
             onClick={openSignup}
             className="group inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg border border-indigo-800/20 bg-indigo-700 px-3.5 text-base font-semibold text-white shadow-[inset_0_1px_0_#ffffff26,0_3px_8px_#3730a325] transition-colors hover:bg-indigo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer"
           >
-            <span>Start Free Trial</span>
+            <span>Start free</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
@@ -107,7 +107,7 @@ export function SiteHeader({ scrolled }: SiteHeaderProps) {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="xl:hidden fixed inset-x-4 top-16 max-h-[calc(100dvh-5rem)] overflow-y-auto bg-[#fcfaf6]/95 backdrop-blur-2xl border border-slate-200 rounded-2xl p-3 shadow-xl space-y-2 z-50 animate-fadeIn">
+        <div className="xl:hidden fixed inset-x-4 top-16 max-h-[calc(100dvh-5rem)] overflow-y-auto bg-[#fcfaf6f2] backdrop-blur-2xl border border-slate-200 rounded-2xl p-3 shadow-xl space-y-2 z-50 animate-fadeIn">
           <div className="space-y-1">
             <Link
               href="/#features"
@@ -176,7 +176,7 @@ export function SiteHeader({ scrolled }: SiteHeaderProps) {
               }}
               className="w-full text-center py-3.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-base shadow-sm cursor-pointer flex items-center justify-center gap-2"
             >
-              <span>Get Started Free</span>
+              <span>Start free</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

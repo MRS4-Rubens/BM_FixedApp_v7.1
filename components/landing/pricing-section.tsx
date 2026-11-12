@@ -34,7 +34,6 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
   const professionalPlan = PLAN_CATALOG.professional
 
   const essPrice = formatPlanPrice('essentials', cycle)
-  const proPrice = formatPlanPrice('professional', cycle)
 
   return (
     <section id="pricing" aria-labelledby="pricing-heading" className="scroll-mt-24 px-5 py-8 sm:px-8 sm:py-10 relative overflow-hidden">
@@ -160,22 +159,17 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
           {/* Plan 3: Professional */}
           <div className="reveal in card-hover bg-white border border-zinc-200 rounded-2xl p-4 lg:p-5 flex flex-col justify-between hover:border-zinc-300 relative">
             <div>
-              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                <div className="font-semibold text-zinc-500 text-sm uppercase tracking-wide">
-                  {professionalPlan.name}
-                </div>
-                <span className="text-xs font-semibold bg-zinc-100 text-zinc-600 border border-zinc-200 px-1.5 py-0.5 rounded-md">
+              <div className="font-semibold text-zinc-500 text-sm uppercase tracking-wide">
+                {professionalPlan.name}
+              </div>
+              {/* Not on sale yet (purchasable: false), so no price is shown. */}
+              <div className="mt-2 flex items-baseline gap-1">
+                <span className="text-5xl font-bold heading text-zinc-900">
                   Coming soon
                 </span>
               </div>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-5xl font-bold heading text-zinc-900">
-                  {proPrice.headline}
-                </span>
-                <span className="text-zinc-600 text-base">/mo</span>
-              </div>
               <p className="text-zinc-600 text-sm mt-1.5">
-                {proPrice.note}
+                Price announced at launch
               </p>
               <div className="border-t border-zinc-100 my-3.5"></div>
               <ul className="space-y-2 text-zinc-700 text-base leading-snug">

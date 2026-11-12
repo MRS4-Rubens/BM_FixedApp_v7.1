@@ -43,7 +43,9 @@ export class AuthModal {
       .filter({ has: this.loginEmailInput })
       .locator('button[type="submit"]');
 
-    this.statusNotice = page.locator('div[role="status"]');
+    // The modal has two live regions: the form notice and the (normally empty) social-login
+    // preview message. Only a status region with text is the notice we assert on.
+    this.statusNotice = page.locator('div[role="status"]').filter({ hasText: /\S/ });
     this.errorBanner = page.locator('div.text-rose-700');
   }
 

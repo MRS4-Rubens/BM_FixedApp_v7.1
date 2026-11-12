@@ -34,7 +34,7 @@ export default function MarketingLayout({
 
         {/* STICKY MOBILE CTA */}
         <div
-          className={`fixed bottom-0 inset-x-0 md:hidden bg-[#fcfaf6]/95 backdrop-blur-xl border-t border-stone-200 p-4 transition-transform duration-500 z-40 ${
+          className={`fixed bottom-0 inset-x-0 md:hidden bg-[#fcfaf6f2] backdrop-blur-xl border-t border-stone-200 p-4 transition-transform duration-500 z-40 ${
             showStickyCta ? 'translate-y-0' : 'translate-y-full'
           }`}
         >
