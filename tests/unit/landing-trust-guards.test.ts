@@ -58,6 +58,16 @@ describe('Landing trust pass: header, footer and pricing', () => {
   })
 })
 
+describe('Rebrand: customer-facing documents carry no old domain', () => {
+  it('free-tier invoice watermark names the brand without the old billmatrix.in domain', () => {
+    for (const n of [1, 2, 3, 4]) {
+      const template = read(`components/app/invoices/templates/template-${n}.tsx`)
+      expect(template, `template-${n}`).not.toMatch(/billmatrix\.in/i)
+      expect(template, `template-${n}`).toContain('Generated via Invoice BizFolio (Free Tier)')
+    }
+  })
+})
+
 describe('Landing trust pass: savings calculator maths', () => {
   it('saves (manual minutes - 1) per invoice, priced at the visitor\'s own hourly cost', () => {
     expect(MINUTES_PER_INVOICE_IN_APP).toBe(1)

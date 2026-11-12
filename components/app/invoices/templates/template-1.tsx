@@ -361,7 +361,7 @@ export function InvoiceTemplate1({ invoice, businessStateCode, hasWatermark, dis
       {hasWatermark && (
         <div className="mt-2 pt-1 border-t border-slate-200 text-center select-none print:mt-1">
           <p className="text-[9px] font-medium text-slate-400 tracking-wider">
-            Generated via Invoice BizFolio (Free Tier) — www.billmatrix.in
+            Generated via Invoice BizFolio (Free Tier)
           </p>
         </div>
       )}

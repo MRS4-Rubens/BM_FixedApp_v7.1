@@ -24,8 +24,7 @@ export default async function Image() {
         backgroundColor: '#fcfaf6',
         padding: '80px',
       }}>
-        {/* ImageResponse embeds the PNG bytes directly into the preview. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/* ImageResponse embeds the PNG bytes directly into the preview (no-img-element is off for this file in eslint.config.mjs). */}
         <img src={logoSource} alt="" width={840} height={174} />
         <div style={{ color: '#292524', fontSize: 35, marginTop: 24 }}>
           {BRAND_TAGLINE}
