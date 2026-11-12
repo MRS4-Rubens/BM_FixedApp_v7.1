@@ -72,12 +72,12 @@ const sections = [
     id: 'retention', title: 'Retention, erasure and legal holds',
     body: <>
       <ul>
-        <li><strong>Statutory and transaction records.</strong> Invoice and credit-note records, payment evidence or related personal details may need to be kept to meet applicable accounting, tax, audit or legal obligations. A valid hold, proceeding or investigation may extend retention. Keeping a statutory copy does not require keeping unrelated profile information indefinitely.</li>
+        <li><strong>Statutory and transaction records.</strong> Invoices, credit notes, payment records and the business and customer details shown on them are kept for at least 8 years after the end of the financial year they belong to, as Indian GST, income-tax and company law require. A valid hold, proceeding or investigation may extend retention. Keeping a statutory copy does not require keeping unrelated profile information indefinitely.</li>
         <li><strong>Account and operational data.</strong> Retention depends on the service purpose, support or security needs, unresolved disputes, legal duties and the applicable provider systems. On a valid erasure request, we assess which data can be erased, which data must be retained, and whether anonymisation is appropriate and permitted. Backup copies may remain subject to restricted access until ordinary expiry or lawful removal.</li>
         <li><strong>Use of retained data.</strong> Information retained for a legal or security reason may still be used for that purpose. Retention of Invoice BizFolio’s own records is separate from your business’s duty to maintain its own books and documents.</li>
       </ul>
       <p>Closing a workspace or withdrawing consent does not automatically erase every invoice, transaction record, backup or audit log.</p>
-      <p><strong>Post-closure deletion schedule</strong> [TO BE CONFIRMED BEFORE PRODUCTION LAUNCH]. <strong>Backup retention</strong> [BACKUP RETENTION PERIOD TO BE FINALIZED].</p>
+      <p><strong>Post-closure deletion schedule.</strong> Data that is not a statutory record (for example your login account, team members, product catalogue, customers that never appeared on an invoice, logo and subscription payment screenshots) is erased within 30 days after your workspace is closed. <strong>Backup retention</strong> [BACKUP RETENTION PERIOD TO BE FINALIZED].</p>
     </>,
   },
   {

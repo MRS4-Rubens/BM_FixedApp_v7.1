@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Calculator, Sparkles, ArrowRight } from 'lucide-react'
 import { useAuthModal } from '@/components/auth/auth-modal-context'
+import { estimateSavings, MINUTES_PER_INVOICE_IN_APP } from './savings-estimate'
 
 const invoicePresets = [
   { value: 20, label: '20', accessibleLabel: '20 invoices per month' },
@@ -14,6 +15,12 @@ const timePresets = [
   { value: 5, label: '5 min (Templates)', accessibleLabel: '5 minutes per invoice' },
   { value: 15, label: '15 min (Excel/Word)', accessibleLabel: '15 minutes per invoice' },
   { value: 30, label: '30 min (Complex Math)', accessibleLabel: '30 minutes per invoice' },
+]
+const ratePresets = [
+  { value: 100, label: '₹100', accessibleLabel: '₹100 per hour' },
+  { value: 500, label: '₹500', accessibleLabel: '₹500 per hour' },
+  { value: 1000, label: '₹1,000', accessibleLabel: '₹1,000 per hour' },
+  { value: 1500, label: '₹1,500', accessibleLabel: '₹1,500 per hour' },
 ]
 
 interface PresetSliderProps {
@@ -68,15 +75,14 @@ function PresetSlider({ label, presets, step, value, onChange }: PresetSliderPro
 export function CalculatorSection() {
   const [invoicesCount, setInvoicesCount] = useState<number>(150)
   const [minutesPerInvoice, setMinutesPerInvoice] = useState<number>(12)
+  const [hourlyRate, setHourlyRate] = useState<number>(300)
   const { openSignup } = useAuthModal()
 
-  // Invoice BizFolio takes ~45 seconds (0.75 min) per invoice
-  const currentTotalHours = (invoicesCount * minutesPerInvoice) / 60
-  const billMatrixHours = (invoicesCount * 0.75) / 60
-  const hoursSavedMonthly = Math.max(1, Math.round(currentTotalHours - billMatrixHours))
-  
-  // Assuming ₹450/hr human admin cost + CA reconciliation savings
-  const annualSavings = Math.round(hoursSavedMonthly * 12 * 450 + invoicesCount * 18)
+  const { hoursSavedMonthly, annualSavingsRupees } = estimateSavings({
+    invoicesPerMonth: invoicesCount,
+    manualMinutesPerInvoice: minutesPerInvoice,
+    hourlyRateRupees: hourlyRate,
+  })
 
   return (
     <section id="calculator" className="py-10 sm:py-12 px-4 sm:px-6 lg:px-8 bg-neutral-900 text-white relative overflow-hidden">
@@ -90,7 +96,7 @@ export function CalculatorSection() {
             Calculate your business time & cost savings
           </h2>
           <p className="mt-3 text-slate-400 text-base sm:text-xl">
-            See how many administrative hours and reconciliation costs your team can recover every single month.
+            Enter your own numbers to see roughly how many hours, and how much staff time, your team could save.
           </p>
         </div>
 
@@ -131,13 +137,30 @@ export function CalculatorSection() {
               />
             </div>
 
+            {/* Slider 3: Cost of staff time */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center gap-2 text-base font-semibold">
+                <span className="text-slate-300">Cost of Your Time Per Hour</span>
+                <span className="font-mono text-2xl font-extrabold text-emerald-300">
+                  ₹{hourlyRate.toLocaleString('en-IN')} <span className="text-sm text-slate-400 font-normal">/ hour</span>
+                </span>
+              </div>
+              <PresetSlider
+                label="Cost of Your Time Per Hour"
+                presets={ratePresets}
+                step={50}
+                value={hourlyRate}
+                onChange={setHourlyRate}
+              />
+            </div>
+
             {/* Note box */}
             <div className="p-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-sm text-slate-400 space-y-1">
               <div className="font-semibold text-slate-300 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-                With Invoice BizFolio automation:
+                With Invoice BizFolio:
               </div>
-              <p>Average invoice creation drops to <strong className="text-white">45 seconds</strong> with instant auto-tax calculation and WhatsApp delivery.</p>
+              <p>Most invoices take <strong className="text-white">about a minute</strong>. Customers and products are saved once, and GST is calculated for you.</p>
             </div>
           </div>
 
@@ -159,13 +182,13 @@ export function CalculatorSection() {
               <div className="mt-3 pb-3 border-b border-slate-800 space-y-1">
                 <div className="text-sm text-slate-400">Estimated Annual Cost Savings</div>
                 <div className="text-4xl font-extrabold font-mono text-emerald-400 heading">
-                  ₹{annualSavings.toLocaleString('en-IN')}
+                  ₹{annualSavingsRupees.toLocaleString('en-IN')}
                   <span className="text-xs font-normal text-slate-400 ml-1.5">/ year</span>
                 </div>
               </div>
 
               <p className="mt-3 text-sm text-slate-400">
-                Estimate based on the numbers you enter.
+                Estimate only: (your minutes − {MINUTES_PER_INVOICE_IN_APP} minute) × invoices per month × your hourly cost × 12.
               </p>
             </div>
 

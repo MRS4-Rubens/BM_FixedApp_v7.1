@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import { InvoiceBizFolioLogo } from '@/components/brand/invoice-bizfolio-logo'
 import { BRAND_NAME } from '@/lib/config/brand'
-import { ArrowUpRight, Mail } from 'lucide-react'
-import { SUPPORT_EMAIL } from '@/lib/config/contact'
+import { ArrowUpRight, Check, MessageSquare } from 'lucide-react'
+
+// The in-app Help & feedback form. A public support e-mail address comes back once
+// the brand's own domain and mailbox exist (launch day).
+const SUPPORT_FORM_HREF = '/settings?tab=User%20Feedback'
 
 const navigation = [
   { href: '/#features', label: 'GST invoicing engine' },
@@ -11,7 +14,7 @@ const navigation = [
   { href: '/#pricing', label: 'Pricing plans' },
 ]
 
-const solutions = [
+const audiences = [
   'Retail & wholesale',
   'E-commerce & D2C brands',
   'Manufacturing & export',
@@ -59,9 +62,14 @@ export function SiteFooter() {
           </nav>
 
           <div>
-            <h2 className={headingStyle}>Solutions</h2>
+            <h2 className={headingStyle}>Built for</h2>
             <ul className="space-y-1.5 text-base leading-snug text-slate-400">
-              {solutions.map(solution => <li key={solution}>{solution}</li>)}
+              {audiences.map(audience => (
+                <li key={audience} className="flex items-start gap-1.5">
+                  <Check aria-hidden="true" className="mt-1 size-3.5 shrink-0 text-emerald-400/80" />
+                  {audience}
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -71,10 +79,11 @@ export function SiteFooter() {
               <li>Encrypted connections</li>
               <li>Private business workspaces</li>
             </ul>
-            <a href={`mailto:${SUPPORT_EMAIL}`} className={`inline-flex max-w-full items-center gap-1.5 text-base text-indigo-300 ${linkStyle}`}>
-              <Mail aria-hidden="true" className="size-4 shrink-0" />
-              <span className="wrap-anywhere">{SUPPORT_EMAIL}</span>
-            </a>
+            <Link href={SUPPORT_FORM_HREF} className={`inline-flex max-w-full items-center gap-1.5 text-base font-semibold text-indigo-300 ${linkStyle}`}>
+              <MessageSquare aria-hidden="true" className="size-4 shrink-0" />
+              Contact support
+            </Link>
+            <p className="mt-1 text-sm text-slate-400">Sign in and use Help &amp; feedback.</p>
             <p className="mt-1.5 text-sm text-slate-400">Bengaluru, Karnataka, India</p>
           </div>
         </div>
