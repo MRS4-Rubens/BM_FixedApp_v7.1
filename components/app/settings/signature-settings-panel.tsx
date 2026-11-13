@@ -15,7 +15,6 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { removeBusinessSignature } from '@/lib/actions/business/remove-signature';
 import { SignatureUploadModal } from './signature-upload-modal';
-import { SIGNATURE_UPLOAD_RULES, CROP_HOW_TO } from '@/lib/signature/upload-rules';
 
 export interface SignaturePreviewCardProps {
   businessName: string;
@@ -144,32 +143,33 @@ export function SignatureSettingsPanel({
 
   return (
     <>
-      {/* flex-wrap: the preview drops below the text whenever the column is too narrow for both. */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        {/* Left side: Status & Actions */}
+      {/* flex-wrap (not a screen-width breakpoint): on tablets the settings column is only ~270px wide, so the
+          preview must drop below the text whenever both don't fit, or it would overflow the panel. */}
+      <div className="flex flex-wrap items-center justify-between gap-5">
+        {/* Left side: Status, Action Buttons & Privacy Notice */}
         <div className="space-y-2 flex-1 min-w-56">
           <div>
             {hasSignature ? (
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                <h4 className="text-sm sm:text-base font-semibold text-slate-900">
+                <h4 className="text-sm font-semibold text-slate-900">
                   Signature on file
                 </h4>
               </div>
             ) : (
-              <h4 className="text-sm sm:text-base font-semibold text-slate-900">
+              <h4 className="text-sm font-semibold text-slate-900">
                 No signature uploaded
               </h4>
             )}
-            <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               {hasSignature
                 ? 'Saved straight away. Invoices already issued keep the signature they were issued with.'
                 : 'Invoices will print a blank line so you can sign by hand.'}
             </p>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2 pt-1 flex-wrap">
+          {/* Action buttons (placed between statement and privacy note) */}
+          <div className="flex items-center gap-2 flex-wrap">
             {hasSignature ? (
               <>
                 {renderActionButton(
@@ -216,30 +216,12 @@ export function SignatureSettingsPanel({
             )}
           </div>
 
-          {/* Signature rules */}
-          <div className="pt-1">
-            <p className="text-xs font-semibold text-slate-700">Signature rules</p>
-            <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
-              {SIGNATURE_UPLOAD_RULES.map((rule, idx) => (
-                <li key={idx} className="flex items-start gap-1.5">
-                  <CheckCircle2 className="size-3 text-emerald-700 shrink-0 mt-0.5" />
-                  <span>{rule}</span>
-                </li>
-              ))}
-            </ul>
+          <div className="flex items-start gap-1.5 text-xs text-muted-foreground leading-snug">
+            <Lock className="size-3.5 shrink-0 mt-0.5" />
+            <span>
+              Stored privately. It is printed only on your own invoices and credit notes and is never shared through a public link.
+            </span>
           </div>
-          <details className="text-xs">
-            <summary className="cursor-pointer font-semibold text-amber-800">
-              How to crop a photo on your phone or computer
-            </summary>
-            <div className="mt-1 space-y-1 text-muted-foreground pl-2 border-l border-amber-200">
-              {CROP_HOW_TO.map((item, idx) => (
-                <p key={idx}>
-                  <strong className="text-slate-700">{item.device}:</strong> {item.steps}
-                </p>
-              ))}
-            </div>
-          </details>
 
           {!canManage && disabledReason && (
             <p className="flex items-center gap-1 text-xs text-muted-foreground pt-0.5">
@@ -263,8 +245,8 @@ export function SignatureSettingsPanel({
           )}
         </div>
 
-        {/* Right side: Live Preview Card */}
-        <div className="min-w-0 max-w-full w-full sm:w-auto flex justify-center sm:justify-end">
+        {/* Right side: Live Preview Card (top-aligned) */}
+        <div className="w-full sm:w-64 max-w-full shrink-0 flex justify-center sm:justify-end">
           <SignaturePreviewCard
             businessName={businessName}
             hasSignature={hasSignature}

@@ -2,13 +2,14 @@
 
 import { useState, useRef, useTransition } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
-import { Camera, Check, CheckCircle2, X, Lock, AlertCircle, Loader2, FileImage } from 'lucide-react';
+import { Camera, CheckCircle2, X, AlertCircle, Loader2, FileImage } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { uploadBusinessSignature } from '@/lib/actions/business/upload-signature';
 import { SignaturePreviewCard } from './signature-settings-panel';
 import { processSignatureImage } from './signature-canvas';
 import { SIGNATURE_UPLOAD_RULES, CROP_HOW_TO, REJECTION_MESSAGES } from '@/lib/signature/upload-rules';
+import { SignatureUploadExamples } from './signature-sample';
 
 export interface SignatureUploadModalProps {
   open: boolean;
@@ -164,7 +165,7 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-[70] bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
-          <Dialog.Popup className="relative w-[calc(100vw-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-5 sm:p-6 shadow-xl flex flex-col justify-between">
+          <Dialog.Popup className="relative w-[calc(100vw-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-4 sm:p-5 shadow-xl flex flex-col justify-between">
             <Dialog.Close
               render={
                 <button
@@ -172,7 +173,7 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
                   aria-label="Close dialog"
                   disabled={isPending}
                   onClick={handleClose}
-                  className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer disabled:pointer-events-none"
+                  className="absolute right-3 top-3 sm:right-3.5 sm:top-3.5 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer disabled:pointer-events-none"
                 >
                   <X className="size-4" />
                 </button>
@@ -180,14 +181,14 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
             />
 
             <div>
-              <div className="mb-4 pr-6">
+              <div className="mb-3 pr-6">
                 <Dialog.Title render={<h3 className="text-lg font-bold text-slate-900 tracking-tight">Upload your signature</h3>} />
                 <Dialog.Description render={<div className="sr-only">Upload and confirm your authorised signature</div>} />
               </div>
 
               {/* PHASE: CHOOSE */}
               {phase === 'choose' && (
-                <div className="space-y-4">
+                <div className="space-y-3.5">
                   {chooseError && (
                     <div role="alert" className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 flex items-start gap-2.5">
                       <AlertCircle className="size-4 shrink-0 text-amber-700 mt-0.5" />
@@ -198,110 +199,85 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
                     </div>
                   )}
 
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={(e) => {
-                      e.preventDefault(); setIsDragging(false);
-                      const f = e.dataTransfer.files?.[0];
-                      if (f) handleFileSelected(f);
-                    }}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={cn(
-                      'border-2 border-dashed rounded-xl p-6 sm:p-8 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2',
-                      isDragging ? 'border-amber-800 bg-amber-50/50' : 'border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50'
-                    )}
-                  >
-                    <div className="size-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-900 mb-1">
-                      <FileImage className="size-6" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">
-                        Drop your signature photo here, or <span className="text-amber-800 underline">browse</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">PNG, JPG or WEBP up to 10 MB</p>
-                    </div>
-                  </div>
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handleFileSelected(f);
-                      e.target.value = '';
-                    }}
-                  />
-
-                  <div className="sm:hidden">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full gap-2 text-xs font-semibold cursor-pointer"
-                      onClick={() => cameraInputRef.current?.click()}
-                    >
-                      <Camera className="size-4" />
-                      <span>Take a photo</span>
-                    </Button>
-                    <input
-                      ref={cameraInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) handleFileSelected(f);
-                        e.target.value = '';
-                      }}
-                    />
-                  </div>
-
-                  <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3.5 space-y-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Rules</h4>
-                    <ul className="text-xs text-slate-600 space-y-1">
-                      {SIGNATURE_UPLOAD_RULES.map((rule, idx) => (
-                        <li key={idx} className="flex items-start gap-1.5">
-                          <CheckCircle2 className="size-3 text-emerald-700 shrink-0 mt-0.5" />
-                          <span>{rule}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div className="grid grid-cols-2 gap-2.5 pt-2">
-                      <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-2.5 text-center shadow-2xs">
-                        <div className="h-10 w-full rounded bg-slate-50 flex items-center justify-center border border-slate-100">
-                          <svg viewBox="0 0 100 30" className="h-7 w-20 text-slate-900" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                            <path d="M 10,20 Q 25,5 40,18 T 70,12 T 90,22" />
-                            <path d="M 30,22 L 85,22" strokeWidth="1.5" strokeDasharray="3 3" />
-                          </svg>
+                  <div className="flex flex-col md:flex-row gap-5 items-start">
+                    {/* Left Column: Dropzone + Rules */}
+                    <div className="flex-1 min-w-0 space-y-2.5">
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={(e) => {
+                          e.preventDefault(); setIsDragging(false);
+                          const f = e.dataTransfer.files?.[0];
+                          if (f) handleFileSelected(f);
+                        }}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={cn(
+                          'border-2 border-dashed rounded-xl p-4 sm:p-5 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5',
+                          isDragging ? 'border-amber-800 bg-amber-50/50' : 'border-slate-300 hover:border-slate-400 bg-slate-50/50 hover:bg-slate-50'
+                        )}
+                      >
+                        <div className="size-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-900 mb-0.5">
+                          <FileImage className="size-5" />
                         </div>
-                        <p className="mt-1.5 text-[11px] font-semibold text-emerald-800 flex items-center gap-1">
-                          <Check className="size-3" /><span>Dark ink on white paper</span>
-                        </p>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">
+                            Drop your signature photo here, or <span className="text-amber-800 underline">browse</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">PNG, JPG or WEBP up to 10 MB</p>
+                        </div>
                       </div>
 
-                      <div className="flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-2.5 text-center shadow-2xs">
-                        <div
-                          className="h-10 w-full rounded flex items-center justify-center border border-slate-200"
-                          style={{ backgroundImage: 'repeating-linear-gradient(to bottom, #f8fafc 0px, #f8fafc 7px, #e2e8f0 8px)' }}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleFileSelected(f);
+                          e.target.value = '';
+                        }}
+                      />
+
+                      <div className="sm:hidden">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full gap-2 text-xs font-semibold cursor-pointer"
+                          onClick={() => cameraInputRef.current?.click()}
                         >
-                          <svg viewBox="0 0 100 30" className="h-7 w-20 text-rose-500" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <path d="M 10,15 Q 30,25 50,10 T 90,18" />
-                          </svg>
-                        </div>
-                        <p className="mt-1.5 text-[11px] font-semibold text-rose-700 flex items-center gap-1">
-                          <X className="size-3" /><span>Lined paper or shadows</span>
-                        </p>
+                          <Camera className="size-4" />
+                          <span>Take a photo</span>
+                        </Button>
+                        <input
+                          ref={cameraInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) handleFileSelected(f);
+                            e.target.value = '';
+                          }}
+                        />
+                      </div>
+
+                      <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 space-y-1.5">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Rules</h4>
+                        <ul className="text-xs text-slate-600 space-y-1.5 leading-relaxed">
+                          {SIGNATURE_UPLOAD_RULES.map((rule, idx) => (
+                            <li key={idx} className="flex items-start gap-1.5">
+                              <CheckCircle2 className="size-3 text-emerald-700 shrink-0 mt-0.5" />
+                              <span>{rule}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground pt-1">
-                    <Lock className="size-3 shrink-0" />
-                    <span>Stored privately. It is printed only on your own invoices and credit notes and is never shared through a public link.</span>
+                    {/* Right Column: Visual Examples */}
+                    <SignatureUploadExamples />
                   </div>
                 </div>
               )}
@@ -370,7 +346,11 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
                     </div>
 
                     {currentRejection.showCropHelp && (
-                      <details className="mt-4 text-xs bg-white/70 p-3 rounded-lg border border-amber-200">
+                      // Uncropped photo: the crop steps ARE the fix, so show them already opened.
+                      <details
+                        open={rejectionReason === 'too_small'}
+                        className="mt-4 text-xs bg-white/70 p-3 rounded-lg border border-amber-200"
+                      >
                         <summary className="cursor-pointer font-semibold text-amber-900">
                           How to crop a photo on your phone or computer
                         </summary>
@@ -389,7 +369,7 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
             </div>
 
             {/* Modal Footer Controls */}
-            <div className="flex items-center justify-between gap-3 pt-5 mt-4 border-t border-slate-200">
+            <div className="flex items-center justify-between gap-3 pt-3.5 mt-3.5 border-t border-slate-200">
               {phase === 'ready' ? (
                 <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={handleChooseAnother} className="cursor-pointer">
                   Choose another
