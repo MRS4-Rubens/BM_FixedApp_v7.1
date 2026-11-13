@@ -25,6 +25,8 @@ describe('OPT-002a Data Export Unit Tests', () => {
       expect(shouldOmitField('pdf_storage_key')).toBe(true);
       expect(shouldOmitField('logo_storage_key')).toBe(true);
       expect(shouldOmitField('signature_storage_key')).toBe(true);
+      expect(shouldOmitField('logo_storage_key_snapshot')).toBe(true);
+      expect(shouldOmitField('signature_storage_key_snapshot')).toBe(true);
       expect(shouldOmitField('screenshot_key')).toBe(true);
       expect(shouldOmitField('cloud_storage_key')).toBe(true);
     });
@@ -54,6 +56,8 @@ describe('OPT-002a Data Export Unit Tests', () => {
         pdf_storage_key: 'archives/inv_123.pdf',
         logo_storage_key: 'logos/biz_abc.png',
         signature_storage_key: 'signatures/sig.png',
+        logo_storage_key_snapshot: 'logos/snap.png',
+        signature_storage_key_snapshot: 'signatures/snap.png',
         archival_attempts: 1,
         archival_claimed_at: new Date('2026-04-01T10:00:00Z'),
         archival_status: 'archived',
@@ -78,6 +82,8 @@ describe('OPT-002a Data Export Unit Tests', () => {
       expect(sanitized.pdf_storage_key).toBeUndefined();
       expect(sanitized.logo_storage_key).toBeUndefined();
       expect(sanitized.signature_storage_key).toBeUndefined();
+      expect(sanitized.logo_storage_key_snapshot).toBeUndefined();
+      expect(sanitized.signature_storage_key_snapshot).toBeUndefined();
       expect(sanitized.archival_attempts).toBeUndefined();
       expect(sanitized.archival_claimed_at).toBeUndefined();
       expect(sanitized.archival_status).toBeUndefined();

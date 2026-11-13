@@ -31,6 +31,7 @@ export function sellerSnapshotColumns() {
     seller_bank_snapshot: jsonb('seller_bank_snapshot').$type<SellerBankSnapshot>(),
     terms_snapshot: text('terms_snapshot'),
     logo_storage_key_snapshot: text('logo_storage_key_snapshot'),
+    signature_storage_key_snapshot: text('signature_storage_key_snapshot'),
     seller_snapshot_source: text('seller_snapshot_source').$type<SellerSnapshotSource>(),
   };
 }

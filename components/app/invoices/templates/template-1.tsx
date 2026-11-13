@@ -37,6 +37,7 @@ export interface InvoiceTemplateProps {
     pincode?: string | null;
     logo_url?: string | null;
     logo_base64?: string | null;
+    signature_data_uri?: string | null;
     customer?: {
       phone?: string | null;
     } | null;

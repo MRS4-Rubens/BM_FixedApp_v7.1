@@ -40,6 +40,40 @@ vi.mock('@/lib/storage/logo', () => ({
   loadLogoDataUri: (...args: unknown[]) => mockLoadLogoDataUri(...args),
 }));
 
+const mockLoadSignatureDataUri = vi.fn();
+vi.mock('@/lib/storage/signature', () => ({
+  loadSignatureDataUri: (...args: unknown[]) => mockLoadSignatureDataUri(...args),
+}));
+
+// Spies that still render the real print views, but record the props the archive passes in, so the
+// tests can prove the signature reaches the document (loading it alone is not enough).
+const renderedProps = vi.hoisted(() => ({
+  invoice: [] as Array<{ invoice: { signature_data_uri?: string | null } }>,
+  creditNote: [] as Array<{ creditNote: { business: { signature_data_uri?: string | null } } }>,
+}));
+vi.mock('@/components/app/invoices/invoice-print-view', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/components/app/invoices/invoice-print-view')>();
+  const { createElement } = await import('react');
+  return {
+    ...mod,
+    InvoicePrintView: (props: Parameters<typeof mod.InvoicePrintView>[0]) => {
+      renderedProps.invoice.push(props);
+      return createElement(mod.InvoicePrintView, props);
+    },
+  };
+});
+vi.mock('@/components/app/credit-notes/credit-note-print-view', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('@/components/app/credit-notes/credit-note-print-view')>();
+  const { createElement } = await import('react');
+  return {
+    ...mod,
+    CreditNotePrintView: (props: Parameters<typeof mod.CreditNotePrintView>[0]) => {
+      renderedProps.creditNote.push(props);
+      return createElement(mod.CreditNotePrintView, props);
+    },
+  };
+});
+
 const SAMPLE_INVOICE = {
   id: 'inv-12345678-0001',
   business_id: 'biz-12345678-0001',
@@ -173,6 +207,56 @@ describe('buildArchivalHtml', () => {
     creditNoteStore = [{ ...SAMPLE_CREDIT_NOTE }];
     creditNoteLineItemsStore = [...SAMPLE_CREDIT_NOTE_LINE_ITEMS];
     mockLoadLogoDataUri.mockResolvedValue('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+    mockLoadSignatureDataUri.mockResolvedValue('data:image/png;base64,mockSignatureDataUri');
+  });
+
+  it('Case 7: passes signature_data_uri when the snapshot key exists and null when it does not', async () => {
+    // 1. Invoice with signature snapshot key
+    invoiceStore = [
+      {
+        ...SAMPLE_INVOICE,
+        signature_storage_key_snapshot: 'signatures/biz-12345678-0001/sig-inv.png',
+      },
+    ];
+    await buildArchivalHtml('invoice', 'inv-12345678-0001');
+    expect(mockLoadSignatureDataUri).toHaveBeenCalledWith('signatures/biz-12345678-0001/sig-inv.png');
+    expect(renderedProps.invoice.at(-1)?.invoice.signature_data_uri).toBe('data:image/png;base64,mockSignatureDataUri');
+
+    // 2. Invoice without signature snapshot key
+    mockLoadSignatureDataUri.mockClear();
+    invoiceStore = [
+      {
+        ...SAMPLE_INVOICE,
+        signature_storage_key_snapshot: null,
+      },
+    ];
+    await buildArchivalHtml('invoice', 'inv-12345678-0001');
+    expect(mockLoadSignatureDataUri).not.toHaveBeenCalled();
+    expect(renderedProps.invoice.at(-1)?.invoice.signature_data_uri).toBeNull();
+
+    // 3. Credit note with signature snapshot key
+    mockLoadSignatureDataUri.mockClear();
+    creditNoteStore = [
+      {
+        ...SAMPLE_CREDIT_NOTE,
+        signature_storage_key_snapshot: 'signatures/biz-12345678-0001/sig-cn.png',
+      },
+    ];
+    await buildArchivalHtml('credit_note', 'cn-12345678-0001');
+    expect(mockLoadSignatureDataUri).toHaveBeenCalledWith('signatures/biz-12345678-0001/sig-cn.png');
+    expect(renderedProps.creditNote.at(-1)?.creditNote.business.signature_data_uri).toBe('data:image/png;base64,mockSignatureDataUri');
+
+    // 4. Credit note without signature snapshot key
+    mockLoadSignatureDataUri.mockClear();
+    creditNoteStore = [
+      {
+        ...SAMPLE_CREDIT_NOTE,
+        signature_storage_key_snapshot: null,
+      },
+    ];
+    await buildArchivalHtml('credit_note', 'cn-12345678-0001');
+    expect(mockLoadSignatureDataUri).not.toHaveBeenCalled();
+    expect(renderedProps.creditNote.at(-1)?.creditNote.business.signature_data_uri).toBeNull();
   });
 
   it('Case 1: buildArchivalHtml("invoice", validId) returns valid HTML and title', async () => {

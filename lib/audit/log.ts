@@ -15,6 +15,8 @@ export const AUDIT_EVENTS = {
     'profile_update',
     'logo_upload',
     'logo_remove',
+    'signature_upload',
+    'signature_remove',
     'subscription_manual_override',
     'business_identity_changed',
     'business_identity_changed_by_admin',

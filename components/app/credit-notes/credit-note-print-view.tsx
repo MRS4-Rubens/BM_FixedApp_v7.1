@@ -33,6 +33,7 @@ export interface CreditNotePrintViewProps {
       logo_storage_key?: string | null;
       logo_base64?: string | null;
       logo_url?: string | null;
+      signature_data_uri?: string | null;
     };
     originalInvoice: {
       id: string;

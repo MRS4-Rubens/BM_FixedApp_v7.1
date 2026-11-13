@@ -34,6 +34,7 @@ export function shouldOmitField(key: string): boolean {
   if (
     key.endsWith('_storage_key') ||
     key.endsWith('storage_key') ||
+    key.endsWith('storage_key_snapshot') ||
     (key.endsWith('_key') && (key.includes('storage') || key.includes('screenshot'))) ||
     key === 'screenshot_key'
   ) {

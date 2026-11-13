@@ -52,6 +52,7 @@ export function createInitialFakeState(): FakeState {
       phone: '9876543210',
       email: 'biz@example.com',
       logo_storage_key: null,
+      signature_storage_key: null,
       bank_account_name: null,
       bank_account_number: null,
       bank_ifsc: null,

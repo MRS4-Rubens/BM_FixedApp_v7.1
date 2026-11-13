@@ -12,6 +12,7 @@ import { listCreditNotes, type CreditNoteListItem } from '@/lib/actions/credit-n
 import { resolveSellerDetails, toInvoicePrintFields, type SellerDetails } from '@/lib/invoices/seller-snapshot';
 import { resolveFinalizedDisplayPrefs } from '@/lib/invoices/display-prefs';
 import { buildLogoUrl } from '@/lib/storage/logo-url';
+import { loadSignatureDataUri } from '@/lib/storage/signature';
 import type { CustomerOption } from '@/lib/pickers/types';
 
 // bounds after()-scheduled PDF archival started by finalize server actions
@@ -131,6 +132,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   }
 
   const displayPrefs = resolveFinalizedDisplayPrefs(invoice?.display_prefs_snapshot);
+  const signatureDataUri = seller.signatureStorageKey ? await loadSignatureDataUri(seller.signatureStorageKey) : null;
 
   return (
     <InvoiceDetail 
@@ -139,6 +141,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         ...invoice, 
         ...toInvoicePrintFields(seller),
         logo_url: seller.logoStorageKey ? buildLogoUrl(invoice.business_id, seller.logoStorageKey) : null,
+        signature_data_uri: signatureDataUri,
         customer_email: invoice.customer?.email,
         customer_phone: invoice.customer?.phone,
         upi_id: ((business as Record<string, unknown>).upi_id as string) || null,
