@@ -25,12 +25,18 @@ import {
   Sparkles,
   Lock,
   ArrowRight,
+  PenLine,
 } from 'lucide-react';
 import { InvoiceFormatGuideModal } from './invoice-format-guide-modal';
-import { canUseTemplate, canCustomizeInvoiceNumberFormat } from '@/lib/subscriptions/entitlements';
+import {
+  canUseTemplate,
+  canCustomizeInvoiceNumberFormat,
+  checkAccountNotSuspended,
+} from '@/lib/subscriptions/entitlements';
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal';
 import { TemplateSelector } from '@/components/app/invoices/template-selector';
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip';
+import { SignatureSettingsPanel } from './signature-settings-panel';
 import {
   parseStoredDisplayPrefs,
   FIXED_ROWS_MAX,
@@ -43,6 +49,8 @@ import { DEFAULT_GST_OPTIONS, type DefaultGstOption } from '@/lib/db/schema/_dis
 interface InvoiceSettingsFormProps {
   business: typeof businesses.$inferSelect | null;
   currentFyLabel: string;
+  signatureDataUri?: string | null;
+  isOwner?: boolean;
 }
 
 // -- Styling Constants (Strict Floor-Integer Tailwind Classes) -----------------
@@ -95,12 +103,27 @@ function Toggle({
   );
 }
 
-export function InvoiceSettingsForm({ business, currentFyLabel }: InvoiceSettingsFormProps) {
+export function InvoiceSettingsForm({
+  business,
+  currentFyLabel,
+  signatureDataUri = null,
+  isOwner = true,
+}: InvoiceSettingsFormProps) {
   const [success, setSuccess] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [isFormatGuideOpen, setIsFormatGuideOpen] = useState(false);
   const [showTemplateUpgradeModal, setShowTemplateUpgradeModal] = useState(false);
   const [showFormatUpgradeModal, setShowFormatUpgradeModal] = useState(false);
+
+  const notSuspended = checkAccountNotSuspended(business);
+  const canManage = isOwner && notSuspended.allowed;
+  const disabledReason = !isOwner
+    ? 'Only the business owner can change the signature.'
+    : !notSuspended.allowed
+    ? notSuspended.reason ?? 'Account is suspended.'
+    : null;
+  const businessName = business?.trade_name || business?.legal_name || 'Your Business';
+  const hasSavedSignature = Boolean(business?.signature_storage_key);
 
   const canCustomize = canCustomizeInvoiceNumberFormat(business).allowed;
   const initialFormat = business?.invoice_number_format
@@ -643,53 +666,82 @@ export function InvoiceSettingsForm({ business, currentFyLabel }: InvoiceSetting
               <Toggle checked={showNextNo} onChange={setShowNextNo} id="toggle-nextno" />
             </div>
 
-            <div className="flex items-center justify-between gap-4 px-4 py-3 bg-background">
-              <div className="flex items-start gap-3">
-                <Check className="size-4 text-amber-800 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm sm:text-base font-semibold text-slate-900">Authorised Signatory Section</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Render an official signature and rubber-stamp area at the bottom right of the invoice.
-                  </p>
+            <div className="px-4 py-3 bg-background">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <Columns className="size-4 text-amber-800 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm sm:text-base font-semibold text-slate-900">Fixed Table Rows (Table Padding)</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Keep a consistent row height and table size on paper prints even when invoices have few items.
+                    </p>
+                  </div>
                 </div>
+                <Toggle checked={enableFixedRows} onChange={setEnableFixedRows} id="toggle-fixed-rows" />
               </div>
-              <Toggle checked={showSignatory} onChange={setShowSignatory} id="toggle-sig" />
+
+              {enableFixedRows && (
+                <div className="mt-3 ml-0 sm:ml-7 rounded-lg border border-amber-800/15 bg-amber-50/40 p-3 sm:p-4">
+                  <div className="sm:max-w-xs">
+                    <label className={labelClass} htmlFor="fixedRowsCount">
+                      <Columns className="size-3.5 text-amber-800 shrink-0" />
+                      <span>Target Table Row Count</span>
+                    </label>
+                    <input
+                      id="fixedRowsCount"
+                      type="number"
+                      min={1}
+                      max={50}
+                      className={cn(inputAmberClass, 'font-mono')}
+                      value={fixedRowsCount}
+                      onChange={(e) => setFixedRowsCount(Math.min(FIXED_ROWS_MAX, Math.max(FIXED_ROWS_MIN, Number(e.target.value) || 13)))}
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Invoices with fewer line items will be padded with empty rows up to this count (Standard: 13).
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center justify-between gap-4 px-4 py-3 bg-background">
-              <div className="flex items-start gap-3">
-                <Columns className="size-4 text-amber-800 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm sm:text-base font-semibold text-slate-900">Fixed Table Rows (Table Padding)</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Keep a consistent row height and table size on paper prints even when invoices have few items.
-                  </p>
+            <div className="px-4 py-3 bg-background">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <PenLine className="size-4 text-amber-800 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm sm:text-base font-semibold text-slate-900">Authorised Signatory Section</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
+                      Print &quot;For &lt;your business&gt;&quot;, your signature and &quot;Authorised Signatory&quot; at the bottom of every invoice.
+                    </p>
+                  </div>
                 </div>
+                <Toggle checked={showSignatory} onChange={setShowSignatory} id="toggle-sig" />
               </div>
-              <Toggle checked={enableFixedRows} onChange={setEnableFixedRows} id="toggle-fixed-rows" />
+
+              {showSignatory ? (
+                <div className="mt-3 ml-0 sm:ml-7 rounded-lg border border-amber-800/15 bg-amber-50/40 p-3 sm:p-4">
+                  <SignatureSettingsPanel
+                    businessName={businessName}
+                    hasSavedSignature={hasSavedSignature}
+                    initialPreviewDataUri={signatureDataUri ?? null}
+                    canManage={canManage}
+                    disabledReason={disabledReason}
+                  />
+                </div>
+              ) : (
+                <p className="mt-2 ml-0 sm:ml-7 text-xs text-muted-foreground">
+                  Tax invoices must be signed under GST rules (Rule 46). Turn this off only if you sign or stamp invoices another way.
+                  {hasSavedSignature && ' Your saved signature is kept and will be used again when you turn this on.'}
+                </p>
+              )}
+
+              {showSignatory !== initialPrefs.showSignatory && (
+                <p className="mt-2 ml-0 sm:ml-7 text-xs font-semibold text-amber-800">
+                  Press Save Settings below to apply this change.
+                </p>
+              )}
             </div>
           </div>
-
-          {enableFixedRows && (
-            <div className="mt-3 sm:w-1/2">
-              <label className={labelClass} htmlFor="fixedRowsCount">
-                <Columns className="size-3.5 text-amber-800 shrink-0" />
-                <span>Target Table Row Count</span>
-              </label>
-              <input
-                id="fixedRowsCount"
-                type="number"
-                min={1}
-                max={50}
-                className={cn(inputAmberClass, 'font-mono')}
-                value={fixedRowsCount}
-                onChange={(e) => setFixedRowsCount(Math.min(FIXED_ROWS_MAX, Math.max(FIXED_ROWS_MIN, Number(e.target.value) || 13)))}
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Invoices with fewer line items will be padded with empty rows up to this count (Standard: 13).
-              </p>
-            </div>
-          )}
         </div>
 
         {/* -- SECTION 5: Default Terms & Conditions (Maroon - rose-900) -- */}

@@ -38,6 +38,7 @@ interface SettingsClientProps {
   /** Request render time from the server page, forwarded to BillingTab. */
   nowMs: number;
   userRole?: AppRole;
+  signatureDataUri?: string | null;
 }
 
 const navItems = [
@@ -71,6 +72,7 @@ export function SettingsClient({
   identityLocked = false,
   nowMs,
   userRole = 'owner',
+  signatureDataUri,
 }: SettingsClientProps) {
   const resolveInitialTab = (): NavItem => {
     if (initialTab) {
@@ -192,7 +194,12 @@ export function SettingsClient({
         <div className="flex-1 min-w-0">
           {/* -- INVOICE SETTINGS TAB ---------------------------------------- */}
           {active === 'Invoice Settings' && (
-            <InvoiceSettingsForm business={business} currentFyLabel={currentFyLabel} />
+            <InvoiceSettingsForm
+              business={business}
+              currentFyLabel={currentFyLabel}
+              signatureDataUri={signatureDataUri}
+              isOwner={isOwner}
+            />
           )}
 
           {/* -- BUSINESS PROFILE TAB ----------------------------------------- */}
