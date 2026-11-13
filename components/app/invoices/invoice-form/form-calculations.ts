@@ -207,6 +207,7 @@ export function buildPreviewInvoiceData({
   taxRates,
   selectedCustomer,
   invoiceNumberFormatPreview,
+  signatureDataUri,
 }: {
   initialId?: string;
   business: CurrentBusiness;
@@ -220,6 +221,7 @@ export function buildPreviewInvoiceData({
   taxRates: Array<typeof taxRatesTable.$inferSelect>;
   selectedCustomer: CustomerOption | null;
   invoiceNumberFormatPreview: string;
+  signatureDataUri?: string | null;
 }) {
   const indexedInputs = (watchLineItems ?? []).map((li, idx) => {
     const tr = taxRates.find((r) => r.id === li.tax_rate_id);
@@ -311,6 +313,7 @@ export function buildPreviewInvoiceData({
     id: initialId || 'draft-id',
     business_id: business.id,
     logo_storage_key: business.logo_storage_key,
+    signature_data_uri: signatureDataUri ?? null,
     business_name: business.legal_name,
     city: business.city,
     seller_gstin_snapshot: business.gstin ? business.gstin.toUpperCase() : null,

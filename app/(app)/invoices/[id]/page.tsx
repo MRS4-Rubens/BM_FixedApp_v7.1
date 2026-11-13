@@ -96,6 +96,15 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       }))
     };
 
+    let signatureDataUri: string | null = null;
+    if (business.signature_storage_key) {
+      try {
+        signatureDataUri = await loadSignatureDataUri(business.signature_storage_key);
+      } catch {
+        signatureDataUri = null;
+      }
+    }
+
     return (
       <InvoiceForm 
         initialData={initialData}
@@ -104,6 +113,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         business={business}
         activeFys={activeFys}
         isDraft={true}
+        signatureDataUri={signatureDataUri}
       />
     );
   }

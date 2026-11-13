@@ -48,12 +48,7 @@ export type InvoiceFormInitialData = Omit<Partial<InvoiceDraftInput>, 'line_item
 };
 
 export function InvoiceForm({
-  initialData,
-  initialCustomer,
-  taxRates,
-  business,
-  activeFys,
-  isDraft,
+  initialData, initialCustomer, taxRates, business, activeFys, isDraft, signatureDataUri,
 }: {
   initialData?: InvoiceFormInitialData;
   initialCustomer?: CustomerOption | null;
@@ -61,6 +56,7 @@ export function InvoiceForm({
   business: CurrentBusiness;
   activeFys: Array<typeof financialYearsTable.$inferSelect>;
   isDraft: boolean;
+  signatureDataUri?: string | null;
 }) {
   const [previewSequence, setPreviewSequence] = useState<number | null>(null);
   const [showTemplateUpgradeModal, setShowTemplateUpgradeModal] = useState(false);
@@ -238,6 +234,7 @@ export function InvoiceForm({
     taxRates,
     selectedCustomer,
     invoiceNumberFormatPreview,
+    signatureDataUri,
   });
 
   return (

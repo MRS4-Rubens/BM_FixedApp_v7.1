@@ -4,6 +4,7 @@ import { INDIAN_GST_STATES, stateTaxLabel } from '@/lib/gst/indian-states';
 import { getCreditNoteReasonLabel } from '@/lib/validations/credit-note';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { buildLogoUrl } from '@/lib/storage/logo-url';
+import { SignatureMark, isSignatureDataUri, AUTHORISED_SIGNATORY_LABEL } from '@/components/app/invoices/templates/signature-mark';
 
 export interface CreditNotePrintViewProps {
   creditNote: {
@@ -315,8 +316,15 @@ export function CreditNotePrintView({ creditNote, printSize = 'A4' }: CreditNote
           <p>Subject to local jurisdiction</p>
         </div>
         <div className="text-right">
-          <p className="font-bold mb-4">For {biz.legal_name}:</p>
-          <p className="text-gray-600 border-t border-gray-400 pt-0.5">Authorized Signatory</p>
+          <p className="font-bold">For {biz.legal_name}:</p>
+          {isSignatureDataUri(biz.signature_data_uri) ? (
+            <div className="h-10 w-36 ml-auto flex items-end justify-end">
+              <SignatureMark src={biz.signature_data_uri} className="ml-auto" />
+            </div>
+          ) : (
+            <div className="h-4" />
+          )}
+          <p className="text-gray-600 border-t border-gray-400 pt-0.5">{AUTHORISED_SIGNATORY_LABEL}</p>
         </div>
       </div>
     </div>
