@@ -35,6 +35,7 @@ export const businesses = pgTable('businesses', {
   phone: text('phone'),
   email: text('email'),
   logo_storage_key: text('logo_storage_key'),
+  signature_storage_key: text('signature_storage_key'),
   bank_account_name: text('bank_account_name'),
   bank_account_number: text('bank_account_number'),
   bank_ifsc: text('bank_ifsc'),

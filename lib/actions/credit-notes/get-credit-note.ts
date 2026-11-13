@@ -4,6 +4,7 @@ import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
 import { resolveSellerDetails, toCreditNotePrintBusiness, SellerSnapshotError, type SellerDetails } from '@/lib/invoices/seller-snapshot';
+import { loadSignatureDataUri } from '@/lib/storage/signature';
 import { db } from '@/lib/db/client';
 import { creditNotes, creditNoteLineItems, invoices, businesses, users } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
@@ -81,7 +82,13 @@ export const getCreditNote = createAuthenticatedAction(
       }
       throw error;
     }
-    const businessData = toCreditNotePrintBusiness(sellerDetails, business.id);
+    const signatureDataUri = sellerDetails.signatureStorageKey
+      ? await loadSignatureDataUri(sellerDetails.signatureStorageKey)
+      : null;
+    const businessData = {
+      ...toCreditNotePrintBusiness(sellerDetails, business.id),
+      signature_data_uri: signatureDataUri,
+    };
 
     // 4. Fetch line items
     const lineItems = await db

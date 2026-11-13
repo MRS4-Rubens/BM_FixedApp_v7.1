@@ -6,7 +6,7 @@ import { buildLogoUrl } from '@/lib/storage/logo-url';
 type BusinessRow = InferSelectModel<typeof businesses>;
 export type LiveBusinessSeller = Pick<BusinessRow,
   'id' | 'legal_name' | 'trade_name' | 'gstin' | 'pan' | 'address_line1' | 'address_line2' | 'city' | 'state_code' |
-  'pincode' | 'phone' | 'alternate_phone' | 'email' | 'nature_of_business' | 'logo_storage_key' |
+  'pincode' | 'phone' | 'alternate_phone' | 'email' | 'nature_of_business' | 'logo_storage_key' | 'signature_storage_key' |
   'bank_account_name' | 'bank_account_number' | 'bank_ifsc' | 'bank_name' | 'invoice_terms'>;
 
 /** Values written to the snapshot columns at finalization. */
@@ -23,6 +23,7 @@ export interface SellerSnapshotValues {
   seller_bank_snapshot: SellerBankSnapshot | null;
   terms_snapshot: string | null;
   logo_storage_key_snapshot: string | null;
+  signature_storage_key_snapshot: string | null;
   seller_snapshot_source: SellerSnapshotSource; // always 'captured_at_finalization' here
 }
 
@@ -64,6 +65,7 @@ export function captureSellerSnapshot(business: LiveBusinessSeller): SellerSnaps
     seller_bank_snapshot,
     terms_snapshot: business.invoice_terms ?? null,
     logo_storage_key_snapshot: business.logo_storage_key ?? null,
+    signature_storage_key_snapshot: business.signature_storage_key ?? null,
     seller_snapshot_source: 'captured_at_finalization',
   };
 }
@@ -93,6 +95,7 @@ export interface SellerSnapshotRow {
   seller_bank_snapshot: unknown;
   terms_snapshot: string | null;
   logo_storage_key_snapshot: string | null;
+  signature_storage_key_snapshot?: string | null;
 }
 
 export interface SellerDetails {
@@ -113,6 +116,7 @@ export interface SellerDetails {
   bank: SellerBankSnapshot | null;
   terms: string | null;
   logoStorageKey: string | null;
+  signatureStorageKey: string | null;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -195,6 +199,7 @@ export function resolveSellerDetails(
       bank,
       terms: doc.terms_snapshot ?? null,
       logoStorageKey: doc.logo_storage_key_snapshot ?? null,
+      signatureStorageKey: doc.signature_storage_key_snapshot ?? null,
     };
   }
 
@@ -232,6 +237,7 @@ export function resolveSellerDetails(
       bank,
       terms: live.invoice_terms ?? null,
       logoStorageKey: live.logo_storage_key ?? null,
+      signatureStorageKey: live.signature_storage_key ?? null,
     };
   }
 

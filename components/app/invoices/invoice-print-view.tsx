@@ -41,6 +41,7 @@ export interface InvoicePrintViewProps {
     logo_storage_key?: string | null;
     logo_url?: string | null;
     logo_base64?: string | null;
+    signature_data_uri?: string | null;
     has_watermark?: boolean;
     subscription_plan?: string | null;
     subscription_status?: string | null;

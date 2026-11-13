@@ -34,7 +34,9 @@ This app uses Next.js Server Actions as the default way pages talk to the backen
 | `lib/reports/period.ts` | Centralized logic for computing date ranges (This Month, Financial Year). Shared groundwork to ensure Phase 15's Excel export logic reuses exact same bounds. | Phase 14 |
 | `lib/pdf/` | Currently contains `number-to-words.ts`, `open-signed-pdf.ts`, `archival-html.ts`, `archival-document.ts`, and `html-to-pdf-provider.ts` (swappable CustomJS API for external PDF rendering). | Phase 10 & 11 / Phase 4 (P3-WRAPUP) |
 | `lib/storage/` | iDrive e2 (S3-compatible) client for archiving finalized invoice and credit note PDFs, archival claim orchestration, and Sentry cron monitor integration. | Phase 11 & Phase 12 / Phase 4 (OPT-001) |
+| `lib/storage/signature.ts` | Authorised signature storage helpers (pure Data URI loader, unreferenced retention check, and deletion). | SIG-A |
 | `lib/security/` | Upload validation with magic-byte checks and storage keys (`upload.ts`, server-only: uses `node:crypto`), the browser-safe size helper (`upload-limits.ts`), and signed tokens. | Phase 11 / Phase 4 (SEC-002, PERF-005) |
+| `lib/security/signature-image.ts` | Pure server-side authorised signature PNG validation (8-byte PNG header, RGBA colour type 6, exact 3:1 ratio, 300-1500px width). | SIG-A |
 | `lib/excel/` | ExcelJS-based export logic for the monthly ITR/GST export. Populates Sales Register and GSTR-1 CDNR sheets with finalized credit notes. | Phase 15 & Phase 12 |
 | `lib/email/` | Resend client (`lib/email/`) and email templates (`lib/email/templates/`). Note that email attachments always come from Phase 11's archived PDF (never generated fresh). This makes the archival step in Phase 11 a hard dependency for emailing invoices. | Phase 16 |
 | `lib/rate-limit/` | Upstash Redis-based rate limiting, applied to sensitive Server Actions and export routes. | Phase 17 |
@@ -151,6 +153,8 @@ Actions with distinct risk profiles declare an explicit `rateLimit` option in `c
 | `submit-payment-claim` | `sensitiveActionLimiter` | 20 req / 60 s | `submit-payment-claim:<userId>` | `fail-closed` | Prevents administrative spam & screenshot processing |
 | `upload-business-logo` | `sensitiveActionLimiter` | 20 req / 60 s | `upload-logo:<userId>` | `fail-closed` | Heavy I/O & cloud storage write bandwidth |
 | `remove-business-logo` | `sensitiveActionLimiter` | 20 req / 60 s | `remove-logo:<userId>` | `fail-closed` | Mutation on cloud storage objects & business records |
+| `upload-business-signature` | `sensitiveActionLimiter` | 20 req / 60 s | `upload-signature:<userId>` | `fail-closed` | Heavy I/O & cloud storage write bandwidth |
+| `remove-business-signature` | `sensitiveActionLimiter` | 20 req / 60 s | `remove-signature:<userId>` | `fail-closed` | Mutation on cloud storage objects & business records |
 | `get-claim-screenshot-url` | `sensitiveActionLimiter` | 20 req / 60 s | `claim-screenshot:<userId>` | `fail-closed` | Sensitive cryptographic signature generation |
 | `finalize-invoice` | `sensitiveActionLimiter` | 20 req / 60 s | `finalize-invoice:<userId>` | `fail-open` | Database-only statutory billing; must not block invoicing |
 | `finalize-credit-note` | `sensitiveActionLimiter` | 20 req / 60 s | `finalize-credit-note:<userId>` | `fail-open` | Database-only statutory billing; must not block credit notes |
@@ -341,6 +345,8 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 | `save-business-profile` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
 | `upload-business-logo` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
 | `remove-business-logo` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
+| `upload-business-signature` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
+| `remove-business-signature` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
 | `save-invoice-settings` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
 | `void-payment` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
 | `void-credit-note` | `owner` | `createAuthenticatedAction(..., { roles: OWNER_ONLY })` |
@@ -1034,3 +1040,28 @@ The details are in "Monitoring & Logging" above. The alert rules and uptime moni
   - `package.json` engines is `24.x`, which is what Vercel uses.
 - The rationale and the deliberately unused options are in `docs/DEPLOYMENT.md` ("Build configuration decisions (OPT-003)").
 - `tests/unit/opt003-build-hygiene.test.ts` keeps these settings in place.
+
+## Authorised signature (SIG-A)
+
+- **What exists**:
+  - `lib/security/signature-image.ts`: pure server-side validation enforcing PNG signature, IHDR dimensions, RGBA colour type 6 (transparent background), exact 3:1 aspect ratio (width = 3 * height), and width bounded to 300–1500 pixels.
+  - `lib/storage/signature.ts`: storage helpers providing `loadSignatureDataUri` (returns inline `data:image/png;base64,...` or null on failure), `isSignatureKeyReferenced` (checks invoice/credit note snapshot references), and `deleteSignatureObjectIfUnreferenced` (lifecycle cleanup after DB commit).
+  - Server Actions `uploadBusinessSignature` and `removeBusinessSignature` (`lib/actions/business/upload-signature.ts`, `lib/actions/business/remove-signature.ts`): owner-only mutations available on all subscription plans.
+  - Frozen snapshot columns: `signature_storage_key` on `businesses`, and `signature_storage_key_snapshot` on `invoices` and `credit_notes` (migration `drizzle/0028_sig_a_authorised_signature.sql`).
+  - In-process archival render (`lib/pdf/archival-document.ts`), finalized invoice page (`app/(app)/invoices/[id]/page.tsx`), and credit note fetch (`lib/actions/credit-notes/get-credit-note.ts`) load and pass embedded `signature_data_uri`.
+- **Rules**:
+  - Private storage only: storage keys follow `signatures/<businessId>/<uuid>.png` with `Content-Disposition: attachment` and `Cache-Control: private, no-store`.
+  - Zero public URL: authorised signatures are never exposed via a public HTTP route handler or signed URL. Documents embed the image strictly as an in-memory base64 Data URI on the server.
+  - Document immutability: upon finalization, `captureSellerSnapshot` freezes `signature_storage_key` into `signature_storage_key_snapshot`. PostgreSQL triggers `bm_guard_invoices()` / `bm_guard_credit_notes()` reject any mutation of snapshot columns (SQLSTATE 55000).
+  - Permanent retention: old signature storage objects referenced by any finalized invoice or credit note snapshot are retained permanently.
+  - Available on all plans: unlike logo branding, authorised signature is available to free, trial, and paid tiers without entitlement barriers. Suspended businesses are read-only (Policy P2), so both actions use `requireActiveSubscription: true`.
+  - Naming compliance: named "Authorised signature" everywhere. Never referred to as "digital signature" (DSC under IT Act 2000).
+  - Part B pending: the settings upload screen (3:1 crop box, paper background made transparent, browser-side blue/black ink check), the draft and new-invoice preview, and rendering the signature in templates 1-4 and the credit note (when "Authorised Signatory Section" is on). A draw-your-signature option may follow later.
+- **Enforced by**:
+  - `tests/unit/sig-a-signature-image.test.ts` (PNG parsing, RGBA alpha, 3:1 ratio, min/max bounds);
+  - `tests/unit/sig-a-actions.test.ts` (RBAC owner check, suspended-business block, upload validation, audit logging, unreferenced cleanup);
+  - `tests/unit/sig-a-seller-snapshot.test.ts` (seller snapshot capture, resolution for finalized and draft documents);
+  - `tests/unit/sig-a-guards.test.ts` (no public URL construction, no signature route, no entitlement check, suspended-business block, zero "digital signature" mentions);
+  - `tests/integration/sig-a-signature-snapshot.test.ts` (PGlite finalization freeze, trigger immutability enforcement, scoped reference checks);
+  - `tests/unit/archival-document.test.ts` (the signature Data URI reaches the invoice and credit-note views).
+

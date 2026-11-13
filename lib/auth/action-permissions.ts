@@ -11,6 +11,8 @@ export const ACTION_ACCESS = {
   'save-business-profile': 'owner',
   'upload-business-logo': 'owner',
   'remove-business-logo': 'owner',
+  'upload-business-signature': 'owner',
+  'remove-business-signature': 'owner',
   'save-invoice-settings': 'owner',
   'import-legacy-display-prefs': 'owner',
   'request-account-closure': 'owner',

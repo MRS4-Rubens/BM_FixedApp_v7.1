@@ -11,6 +11,7 @@ import {
   type SellerDetails,
 } from '@/lib/invoices/seller-snapshot';
 import { loadLogoDataUri } from '@/lib/storage/logo';
+import { loadSignatureDataUri } from '@/lib/storage/signature';
 import { InvoicePrintView } from '@/components/app/invoices/invoice-print-view';
 import {
   CreditNotePrintView,
@@ -61,7 +62,8 @@ async function buildInvoiceArchivalHtml(id: string): Promise<{ html: string; tit
   }
 
   const logoBase64 = seller.logoStorageKey ? await loadLogoDataUri(seller.logoStorageKey) : null;
-  const invoiceData = { ...invoice, ...toInvoicePrintFields(seller), logo_base64: logoBase64, lineItems };
+  const signatureDataUri = seller.signatureStorageKey ? await loadSignatureDataUri(seller.signatureStorageKey) : null;
+  const invoiceData = { ...invoice, ...toInvoicePrintFields(seller), logo_base64: logoBase64, signature_data_uri: signatureDataUri, lineItems };
 
   const extraCss = `/* Force print styles for the standalone render to ensure we capture the print layout */
     @media all {
@@ -130,12 +132,14 @@ async function buildCreditNoteArchivalHtml(id: string): Promise<{ html: string; 
   }
 
   const logoBase64 = seller.logoStorageKey ? await loadLogoDataUri(seller.logoStorageKey) : null;
+  const signatureDataUri = seller.signatureStorageKey ? await loadSignatureDataUri(seller.signatureStorageKey) : null;
 
   const printData = {
     ...creditNote,
     business: {
       ...toCreditNotePrintBusiness(seller, creditNote.business_id),
       logo_base64: logoBase64,
+      signature_data_uri: signatureDataUri,
     },
     originalInvoice,
     lineItems,

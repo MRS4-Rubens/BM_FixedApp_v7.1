@@ -522,6 +522,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       default_gst_rate_type: 'exclusive',
       invoice_display_prefs: {},
       logo_storage_key: null,
+      signature_storage_key: null,
       subscription_plan: 'essentials',
       subscription_status: 'active',
       subscription_activated_at: new Date('2026-06-01T00:00:00.000Z'),

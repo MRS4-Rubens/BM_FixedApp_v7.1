@@ -25,6 +25,7 @@ const mockLiveBusiness: LiveBusinessSeller = {
   email: 'billing@acme.com',
   nature_of_business: 'IT Consulting & Services',
   logo_storage_key: 'businesses/0001/logo-123.png',
+  signature_storage_key: null,
   bank_account_name: 'Acme Tech Primary',
   bank_account_number: '123456789012',
   bank_ifsc: 'HDFC0001234',
