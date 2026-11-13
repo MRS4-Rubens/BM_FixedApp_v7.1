@@ -15,6 +15,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { removeBusinessSignature } from '@/lib/actions/business/remove-signature';
 import { SignatureUploadModal } from './signature-upload-modal';
+import { SIGNATURE_UPLOAD_RULES, CROP_HOW_TO } from '@/lib/signature/upload-rules';
 
 export interface SignaturePreviewCardProps {
   businessName: string;
@@ -214,6 +215,31 @@ export function SignatureSettingsPanel({
               )
             )}
           </div>
+
+          {/* Signature rules */}
+          <div className="pt-1">
+            <p className="text-xs font-semibold text-slate-700">Signature rules</p>
+            <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+              {SIGNATURE_UPLOAD_RULES.map((rule, idx) => (
+                <li key={idx} className="flex items-start gap-1.5">
+                  <CheckCircle2 className="size-3 text-emerald-700 shrink-0 mt-0.5" />
+                  <span>{rule}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <details className="text-xs">
+            <summary className="cursor-pointer font-semibold text-amber-800">
+              How to crop a photo on your phone or computer
+            </summary>
+            <div className="mt-1 space-y-1 text-muted-foreground pl-2 border-l border-amber-200">
+              {CROP_HOW_TO.map((item, idx) => (
+                <p key={idx}>
+                  <strong className="text-slate-700">{item.device}:</strong> {item.steps}
+                </p>
+              ))}
+            </div>
+          </details>
 
           {!canManage && disabledReason && (
             <p className="flex items-center gap-1 text-xs text-muted-foreground pt-0.5">
