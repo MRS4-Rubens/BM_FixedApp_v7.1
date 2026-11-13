@@ -65,9 +65,9 @@ describe('SIG-B3 architectural guards', () => {
     expect(content.toLowerCase()).not.toContain('radiogroup');
   });
 
-  it('4. signature-settings-panel.tsx imports SIGNATURE_UPLOAD_RULES and CROP_HOW_TO', () => {
-    const panelPath = path.resolve(ROOT_DIR, 'components/app/settings/signature-settings-panel.tsx');
-    const content = fs.readFileSync(panelPath, 'utf-8');
+  it('4. signature-upload-modal.tsx imports SIGNATURE_UPLOAD_RULES and CROP_HOW_TO', () => {
+    const modalPath = path.resolve(ROOT_DIR, 'components/app/settings/signature-upload-modal.tsx');
+    const content = fs.readFileSync(modalPath, 'utf-8');
 
     expect(content).toMatch(/import\s+.*SIGNATURE_UPLOAD_RULES.*from\s+['"]@\/lib\/signature\/upload-rules['"]/);
     expect(content).toMatch(/import\s+.*CROP_HOW_TO.*from\s+['"]@\/lib\/signature\/upload-rules['"]/);

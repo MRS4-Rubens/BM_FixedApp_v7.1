@@ -27,7 +27,7 @@ export const CROP_HOW_TO = [
 ] as const;
 
 export const REJECTION_MESSAGES: Record<
-  'empty' | 'too_busy' | 'portrait' | 'wrong_colour' | 'too_large' | 'unreadable',
+  'empty' | 'too_busy' | 'portrait' | 'wrong_colour' | 'too_large' | 'unreadable' | 'too_small',
   { title: string; fix: string; showCropHelp: boolean }
 > = {
   empty: {
@@ -59,6 +59,11 @@ export const REJECTION_MESSAGES: Record<
     title: "We couldn't read this image.",
     fix: 'Please choose a PNG, JPG or WEBP photo.',
     showCropHelp: false,
+  },
+  too_small: {
+    title: 'Please crop closer to your signature.',
+    fix: 'Your signature is too small in this photo and may look blurry. Please crop the photo tightly around your signature on your phone and upload again.',
+    showCropHelp: true,
   },
 };
 

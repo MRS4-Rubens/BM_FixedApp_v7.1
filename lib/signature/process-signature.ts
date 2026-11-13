@@ -353,7 +353,7 @@ export function findInkBounds(cleaned: SignatureImageData): InkBounds | null {
   };
 }
 
-export type SignatureRejection = 'empty' | 'too_busy' | 'portrait' | 'wrong_colour';
+export type SignatureRejection = 'empty' | 'too_busy' | 'portrait' | 'wrong_colour' | 'too_small';
 
 /**
  * Validates dimensions, density, and orientation of the signature.
@@ -369,6 +369,13 @@ export function assessSignature(
 
   if (bounds.height > bounds.width * 1.1) {
     return { ok: false, reason: 'portrait' };
+  }
+
+  // If the image is large (>= 600px wide) and the signature ink occupies less than 20% of the image width,
+  // or if the signature ink is narrower than 200px in an image >= 400px wide,
+  // the user photographed the whole page/desk without cropping.
+  if (imgW >= 600 && (bounds.width < imgW * 0.2 || bounds.width < 200)) {
+    return { ok: false, reason: 'too_small' };
   }
 
   const density = bounds.inkPixels / (bounds.width * bounds.height);

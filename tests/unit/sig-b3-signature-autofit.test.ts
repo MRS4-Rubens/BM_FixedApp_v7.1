@@ -210,6 +210,13 @@ describe('SIG-B3: Signature Autofit & Processing Helpers', () => {
       expect(res).toEqual({ ok: false, reason: 'empty' });
     });
 
+    it('rejects uncropped / small signature in a large photo as "too_small"', () => {
+      // Signature is 120px wide in a 1200px wide photo (10% of width)
+      const bounds: InkBounds = { x: 500, y: 500, width: 120, height: 40, inkPixels: 800 };
+      const res = assessSignature(bounds, 1200, 900);
+      expect(res).toEqual({ ok: false, reason: 'too_small' });
+    });
+
     it('accepts normal wide strokes', () => {
       const bounds: InkBounds = { x: 100, y: 50, width: 300, height: 80, inkPixels: 2500 };
       const res = assessSignature(bounds, 600, 300);
@@ -242,7 +249,7 @@ describe('SIG-B3: Signature Autofit & Processing Helpers', () => {
 
   describe('REJECTION_MESSAGES & upload-rules', () => {
     it('has an entry for every SignatureRejection plus too_large and unreadable', () => {
-      const expectedKeys = ['empty', 'too_busy', 'portrait', 'wrong_colour', 'too_large', 'unreadable'] as const;
+      const expectedKeys = ['empty', 'too_busy', 'portrait', 'wrong_colour', 'too_large', 'unreadable', 'too_small'] as const;
       for (const k of expectedKeys) {
         expect(REJECTION_MESSAGES[k]).toBeDefined();
         expect(REJECTION_MESSAGES[k].title.length).toBeGreaterThan(0);

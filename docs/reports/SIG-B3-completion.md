@@ -84,3 +84,15 @@ Verification on `/settings?tab=Invoice%20Settings`:
 - typecheck, lint:ratchet (0/0), knip pass; full vitest with CI env: 1696 pass, 1 failure in tests/unit/db-client-pool.test.ts (untouched by this change) that passes when re-run alone (2/2) — timing-sensitive under full-suite load. print-css regenerated. Local `pnpm build` skipped (user's dev server running); CI runs it.
 - Real browser run of the actual `processSignatureImage` (bundled into a temporary page served by the dev server, then deleted) on 7 generated photos: normal black → ok; tightly phone-cropped (ink touching the edges, ~2.2:1) → ok with 0 ink pixels touching the output edge (the original "cut off" bug); red → wrong_colour; upright → portrait; black under warm light → ok black; blue → ok blue; blank → empty. All outputs 900×300 RGBA PNG (colour type 6), 40–45 KB.
 - Not checked: the dialog screens in the signed-in app (browser session was logged out).
+
+---
+
+## 8. Follow-up: UI polish (branch feat/sig-b3-ui-polish, after PR #43)
+
+What actually changed (verified against the diff):
+- **Settings row** (`signature-settings-panel.tsx`): compact status text; buttons sit between the status and a new privacy line ("Stored privately…"); rules and crop help removed from the row (they live in the upload dialog only); preview vertically centred. Reviewer fix: the row uses `flex-wrap` instead of a screen-width `sm:flex-row` breakpoint, because on tablets the settings column is ~270 px and text + 256 px preview overflowed.
+- **Upload dialog** (`signature-upload-modal.tsx`): wider (`max-w-3xl`), tighter padding, two columns in the choose phase — drop zone + rules on the left, photo examples on the right (new `signature-sample.tsx`: one sample signature image shown as correct / red-on-lined-paper / tilted). Reviewer fix: for `too_small` the "How to crop" help opens automatically.
+- **New rejection `too_small`** (`process-signature.ts` → `assessSignature`, 7 lines): if the photo is ≥ 600 px wide and the ink is < 20 % of its width or < 200 px wide, the user photographed the whole page without cropping → "Please crop closer to your signature." with crop help. Checked after `portrait`, before the density checks. 1 new test.
+- Guard test 4 now checks the rules/crop constants are imported by the dialog (they moved out of the row).
+
+Not changed (the handover text described otherwise): `classifyInkColour(img, paperLum)` keeps its white-balanced black/blue/other logic (no "red ≥ 5 %" or "faint" rule), there is no `lined_paper` heuristic, and no `findInkBoundingBox` / `assessSignatureDensity` / `validateSignatureCoverage` / `findOptimalThreshold` exports exist. `fitRectForSignature` is not clamped to the photo — clamping would cut ink again.
