@@ -6,7 +6,7 @@ import { buildLogoUrl } from '@/lib/storage/logo-url';
 type BusinessRow = InferSelectModel<typeof businesses>;
 export type LiveBusinessSeller = Pick<BusinessRow,
   'id' | 'legal_name' | 'trade_name' | 'gstin' | 'pan' | 'address_line1' | 'address_line2' | 'city' | 'state_code' |
-  'pincode' | 'phone' | 'alternate_phone' | 'email' | 'nature_of_business' | 'logo_storage_key' | 'signature_storage_key' |
+  'pincode' | 'phone' | 'alternate_phone' | 'email' | 'nature_of_business' | 'invoice_tagline' | 'logo_storage_key' | 'signature_storage_key' |
   'bank_account_name' | 'bank_account_number' | 'bank_ifsc' | 'bank_name' | 'invoice_terms'>;
 
 /** Values written to the snapshot columns at finalization. */
@@ -19,6 +19,7 @@ export interface SellerSnapshotValues {
   seller_alternate_phone_snapshot: string | null;
   seller_email_snapshot: string | null;
   seller_nature_of_business_snapshot: string | null;
+  seller_tagline_snapshot: string | null;
   seller_pan_snapshot: string | null;
   seller_bank_snapshot: SellerBankSnapshot | null;
   terms_snapshot: string | null;
@@ -61,6 +62,7 @@ export function captureSellerSnapshot(business: LiveBusinessSeller): SellerSnaps
     seller_alternate_phone_snapshot: business.alternate_phone ?? null,
     seller_email_snapshot: business.email ?? null,
     seller_nature_of_business_snapshot: business.nature_of_business ?? null,
+    seller_tagline_snapshot: business.invoice_tagline ?? null,
     seller_pan_snapshot: business.pan ?? null,
     seller_bank_snapshot,
     terms_snapshot: business.invoice_terms ?? null,
@@ -91,6 +93,7 @@ export interface SellerSnapshotRow {
   seller_alternate_phone_snapshot: string | null;
   seller_email_snapshot: string | null;
   seller_nature_of_business_snapshot: string | null;
+  seller_tagline_snapshot?: string | null;
   seller_pan_snapshot: string | null;
   seller_bank_snapshot: unknown;
   terms_snapshot: string | null;
@@ -113,6 +116,7 @@ export interface SellerDetails {
   alternatePhone: string | null;
   email: string | null;
   natureOfBusiness: string | null;
+  tagline: string | null;
   bank: SellerBankSnapshot | null;
   terms: string | null;
   logoStorageKey: string | null;
@@ -196,6 +200,7 @@ export function resolveSellerDetails(
       alternatePhone: doc.seller_alternate_phone_snapshot ?? null,
       email: doc.seller_email_snapshot ?? null,
       natureOfBusiness: doc.seller_nature_of_business_snapshot ?? null,
+      tagline: doc.seller_tagline_snapshot ?? null,
       bank,
       terms: doc.terms_snapshot ?? null,
       logoStorageKey: doc.logo_storage_key_snapshot ?? null,
@@ -234,6 +239,7 @@ export function resolveSellerDetails(
       alternatePhone: live.alternate_phone ?? null,
       email: live.email ?? null,
       natureOfBusiness: live.nature_of_business ?? null,
+      tagline: live.invoice_tagline ?? null,
       bank,
       terms: live.invoice_terms ?? null,
       logoStorageKey: live.logo_storage_key ?? null,
@@ -261,6 +267,7 @@ export function toInvoicePrintFields(d: SellerDetails): {
   bank_ifsc: string | null;
   invoice_terms: string | null;
   logo_storage_key: string | null;
+  invoice_tagline: string | null;
 } {
   return {
     business_name: d.legalName,
@@ -276,6 +283,7 @@ export function toInvoicePrintFields(d: SellerDetails): {
     bank_ifsc: d.bank?.ifsc ?? null,
     invoice_terms: d.terms,
     logo_storage_key: d.logoStorageKey,
+    invoice_tagline: d.tagline,
   };
 }
 

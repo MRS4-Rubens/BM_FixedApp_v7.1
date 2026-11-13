@@ -204,6 +204,13 @@
       "when": 1794555987848,
       "tag": "0028_sig_a_authorised_signature",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794603352158,
+      "tag": "0029_tag_a_invoice_tagline",
+      "breakpoints": true
     }
   ]
 }

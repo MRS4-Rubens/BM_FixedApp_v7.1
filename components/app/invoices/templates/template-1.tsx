@@ -31,6 +31,7 @@ export interface InvoiceTemplateProps {
     total_tax_paise: number;
     grand_total_paise: number;
     nature_of_business?: string | null;
+    invoice_tagline?: string | null;
     alternate_phone?: string | null;
     address_line1?: string | null;
     address_line2?: string | null;

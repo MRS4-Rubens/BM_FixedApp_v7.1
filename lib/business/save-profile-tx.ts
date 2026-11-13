@@ -18,6 +18,7 @@ import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import { DEFAULT_INVOICE_TEMPLATE_ID } from '@/lib/invoices/template-ids';
 import { checkInvoiceSettingsEntitlement } from '@/lib/subscriptions/invoice-settings-gate';
 import type { businessProfileSchema } from '@/lib/validations/business';
+import { normaliseInvoiceTagline } from '@/lib/business/invoice-tagline';
 import { diffBusinessIdentity, buildIdentityLockedMessage } from './identity-policy';
 import { hasFinalizedInvoices } from './identity-lock';
 
@@ -80,6 +81,7 @@ export async function saveBusinessProfileInTransaction(
     bank_ifsc: params.profile.bank_ifsc || null,
     bank_name: params.profile.bank_name || null,
     nature_of_business: params.profile.nature_of_business || null,
+    invoice_tagline: normaliseInvoiceTagline(params.profile.invoice_tagline),
     alternate_phone: params.profile.alternate_phone || null,
   };
 
@@ -184,6 +186,7 @@ export async function saveBusinessProfileInTransaction(
       email: businesses.email,
       alternate_phone: businesses.alternate_phone,
       nature_of_business: businesses.nature_of_business,
+      invoice_tagline: businesses.invoice_tagline,
       bank_account_number: businesses.bank_account_number,
     })
     .from(businesses)

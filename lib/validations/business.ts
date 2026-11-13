@@ -3,6 +3,11 @@ import { GSTIN_REGEX, PAN_REGEX, IFSC_REGEX, PINCODE_REGEX } from './patterns';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { validateInvoiceNumberFormat } from '@/lib/invoices/number-format';
 import { INVOICE_TEMPLATE_IDS } from '@/lib/invoices/template-ids';
+import {
+  INVOICE_TAGLINE_MAX,
+  INVOICE_TAGLINE_ALLOWED,
+  normaliseInvoiceTagline,
+} from '@/lib/business/invoice-tagline';
 
 export const businessProfileSchema = z.object({
   legal_name: z.string().min(1, 'Legal business name is required').max(200),
@@ -44,6 +49,9 @@ export const businessProfileSchema = z.object({
   default_invoice_template: z.enum(INVOICE_TEMPLATE_IDS).optional(),
   default_gst_rate_type: z.enum(['inclusive', 'exclusive']).optional(),
   nature_of_business: z.string().max(200).optional().or(z.literal('')),
+  invoice_tagline: z.string().max(200).optional().or(z.literal(''))
+    .refine((v) => (normaliseInvoiceTagline(v)?.length ?? 0) <= INVOICE_TAGLINE_MAX, { message: `Keep the tagline to ${INVOICE_TAGLINE_MAX} characters or fewer` })
+    .refine((v) => INVOICE_TAGLINE_ALLOWED.test(normaliseInvoiceTagline(v) ?? ''), { message: "Use letters, numbers, spaces and & @ , . ; : - / ( ) ' + | only" }),
   alternate_phone: z.string().max(15).optional().or(z.literal('')),
 }).refine(
   (data) => INDIAN_GST_STATES.some((s) => s.code === data.state_code),

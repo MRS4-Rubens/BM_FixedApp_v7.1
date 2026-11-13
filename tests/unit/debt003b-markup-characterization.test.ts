@@ -510,6 +510,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       email: 'billing@acme.com',
       alternate_phone: null,
       nature_of_business: 'Wholesale & Retail',
+      invoice_tagline: null,
       bank_name: 'HDFC Bank',
       bank_account_name: null,
       bank_account_number: '50200012345678',

@@ -25,6 +25,7 @@ function createBaseSnapshot(): ProfileSnapshot {
     email: 'billing@acme.com',
     alternate_phone: null,
     nature_of_business: 'Software Development',
+    invoice_tagline: null,
     bank_account_number: '12345678901234',
   };
 }

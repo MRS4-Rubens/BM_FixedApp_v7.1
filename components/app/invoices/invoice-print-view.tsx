@@ -33,6 +33,7 @@ export interface InvoicePrintViewProps {
     invoice_template?: string | null;
     gst_rate_type?: string | null;
     nature_of_business?: string | null;
+    invoice_tagline?: string | null;
     alternate_phone?: string | null;
     address_line1?: string | null;
     address_line2?: string | null;
@@ -93,6 +94,7 @@ export function InvoicePrintView({ invoice, businessStateCode, printSize = 'A4',
       billing_gstin_snapshot: invoice.billing_gstin_snapshot?.toUpperCase() || null,
       place_of_supply_state_code: invoice.place_of_supply_state_code || null,
       nature_of_business: invoice.nature_of_business || null,
+      invoice_tagline: invoice.invoice_tagline || null,
       alternate_phone: invoice.alternate_phone || null,
       address_line1: invoice.address_line1 || null,
       address_line2: invoice.address_line2 || null,

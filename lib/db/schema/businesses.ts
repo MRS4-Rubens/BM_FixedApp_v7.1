@@ -47,6 +47,7 @@ export const businesses = pgTable('businesses', {
   credit_note_number_prefix: text('credit_note_number_prefix').notNull().default('CN'),
   payment_due_days: integer('payment_due_days').notNull().default(30),
   nature_of_business: text('nature_of_business'),
+  invoice_tagline: text('invoice_tagline'),
   alternate_phone: text('alternate_phone'),
   // Default calculation preference for the business's line items (inclusive vs exclusive)
   default_gst_rate_type: gstRateTypeEnum('default_gst_rate_type').notNull().default('exclusive'),
