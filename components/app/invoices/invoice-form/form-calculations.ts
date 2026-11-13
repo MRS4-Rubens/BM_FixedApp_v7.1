@@ -319,6 +319,7 @@ export function buildPreviewInvoiceData({
     seller_gstin_snapshot: business.gstin ? business.gstin.toUpperCase() : null,
     phone: business.phone,
     nature_of_business: business.nature_of_business || null,
+    invoice_tagline: business.invoice_tagline || null,
     alternate_phone: business.alternate_phone || null,
     address_line1: business.address_line1,
     address_line2: business.address_line2 || null,

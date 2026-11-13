@@ -27,6 +27,7 @@ export function sellerSnapshotColumns() {
     seller_alternate_phone_snapshot: text('seller_alternate_phone_snapshot'),
     seller_email_snapshot: text('seller_email_snapshot'),
     seller_nature_of_business_snapshot: text('seller_nature_of_business_snapshot'),
+    seller_tagline_snapshot: text('seller_tagline_snapshot'),
     seller_pan_snapshot: varchar('seller_pan_snapshot', { length: 10 }),
     seller_bank_snapshot: jsonb('seller_bank_snapshot').$type<SellerBankSnapshot>(),
     terms_snapshot: text('terms_snapshot'),

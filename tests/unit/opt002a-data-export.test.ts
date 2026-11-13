@@ -40,6 +40,8 @@ describe('OPT-002a Data Export Unit Tests', () => {
       expect(shouldOmitField('line_items')).toBe(false);
       expect(shouldOmitField('created_at')).toBe(false);
       expect(shouldOmitField('role')).toBe(false);
+      expect(shouldOmitField('invoice_tagline')).toBe(false);
+      expect(shouldOmitField('seller_tagline_snapshot')).toBe(false);
     });
   });
 

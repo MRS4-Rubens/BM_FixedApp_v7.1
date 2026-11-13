@@ -34,6 +34,7 @@ import {
 import type { businesses } from '@/lib/db/schema';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { ProfileSpotlightTour } from './profile-spotlight-tour';
+import { InvoiceTaglineField } from './invoice-tagline-field';
 
 const baseInputClass =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 h-9 text-sm text-slate-900 font-medium placeholder:text-slate-400 hover:border-slate-400 focus:outline-none focus:ring-2 shadow-2xs transition-all'
@@ -85,6 +86,7 @@ export function BusinessProfileForm({
       alternate_phone: business.alternate_phone || '',
       email: business.email || '',
       nature_of_business: business.nature_of_business || '',
+      invoice_tagline: business.invoice_tagline || '',
       bank_account_name: business.bank_account_name || '',
       bank_account_number: business.bank_account_number || '',
       bank_ifsc: business.bank_ifsc || '',
@@ -104,6 +106,7 @@ export function BusinessProfileForm({
       alternate_phone: '',
       email: '',
       nature_of_business: '',
+      invoice_tagline: '',
       bank_account_name: '',
       bank_account_number: '',
       bank_ifsc: '',
@@ -113,6 +116,7 @@ export function BusinessProfileForm({
 
   // Smart Auto-fill: When GSTIN is typed, automatically extract PAN and pre-fill State code
   const watchedGstin = useWatch({ control, name: 'gstin' });
+  const watchedTagline = useWatch({ control, name: 'invoice_tagline' });
   useEffect(() => {
     if (!watchedGstin) return;
     const clean = watchedGstin.trim().toUpperCase();
@@ -307,6 +311,19 @@ export function BusinessProfileForm({
                 <input id={`${id}-nature-of-business`} type="text" placeholder="e.g. Wholesale & Retail" className={cn(inputGreenClass, errors.nature_of_business && 'border-destructive focus:ring-destructive/20')} {...register('nature_of_business')} />
                 {errors.nature_of_business && <p className={errorClass}>{errors.nature_of_business.message}</p>}
               </div>
+            </div>
+
+            {/* Row 2.5: Invoice Tagline */}
+            <div>
+              <InvoiceTaglineField
+                idPrefix={id}
+                registration={register('invoice_tagline')}
+                value={watchedTagline}
+                error={errors.invoice_tagline?.message}
+                onUseExample={(text) => {
+                  setValue('invoice_tagline', text, { shouldDirty: true, shouldValidate: true });
+                }}
+              />
             </div>
 
             {/* Row 3: Contact Details (Email 50%, Phone 25%, Alt Phone 25%) */}

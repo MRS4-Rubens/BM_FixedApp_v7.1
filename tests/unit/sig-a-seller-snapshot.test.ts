@@ -23,6 +23,7 @@ const mockLiveBusiness: LiveBusinessSeller = {
   alternate_phone: '+91 9876543211',
   email: 'billing@acme.com',
   nature_of_business: 'IT Consulting & Services',
+  invoice_tagline: null,
   logo_storage_key: 'logos/0001/logo-123.png',
   signature_storage_key: 'signatures/0001/sig-abc.png',
   bank_account_name: 'Acme Tech Primary',

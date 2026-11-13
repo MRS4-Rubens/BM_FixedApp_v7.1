@@ -7,7 +7,7 @@ const PROFILE_AUDIT_VALUE_FIELDS = [
 ] as const;
 /** Only the FACT of change is recorded (personal data must not enter an immutable log). */
 const PROFILE_AUDIT_PRESENCE_FIELDS = [
-  'pan', 'address_line1', 'address_line2', 'city', 'pincode', 'phone', 'email', 'alternate_phone', 'nature_of_business',
+  'pan', 'address_line1', 'address_line2', 'city', 'pincode', 'phone', 'email', 'alternate_phone', 'nature_of_business', 'invoice_tagline',
 ] as const;
 /** Recorded as last-4 only, under the key bank_account_last4. */
 const PROFILE_AUDIT_MASKED_FIELD = 'bank_account_number' as const;

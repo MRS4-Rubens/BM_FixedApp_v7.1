@@ -64,6 +64,7 @@ export function createInitialFakeState(): FakeState {
       credit_note_number_prefix: 'CN',
       payment_due_days: 30,
       nature_of_business: null,
+      invoice_tagline: null,
       alternate_phone: null,
       default_gst_rate_type: 'exclusive',
       subscription_plan: 'free',
