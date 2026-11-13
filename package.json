@@ -61,7 +61,6 @@
     "qrcode": "1.5.4",
     "react": "^19",
     "react-dom": "^19",
-    "react-easy-crop": "^6.2.5",
     "react-hook-form": "^7.91.0",
     "recharts": "^3.10.1",
     "resend": "^6.37.0",

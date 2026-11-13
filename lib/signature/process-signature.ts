@@ -184,3 +184,232 @@ export function validateCoverage(
   return { ok: true };
 }
 
+export type InkVerdict = 'black' | 'blue' | 'other' | 'none';
+
+/**
+ * Classifies ink colour into 'black', 'blue', 'other', or 'none'.
+ * Analyzes pixels darker than 70% of paper luminance, after white-balancing against the paper colour.
+ */
+export function classifyInkColour(
+  img: SignatureImageData,
+  paperLum: number
+): { verdict: InkVerdict; inkPixels: number; blueShare: number; otherShare: number } {
+  const threshold = paperLum * 0.7;
+  const totalPixels = img.width * img.height;
+  const data = img.data;
+
+  // White balance: phone photos under warm/yellow room light tint everything, which would make the
+  // anti-aliased edges of BLACK ink look brown ("other"). Measure the paper's own colour and divide it out
+  // before judging hue, so the verdict is about the pen, not the light.
+  let paperR = 0;
+  let paperG = 0;
+  let paperB = 0;
+  let paperCount = 0;
+  const paperFloor = paperLum * 0.95;
+  for (let i = 0; i < totalPixels; i++) {
+    const idx = i * 4;
+    if (luminance(data[idx], data[idx + 1], data[idx + 2]) >= paperFloor) {
+      paperR += data[idx];
+      paperG += data[idx + 1];
+      paperB += data[idx + 2];
+      paperCount++;
+    }
+  }
+  const scaleR = paperCount > 0 ? 255 / Math.max(1, paperR / paperCount) : 1;
+  const scaleG = paperCount > 0 ? 255 / Math.max(1, paperG / paperCount) : 1;
+  const scaleB = paperCount > 0 ? 255 / Math.max(1, paperB / paperCount) : 1;
+
+  let inkPixels = 0;
+  let blueCount = 0;
+  let otherCount = 0;
+
+  for (let i = 0; i < totalPixels; i++) {
+    const idx = i * 4;
+    const lum = luminance(data[idx], data[idx + 1], data[idx + 2]);
+
+    if (lum < threshold) {
+      const r = Math.min(255, data[idx] * scaleR);
+      const g = Math.min(255, data[idx + 1] * scaleG);
+      const b = Math.min(255, data[idx + 2] * scaleB);
+      inkPixels++;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const delta = max - min;
+      const sat = max === 0 ? 0 : delta / max;
+
+      let isNeutral = false;
+      if (max < 70 || sat < 0.25) {
+        isNeutral = true;
+      }
+
+      if (!isNeutral) {
+        let hue = 0;
+        if (delta > 0) {
+          if (max === r) {
+            hue = ((g - b) / delta) % 6;
+          } else if (max === g) {
+            hue = (b - r) / delta + 2;
+          } else {
+            hue = (r - g) / delta + 4;
+          }
+          hue = hue * 60;
+          if (hue < 0) hue += 360;
+        }
+
+        if (hue >= 190 && hue <= 260) {
+          blueCount++;
+        } else {
+          otherCount++;
+        }
+      }
+    }
+  }
+
+  if (inkPixels === 0) {
+    return { verdict: 'none', inkPixels: 0, blueShare: 0, otherShare: 0 };
+  }
+
+  const otherShare = otherCount / inkPixels;
+  const blueShare = blueCount / inkPixels;
+
+  if (otherShare > 0.15) {
+    return { verdict: 'other', inkPixels, blueShare, otherShare };
+  }
+  if (blueShare >= 0.3) {
+    return { verdict: 'blue', inkPixels, blueShare, otherShare };
+  }
+  return { verdict: 'black', inkPixels, blueShare, otherShare };
+}
+
+export interface InkBounds {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  inkPixels: number;
+}
+
+/**
+ * Finds bounding box of ink pixels (alpha >= 128) using a noise floor.
+ */
+export function findInkBounds(cleaned: SignatureImageData): InkBounds | null {
+  const { width, height, data } = cleaned;
+  if (width === 0 || height === 0) return null;
+
+  const rowCounts = new Uint32Array(height);
+  const colCounts = new Uint32Array(width);
+
+  for (let y = 0; y < height; y++) {
+    const rowOffset = y * width;
+    for (let x = 0; x < width; x++) {
+      if (data[(rowOffset + x) * 4 + 3] >= 128) {
+        rowCounts[y]++;
+        colCounts[x]++;
+      }
+    }
+  }
+
+  const rowNoise = Math.max(1, Math.round(width * 0.002));
+  const colNoise = Math.max(1, Math.round(height * 0.002));
+
+  let minY = -1;
+  let maxY = -1;
+  for (let y = 0; y < height; y++) {
+    if (rowCounts[y] > rowNoise) {
+      if (minY === -1) minY = y;
+      maxY = y;
+    }
+  }
+
+  let minX = -1;
+  let maxX = -1;
+  for (let x = 0; x < width; x++) {
+    if (colCounts[x] > colNoise) {
+      if (minX === -1) minX = x;
+      maxX = x;
+    }
+  }
+
+  if (minY === -1 || minX === -1) {
+    return null;
+  }
+
+  let inkPixels = 0;
+  for (let y = minY; y <= maxY; y++) {
+    const rowOffset = y * width;
+    for (let x = minX; x <= maxX; x++) {
+      if (data[(rowOffset + x) * 4 + 3] >= 128) {
+        inkPixels++;
+      }
+    }
+  }
+
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+    inkPixels,
+  };
+}
+
+export type SignatureRejection = 'empty' | 'too_busy' | 'portrait' | 'wrong_colour';
+
+/**
+ * Validates dimensions, density, and orientation of the signature.
+ */
+export function assessSignature(
+  bounds: InkBounds | null,
+  imgW: number,
+  imgH: number
+): { ok: true } | { ok: false; reason: SignatureRejection } {
+  if (!bounds || bounds.inkPixels < 150 || bounds.width < imgW * 0.05) {
+    return { ok: false, reason: 'empty' };
+  }
+
+  if (bounds.height > bounds.width * 1.1) {
+    return { ok: false, reason: 'portrait' };
+  }
+
+  const density = bounds.inkPixels / (bounds.width * bounds.height);
+  if (density > 0.45) {
+    return { ok: false, reason: 'too_busy' };
+  }
+
+  if (bounds.width >= imgW * 0.97 && bounds.height >= imgH * 0.97 && density > 0.2) {
+    return { ok: false, reason: 'too_busy' };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Fits a 3:1 bounding box around the signature by padding and growing the smaller side.
+ */
+export function fitRectForSignature(bounds: InkBounds): { sx: number; sy: number; sw: number; sh: number } {
+  const padX = bounds.width * 0.06;
+  const padY = bounds.height * 0.15;
+
+  let w = bounds.width + 2 * padX;
+  let h = bounds.height + 2 * padY;
+
+  if (w / h > 3) {
+    h = w / 3;
+  } else {
+    w = h * 3;
+  }
+
+  const cx = bounds.x + bounds.width / 2;
+  const cy = bounds.y + bounds.height / 2;
+  const sx = cx - w / 2;
+  const sy = cy - h / 2;
+
+  return {
+    sx,
+    sy,
+    sw: w,
+    sh: h,
+  };
+}
+
+
