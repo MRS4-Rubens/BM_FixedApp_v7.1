@@ -3,6 +3,7 @@ import { paiseToRupees, formatPaiseAsInr } from '@/lib/money';
 import { INDIAN_GST_STATES, stateTaxLabel } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
+import { SignatureMark, isSignatureDataUri, AUTHORISED_SIGNATORY_LABEL } from './signature-mark';
 
 // ============================================================================
 // CONFIGURABLE DESIGN SYSTEM VARIABLES FOR TEMPLATE 4 (EXECUTIVE PREMIUM)
@@ -31,7 +32,8 @@ const PRINT_STYLES = {
 };
 
 export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
-  const { discEnabled, showHsn, enableFixedRows, fixedRowsCount } = displayPrefs;
+  const { discEnabled, showHsn, enableFixedRows, fixedRowsCount, showSignatory } = displayPrefs;
+  const signatureSrc = isSignatureDataUri(invoice.signature_data_uri) ? invoice.signature_data_uri : null;
   const isIntra = invoice.total_igst_paise === 0;
   const taxLabel = stateTaxLabel(businessStateCode);
 
@@ -592,7 +594,9 @@ export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, dis
         {/* Row 1: Header / Title */}
         <div className="flex justify-between items-start uppercase leading-tight mb-1">
           <span className="tracking-wider">Terms &amp; Conditions:</span>
-          <span className="font-black">For {invoice.business_name}</span>
+          {showSignatory && (
+            <span className="font-black">For {invoice.business_name}</span>
+          )}
         </div>
 
         {/* Row 2: Other Terms & Stamp Placeholder */}
@@ -610,9 +614,17 @@ export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, dis
             )}
           </div>
           {/* Dynamic Signature area / Stamp placeholder */}
-          <div className="shrink-0 h-6 w-36 border border-dashed border-slate-400 rounded bg-slate-50/60 flex items-center justify-center select-none pointer-events-none ml-2">
-            <span className="font-mono text-slate-600 font-bold text-[10px] tracking-wider uppercase whitespace-nowrap">STAMP / SIGNATURE</span>
-          </div>
+          {showSignatory && (
+            signatureSrc ? (
+              <div className="shrink-0 ml-2 w-36 h-10 flex items-end justify-center">
+                <SignatureMark src={signatureSrc} />
+              </div>
+            ) : (
+              <div className="shrink-0 h-6 w-36 border border-dashed border-slate-400 rounded bg-slate-50/60 flex items-center justify-center select-none pointer-events-none ml-2">
+                <span className="font-mono text-slate-600 font-bold text-[10px] tracking-wider uppercase whitespace-nowrap">STAMP / SIGNATURE</span>
+              </div>
+            )
+          )}
         </div>
 
         {/* Row 3: Last Term aligned with Dashed Signature Line */}
@@ -621,9 +633,14 @@ export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, dis
             <span className="shrink-0 text-slate-700 font-extrabold select-none">→</span>
             <span>{lastTerm}</span>
           </div>
-          <div className="shrink-0 pl-2 flex justify-end">
-            <div className="border-t border-dashed border-slate-800 w-36"></div>
-          </div>
+          {showSignatory && (
+            <div className="shrink-0 pl-2 flex flex-col items-center justify-end">
+              <div className="border-t border-dashed border-slate-800 w-36"></div>
+              <span className="mt-[1px] text-[9px] uppercase tracking-wider leading-none">
+                {AUTHORISED_SIGNATORY_LABEL}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
