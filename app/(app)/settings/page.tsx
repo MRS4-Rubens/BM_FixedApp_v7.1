@@ -9,6 +9,7 @@ import { getCurrentMonthRange } from '@/lib/reports/period';
 import { hasFinalizedInvoices } from '@/lib/business/identity-lock';
 import { getCurrentFinancialYearLabel } from '@/lib/invoices/financial-year';
 import { getRequestTimeMs } from '@/lib/time/request-time';
+import { loadSignatureDataUri } from '@/lib/storage/signature';
 
 export default async function SettingsPage({
   searchParams,
@@ -24,6 +25,7 @@ export default async function SettingsPage({
   const initialTab = resolvedParams?.tab;
 
   let business = null;
+  let signatureDataUri: string | null = null;
   let subscriptionHistory: Array<{
     id: string;
     planName: string;
@@ -52,6 +54,14 @@ export default async function SettingsPage({
     business = await getCurrentBusiness();
 
     if (business) {
+      if (business.signature_storage_key) {
+        try {
+          signatureDataUri = await loadSignatureDataUri(business.signature_storage_key);
+        } catch {
+          signatureDataUri = null;
+        }
+      }
+
       const monthRange = getCurrentMonthRange();
       usageStats.currentMonthLabel = monthRange.label;
 
@@ -133,6 +143,7 @@ export default async function SettingsPage({
       identityLocked={identityLocked}
       nowMs={nowMs}
       userRole={appUser.role}
+      signatureDataUri={signatureDataUri}
     />
   );
 }

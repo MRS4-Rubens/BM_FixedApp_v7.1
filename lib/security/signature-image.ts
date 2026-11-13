@@ -3,9 +3,17 @@
  * Validates PNG signature, IHDR dimensions, aspect ratio, and RGBA alpha channel.
  */
 
-export const SIGNATURE_MAX_BYTES = 512 * 1024; // 512 KB
-export const SIGNATURE_MIN_WIDTH_PX = 300;
-export const SIGNATURE_MAX_WIDTH_PX = 1500;
+import {
+  SIGNATURE_MAX_BYTES,
+  SIGNATURE_MIN_WIDTH_PX,
+  SIGNATURE_MAX_WIDTH_PX,
+} from './signature-limits';
+
+export {
+  SIGNATURE_MAX_BYTES,
+  SIGNATURE_MIN_WIDTH_PX,
+  SIGNATURE_MAX_WIDTH_PX,
+};
 
 export type SignatureValidationError = {
   readonly ok: false;
