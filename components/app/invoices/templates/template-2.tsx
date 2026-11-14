@@ -4,6 +4,7 @@ import { getStateAbbrByCode, stateTaxLabel } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { SignatureMark, isSignatureDataUri, AUTHORISED_SIGNATORY_LABEL } from './signature-mark';
+import { resolveHeaderSubline, TaglinePill, ContactLine } from './header-parts';
 
 // ============================================================================
 // CONFIGURABLE DESIGN SYSTEM VARIABLES FOR TEMPLATE 2 (BOOK DEPOT)
@@ -77,6 +78,12 @@ export function InvoiceTemplate2({ invoice, businessStateCode, hasWatermark, dis
   const lastTerm = termsLines[termsLines.length - 1] || '';
 
   const logoSrc = invoice.logo_base64 || invoice.logo_url || null;
+  const subline = resolveHeaderSubline(invoice);
+
+  const template2Phones = [invoice.phone, invoice.alternate_phone].filter(Boolean) as string[];
+  const template2Address = (invoice.address_line1 || invoice.city || invoice.pincode)
+    ? `${invoice.address_line1 || ''}${invoice.address_line2 ? `, ${invoice.address_line2}` : ''}, ${invoice.city ? invoice.city.toUpperCase() : ''} - ${invoice.pincode || ''}${template2Phones.length === 0 ? '.' : ''}`
+    : '';
 
   return (
     <div className={`template-2-root ${PRINT_STYLES.outerBorder}`}>
@@ -117,8 +124,10 @@ export function InvoiceTemplate2({ invoice, businessStateCode, hasWatermark, dis
           {/* Brand Block: Business Name + Tagline with Logo Bottom-Aligned to Tagline */}
           <div className="relative inline-flex flex-col items-center">
             {logoSrc && (
-              <div className={`absolute right-full mr-[7px] w-[140px] h-[70px] flex items-end justify-end p-0 select-none overflow-hidden ${
-                invoice.nature_of_business ? 'bottom-[-4.5px]' : 'bottom-0'
+              // Logo height: with a tagline the pill sits under the name, so the logo must fit between the top-left
+              // GSTIN and the name's baseline (measured: TAG-B review). Without a tagline it keeps its full size.
+              <div className={`absolute right-full mr-[7px] w-[140px] ${subline?.kind === 'tagline' ? 'h-[42px]' : 'h-[70px]'} flex items-end justify-end p-0 select-none overflow-hidden ${
+                subline?.kind === 'nature' ? 'bottom-[-4.5px]' : 'bottom-0'
               }`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -132,28 +141,26 @@ export function InvoiceTemplate2({ invoice, businessStateCode, hasWatermark, dis
             <h1 className={`${PRINT_STYLES.fontTitle} whitespace-nowrap`}>{invoice.business_name}</h1>
 
             {/* Line 3: Nature of the Business (Conditional) */}
-            {invoice.nature_of_business && (
+            {subline?.kind === 'nature' && (
               <p className="text-[11px] font-semibold text-black uppercase mt-[5px] leading-tight whitespace-nowrap">
-                ({invoice.nature_of_business})
+                ({subline.text})
               </p>
             )}
           </div>
 
-          {/* Line 4: Single-Line Address */}
-          <p className="text-[11px] font-medium mt-[5px] leading-tight">
-            {invoice.address_line1}
-            {invoice.address_line2 ? `, ${invoice.address_line2}` : ''}
-            , {invoice.city ? invoice.city.toUpperCase() : ''} - {invoice.pincode || ''}.
-          </p>
-
-          {/* Line 5: Phone Numbers (Phone & Alternate Phone) */}
-          {(invoice.phone || invoice.alternate_phone) && (
-            <p className="text-[11px] font-medium mt-[5px] leading-tight">
-              Ph No. : {invoice.phone || ''}
-              {invoice.phone && invoice.alternate_phone ? ', ' : ''}
-              {invoice.alternate_phone || ''}
-            </p>
+          {subline?.kind === 'tagline' && (
+            <div className="mt-[6px] max-w-full">
+              <TaglinePill text={subline.text} tone="black" />
+            </div>
           )}
+
+          {/* Line 4: Single-Line Address & Phones */}
+          <ContactLine
+            // max-w: this header column is shifted 1cm left, so a full-width line would run off the left edge.
+            className="text-[11px] font-medium mt-[5px] leading-tight max-w-[85%] text-center"
+            address={template2Address}
+            phones={template2Phones}
+          />
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { INDIAN_GST_STATES, stateTaxLabel } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { SignatureMark, isSignatureDataUri, AUTHORISED_SIGNATORY_LABEL } from './signature-mark';
+import { resolveHeaderSubline, TaglinePill, ContactLine } from './header-parts';
 
 // ============================================================================
 // CONFIGURABLE DESIGN SYSTEM VARIABLES FOR TEMPLATE 4 (EXECUTIVE PREMIUM)
@@ -82,6 +83,10 @@ export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, dis
   const lastTerm = termsLines[termsLines.length - 1] || '';
 
   const logoSrc = invoice.logo_base64 || invoice.logo_url || null;
+  const subline = resolveHeaderSubline(invoice);
+
+  const template4Address = `${invoice.address_line1 || ''}${invoice.address_line2 ? `, ${invoice.address_line2}` : ''}${invoice.city ? `, ${invoice.city.toUpperCase()}` : ''}${invoice.pincode ? ` - ${invoice.pincode}` : ''}`;
+  const template4Phones = [invoice.phone, invoice.alternate_phone].filter(Boolean) as string[];
 
   return (
     <div className={`template-4-root ${PRINT_STYLES.outerBorder}`}>
@@ -103,6 +108,16 @@ export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, dis
       {/* 1. TOP HEADER SECTION (COMPACT & MODERN)                            */}
       {/* ==================================================================== */}
       <div className={`relative flex flex-col items-center w-full ${PRINT_STYLES.spacingSection} min-h-[75px]`}>
+        {/* Top Left: GSTIN card (same style as the right meta card) */}
+        <div className="absolute top-0 left-0 border border-slate-300 rounded-md bg-slate-50/90 px-2 py-1 text-[11px] font-semibold text-slate-800 text-left shrink-0 shadow-xs">
+          <div className="flex justify-between items-center gap-2">
+            <span className="text-slate-700 font-extrabold uppercase text-[10px] whitespace-nowrap">GSTIN</span>
+            <span className="font-mono font-bold text-slate-900 text-[11px] uppercase whitespace-nowrap">
+              {invoice.seller_gstin_snapshot ? invoice.seller_gstin_snapshot.toUpperCase() : '—'}
+            </span>
+          </div>
+        </div>
+
         {/* Center: Business Branding Block (Nudged 7px left for balanced print breathing room) */}
         <div className="flex flex-col items-center text-center relative left-[-7px]">
           {/* TAX INVOICE Badge */}
@@ -115,8 +130,11 @@ export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, dis
           {/* Brand Block: Business Name + Tagline with Dynamic Logo Anchor */}
           <div className="relative inline-flex flex-col items-center">
             {logoSrc && (
-              <div className={`absolute right-full mr-[7px] w-[140px] h-[64px] flex items-end justify-end p-0 select-none overflow-hidden ${invoice.nature_of_business ? 'bottom-[-4px]' : 'bottom-0'
-                }`}>
+              // Logo height: with a tagline the pill sits under the name, so the logo must fit between the top-left
+              // GSTIN and the name's baseline (measured: TAG-B review). Without a tagline it is 48px (was 64px) so it clears the new top-left GSTIN card.
+              <div className={`absolute right-full mr-[7px] w-[140px] ${subline?.kind === 'tagline' ? 'h-[28px]' : 'h-[48px]'} flex items-end justify-end p-0 select-none overflow-hidden ${
+                subline?.kind === 'nature' ? 'bottom-[-4px]' : 'bottom-0'
+              }`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={logoSrc}
@@ -130,29 +148,25 @@ export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, dis
             <h1 className={`${PRINT_STYLES.fontTitle} whitespace-nowrap`}>{invoice.business_name}</h1>
 
             {/* Nature of Business */}
-            {invoice.nature_of_business && (
+            {subline?.kind === 'nature' && (
               <p className={`${PRINT_STYLES.fontSubtitle} whitespace-nowrap mt-[2px]`}>
-                ({invoice.nature_of_business})
+                ({subline.text})
               </p>
             )}
           </div>
 
-          {/* Address */}
-          <p className={`${PRINT_STYLES.fontAddress} mt-[4px]`}>
-            {invoice.address_line1}
-            {invoice.address_line2 ? `, ${invoice.address_line2}` : ''}
-            {invoice.city ? `, ${invoice.city.toUpperCase()}` : ''}
-            {invoice.pincode ? ` - ${invoice.pincode}` : ''}
-          </p>
-
-          {/* Contact Numbers */}
-          {(invoice.phone || invoice.alternate_phone) && (
-            <p className={`${PRINT_STYLES.fontContact} mt-[2px]`}>
-              Ph No. : {invoice.phone || ''}
-              {invoice.phone && invoice.alternate_phone ? ' | ' : ''}
-              {invoice.alternate_phone || ''}
-            </p>
+          {subline?.kind === 'tagline' && (
+            <div className="mt-[5px] max-w-full">
+              <TaglinePill text={subline.text} tone="slate" />
+            </div>
           )}
+
+          {/* Address & Contact Numbers */}
+          <ContactLine
+            className={`${PRINT_STYLES.fontAddress} mt-[4px]`}
+            address={template4Address}
+            phones={template4Phones}
+          />
         </div>
 
         {/* Top Right: Compact Elevated Invoice Meta Card */}
@@ -161,15 +175,11 @@ export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, dis
             <span className="text-slate-700 font-extrabold uppercase text-[10px] whitespace-nowrap">Invoice No</span>
             <span className="font-mono font-black text-slate-900 text-[11px] whitespace-nowrap">{invoice.invoice_number}</span>
           </div>
-          <div className="flex justify-between items-center border-b border-slate-200 pb-[2px] gap-2">
+          <div className="flex justify-between items-center gap-2">
             <span className="text-slate-700 font-extrabold uppercase text-[10px] whitespace-nowrap">Date</span>
             <span className="font-bold text-slate-900 text-[11px] whitespace-nowrap">
               {invoice.invoice_date ? formatIstDate(invoice.invoice_date) : '—'}
             </span>
-          </div>
-          <div className="flex justify-between items-center gap-2">
-            <span className="text-slate-700 font-extrabold uppercase text-[10px] whitespace-nowrap">GSTIN</span>
-            <span className="font-mono font-bold text-slate-900 text-[11px] uppercase whitespace-nowrap">{invoice.seller_gstin_snapshot ? invoice.seller_gstin_snapshot.toUpperCase() : '—'}</span>
           </div>
         </div>
       </div>

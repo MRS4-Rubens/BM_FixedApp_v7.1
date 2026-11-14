@@ -4,6 +4,7 @@ import { getStateAbbrByCode, stateTaxLabel } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { SignatureMark, isSignatureDataUri, AUTHORISED_SIGNATORY_LABEL } from './signature-mark';
+import { resolveHeaderSubline, TaglinePill, ContactLine } from './header-parts';
 
 // ============================================================================
 // CONFIGURABLE DESIGN SYSTEM VARIABLES FOR TEMPLATE 3 (MANUAL PAD STYLE)
@@ -82,6 +83,7 @@ export function InvoiceTemplate3({ invoice, businessStateCode, hasWatermark, dis
   const lastTerm = termsLines[termsLines.length - 1] || '';
 
   const logoSrc = invoice.logo_base64 || invoice.logo_url || null;
+  const subline = resolveHeaderSubline(invoice);
 
   // Format full address and phone details in a single line
   const cityPin = [
@@ -95,10 +97,8 @@ export function InvoiceTemplate3({ invoice, businessStateCode, hasWatermark, dis
     cityPin,
   ].filter(Boolean).join(', ');
 
-  const phoneNumbers = [invoice.phone, invoice.alternate_phone].filter(Boolean).join(', ');
-  const phoneLine = phoneNumbers ? `Ph No.: ${phoneNumbers}` : '';
-
-  const contactLine = [addressParts, phoneLine].filter(Boolean).join(' ♦ ');
+  const phones = [invoice.phone, invoice.alternate_phone].filter(Boolean) as string[];
+  const hasContact = Boolean(addressParts || phones.length > 0);
 
   return (
     <div className={`template-3-root border-2 ${PAD_STYLES.skeletonBorder} p-4 bg-white print:p-0 print:border-none print:shadow-none`}>
@@ -136,7 +136,9 @@ export function InvoiceTemplate3({ invoice, businessStateCode, hasWatermark, dis
           {/* Brand Block: Wraps Title + Subline (Width dynamically adapts to max(Title, Subline)) */}
           <div className="relative inline-flex flex-col items-center mt-1">
             {logoSrc && (
-              <div className="absolute bottom-[-5.5px] right-full mr-[7px] w-[140px] h-[64px] flex items-end justify-end p-0 select-none overflow-hidden">
+              // Logo height: with a tagline the pill sits under the name, so the logo must fit between the top-left
+              // GSTIN and the name's baseline (measured: TAG-B review). Without a tagline it keeps its full size.
+              <div className={`absolute bottom-[-5.5px] right-full mr-[7px] w-[140px] ${subline?.kind === 'tagline' ? 'h-[44px]' : 'h-[64px]'} flex items-end justify-end p-0 select-none overflow-hidden`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={logoSrc}
@@ -150,18 +152,26 @@ export function InvoiceTemplate3({ invoice, businessStateCode, hasWatermark, dis
             <h1 className={`${PAD_STYLES.fontTitle} whitespace-nowrap`}>{invoice.business_name}</h1>
 
             {/* Line 2: Dynamic Nature of Business Subline */}
-            {invoice.nature_of_business && (
+            {subline?.kind === 'nature' && (
               <p className="text-[10px] font-black tracking-widest text-[#0e3f94] mt-[5px] uppercase whitespace-nowrap">
-                ({invoice.nature_of_business})
+                ({subline.text})
               </p>
             )}
           </div>
 
-          {contactLine && (
+          {subline?.kind === 'tagline' && (
+            <div className="mt-[6px] flex justify-center max-w-full">
+              <TaglinePill text={subline.text} tone="blue" />
+            </div>
+          )}
+
+          {hasContact && (
             <div className="flex justify-center mt-[9px]">
-              <span className="text-[11px] font-bold text-gray-700 leading-tight border-t border-[#0e3f94] pt-[7px] whitespace-nowrap">
-                {contactLine}
-              </span>
+              <ContactLine
+                className="text-[11px] font-bold text-gray-700 leading-tight border-t border-[#0e3f94] pt-[7px] text-center"
+                address={addressParts}
+                phones={phones}
+              />
             </div>
           )}
         </div>
