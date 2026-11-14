@@ -22,6 +22,7 @@ describe('display-prefs pure logic (FE-001)', () => {
       enableFixedRows: true,
       fixedRowsCount: 13,
       defaultGst: '18',
+      quantityDecimals: 3, // Quantity Format default = today's behaviour
     });
     expect(FIXED_ROWS_MIN).toBe(1);
     expect(FIXED_ROWS_MAX).toBe(50);
@@ -52,6 +53,7 @@ describe('display-prefs pure logic (FE-001)', () => {
         enableFixedRows: true,
         fixedRowsCount: 20,
         defaultGst: '18',
+        quantityDecimals: 3,
       });
     });
 
@@ -64,6 +66,7 @@ describe('display-prefs pure logic (FE-001)', () => {
         enableFixedRows: false, // valid
         fixedRowsCount: 999, // out of range [1, 50]
         defaultGst: '40', // not in DEFAULT_GST_OPTIONS
+        quantityDecimals: 1, // not an allowed Quantity Format
       };
       const result = parseStoredDisplayPrefs(corrupt);
       expect(result).toEqual({
@@ -74,7 +77,15 @@ describe('display-prefs pure logic (FE-001)', () => {
         enableFixedRows: false,
         fixedRowsCount: 13,
         defaultGst: '18',
+        quantityDecimals: 3,
       });
+    });
+
+    it('keeps a saved Quantity Format of 0, 2 or 3 decimals', () => {
+      for (const q of [0, 2, 3] as const) {
+        expect(parseStoredDisplayPrefs({ quantityDecimals: q }).quantityDecimals).toBe(q);
+      }
+      expect(parseStoredDisplayPrefs({ quantityDecimals: '0' }).quantityDecimals).toBe(3);
     });
 
     it('accepts boundary values for fixedRowsCount and all DEFAULT_GST_OPTIONS', () => {
@@ -184,6 +195,19 @@ describe('display-prefs pure logic (FE-001)', () => {
           defaultGst: '33',
         }).success,
       ).toBe(false);
+    });
+
+    it('accepts Quantity Format 0/2/3 or no value, and rejects anything else', () => {
+      for (const q of [0, 2, 3]) {
+        expect(invoiceDisplayPrefsSchema.safeParse({ ...DEFAULT_INVOICE_DISPLAY_PREFS, quantityDecimals: q }).success).toBe(true);
+      }
+      const withoutQty = Object.fromEntries(
+        Object.entries(DEFAULT_INVOICE_DISPLAY_PREFS).filter(([key]) => key !== 'quantityDecimals'),
+      );
+      expect(invoiceDisplayPrefsSchema.safeParse(withoutQty).success).toBe(true); // older clients/imports
+      for (const bad of [1, 4, -1, '2', 2.5]) {
+        expect(invoiceDisplayPrefsSchema.safeParse({ ...DEFAULT_INVOICE_DISPLAY_PREFS, quantityDecimals: bad }).success).toBe(false);
+      }
     });
   });
 });

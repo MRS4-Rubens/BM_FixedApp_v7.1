@@ -18,7 +18,8 @@ import { assertInvoiceQuotaAvailable } from '@/lib/invoices/invoice-quota';
 import { formatIstDateAsIso, getIstDateParts, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
 import { captureSellerSnapshot } from '@/lib/invoices/seller-snapshot';
-import { captureDisplayPrefsSnapshot } from '@/lib/invoices/display-prefs';
+import { captureDisplayPrefsSnapshot, parseStoredDisplayPrefs } from '@/lib/invoices/display-prefs';
+import { quantityFormatViolation } from '@/lib/invoices/quantity-format';
 import { canUseTemplate, getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 
 export interface FinalizeInvoiceTxParams {
@@ -79,6 +80,12 @@ export async function finalizeDraftInvoiceInTransaction(
   // 4. Fetch Line Items and Tax Rates for authoritative recalc
   const lineItems = await tx.select().from(invoiceLineItems).where(eq(invoiceLineItems.invoice_id, params.invoiceId)).orderBy(invoiceLineItems.sort_order);
   if (lineItems.length === 0) throw new ActionError('Cannot finalize an invoice with no line items.', { code: 'NO_ITEMS' });
+
+  // Quantity Format (Invoice Settings): a draft saved before the setting changed may hold more decimals than now
+  // allowed. Drafts tolerate it; the issued invoice must not.
+  const quantityDecimals = parseStoredDisplayPrefs(business.invoice_display_prefs).quantityDecimals;
+  const quantityProblem = quantityFormatViolation(lineItems.map((li) => ({ quantity: li.quantity, decimals: quantityDecimals })));
+  if (quantityProblem) throw new ActionError(quantityProblem, { code: 'QUANTITY_FORMAT' });
 
   // Note: the draft might have stale tax rates if they changed, though our draft stores tax_rate_percentage
   // To strictly follow "recompute authoritatively", we just use the stored rate from line items or fetch from DB if we stored the relation.

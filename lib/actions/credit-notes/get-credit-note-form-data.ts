@@ -8,6 +8,7 @@ import { ActionError } from '@/lib/actions/_shared/errors';
 import { CreditNoteRuleError } from '@/lib/credit-notes/derivation';
 import { db } from '@/lib/db/client';
 import { businesses, invoices } from '@/lib/db/schema';
+import { parseStoredDisplayPrefs } from '@/lib/invoices/display-prefs';
 
 const getCreditNoteFormDataSchema = z
   .object({
@@ -83,6 +84,8 @@ export const getCreditNoteFormData = createAuthenticatedAction(
           trade_name: business.trade_name,
           gstin: business.gstin,
           state_code: business.state_code,
+          // Quantity Format (Invoice Settings); the form widens it per line for older decimal quantities.
+          quantity_decimals: parseStoredDisplayPrefs(business.invoice_display_prefs).quantityDecimals,
         },
         creditNoteFormat: business.credit_note_number_prefix,
       };
