@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, ArrowLeft, CheckCircle, CornerDownRight, Save, Trash2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle, CornerDownRight, Save } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { finalizeCreditNote } from '@/lib/actions/credit-notes/finalize-credit-note';
@@ -18,6 +18,19 @@ import {
   type CreditNoteTotals,
   type DerivedCreditLine,
 } from '@/lib/credit-notes/derivation';
+import {
+  EMPTY_SELECTION,
+  creditedLines,
+  isSelectable,
+  isSelected,
+  selectAllState,
+  setLineQuantity,
+  settleLine,
+  toggleAll,
+  toggleLine,
+  type CreditSelection,
+  type SelectableLine,
+} from '@/lib/credit-notes/selection';
 import { formatPaiseAsInr } from '@/lib/money';
 import { computeNetBillPaise } from '@/lib/invoices/settlement';
 import { CREDIT_NOTE_REASONS, type CreditNoteReasonCode } from '@/lib/validations/credit-note';
@@ -55,6 +68,8 @@ interface CreditNoteFormProps {
   initialNotes?: string;
 }
 
+const NOTHING_SELECTED_MESSAGE = 'Tick at least one item and enter a credit quantity greater than 0.';
+
 type Preview =
   | { ok: true; lines: DerivedCreditLine[]; totals: CreditNoteTotals; grandTotalPaise: number }
   | { ok: false; message: string | null };
@@ -74,38 +89,55 @@ export function CreditNoteForm({
   const [reason, setReason] = useState<CreditNoteReasonCode>(initialReason);
   const [notes, setNotes] = useState(initialNotes);
 
-  const [lineStates, setLineStates] = useState<CreditLineState[]>(initialLineStates);
+  const lineStates = initialLineStates;
   const remainingMilli = (s: CreditLineState): number =>
     Math.max(0, s.original.quantityMilli - s.credited.quantityMilli);
-
-  const [quantities, setQuantities] = useState<Record<string, number>>(() =>
-    Object.fromEntries(
-      initialLineStates.map((s) => [s.original.originalLineItemId, milliToQuantity(remainingMilli(s))]),
-    ),
+  const selectableLines: SelectableLine[] = useMemo(
+    () =>
+      initialLineStates.map((s) => ({
+        id: s.original.originalLineItemId,
+        remainingQty: milliToQuantity(Math.max(0, s.original.quantityMilli - s.credited.quantityMilli)),
+      })),
+    [initialLineStates],
   );
+  const lineById = (id: string): SelectableLine | undefined => selectableLines.find((l) => l.id === id);
+
+  // Nothing is credited until an item is ticked (see lib/credit-notes/selection.ts).
+  const [selection, setSelection] = useState<CreditSelection>(EMPTY_SELECTION);
+  const allState = selectAllState(selection, selectableLines);
+  const anySelectable = selectableLines.some(isSelectable);
 
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleQuantityChange = (id: string, raw: number): void => {
-    const state = lineStates.find((s) => s.original.originalLineItemId === id);
-    if (!state) return;
-    const bounded = Math.max(0, Math.min(Number.isFinite(raw) ? raw : 0, milliToQuantity(remainingMilli(state))));
-    setQuantities((prev) => ({ ...prev, [id]: Math.round(bounded * 1000) / 1000 }));
+  const handleToggle = (id: string): void => {
+    const line = lineById(id);
+    if (!line) return;
+    const willSelect = !isSelected(selection, id);
+    setSelection((prev) => toggleLine(prev, line));
+    setErrorMessage(null);
+    if (willSelect && isSelectable(line)) {
+      // Highlight the filled-in quantity so typing a smaller number replaces it.
+      requestAnimationFrame(() => {
+        const input = document.getElementById(`cn-qty-${id}`) as HTMLInputElement | null;
+        input?.focus();
+        input?.select();
+      });
+    }
   };
 
-  const handleRemoveItem = (id: string): void => {
-    setLineStates((prev) => prev.filter((s) => s.original.originalLineItemId !== id));
+  const handleQuantityChange = (id: string, raw: number): void => {
+    const line = lineById(id);
+    if (!line) return;
+    setSelection((prev) => setLineQuantity(prev, line, raw));
   };
 
   const preview: Preview = useMemo(() => {
     try {
-      const requests = lineStates.flatMap((s) => {
-        const q = quantities[s.original.originalLineItemId] ?? 0;
-        return q > 0
-          ? [{ originalLineItemId: s.original.originalLineItemId, quantityMilli: quantityToMilli(q) }]
-          : [];
-      });
+      const requests = creditedLines(selection, selectableLines).map((l) => ({
+        originalLineItemId: l.id,
+        quantityMilli: quantityToMilli(l.quantity),
+      }));
       if (requests.length === 0) return { ok: false, message: null };
       const states = new Map(lineStates.map((s) => [s.original.originalLineItemId, s] as const));
       const lines = deriveCreditLines(states, requests);
@@ -126,7 +158,8 @@ export function CreditNoteForm({
     }
   }, [
     lineStates,
-    quantities,
+    selection,
+    selectableLines,
     originalInvoice.grand_total_paise,
     invoiceExactTotalPaise,
     previouslyCreditedPaise,
@@ -155,19 +188,17 @@ export function CreditNoteForm({
     setErrorMessage(null);
 
     if (!preview.ok) {
-      setErrorMessage(preview.message || 'Please specify at least one line item with a quantity greater than 0.');
+      setErrorMessage(preview.message || NOTHING_SELECTED_MESSAGE);
       return;
     }
 
-    const payloadLines = lineStates
-      .filter((s) => (quantities[s.original.originalLineItemId] ?? 0) > 0)
-      .map((s) => ({
-        original_line_item_id: s.original.originalLineItemId,
-        quantity: quantities[s.original.originalLineItemId] ?? 0,
-      }));
+    const payloadLines = creditedLines(selection, selectableLines).map((l) => ({
+      original_line_item_id: l.id,
+      quantity: l.quantity,
+    }));
 
     if (payloadLines.length === 0) {
-      setErrorMessage('Please specify at least one line item with a quantity greater than 0.');
+      setErrorMessage(NOTHING_SELECTED_MESSAGE);
       return;
     }
 
@@ -375,7 +406,7 @@ export function CreditNoteForm({
             Select Items & Quantities to Credit
           </h2>
           <p className="text-[13px] text-muted-foreground mt-0.5">
-            Enter the quantity of each product being returned or credited. Set quantity to 0 or remove items you do not wish to credit.
+            Tick each item being returned or credited, then adjust its quantity. Unticked items are not included.
           </p>
         </div>
 
@@ -383,6 +414,23 @@ export function CreditNoteForm({
           <table className="w-full text-[15px] text-left border-collapse">
             <thead className="bg-muted/50 text-[12px] uppercase tracking-wider text-muted-foreground font-bold border-b border-border whitespace-nowrap">
               <tr>
+                <th className="pl-4 pr-1 pt-[7px] pb-[7px] text-center w-10">
+                  <input
+                    type="checkbox"
+                    aria-label={allState === 'all' ? 'Untick all items' : 'Tick all items'}
+                    title={allState === 'all' ? 'Untick all items' : 'Tick all items (full remaining quantity)'}
+                    checked={allState === 'all'}
+                    ref={(el) => {
+                      if (el) el.indeterminate = allState === 'some';
+                    }}
+                    disabled={!anySelectable}
+                    onChange={() => {
+                      setSelection((prev) => toggleAll(prev, selectableLines));
+                      setErrorMessage(null);
+                    }}
+                    className="size-4 cursor-pointer rounded border-border accent-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                  />
+                </th>
                 <th className="px-3 pt-[7px] pb-[7px] text-center w-12">#</th>
                 <th className="px-3 pt-[7px] pb-[7px] text-center min-w-[240px]">Item Description</th>
                 <th className="px-3 pt-[7px] pb-[7px] text-center w-28">HSN/SAC</th>
@@ -392,15 +440,16 @@ export function CreditNoteForm({
                 <th className="px-3 pt-[7px] pb-[7px] text-center w-28">Rate (₹)</th>
                 <th className="px-3 pt-[7px] pb-[7px] text-center w-24">Tax (%)</th>
                 <th className="px-3 pt-[7px] pb-[7px] text-center w-32">Line Credit</th>
-                <th className="px-3 pt-[7px] pb-[7px] text-center w-16">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {lineStates.map((item, idx) => {
                 const id = item.original.originalLineItemId;
-                const q = quantities[id] ?? 0;
+                const ticked = isSelected(selection, id);
+                const q = selection.quantities[id] ?? 0;
                 const remMilli = remainingMilli(item);
                 const remQty = milliToQuantity(remMilli);
+                const fullyCredited = remMilli <= 0;
                 const lineCreditPaise = preview.ok
                   ? preview.lines.find((l) => l.originalLineItemId === id)?.lineTotalPaise ?? 0
                   : 0;
@@ -411,16 +460,41 @@ export function CreditNoteForm({
                 return (
                   <tr
                     key={id}
+                    // Clicking anywhere on the row (except the quantity box) ticks/unticks it.
+                    onClick={(e) => {
+                      if (fullyCredited) return;
+                      if ((e.target as HTMLElement).closest('input')) return;
+                      handleToggle(id);
+                    }}
                     className={`transition-colors ${
-                      q === 0 ? 'bg-muted/10 opacity-60 hover:opacity-100' : 'hover:bg-muted/30'
+                      fullyCredited
+                        ? 'bg-muted/10 opacity-50'
+                        : ticked
+                          ? 'bg-red-50/40 dark:bg-red-950/10 cursor-pointer'
+                          : 'opacity-60 hover:opacity-100 hover:bg-muted/30 cursor-pointer'
                     }`}
                   >
+                    <td className="pl-4 pr-1 pt-[7px] pb-[7px] text-center">
+                      <input
+                        type="checkbox"
+                        aria-label={`Credit ${item.original.description}`}
+                        checked={ticked}
+                        disabled={fullyCredited}
+                        onChange={() => handleToggle(id)}
+                        className="size-4 cursor-pointer rounded border-border accent-red-600 disabled:cursor-not-allowed"
+                      />
+                    </td>
                     <td className="px-3 pt-[7px] pb-[7px] text-center text-muted-foreground font-medium">{idx + 1}</td>
                     <td className="px-3 pt-[7px] pb-[7px]">
                       <p className="font-semibold text-foreground">{item.original.description}</p>
                       <span className="inline-block text-[12px] text-muted-foreground font-normal mt-0.5">
                         Unit: {item.original.unitOfMeasurement}
                       </span>
+                      {fullyCredited && (
+                        <span className="ml-2 inline-block rounded-full border border-border bg-muted px-1.5 py-px text-[11px] font-semibold text-muted-foreground">
+                          Fully credited
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 pt-[7px] pb-[7px] text-center font-mono text-[13px] text-muted-foreground">
                       {item.original.hsnSacCode || '—'}
@@ -433,33 +507,24 @@ export function CreditNoteForm({
                     </td>
                     <td className="px-3 pt-[7px] pb-[7px] text-center">
                       <input
+                        id={`cn-qty-${id}`}
                         type="number"
                         min="0"
                         max={remQty}
                         step="0.001"
-                        value={q === 0 ? '' : q}
-                        placeholder="0"
+                        value={ticked ? (q === 0 ? '' : q) : ''}
+                        placeholder={ticked ? '0' : '—'}
+                        aria-label={`Credit quantity, ${item.original.description}`}
                         onChange={(e) => handleQuantityChange(id, Number(e.target.value))}
-                        disabled={remMilli <= 0}
-                        className="w-24 h-8 px-2 py-1 mx-auto border border-border rounded-md text-center font-mono font-semibold text-[15px] focus:ring-2 focus:ring-primary focus:outline-none bg-background shadow-xs disabled:opacity-50"
+                        onBlur={() => setSelection((prev) => settleLine(prev, id))}
+                        disabled={!ticked}
+                        className="w-24 h-8 px-2 py-1 mx-auto border border-border rounded-md text-center font-mono font-semibold text-[15px] focus:ring-2 focus:ring-primary focus:outline-none bg-background shadow-xs disabled:opacity-50 disabled:bg-muted/40 disabled:cursor-not-allowed"
                       />
                     </td>
                     <td className="px-3 pt-[7px] pb-[7px] text-right font-mono">₹{rateRupees.toFixed(2)}</td>
                     <td className="px-3 pt-[7px] pb-[7px] text-center font-mono text-[13px]">{taxPercent}%</td>
-                    <td className="px-3 pt-[7px] pb-[7px] text-right font-mono font-bold text-red-600">
+                    <td className={`px-3 pt-[7px] pb-[7px] text-right font-mono font-bold ${lineCreditPaise > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
                       ₹{lineCreditRupees.toFixed(2)}
-                    </td>
-                    <td className="px-3 pt-[7px] pb-[7px] text-center">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveItem(id)}
-                        className="size-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                        title="Remove item"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
                     </td>
                   </tr>
                 );
