@@ -17,8 +17,14 @@ export type NeonPoolOptions = NonNullable<ConstructorParameters<typeof Pool>[0]>
 export const DB_POOL_MAX_CONNECTIONS = 5;
 /** Idle sockets are closed quickly: serverless instances freeze and idle sockets rot. */
 export const DB_POOL_IDLE_TIMEOUT_MS = 10_000;
-/** Fail fast instead of hanging. Also bounds how long a request waits when all connections are busy. */
-export const DB_POOL_CONNECTION_TIMEOUT_MS = 5_000;
+/**
+ * How long a query may wait for a connection: opening one AND queueing behind busy ones. Still fails well before
+ * the platform's request timeout instead of hanging.
+ * Was 5s; measured 2026-11-14 that was too tight. A new Neon connection took ~2.2s (dev DB in us-east-1 reached from
+ * India) and a waking (scale-to-zero) compute adds 1-3s. The dashboard queues ~12 queries on 5 connections, so the
+ * last ones waited >5s and failed with "timeout exceeded when trying to connect" (logged as "Failed query").
+ */
+export const DB_POOL_CONNECTION_TIMEOUT_MS = 15_000;
 /** Stable tag for logs and Sentry. */
 export const DB_POOL_ERROR_SCOPE = 'db-pool';
 
