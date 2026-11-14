@@ -13,7 +13,7 @@ describe('DB-006: Connection pool configuration (pure unit tests)', () => {
   it('defines constants matching audited values', () => {
     expect(DB_POOL_MAX_CONNECTIONS).toBe(5);
     expect(DB_POOL_IDLE_TIMEOUT_MS).toBe(10_000);
-    expect(DB_POOL_CONNECTION_TIMEOUT_MS).toBe(5_000);
+    expect(DB_POOL_CONNECTION_TIMEOUT_MS).toBe(15_000);
     expect(DB_POOL_ERROR_SCOPE).toBe('db-pool');
   });
 
@@ -24,7 +24,7 @@ describe('DB-006: Connection pool configuration (pure unit tests)', () => {
       connectionString: 'postgresql://u:p@h/d',
       max: 5,
       idleTimeoutMillis: 10_000,
-      connectionTimeoutMillis: 5_000,
+      connectionTimeoutMillis: 15_000,
     });
   });
 

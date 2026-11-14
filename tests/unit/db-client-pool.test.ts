@@ -105,7 +105,7 @@ describe('DB-006: client.ts pool wiring unit tests (mocked driver)', () => {
       connectionString: 'postgresql://u:p@host/db',
       max: 5,
       idleTimeoutMillis: 10_000,
-      connectionTimeoutMillis: 5_000,
+      connectionTimeoutMillis: 15_000,
     });
     expect(mockGetDatabaseEnv).toHaveBeenCalledTimes(1);
   });

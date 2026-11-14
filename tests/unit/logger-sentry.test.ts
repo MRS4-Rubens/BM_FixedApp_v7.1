@@ -135,6 +135,33 @@ describe('logger-sentry (ARCH-005)', () => {
     });
   });
 
+  it('logError prints the real reason behind a DrizzleQueryError (error.cause), scrubbed', () => {
+    const connectTimeout = Object.assign(new Error('timeout exceeded when trying to connect'), { code: 'ETIMEDOUT' });
+    const err = new DrizzleQueryError('select 1 from invoices where business_id = $1', ['biz-1'], connectTimeout);
+    logError('get-dashboard-stats', err);
+
+    const parsed = JSON.parse(consoleSpy.mock.calls[0]?.[0] as string) as {
+      message: string;
+      cause?: Array<{ name: string; message: string; code?: string }>;
+    };
+    expect(parsed.message).toContain('Failed query');
+    expect(parsed.cause).toEqual([{ name: 'Error', message: 'timeout exceeded when trying to connect', code: 'ETIMEDOUT' }]);
+
+    // A cause carrying private data is scrubbed like everything else in the log line.
+    consoleSpy.mockClear();
+    const leaky = new DrizzleQueryError('insert into customers values ($1)', ['x'], new Error('bad mobile 9876543210'));
+    logError('create-customer', leaky);
+    const printed = consoleSpy.mock.calls[0]?.[0] as string;
+    expect(printed).not.toContain('9876543210');
+    expect(JSON.parse(printed).cause[0].message).toContain('bad mobile');
+  });
+
+  it('logError omits the cause field when there is no cause', () => {
+    logError('plain', new Error('no cause here'));
+    const parsed = JSON.parse(consoleSpy.mock.calls[0]?.[0] as string) as Record<string, unknown>;
+    expect(parsed).not.toHaveProperty('cause');
+  });
+
   it('SEC-006: logError extra passed to Sentry is scrubbed for sensitive keys', () => {
     const error = new Error('GSTIN verification failure');
     logError('business:verify', error, { gstin: '27AAAAA0000A1Z5' });
