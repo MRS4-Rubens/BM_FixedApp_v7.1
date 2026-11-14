@@ -32,6 +32,12 @@ import {
   type SelectableLine,
 } from '@/lib/credit-notes/selection';
 import { formatPaiseAsInr } from '@/lib/money';
+import {
+  DEFAULT_QUANTITY_DECIMALS,
+  creditQuantityDecimals,
+  quantityInputGuards,
+  type QuantityDecimals,
+} from '@/lib/invoices/quantity-format';
 import { computeNetBillPaise } from '@/lib/invoices/settlement';
 import { CREDIT_NOTE_REASONS, type CreditNoteReasonCode } from '@/lib/validations/credit-note';
 import { formatIstDate } from '@/lib/invoices/ist-date';
@@ -61,6 +67,8 @@ interface CreditNoteFormProps {
     legal_name: string;
     gstin: string;
     state_code: string;
+    /** Quantity Format; missing => 3 decimals (today's behaviour). */
+    quantity_decimals?: QuantityDecimals;
   };
   initialLineStates: CreditLineState[];
   existingCreditNoteId?: string;
@@ -450,6 +458,14 @@ export function CreditNoteForm({
                 const remMilli = remainingMilli(item);
                 const remQty = milliToQuantity(remMilli);
                 const fullyCredited = remMilli <= 0;
+                // Quantity Format, widened to whatever decimals this line's original/remaining quantity needs.
+                const qtyGuards = quantityInputGuards(
+                  creditQuantityDecimals(
+                    business.quantity_decimals ?? DEFAULT_QUANTITY_DECIMALS,
+                    item.original.quantityMilli,
+                    remMilli,
+                  ),
+                );
                 const lineCreditPaise = preview.ok
                   ? preview.lines.find((l) => l.originalLineItemId === id)?.lineTotalPaise ?? 0
                   : 0;
@@ -511,11 +527,16 @@ export function CreditNoteForm({
                         type="number"
                         min="0"
                         max={remQty}
-                        step="0.001"
+                        step={qtyGuards.step}
+                        inputMode={qtyGuards.inputMode}
+                        onKeyDown={qtyGuards.onKeyDown}
                         value={ticked ? (q === 0 ? '' : q) : ''}
                         placeholder={ticked ? '0' : '—'}
                         aria-label={`Credit quantity, ${item.original.description}`}
-                        onChange={(e) => handleQuantityChange(id, Number(e.target.value))}
+                        onChange={(e) => {
+                          qtyGuards.clean(e.target);
+                          handleQuantityChange(id, Number(e.target.value));
+                        }}
                         onBlur={() => setSelection((prev) => settleLine(prev, id))}
                         disabled={!ticked}
                         className="w-24 h-8 px-2 py-1 mx-auto border border-border rounded-md text-center font-mono font-semibold text-[15px] focus:ring-2 focus:ring-primary focus:outline-none bg-background shadow-xs disabled:opacity-50 disabled:bg-muted/40 disabled:cursor-not-allowed"

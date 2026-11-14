@@ -12,11 +12,12 @@ import type { taxRates as taxRatesTable } from '@/lib/db/schema';
 import type { resolveDraftDisplayPrefs } from '@/lib/invoices/display-prefs';
 type ResolvedDraftDisplayPrefs = ReturnType<typeof resolveDraftDisplayPrefs>;
 import { colStyles } from './col-styles';
+import { fitsQuantityDecimals, quantityFormatMessage, quantityInputGuards } from '@/lib/invoices/quantity-format';
 import { LINE_REORDER_HINT_ID, lineReorderHandleId, reorderTargetForKey } from './use-line-reorder';
 
 const REORDER_KEYS = new Set(['ArrowUp', 'ArrowDown', 'Home', 'End']);
 
-const tableInputCls ="w-full rounded-md border border-border bg-background px-2 py-1 text-sm font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring hover:border-muted-foreground/20 shadow-sm transition-all";
+const tableInputCls = "w-full rounded-md border border-border bg-background px-2 py-1 text-sm font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring hover:border-muted-foreground/20 shadow-sm transition-all";
 
 export function LineItemRow({
   fieldId,
@@ -137,6 +138,11 @@ export function LineItemRow({
   };
 
   const rowDescVal = descVal || '';
+  // Quantity Format (Invoice Settings): whole-unit arrows, blocked keys, and an amber box for a value an older draft
+  // saved with more decimals than now allowed (finalize rejects it with the same message).
+  const qtyGuards = quantityInputGuards(displayPrefs.quantityDecimals);
+  const qtyField = register(`line_items.${idx}.quantity`);
+  const qtyFits = fitsQuantityDecimals(String(qtyVal ?? ''), displayPrefs.quantityDecimals);
   const canReorder = fieldsLength > 1;
   const isDragging = draggedIdx === idx;
   const isDropTop = dropTargetIdx === idx && dropPosition === 'top' && draggedIdx !== idx;
@@ -273,12 +279,16 @@ export function LineItemRow({
       <td className="px-2 py-1.5" style={colStyles.qty}>
         <input
           type="number"
-          min="0"
-          step="0.001"
+          min={qtyGuards.min}
+          step={qtyGuards.step}
+          inputMode={qtyGuards.inputMode}
+          onKeyDown={qtyGuards.onKeyDown}
           aria-label={`Quantity, line ${idx + 1}`}
-          className={cn(tableInputCls, 'text-center font-semibold', errors.line_items?.[idx]?.quantity && 'border-destructive focus:ring-destructive/30 animate-shake')}
+          title={qtyFits ? undefined : quantityFormatMessage(displayPrefs.quantityDecimals)}
+          className={cn(tableInputCls, 'text-center font-semibold', !qtyFits && 'border-amber-500 ring-1 ring-amber-500/40', errors.line_items?.[idx]?.quantity && 'border-destructive focus:ring-destructive/30 animate-shake')}
           style={colStyles.qty}
-          {...register(`line_items.${idx}.quantity`)}
+          {...qtyField}
+          onChange={(e) => { qtyGuards.clean(e.target); return qtyField.onChange(e); }}
         />
       </td>
 

@@ -19,6 +19,8 @@ import {
   resolveCreditNoteGrandTotal,
   sumDerivedLines,
 } from '@/lib/credit-notes/derivation';
+import { parseStoredDisplayPrefs } from '@/lib/invoices/display-prefs';
+import { creditQuantityDecimals, quantityFormatViolation } from '@/lib/invoices/quantity-format';
 
 export interface FinalizeCreditNoteTxParams {
   readonly creditNoteId: string;
@@ -161,6 +163,19 @@ export async function finalizeDraftCreditNoteInTransaction(
   const bizRows = await tx.select().from(businesses).where(eq(businesses.id, params.businessId)).for('share');
   if (bizRows.length === 0) throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
   const business = bizRows[0];
+
+  // Quantity Format, widened per line to the decimals its original/remaining quantity needs (credit notes must be
+  // able to fully credit older decimal lines even after switching to whole numbers).
+  const quantityDecimals = parseStoredDisplayPrefs(business.invoice_display_prefs).quantityDecimals;
+  const quantityProblem = quantityFormatViolation(
+    lineItemRows.map((li) => {
+      const state = li.original_line_item_id ? ctx.states.get(li.original_line_item_id) : undefined;
+      const originalMilli = state?.original.quantityMilli ?? 0;
+      const remainingMilli = state ? Math.max(0, state.original.quantityMilli - state.credited.quantityMilli) : 0;
+      return { quantity: li.quantity, decimals: creditQuantityDecimals(quantityDecimals, originalMilli, remainingMilli) };
+    }),
+  );
+  if (quantityProblem) throw new ActionError(quantityProblem, { code: 'QUANTITY_FORMAT' });
 
   // 7. Get active financial year
   const issueDateObj = creditNote.issue_date ? parseIsoDateToIstDate(creditNote.issue_date) : new Date();

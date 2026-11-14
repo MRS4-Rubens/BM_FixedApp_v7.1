@@ -45,6 +45,12 @@ import {
 import { clearLegacyDisplayPrefs } from '@/lib/invoices/legacy-display-prefs';
 import { LegacyDisplayPrefsImport } from './legacy-display-prefs-import';
 import { DEFAULT_GST_OPTIONS, type DefaultGstOption } from '@/lib/db/schema/_display_prefs';
+import {
+  QUANTITY_DECIMAL_OPTIONS,
+  QUANTITY_FORMAT_LABELS,
+  isQuantityDecimals,
+  type QuantityDecimals,
+} from '@/lib/invoices/quantity-format';
 
 interface InvoiceSettingsFormProps {
   business: typeof businesses.$inferSelect | null;
@@ -141,6 +147,7 @@ export function InvoiceSettingsForm({
   const [enableFixedRows, setEnableFixedRows] = useState(() => initialPrefs.enableFixedRows);
   const [fixedRowsCount, setFixedRowsCount] = useState(() => initialPrefs.fixedRowsCount);
   const [defaultGst, setDefaultGst] = useState<DefaultGstOption>(() => initialPrefs.defaultGst);
+  const [quantityDecimals, setQuantityDecimals] = useState<QuantityDecimals>(() => initialPrefs.quantityDecimals);
 
   const rawTemplate = business?.default_invoice_template || 'template_1';
   const initialTemplate = canUseTemplate(business, rawTemplate).allowed
@@ -223,6 +230,8 @@ export function InvoiceSettingsForm({
         enableFixedRows,
         fixedRowsCount: clampedFixedRows,
         defaultGst,
+        // Always sent: saving REPLACES the stored preferences, so a missing key would reset it to the default.
+        quantityDecimals,
       },
     };
 
@@ -423,6 +432,31 @@ export function InvoiceSettingsForm({
               )}
               <p className="mt-1 text-xs text-slate-500">
                 Sets default invoice due date (e.g. 30 days from issue date).
+              </p>
+            </div>
+
+            <div>
+              <label className={labelClass} htmlFor="quantity_decimals">
+                <Calculator className="size-3.5 text-blue-900 shrink-0" />
+                <span>Quantity Format</span>
+              </label>
+              <select
+                id="quantity_decimals"
+                value={quantityDecimals}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  if (isQuantityDecimals(next)) setQuantityDecimals(next);
+                }}
+                className={cn(inputBlueClass, 'cursor-pointer')}
+              >
+                {QUANTITY_DECIMAL_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {QUANTITY_FORMAT_LABELS[option]}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                Applies to quantities on new invoices and credit notes. Arrows always move by 1. Issued documents keep their quantities.
               </p>
             </div>
           </div>
