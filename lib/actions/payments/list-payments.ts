@@ -24,6 +24,7 @@ export const listPayments = createAuthenticatedAction(
         business_id: payments.business_id,
         invoice_id: payments.invoice_id,
         amount_paise: payments.amount_paise,
+        kind: payments.kind,
         payment_date: payments.payment_date,
         payment_method: payments.payment_method,
         reference_number: payments.reference_number,

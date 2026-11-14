@@ -37,6 +37,7 @@ export const getRecentInvoices = createAuthenticatedAction(getRecentInvoicesSche
     due_date: invoices.due_date,
     lifecycle_status: invoices.lifecycle_status,
     payment_status: invoices.payment_status,
+    refund_due_paise: invoices.refund_due_paise,
     customer_name: sql<string>`coalesce(${invoices.billing_name_snapshot}, ${customers.name}, 'One-Time Customer')`
   })
   .from(invoices)
@@ -57,7 +58,8 @@ export const getRecentInvoices = createAuthenticatedAction(getRecentInvoicesSche
     status: getDisplayInvoiceStatus({
       lifecycle_status: inv.lifecycle_status,
       payment_status: inv.payment_status,
-      due_date: inv.due_date
+      due_date: inv.due_date,
+      refund_due_paise: inv.refund_due_paise
     })
   }));
 }, 'get-recent-invoices');

@@ -24,7 +24,14 @@ export interface VoidablePayment {
   payment_date: string | Date;
   payment_method: string;
   reference_number?: string | null;
+  /** 'refund' = money paid back to the customer. Missing => 'payment'. */
+  kind?: 'payment' | 'refund';
 }
+
+// Reasons that make sense for each kind of entry. A refund that bounced/failed is voided so the refund due returns.
+const REFUND_REASON_CODES: readonly VoidPaymentReasonCode[] = ['refund_failed', 'clerical_error', 'wrong_invoice', 'other'];
+const reasonsFor = (kind: 'payment' | 'refund') =>
+  VOID_PAYMENT_REASONS.filter((r) => (kind === 'refund' ? REFUND_REASON_CODES.includes(r.code) : r.code !== 'refund_failed'));
 
 interface VoidPaymentDialogProps {
   isOpen: boolean;
@@ -41,7 +48,10 @@ export function VoidPaymentDialog({
   invoiceNumber,
   onSuccess,
 }: VoidPaymentDialogProps) {
-  const [reason, setReason] = useState<VoidPaymentReasonCode>('clerical_error');
+  // The dialog is re-mounted per entry (key in PaymentSection), so the default reason follows the entry's kind.
+  const kind = payment?.kind === 'refund' ? 'refund' : 'payment';
+  const word = kind === 'refund' ? 'Refund' : 'Payment';
+  const [reason, setReason] = useState<VoidPaymentReasonCode>(kind === 'refund' ? 'refund_failed' : 'clerical_error');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +76,7 @@ export function VoidPaymentDialog({
       });
 
       if (!res.success) {
-        setError(res.error.message || 'Failed to void payment record.');
+        setError(res.error.message || `Failed to void ${word.toLowerCase()} record.`);
         setIsSubmitting(false);
         return;
       }
@@ -117,7 +127,7 @@ export function VoidPaymentDialog({
                 <Dialog.Title
                   render={
                     <h2 className="text-[17px] font-bold text-foreground tracking-tight">
-                      Void Payment Record
+                      Void {word} Record
                     </h2>
                   }
                 />
@@ -135,7 +145,7 @@ export function VoidPaymentDialog({
             <div className="rounded-xl border border-border bg-muted/30 p-2.5 sm:px-3 sm:py-2.5 mb-3 space-y-1.5">
               <div className="flex items-center justify-between pb-1.5 border-b border-border/60">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Payment Being Voided
+                  {word} Being Voided
                 </span>
                 <span className="text-[15px] font-bold text-red-700">
                   {formatPaiseAsInr(payment.amount_paise)}
@@ -172,9 +182,9 @@ export function VoidPaymentDialog({
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 mb-3 flex items-start gap-2.5">
               <AlertTriangle className="size-[18px] shrink-0 text-amber-700 mt-0.5" />
               <div className="text-xs text-amber-900 leading-snug">
-                <span className="font-bold">Permanent Audit Trail Notice:</span> Payment records cannot be erased. 
+                <span className="font-bold">Permanent Audit Trail Notice:</span> {word} records cannot be erased. 
                 This record will be permanently marked as <span className="font-bold">VOID</span> in the financial ledger with your user ID and timestamp. 
-                The invoice balance will automatically revert.
+                {kind === 'refund' ? 'The refund due will return so the refund can be recorded again.' : 'The invoice balance will automatically revert.'}
               </div>
             </div>
 
@@ -199,7 +209,7 @@ export function VoidPaymentDialog({
                   disabled={isSubmitting}
                   className="w-full h-8 rounded-lg border border-border bg-background px-2.5 text-[13px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-xs transition-colors cursor-pointer"
                 >
-                  {VOID_PAYMENT_REASONS.map((r) => (
+                  {reasonsFor(kind).map((r) => (
                     <option key={r.code} value={r.code}>
                       {r.label}
                     </option>
@@ -247,11 +257,11 @@ export function VoidPaymentDialog({
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="size-4 animate-spin shrink-0" /> <span className="whitespace-nowrap">Voiding Payment...</span>
+                      <Loader2 className="size-4 animate-spin shrink-0" /> <span className="whitespace-nowrap">Voiding {word}...</span>
                     </>
                   ) : (
                     <>
-                      <Ban className="size-4 shrink-0" /> <span className="whitespace-nowrap">Confirm &amp; Void Payment</span>
+                      <Ban className="size-4 shrink-0" /> <span className="whitespace-nowrap">Confirm &amp; Void {word}</span>
                     </>
                   )}
                 </Button>

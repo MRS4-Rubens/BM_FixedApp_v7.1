@@ -10,6 +10,10 @@ import { INVOICE_TEMPLATE_IDS } from '../invoices/template-ids';
 export { INVOICE_TEMPLATE_IDS };
 export type InvoiceTemplateValue = (typeof INVOICE_TEMPLATE_IDS)[number];
 
+/** payments.kind: money received from the customer, or money given back to them (a refund). */
+export const PAYMENT_KINDS = ['payment', 'refund'] as const;
+export type PaymentKind = (typeof PAYMENT_KINDS)[number];
+
 /** payments.status and credit_notes.status */
 export const RECORD_STATUSES = ['active', 'voided'] as const;
 export type RecordStatus = (typeof RECORD_STATUSES)[number];

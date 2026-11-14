@@ -116,7 +116,11 @@ export async function voidCreditNoteInTransaction(
   });
 
   // 7. Recompute and persist invoice payment status after voiding the credit note
-  const after = await recomputePaymentStatus(tx, invoice);
+  // Voiding a credit note whose amount was already refunded would leave an unjustified refund: refused here.
+  const after = await recomputePaymentStatus(tx, invoice, {
+    refundNotCoveredMessage:
+      "This credit note's amount has already been refunded to the customer. Void the refund entry first, then void this credit note.",
+  });
 
   return {
     success: true,

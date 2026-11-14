@@ -8,7 +8,12 @@ import { recordPayment } from '@/lib/actions/payments/record-payment';
 import { VoidPaymentDialog, VoidablePayment } from './void-payment-dialog';
 import { Button } from '@/components/ui/button';
 import { formatPaiseAsInr, paiseToRupees } from '@/lib/money';
-import { sumActivePaidPaise, summarizeSettlement } from '@/lib/invoices/settlement';
+import {
+  sumActivePaidPaise,
+  sumActiveReceivedPaise,
+  sumActiveRefundedPaise,
+  summarizeSettlement,
+} from '@/lib/invoices/settlement';
 import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import {
   Ban,
@@ -27,7 +32,8 @@ import {
   Check,
   ShieldAlert,
   Hash,
-  Info
+  Info,
+  RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip';
@@ -35,6 +41,8 @@ import { Tooltip, TooltipProvider } from '@/components/ui/tooltip';
 export interface PaymentItem {
   id: string;
   amount_paise: number;
+  /** 'refund' = money paid back to the customer. Missing => 'payment'. */
+  kind?: string | null;
   payment_date: string | Date;
   payment_method: string;
   reference_number?: string | null;
@@ -56,6 +64,8 @@ interface PaymentSectionProps {
   };
   payments: PaymentItem[];
   totalCreditedPaise?: number;
+  /** Earliest active credit note date: a refund cannot be dated before it. */
+  refundMinDate?: string | null;
 }
 
 const PAYMENT_METHODS = [
@@ -66,7 +76,7 @@ const PAYMENT_METHODS = [
   { id: 'cheque', label: 'Cheque', icon: FileCheck },
 ] as const;
 
-export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: PaymentSectionProps) {
+export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refundMinDate = null }: PaymentSectionProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -86,19 +96,43 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
   const creditedPaise = settlement.totalCreditedPaise;
   const existingSum = settlement.activePaidPaise;
   const balanceDue = settlement.balanceDuePaise;
-  const balanceDueRupees = paiseToRupees(balanceDue > 0 ? balanceDue : 0);
+
+  // REFUND: when the customer has paid more than the (credit-note reduced) bill, the same card records the refund.
+  const refundDue = settlement.refundDuePaise;
+  const isRefundMode = refundDue > 0;
+  const receivedPaise = sumActiveReceivedPaise(payments);
+  const refundedPaise = sumActiveRefundedPaise(payments);
+  const activeRefundCount = activePayments.filter((p) => p.kind === 'refund').length;
+  const activePaymentCount = activePayments.length - activeRefundCount;
+  const targetPaise = isRefundMode ? refundDue : Math.max(0, balanceDue);
+  const balanceDueRupees = paiseToRupees(targetPaise);
+  const word = isRefundMode ? 'Refund' : 'Payment';
 
   const { register, handleSubmit, reset, setValue, control, formState: { errors } } = useForm<RecordPaymentInput>({
     resolver: zodResolver(recordPaymentSchema as never),
     defaultValues: {
       invoice_id: invoice.id,
-      amount: balanceDue > 0 ? balanceDueRupees : 0,
+      kind: isRefundMode ? 'refund' : 'payment',
+      amount: targetPaise > 0 ? balanceDueRupees : 0,
       payment_date: formatIstDateAsIso(new Date()),
       payment_method: 'bank_transfer',
       reference_number: '',
       notes: ''
     }
   });
+
+  // When what is owed changes (a credit note, a void, a recorded entry), start the form from the new amount and mode.
+  useEffect(() => {
+    reset({
+      invoice_id: invoice.id,
+      kind: isRefundMode ? 'refund' : 'payment',
+      amount: targetPaise > 0 ? paiseToRupees(targetPaise) : 0,
+      payment_date: formatIstDateAsIso(new Date()),
+      payment_method: 'bank_transfer',
+      reference_number: '',
+      notes: '',
+    });
+  }, [reset, invoice.id, isRefundMode, targetPaise]);
 
   const selectedMethod = useWatch({ control, name: 'payment_method' });
   const currentMethod = PAYMENT_METHODS.find((m) => m.id === selectedMethod) || PAYMENT_METHODS[0];
@@ -131,11 +165,12 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
     setError(null);
     const result = await recordPayment(data);
     if (!result.success) {
-      setError(result.error.message || 'Failed to record payment');
+      setError(result.error.message || `Failed to record ${word.toLowerCase()}`);
     } else {
-      const remainingPaise = result.data.remaining_balance_paise;
+      const remainingPaise = data.kind === 'refund' ? result.data.refund_due_paise : result.data.remaining_balance_paise;
       reset({
         invoice_id: invoice.id,
+        kind: data.kind,
         amount: remainingPaise > 0 ? paiseToRupees(remainingPaise) : 0,
         payment_date: formatIstDateAsIso(new Date()),
         payment_method: data.payment_method,
@@ -153,6 +188,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
       payment_date: payment.payment_date,
       payment_method: payment.payment_method,
       reference_number: payment.reference_number,
+      kind: payment.kind === 'refund' ? 'refund' : 'payment',
     });
     setVoidDialogOpen(true);
   };
@@ -168,7 +204,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
   return (
     <div className="space-y-2">
       {/* If Invoice is Fully Settled */}
-      {balanceDue <= 0 ? (
+      {!isRefundMode && balanceDue <= 0 ? (
         <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 via-card to-emerald-500/10 px-3 py-2 shadow-xs">
           <div className="flex items-center gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700">
@@ -182,22 +218,32 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                 </span>
               </div>
               <p className="text-[13px] text-muted-foreground mt-0.5">
-                Total {formatPaiseAsInr(existingSum)} collected across {activePayments.length} transaction{activePayments.length === 1 ? '' : 's'}. Zero balance remaining.
+                {refundedPaise > 0
+                  ? `Net ${formatPaiseAsInr(existingSum)} kept: ${formatPaiseAsInr(receivedPaise)} received, ${formatPaiseAsInr(refundedPaise)} refunded. Zero balance remaining.`
+                  : `Total ${formatPaiseAsInr(existingSum)} collected across ${activePaymentCount} transaction${activePaymentCount === 1 ? '' : 's'}. Zero balance remaining.`}
               </p>
             </div>
           </div>
         </div>
       ) : (
-        /* Record Payment Form Card */
-        <div className="rounded-xl border border-border bg-card px-3 py-2 shadow-xs">
+        /* Record Payment / Record Refund Form Card */
+        <div className={cn("rounded-xl border bg-card px-3 py-2 shadow-xs", isRefundMode ? "border-amber-400/60" : "border-border")}>
           <div className="flex items-center justify-between pb-1 mb-1.5 border-b border-border">
             <div className="flex items-center gap-2">
-              <CreditCard className="size-[18px] text-primary shrink-0" />
-              <h3 className="text-[13px] font-bold text-foreground uppercase tracking-wider whitespace-nowrap">Record Payment</h3>
+              {isRefundMode ? (
+                <RotateCcw className="size-[18px] text-amber-600 shrink-0" />
+              ) : (
+                <CreditCard className="size-[18px] text-primary shrink-0" />
+              )}
+              <h3 className="text-[13px] font-bold text-foreground uppercase tracking-wider whitespace-nowrap">Record {word}</h3>
             </div>
             <div className="flex items-center gap-1.5 text-right shrink-0">
               <span className="text-[13px] font-semibold text-muted-foreground whitespace-nowrap">
-                Balance: <span className="font-bold text-destructive whitespace-nowrap">{formatPaiseAsInr(balanceDue)}</span>
+                {isRefundMode ? (
+                  <>Refund Due: <span className="font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">{formatPaiseAsInr(refundDue)}</span></>
+                ) : (
+                  <>Balance: <span className="font-bold text-destructive whitespace-nowrap">{formatPaiseAsInr(balanceDue)}</span></>
+                )}
               </span>
               {creditedPaise > 0 && (
                 <span className="text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 px-1.5 py-0.5 rounded border border-red-200 dark:border-red-900/60 hidden sm:inline-block whitespace-nowrap shrink-0">
@@ -215,6 +261,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-2.5">
+            <input type="hidden" {...register('kind')} />
             {/* Row 1: Amount (with Quick Presets) & Date */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
               <div className="sm:col-span-7">
@@ -225,12 +272,12 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                       type="button"
                       onClick={() => handleSetAmount(balanceDueRupees)}
                       className="inline-flex items-center gap-1 rounded border border-primary/30 bg-primary/5 px-1.5 py-0.5 text-[11px] font-bold text-primary transition-all hover:bg-primary/15 active:scale-95 cursor-pointer whitespace-nowrap"
-                      title={`Pay Full: ₹${balanceDueRupees.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`}
+                      title={`${isRefundMode ? 'Refund' : 'Pay'} Full: ₹${balanceDueRupees.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`}
                     >
                       <Sparkles className="size-3" />
-                      Pay Full
+                      {isRefundMode ? 'Refund Full' : 'Pay Full'}
                     </button>
-                    {balanceDueRupees > 500 && (
+                    {!isRefundMode && balanceDueRupees > 500 && (
                       <button
                         type="button"
                         onClick={() => handleSetAmount(halfBalanceRupees)}
@@ -259,12 +306,16 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
 
               <div className="sm:col-span-5">
                 <div className="flex items-center mb-1 h-5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Payment Date</label>
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{word} Date</label>
                 </div>
                 <input
                   type="date"
                   max={formatIstDateAsIso(new Date())}
-                  min={typeof invoice.invoice_date === 'string' ? invoice.invoice_date.slice(0, 10) : undefined}
+                  min={
+                    isRefundMode && refundMinDate
+                      ? refundMinDate.slice(0, 10)
+                      : typeof invoice.invoice_date === 'string' ? invoice.invoice_date.slice(0, 10) : undefined
+                  }
                   className={cn(inputCls, errors.payment_date && 'border-destructive focus:ring-destructive/30')}
                   {...register('payment_date')}
                 />
@@ -276,7 +327,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <div className="flex items-center mb-1 h-5">
-                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Payment Mode</label>
+                  <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">{word} Mode</label>
                 </div>
                 <div className="relative" ref={dropdownRef}>
                   <button
@@ -347,7 +398,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                 </div>
                 <input
                   type="text"
-                  placeholder="Remarks or payer name"
+                  placeholder={isRefundMode ? 'Reason or who received it' : 'Remarks or payer name'}
                   className={inputCls}
                   {...register('notes')}
                 />
@@ -355,14 +406,14 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
 
               <div className="sm:col-span-5">
                 <div className="flex items-center mb-1 h-5">
-                  <span className="sr-only">Submit Payment</span>
+                  <span className="sr-only">Submit {word}</span>
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-8 px-3 py-1 font-bold shadow-xs cursor-pointer text-sm whitespace-nowrap"
+                  className={cn("w-full h-8 px-3 py-1 font-bold shadow-xs cursor-pointer text-sm whitespace-nowrap", isRefundMode && "bg-amber-600 hover:bg-amber-700 text-white")}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Recording...' : 'Record Payment'}
+                  {isSubmitting ? 'Recording...' : `Record ${word}`}
                 </Button>
               </div>
             </div>
@@ -381,6 +432,11 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground whitespace-nowrap">
               {activePayments.length} Active
             </span>
+            {activeRefundCount > 0 && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/30 whitespace-nowrap">
+                {activeRefundCount} Refund{activeRefundCount === 1 ? '' : 's'}
+              </span>
+            )}
             {voidedPayments.length > 0 && (
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 whitespace-nowrap">
                 {voidedPayments.length} Voided
@@ -412,6 +468,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                 <tbody className="divide-y border-border">
                   {payments.map((p) => {
                     const isVoided = p.status === 'voided';
+                    const isRefund = p.kind === 'refund';
                     const dateObj = new Date(p.payment_date);
                     const formattedDate = !isNaN(dateObj.getTime())
                       ? `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getFullYear()).slice(-2)}`
@@ -487,20 +544,29 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                                   {/* Line 2: Mode | Status */}
                                   <div className="flex items-center gap-2 text-[11px] whitespace-nowrap">
                                     <div className="flex items-center gap-1">
-                                      <span className="text-slate-400 font-normal">Payment Mode:</span>
+                                      <span className="text-slate-400 font-normal">{isRefund ? 'Refund' : 'Payment'} Mode:</span>
                                       <MethodIcon className="size-3.5 text-slate-300 shrink-0" />
                                       <span className="text-slate-200 font-semibold">{methodObj.label}</span>
                                     </div>
                                     <span className="text-slate-600">|</span>
                                     <div className="flex items-center gap-1">
                                       <span className="text-slate-400 font-normal">Status:</span>
-                                      <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
-                                      <span className="text-emerald-400 font-bold">PAID</span>
+                                      {isRefund ? (
+                                        <>
+                                          <RotateCcw className="size-3.5 text-amber-400 shrink-0" />
+                                          <span className="text-amber-400 font-bold">REFUNDED</span>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />
+                                          <span className="text-emerald-400 font-bold">PAID</span>
+                                        </>
+                                      )}
                                     </div>
                                   </div>
                                   {/* Line 3: Remarks */}
                                   <div className="text-[11px] text-slate-300 leading-snug truncate">
-                                    <span className="text-slate-400 font-normal">Remarks:</span> {p.notes || 'Settlement recorded'}
+                                    <span className="text-slate-400 font-normal">Remarks:</span> {p.notes || (isRefund ? 'Refund recorded' : 'Settlement recorded')}
                                   </div>
                                 </div>
                               )
@@ -513,11 +579,13 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                                 "w-[155px] inline-flex items-center justify-between gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-mono font-medium cursor-pointer transition-colors shadow-2xs",
                                 isVoided
                                   ? "bg-rose-50/90 text-rose-800 border border-rose-200/90 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60 line-through"
-                                  : "bg-emerald-50/90 text-emerald-800 border border-emerald-200/90 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60"
+                                  : isRefund
+                                    ? "bg-amber-50/90 text-amber-800 border border-amber-300/90 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60"
+                                    : "bg-emerald-50/90 text-emerald-800 border border-emerald-200/90 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60"
                               )}
                             >
                               <span className="truncate">
-                                {p.reference_number || (isVoided ? (reasonLabel || 'Voided') : (p.notes ? 'Remarks' : 'Payment Settled'))}
+                                {p.reference_number || (isVoided ? (reasonLabel || 'Voided') : (p.notes ? 'Remarks' : (isRefund ? 'Refund Paid' : 'Payment Settled')))}
                               </span>
                               <Info className="size-3 shrink-0 opacity-70" />
                             </span>
@@ -528,7 +596,11 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                         <td className="py-1 text-right text-[13px] whitespace-nowrap w-[100px]">
                           {isVoided ? (
                             <span className="line-through text-muted-foreground font-semibold whitespace-nowrap">
-                              {formatPaiseAsInr(p.amount_paise)}
+                              {isRefund ? '−' : ''}{formatPaiseAsInr(p.amount_paise)}
+                            </span>
+                          ) : isRefund ? (
+                            <span className="font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">
+                              −{formatPaiseAsInr(p.amount_paise)}
                             </span>
                           ) : (
                             <span className="font-bold text-emerald-700 whitespace-nowrap">
@@ -569,12 +641,12 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
                               </div>
                             </Tooltip>
                           ) : (
-                            <Tooltip content="Void this payment (Audit Trail)" side="left" sideOffset={6}>
+                            <Tooltip content={isRefund ? 'Void this refund, e.g. it failed (Audit Trail)' : 'Void this payment (Audit Trail)'} side="left" sideOffset={6}>
                               <button
                                 type="button"
                                 onClick={() => handleOpenVoidDialog(p)}
                                 className="p-1 rounded-md text-slate-400 hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                                aria-label="Void payment"
+                                aria-label={isRefund ? 'Void refund' : 'Void payment'}
                               >
                                 <Ban className="size-4" />
                               </button>
@@ -593,6 +665,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0 }: Pa
 
       {/* Audited Void Payment Dialog */}
       <VoidPaymentDialog
+        key={paymentToVoid?.id ?? 'none'}
         isOpen={voidDialogOpen}
         onClose={() => setVoidDialogOpen(false)}
         payment={paymentToVoid}

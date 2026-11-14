@@ -1,8 +1,8 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, min } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { writeAudit, type AuditRequestContext } from '@/lib/audit/log';
 import type { DbTransaction } from '@/lib/db/client';
-import { payments } from '@/lib/db/schema';
+import { creditNotes, payments } from '@/lib/db/schema';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
 import { formatIstDateAsIso, isValidIsoDate } from '@/lib/invoices/ist-date';
 import { lockFinalizedInvoice, lockPayment } from '@/lib/invoices/document-locks';
@@ -25,6 +25,8 @@ export interface RecordPaymentTxParams {
 export interface RecordPaymentTxResult {
   readonly payment_status: PaymentStatus;
   readonly remaining_balance_paise: number;
+  /** Still owed back to the customer after this entry. */
+  readonly refund_due_paise: number;
 }
 
 export async function recordPaymentInTransaction(
@@ -32,6 +34,8 @@ export async function recordPaymentInTransaction(
   params: RecordPaymentTxParams,
 ): Promise<RecordPaymentTxResult> {
   const { businessId, actorUserId, requestContext, input } = params;
+  const isRefund = input.kind === 'refund';
+  const word = isRefund ? 'Refund' : 'Payment';
 
   // 1. Fail fast lock timeout
   await setLocalLockTimeout(tx);
@@ -42,7 +46,7 @@ export async function recordPaymentInTransaction(
     { id: input.invoice_id, businessId },
     {
       notFound: 'Invoice not found.',
-      notFinalized: 'Payments can only be recorded against finalized invoices.',
+      notFinalized: `${word}s can only be recorded against finalized invoices.`,
     },
   );
 
@@ -56,25 +60,55 @@ export async function recordPaymentInTransaction(
 
   // 4. Strict calendar date validation
   if (!isValidIsoDate(input.payment_date)) {
-    throw new ActionError('Enter a valid payment date.', { code: 'INVALID_DATE' });
+    throw new ActionError(`Enter a valid ${word.toLowerCase()} date.`, { code: 'INVALID_DATE' });
   }
 
   const today = params.todayIst ?? formatIstDateAsIso(new Date());
   if (input.payment_date > today) {
-    throw new ActionError('Payment date cannot be in the future.', { code: 'INVALID_DATE' });
+    throw new ActionError(`${word} date cannot be in the future.`, { code: 'INVALID_DATE' });
   }
 
   if (invoice.invoice_date && input.payment_date < invoice.invoice_date) {
     const [iY, iM, iD] = invoice.invoice_date.slice(0, 10).split('-');
     const formattedInvoiceDate = `${iD}/${iM}/${iY}`;
-    throw new ActionError(`Payment date cannot be before the invoice date (${formattedInvoiceDate}).`, {
+    throw new ActionError(`${word} date cannot be before the invoice date (${formattedInvoiceDate}).`, {
       code: 'INVALID_DATE',
     });
   }
 
-  // 5. Query stable invoice balance under row lock and check overpayment
+  // 5. Query stable invoice balance under row lock and check the amount
   const balance = await loadInvoiceBalance(tx, invoice);
-  if (amountPaise > balance.remainingPaise) {
+  if (isRefund) {
+    // A refund only returns an overpayment, which exists only after a credit note reduced the bill.
+    if (balance.refundDuePaise === 0) {
+      throw new ActionError('There is no refund due on this invoice.', { code: 'NO_REFUND_DUE' });
+    }
+    if (amountPaise > balance.refundDuePaise) {
+      throw new ActionError(
+        `This refund of ${formatPaiseAsInr(amountPaise)} is more than the refund due of ${formatPaiseAsInr(balance.refundDuePaise)}. Enter an amount up to the refund due.`,
+        { code: 'OVER_REFUND' },
+      );
+    }
+    // Money cannot go back before the credit note that created the refund due.
+    const [firstCredit] = await tx
+      .select({ date: min(creditNotes.issue_date) })
+      .from(creditNotes)
+      .where(
+        and(
+          eq(creditNotes.original_invoice_id, invoice.id),
+          eq(creditNotes.business_id, businessId),
+          eq(creditNotes.lifecycle_status, 'finalized'),
+          eq(creditNotes.status, 'active'),
+        ),
+      );
+    const firstCreditDate = firstCredit?.date ? String(firstCredit.date).slice(0, 10) : null;
+    if (firstCreditDate && input.payment_date < firstCreditDate) {
+      const [cY, cM, cD] = firstCreditDate.split('-');
+      throw new ActionError(`Refund date cannot be before the credit note date (${cD}/${cM}/${cY}).`, {
+        code: 'INVALID_DATE',
+      });
+    }
+  } else if (amountPaise > balance.remainingPaise) {
     if (balance.remainingPaise === 0) {
       throw new ActionError('This invoice has no remaining balance.', { code: 'OVERPAYMENT' });
     }
@@ -94,6 +128,7 @@ export async function recordPaymentInTransaction(
     .values({
       business_id: businessId,
       invoice_id: invoice.id,
+      kind: isRefund ? 'refund' : 'payment',
       amount_paise: amountPaise,
       payment_date: input.payment_date,
       payment_method: input.payment_method,
@@ -103,34 +138,50 @@ export async function recordPaymentInTransaction(
     .returning({ id: payments.id });
 
   if (!inserted) {
-    throw new ActionError('Failed to record payment.', { code: 'INTERNAL_ERROR' });
+    throw new ActionError(`Failed to record ${word.toLowerCase()}.`, { code: 'INTERNAL_ERROR' });
   }
 
   // 7. Recompute and persist payment_status
   const after = await recomputePaymentStatus(tx, invoice);
 
-  // 8. Log in statutory audit log
-  await writeAudit(tx, {
-    businessId,
-    actorUserId,
-    entityType: 'payment',
-    entityId: inserted.id,
-    action: 'record',
-    requestContext,
-    metadata: {
-      amount_paise: amountPaise,
-      payment_date: input.payment_date,
-      payment_method: input.payment_method,
-      reference_number: input.reference_number || null,
-      invoice_id: invoice.id,
-      invoice_number: invoice.invoice_number,
-      resulting_payment_status: after.status,
-    },
-  });
+  // 8. Log in statutory audit log (separate literal actions: the audit-coverage scan checks each pair)
+  const auditMetadata = {
+    kind: isRefund ? 'refund' : 'payment',
+    amount_paise: amountPaise,
+    payment_date: input.payment_date,
+    payment_method: input.payment_method,
+    reference_number: input.reference_number || null,
+    invoice_id: invoice.id,
+    invoice_number: invoice.invoice_number,
+    resulting_payment_status: after.status,
+    resulting_refund_due_paise: after.refundDuePaise,
+  };
+  if (isRefund) {
+    await writeAudit(tx, {
+      businessId,
+      actorUserId,
+      entityType: 'payment',
+      entityId: inserted.id,
+      action: 'record_refund',
+      requestContext,
+      metadata: auditMetadata,
+    });
+  } else {
+    await writeAudit(tx, {
+      businessId,
+      actorUserId,
+      entityType: 'payment',
+      entityId: inserted.id,
+      action: 'record',
+      requestContext,
+      metadata: auditMetadata,
+    });
+  }
 
   return {
     payment_status: after.status,
     remaining_balance_paise: after.remainingPaise,
+    refund_due_paise: after.refundDuePaise,
   };
 }
 
@@ -224,6 +275,7 @@ export async function voidPaymentInTransaction(
     action: 'void',
     requestContext,
     metadata: {
+      kind: payment.kind,
       amount_paise: payment.amount_paise,
       payment_date: payment.payment_date,
       payment_method: payment.payment_method,
@@ -237,8 +289,12 @@ export async function voidPaymentInTransaction(
     },
   });
 
-  // 7. Recompute and persist invoice payment_status
-  const after = await recomputePaymentStatus(tx, invoice);
+  // 7. Recompute and persist invoice payment_status. Voiding a PAYMENT that a refund depends on is refused here
+  //    (refunds may never exceed the money kept); voiding a refund always passes.
+  const after = await recomputePaymentStatus(tx, invoice, {
+    refundNotCoveredMessage:
+      'Voiding this payment would leave more refunded to the customer than they paid. Void the refund entry first, then void this payment.',
+  });
 
   return {
     success: true,

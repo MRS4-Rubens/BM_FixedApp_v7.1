@@ -23,6 +23,9 @@ export const invoices = pgTable('invoices', {
   invoice_type: invoiceTypeEnum('invoice_type').notNull().default('tax_invoice'),
   lifecycle_status: lifecycleStatusEnum('lifecycle_status').notNull().default('draft'),
   payment_status: paymentStatusEnum('payment_status').notNull().default('unpaid'),
+  // REFUND: money owed BACK to the customer (received − refunded − net bill, when above 0). Kept in step with
+  // payment_status by recomputePaymentStatus; mutable on finalized invoices (bm_guard_invoices allow-list).
+  refund_due_paise: bigint('refund_due_paise', { mode: 'number' }).notNull().default(0),
   invoice_date: date('invoice_date'),
   // Computed and locked in at finalization time from the business's payment_due_days setting at that moment — changing payment_due_days later never affects already-finalized invoices, consistent with the snapshot-immutability principle used throughout this app.
   due_date: date('due_date'),
@@ -104,7 +107,9 @@ export const invoices = pgTable('invoices', {
   // API-011: a counter can never be negative.
   check('invoices_reminder_count_nonneg', sql`${table.reminder_count} >= 0`),
   // FE-001: display preferences snapshot must be null or a json object
-  check('invoices_display_prefs_snapshot_object', sql`${table.display_prefs_snapshot} IS NULL OR jsonb_typeof(${table.display_prefs_snapshot}) = 'object'`)
+  check('invoices_display_prefs_snapshot_object', sql`${table.display_prefs_snapshot} IS NULL OR jsonb_typeof(${table.display_prefs_snapshot}) = 'object'`),
+  // REFUND: refund due is never negative and stays JS-safe.
+  check('invoices_refund_due_valid', sql`${table.refund_due_paise} >= 0 AND ${table.refund_due_paise} <= 9007199254740991`)
 ]);
 
 export const invoicesRelations = relations(invoices, ({ one, many }) => ({

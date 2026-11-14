@@ -5,13 +5,15 @@ import { invoices } from './invoices';
 import { users } from './users';
 import { paymentMethodEnum } from './enums';
 import { inList } from './_check-helpers';
-import { RECORD_STATUSES, type RecordStatus } from '../domain-values';
+import { PAYMENT_KINDS, RECORD_STATUSES, type PaymentKind, type RecordStatus } from '../domain-values';
 
 export const payments = pgTable('payments', {
   id: uuid('id').primaryKey().defaultRandom(),
   business_id: uuid('business_id').notNull().references(() => businesses.id),
   invoice_id: uuid('invoice_id').notNull(),
   amount_paise: bigint('amount_paise', { mode: 'number' }).notNull(),
+  // REFUND: 'payment' = received from the customer; 'refund' = paid back to them. amount_paise is positive for both.
+  kind: text('kind').$type<PaymentKind>().notNull().default('payment'),
   payment_date: date('payment_date').notNull(),
   payment_method: paymentMethodEnum('payment_method').notNull(),
   reference_number: text('reference_number'),
@@ -41,7 +43,9 @@ export const payments = pgTable('payments', {
   // DB-003: JavaScript Number.MAX_SAFE_INTEGER safety check.
   check('payments_amount_js_safe', sql`${table.amount_paise} <= 9007199254740991`),
   // DB-004: CHECK payments_status_valid
-  check('payments_status_valid', inList(table.status, RECORD_STATUSES))
+  check('payments_status_valid', inList(table.status, RECORD_STATUSES)),
+  // REFUND: CHECK payments_kind_valid
+  check('payments_kind_valid', inList(table.kind, PAYMENT_KINDS))
 ]);
 
 export const paymentsRelations = relations(payments, ({ one }) => ({

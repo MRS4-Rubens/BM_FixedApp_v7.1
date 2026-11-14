@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-export type InvoiceStatus = 'Paid' | 'Sent' | 'Overdue' | 'Draft' | 'Partial'
+export type InvoiceStatus = 'Paid' | 'Sent' | 'Overdue' | 'Draft' | 'Partial' | 'Refund Due'
 
 const statusStyles: Record<InvoiceStatus, string> = {
   Paid: 'bg-success-subtle text-success-text',
@@ -8,6 +8,8 @@ const statusStyles: Record<InvoiceStatus, string> = {
   Overdue: 'bg-red-100 text-red-700',
   Draft: 'bg-muted text-muted-foreground',
   Partial: 'bg-amber-100 text-amber-700',
+  // REFUND: paid, but money is owed back to the customer.
+  'Refund Due': 'bg-amber-50 text-amber-800 ring-1 ring-amber-300',
 }
 
 interface InvoiceStatusBadgeProps {

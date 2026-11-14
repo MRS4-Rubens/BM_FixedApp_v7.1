@@ -1,18 +1,20 @@
 import { getIstDateParts, formatIstDateAsIso } from './ist-date';
 
-export type DisplayInvoiceStatus = 'draft' | 'sent' | 'partially_paid' | 'paid' | 'overdue';
+export type DisplayInvoiceStatus = 'draft' | 'sent' | 'partially_paid' | 'paid' | 'refund_due' | 'overdue';
 
 // This is a PURE, live-computed function — 'overdue' is intentionally never written to the database's payment_status column by this app. Computing it fresh on every read means the status is always accurate the instant it's viewed, with no dependency on any scheduled job having run recently. payment_status in the database only ever reflects real payment events (unpaid/partially_paid/paid).
 export function getDisplayInvoiceStatus(
   invoice: { 
     lifecycle_status: 'draft' | 'finalized'; 
     payment_status: 'unpaid' | 'partially_paid' | 'paid' | 'overdue'; 
-    due_date: string | Date | null 
+    due_date: string | Date | null;
+    /** REFUND: a paid invoice that still owes money back shows 'refund_due'. Optional for older callers. */
+    refund_due_paise?: number | string | null;
   }, 
   asOfDate: Date = new Date()
 ): DisplayInvoiceStatus {
   if (invoice.lifecycle_status === 'draft') return 'draft';
-  if (invoice.payment_status === 'paid') return 'paid';
+  if (invoice.payment_status === 'paid') return Number(invoice.refund_due_paise || 0) > 0 ? 'refund_due' : 'paid';
   
   if (invoice.due_date) {
     const asOfParts = getIstDateParts(asOfDate);
@@ -51,6 +53,8 @@ export function getDisplayStatusLabel(status: DisplayInvoiceStatus): { label: st
       return { label: 'Partially Paid', colorClass: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800' };
     case 'paid':
       return { label: 'Paid', colorClass: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' };
+    case 'refund_due':
+      return { label: 'Refund Due', colorClass: 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700' };
     case 'overdue':
       return { label: 'Overdue', colorClass: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' };
     default:
