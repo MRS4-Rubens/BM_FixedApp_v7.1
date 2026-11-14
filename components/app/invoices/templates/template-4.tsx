@@ -4,7 +4,7 @@ import { INDIAN_GST_STATES, stateTaxLabel } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { SignatureMark, isSignatureDataUri, AUTHORISED_SIGNATORY_LABEL } from './signature-mark';
-import { resolveHeaderSubline, TaglinePill, ContactLine } from './header-parts';
+import { resolveHeaderSubline, TaglinePill, ContactLine, BrandLockup, MetaDivider } from './header-parts';
 
 // ============================================================================
 // CONFIGURABLE DESIGN SYSTEM VARIABLES FOR TEMPLATE 4 (EXECUTIVE PREMIUM)
@@ -13,13 +13,6 @@ import { resolveHeaderSubline, TaglinePill, ContactLine } from './header-parts';
 const PRINT_STYLES = {
   outerBorder: 'border-2 border-slate-800 p-3 bg-white text-slate-900 shadow-sm print:p-0 print:border-none print:shadow-none',
 
-  // Header aesthetics
-  badgeTaxInvoice: 'border border-slate-900 bg-white text-slate-950 text-[11px] font-black tracking-widest uppercase px-3.5 py-0.5 rounded-full inline-block',
-  fontTitle: 'text-2xl font-black tracking-tight text-slate-900 leading-tight uppercase',
-  fontSubtitle: 'text-[11px] font-extrabold text-slate-700 uppercase tracking-wide',
-  fontAddress: 'text-[11px] text-slate-700 font-semibold leading-tight',
-  fontContact: 'text-[11px] text-slate-800 font-bold',
-
   // Table aesthetics
   tableHeaderPrimary: 'bg-slate-900 text-white text-[11px] font-bold text-center uppercase tracking-wider p-1',
   tableHeaderSecondary: 'bg-slate-800 text-slate-200 text-[10px] font-bold text-center uppercase p-0.5',
@@ -27,10 +20,11 @@ const PRINT_STYLES = {
   tableRowHover: 'hover:bg-slate-100/50',
   tableBorder: 'border-collapse border border-slate-800',
   cellBorder: 'border border-slate-300',
-
-  // Section Spacing
-  spacingSection: 'mb-2',
 };
+
+// Header info cards (GSTIN, Invoice No & Date): one compact row each, same style on both sides.
+const META_CARD = 'whitespace-nowrap rounded-md border border-slate-300 bg-slate-50 px-2 py-[2px] font-semibold text-slate-800 shadow-xs';
+const META_LABEL = 'text-[10px] font-extrabold uppercase tracking-wide text-slate-600';
 
 export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, displayPrefs }: InvoiceTemplateProps) {
   const { discEnabled, showHsn, enableFixedRows, fixedRowsCount, showSignatory } = displayPrefs;
@@ -105,84 +99,55 @@ export function InvoiceTemplate4({ invoice, businessStateCode, hasWatermark, dis
       `}</style>
 
       {/* ==================================================================== */}
-      {/* 1. TOP HEADER SECTION (COMPACT & MODERN)                            */}
+      {/* 1. HEADER: info cards → logo + name → subline → address & phone      */}
+      {/* Shared rules live in ./header-parts (BrandLockup, MetaDivider).     */}
       {/* ==================================================================== */}
-      <div className={`relative flex flex-col items-center w-full ${PRINT_STYLES.spacingSection} min-h-[75px]`}>
-        {/* Top Left: GSTIN card (same style as the right meta card) */}
-        <div className="absolute top-0 left-0 border border-slate-300 rounded-md bg-slate-50/90 px-2 py-1 text-[11px] font-semibold text-slate-800 text-left shrink-0 shadow-xs">
-          <div className="flex justify-between items-center gap-2">
-            <span className="text-slate-700 font-extrabold uppercase text-[10px] whitespace-nowrap">GSTIN</span>
-            <span className="font-mono font-bold text-slate-900 text-[11px] uppercase whitespace-nowrap">
-              {invoice.seller_gstin_snapshot ? invoice.seller_gstin_snapshot.toUpperCase() : '—'}
+      <header data-hdr="header" className="flex w-full flex-col items-center mb-[8px]">
+        {/* Row 1: GSTIN card (left) | TAX INVOICE pill (page centre) | Invoice No & Date card (right) */}
+        <div data-hdr="meta" className="grid w-full grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-x-3 text-[11px] leading-tight">
+          <div className={`justify-self-start ${META_CARD}`}>
+            <span className={META_LABEL}>GSTIN</span>
+            <span className="ml-2 font-mono font-bold uppercase text-slate-900">{invoice.seller_gstin_snapshot ? invoice.seller_gstin_snapshot.toUpperCase() : '—'}</span>
+          </div>
+          <h2 className="whitespace-nowrap rounded-full border border-slate-900 bg-white px-3 py-[1px] text-[11px] font-black uppercase leading-tight tracking-[0.2em] text-slate-950">
+            <span className="-mr-[0.2em]">TAX INVOICE</span>
+          </h2>
+          <div className={`justify-self-end ${META_CARD}`}>
+            <span className="whitespace-nowrap">
+              <span className={META_LABEL}>Invoice No</span>
+              <span className="ml-2 font-mono font-black text-slate-900">{invoice.invoice_number}</span>
+            </span>
+            <span className="whitespace-nowrap">
+              <span className="text-slate-400"><MetaDivider /></span>
+              <span className={META_LABEL}>Date</span>
+              <span className="ml-2 font-bold text-slate-900">{invoice.invoice_date ? formatIstDate(invoice.invoice_date) : '—'}</span>
             </span>
           </div>
         </div>
 
-        {/* Center: Business Branding Block (Nudged 7px left for balanced print breathing room) */}
-        <div className="flex flex-col items-center text-center relative left-[-7px]">
-          {/* TAX INVOICE Badge */}
-          <div className="mb-[3px]">
-            <span className={PRINT_STYLES.badgeTaxInvoice}>
-              TAX INVOICE
-            </span>
-          </div>
-
-          {/* Brand Block: Business Name + Tagline with Dynamic Logo Anchor */}
-          <div className="relative inline-flex flex-col items-center">
-            {logoSrc && (
-              // Logo height: with a tagline the pill sits under the name, so the logo must fit between the top-left
-              // GSTIN and the name's baseline (measured: TAG-B review). Without a tagline it is 48px (was 64px) so it clears the new top-left GSTIN card.
-              <div className={`absolute right-full mr-[7px] w-[140px] ${subline?.kind === 'tagline' ? 'h-[28px]' : 'h-[48px]'} flex items-end justify-end p-0 select-none overflow-hidden ${
-                subline?.kind === 'nature' ? 'bottom-[-4px]' : 'bottom-0'
-              }`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={logoSrc}
-                  alt="Logo"
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
-            )}
-
-            {/* Business Name */}
-            <h1 className={`${PRINT_STYLES.fontTitle} whitespace-nowrap`}>{invoice.business_name}</h1>
-
-            {/* Nature of Business */}
-            {subline?.kind === 'nature' && (
-              <p className={`${PRINT_STYLES.fontSubtitle} whitespace-nowrap mt-[2px]`}>
-                ({subline.text})
-              </p>
-            )}
-          </div>
-
-          {subline?.kind === 'tagline' && (
-            <div className="mt-[5px] max-w-full">
-              <TaglinePill text={subline.text} tone="slate" />
-            </div>
-          )}
-
-          {/* Address & Contact Numbers */}
-          <ContactLine
-            className={`${PRINT_STYLES.fontAddress} mt-[4px]`}
-            address={template4Address}
-            phones={template4Phones}
-          />
+        {/* Row 2: logo + business name, centred together */}
+        {/* 6px (not 8px): the cards above carry their own padding, so the gap from their text to the logo matches the other templates. */}
+        <div className="mt-[6px] w-full">
+          <BrandLockup logoSrc={logoSrc} name={invoice.business_name} nameClassName="tracking-[0.08em] -mr-[0.08em] text-slate-900" />
         </div>
 
-        {/* Top Right: Compact Elevated Invoice Meta Card */}
-        <div className="absolute top-0 right-0 border border-slate-300 rounded-md bg-slate-50/90 px-2 py-1 text-[11px] font-semibold text-slate-800 text-left space-y-[2px] shrink-0 min-w-[205px] shadow-xs">
-          <div className="flex justify-between items-center border-b border-slate-200 pb-[2px] gap-2">
-            <span className="text-slate-700 font-extrabold uppercase text-[10px] whitespace-nowrap">Invoice No</span>
-            <span className="font-mono font-black text-slate-900 text-[11px] whitespace-nowrap">{invoice.invoice_number}</span>
+        {/* Row 3: tagline pill, or (nature of business) */}
+        {subline?.kind === 'tagline' && (
+          <div className="mt-[5px] max-w-full">
+            <TaglinePill text={subline.text} tone="slate" />
           </div>
-          <div className="flex justify-between items-center gap-2">
-            <span className="text-slate-700 font-extrabold uppercase text-[10px] whitespace-nowrap">Date</span>
-            <span className="font-bold text-slate-900 text-[11px] whitespace-nowrap">
-              {invoice.invoice_date ? formatIstDate(invoice.invoice_date) : '—'}
-            </span>
-          </div>
-        </div>
-      </div>
+        )}
+        {subline?.kind === 'nature' && (
+          <p className="mt-[4px] text-[11px] font-semibold uppercase leading-tight tracking-[0.12em] text-slate-700">({subline.text})</p>
+        )}
+
+        {/* Row 4: address | phone */}
+        <ContactLine
+          className="mt-[5px] max-w-full text-center text-[11px] font-semibold leading-tight text-slate-700"
+          address={template4Address}
+          phones={template4Phones}
+        />
+      </header>
 
       {/* ==================================================================== */}
       {/* 2. SINGLE FULL-WIDTH CARD: 2-LINE COMPACT CUSTOMER & SUPPLY DETAILS  */}

@@ -95,7 +95,8 @@ describe('TAG-B: Header Parts pure components and helpers', () => {
   });
 
   describe('ContactLine', () => {
-    it('renders address and phones separated by diamond when both exist', () => {
+    // HDR redesign: the ◆ was replaced by a thin vertical divider (MetaDivider, a 1px `w-px` span).
+    it('renders address and phones separated by the thin divider when both exist', () => {
       const html = renderToStaticMarkup(
         createElement(ContactLine, {
           address: '123 Main St, Mumbai - 400001',
@@ -104,16 +105,16 @@ describe('TAG-B: Header Parts pure components and helpers', () => {
         }),
       );
       expect(html).toContain('123 Main St, Mumbai - 400001');
-      expect(html).toContain('◆');
-      // The diamond and the phone text live in ONE unbreakable span, so a wrap never strands the diamond.
+      expect(html).not.toContain('◆');
+      // The divider and the phone text live in ONE unbreakable span, so a wrap never strands the divider.
       const nowrap = html.match(/<span class="whitespace-nowrap">([\s\S]*?Ph No\.: 9876543210, 9123456780)<\/span>/);
       expect(nowrap).not.toBeNull();
-      expect(nowrap![1]).toContain('◆');
-      expect(html.indexOf('123 Main St')).toBeLessThan(html.indexOf('◆'));
+      expect(nowrap![1]).toMatch(/<span aria-hidden="true" class="[^"]*w-px[^"]*"><\/span>/);
+      expect(html.indexOf('123 Main St')).toBeLessThan(html.indexOf('w-px'));
       expect(html).toContain('class="contact-cls"');
     });
 
-    it('renders phones only with no diamond separator', () => {
+    it('renders phones only with no divider', () => {
       const html = renderToStaticMarkup(
         createElement(ContactLine, {
           address: '',
@@ -121,10 +122,10 @@ describe('TAG-B: Header Parts pure components and helpers', () => {
         }),
       );
       expect(html).toContain('Ph No.: 9876543210');
-      expect(html).not.toContain('◆');
+      expect(html).not.toContain('w-px');
     });
 
-    it('renders address only with no diamond separator', () => {
+    it('renders address only with no divider', () => {
       const html = renderToStaticMarkup(
         createElement(ContactLine, {
           address: '123 Main St, Mumbai - 400001.',
@@ -132,7 +133,7 @@ describe('TAG-B: Header Parts pure components and helpers', () => {
         }),
       );
       expect(html).toContain('123 Main St, Mumbai - 400001.');
-      expect(html).not.toContain('◆');
+      expect(html).not.toContain('w-px');
       expect(html).not.toContain('Ph No.');
     });
 
@@ -256,7 +257,7 @@ describe('TAG-B: Template Headers rendering', () => {
         expect(html).not.toContain('(Wholesale');
       });
 
-      it('d) renders phone number in the SAME <p> as the address after ◆', () => {
+      it('d) renders phone number in the SAME <p> as the address, after the thin divider', () => {
         const html = renderToStaticMarkup(
           createElement(InvoicePrintView, {
             invoice: {
@@ -269,10 +270,11 @@ describe('TAG-B: Template Headers rendering', () => {
           }),
         );
 
-        // Match a <p ...> containing both the address and Ph No. separated by ◆
+        // Match a <p ...> containing both the address and Ph No. separated by the divider
         const match = html.match(/<p[^>]*>([\s\S]*?)<\/p>/g);
         expect(match).not.toBeNull();
-        const contactP = match?.find((p) => p.includes('◆') && p.includes('Ph No.:'));
+        expect(html).not.toContain('◆');
+        const contactP = match?.find((p) => p.includes('w-px') && p.includes('Ph No.:'));
         expect(contactP).toBeDefined();
         expect(contactP).toContain('BENGALURU');
         expect(contactP).toContain('Ph No.: 9876543210, 9123456780');
@@ -336,10 +338,12 @@ describe('TAG-B: Template Headers rendering', () => {
       expect(taxInvoiceIndex).toBeGreaterThan(-1);
       expect(gstinIndex).toBeLessThan(taxInvoiceIndex);
 
-      // Inspect the right meta card: it should contain Invoice No and Date, but not GSTIN
-      const rightCardStart = html.indexOf('min-w-[205px]');
-      expect(rightCardStart).toBeGreaterThan(-1);
-      const rightCardHtml = html.slice(rightCardStart, rightCardStart + 500);
+      // Inspect the right meta card (after TAX INVOICE, before the logo + name row):
+      // it should contain Invoice No and Date, but not GSTIN.
+      const rightCardStart = html.indexOf('TAX INVOICE');
+      const rightCardEnd = html.indexOf('data-hdr="lockup"');
+      expect(rightCardEnd).toBeGreaterThan(rightCardStart);
+      const rightCardHtml = html.slice(rightCardStart, rightCardEnd);
       expect(rightCardHtml).toContain('Invoice No');
       expect(rightCardHtml).toContain('INV-2026-9999');
       expect(rightCardHtml).toContain('Date');
