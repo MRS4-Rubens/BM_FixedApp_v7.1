@@ -1,5 +1,5 @@
 export const colStyles = {
-  drag: { width: '56px', minWidth: '56px', textAlign: 'left' } as const,
+  drag: { width: '36px', minWidth: '36px', textAlign: 'left' } as const,
   sNo: { width: '42px', minWidth: '42px', textAlign: 'left' } as const,
   description: { width: '100%', minWidth: '250px' } as const,
   hsn: { width: '76px', minWidth: '76px', textAlign: 'center' } as const,

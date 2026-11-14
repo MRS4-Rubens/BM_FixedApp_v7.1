@@ -3,6 +3,7 @@
 import { ArrowUpDown, ListTodo, Plus } from 'lucide-react';
 import { colStyles } from './col-styles';
 import { LineItemRow } from './line-item-row';
+import { LINE_REORDER_HINT_ID, LINE_REORDER_STATUS_ID } from './use-line-reorder';
 import type { UseFieldArrayReturn } from 'react-hook-form';
 import type { InvoiceDraftInput } from '@/lib/validations/invoice';
 import type { ProductOption } from '@/lib/pickers/types';
@@ -46,7 +47,7 @@ export function LineItemsTable({
   fields: UseFieldArrayReturn<InvoiceDraftInput, 'line_items'>['fields'];
   append: UseFieldArrayReturn<InvoiceDraftInput, 'line_items'>['append'];
   remove: UseFieldArrayReturn<InvoiceDraftInput, 'line_items'>['remove'];
-  handleMoveLine: (from: number, to: number, direction: 'up' | 'down') => void;
+  handleMoveLine: (from: number, to: number) => void;
   handleGroupByGst: () => void;
   taxRates: Array<typeof taxRatesTable.$inferSelect>;
   sortedTaxRates: Array<typeof taxRatesTable.$inferSelect>;
@@ -99,7 +100,7 @@ export function LineItemsTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/10">
-              <th className="pl-2 pr-0 py-1.5" style={colStyles.drag} aria-label="Reorder"></th>
+              <th className="pl-1 pr-0 py-1.5" style={colStyles.drag} aria-label="Reorder"></th>
               <th className="pl-3 pr-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left whitespace-nowrap" style={colStyles.sNo}>S.No</th>
               <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left whitespace-nowrap" style={colStyles.description}>Description</th>
               {displayPrefs.showHsn && <th className="px-2 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center whitespace-nowrap" style={colStyles.hsn}>HSN/SAC</th>}
@@ -162,6 +163,11 @@ export function LineItemsTable({
             ))}
           </tbody>
         </table>
+        {/* Screen-reader only: how the grip handles work, and a polite announcement after each move. */}
+        <p id={LINE_REORDER_HINT_ID} className="sr-only">
+          Drag to reorder, or press the up or down arrow key to move this line. Home and End move it to the top or bottom.
+        </p>
+        <p id={LINE_REORDER_STATUS_ID} role="status" aria-live="polite" className="sr-only" />
       </div>
       <button
         type="button"

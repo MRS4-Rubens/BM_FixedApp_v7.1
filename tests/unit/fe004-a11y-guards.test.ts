@@ -116,13 +116,23 @@ describe('FE-004: Accessibility (WCAG 2.1 AA) guards', () => {
     expect(content).toContain('export function ConfirmDialog');
   });
 
-  it('ensures keyboard line reordering buttons exist in components/app/invoices/invoice-form.tsx', () => {
+  // Line reordering uses ONE control: the grip handle. It must stay keyboard- and screen-reader-usable
+  // (focusable, labelled, ↑ ↓ keys, hint + live announcement), because the separate ↑/↓ buttons were removed.
+  it('ensures the grip handle supports keyboard line reordering in components/app/invoices/invoice-form.tsx', () => {
     const formPath = resolve(rootDir, 'components/app/invoices/invoice-form.tsx');
     expect(existsSync(formPath)).toBe(true);
 
     const content = readComponentSources('components/app/invoices/invoice-form.tsx');
-    expect(content).toContain('Move line ${idx + 1} up');
-    expect(content).toContain('Move line ${idx + 1} down');
+    expect(content).toContain('role="button"');
+    expect(content).toContain('tabIndex={canReorder ? 0 : -1}');
+    expect(content).toContain('Reorder line ${idx + 1}');
+    expect(content).toContain('onKeyDown');
+    expect(content).toContain('reorderTargetForKey(e.key, idx, fieldsLength)');
     expect(content).toContain('handleMoveLine');
+    expect(content).toContain('aria-describedby={canReorder ? LINE_REORDER_HINT_ID : undefined}');
+    expect(content).toContain('id={LINE_REORDER_STATUS_ID} role="status" aria-live="polite"');
+    // The old duplicate arrow buttons must not come back.
+    expect(content).not.toContain('move-line-up-');
+    expect(content).not.toContain('move-line-down-');
   });
 });
