@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useFormContext, useWatch } from 'react-hook-form';
-import { ChevronDown, ChevronUp, GripVertical, Trash2 } from 'lucide-react';
+import { ChevronDown, GripVertical, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UNIT_OF_MEASUREMENT_OPTIONS } from '@/lib/gst/units';
 import type { InvoiceDraftInput } from '@/lib/validations/invoice';
@@ -12,8 +12,11 @@ import type { taxRates as taxRatesTable } from '@/lib/db/schema';
 import type { resolveDraftDisplayPrefs } from '@/lib/invoices/display-prefs';
 type ResolvedDraftDisplayPrefs = ReturnType<typeof resolveDraftDisplayPrefs>;
 import { colStyles } from './col-styles';
+import { LINE_REORDER_HINT_ID, lineReorderHandleId, reorderTargetForKey } from './use-line-reorder';
 
-const tableInputCls = "w-full rounded-md border border-border bg-background px-2 py-1 text-sm font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring hover:border-muted-foreground/20 shadow-sm transition-all";
+const REORDER_KEYS = new Set(['ArrowUp', 'ArrowDown', 'Home', 'End']);
+
+const tableInputCls ="w-full rounded-md border border-border bg-background px-2 py-1 text-sm font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring hover:border-muted-foreground/20 shadow-sm transition-all";
 
 export function LineItemRow({
   fieldId,
@@ -57,7 +60,7 @@ export function LineItemRow({
   displayPrefs: ResolvedDraftDisplayPrefs;
   mounted: boolean;
   remove: (index: number) => void;
-  handleMoveLine: (from: number, to: number, direction: 'up' | 'down') => void;
+  handleMoveLine: (from: number, to: number) => void;
   draggedIdx: number | null;
   dropTargetIdx: number | null;
   dropPosition: 'top' | 'bottom' | null;
@@ -134,6 +137,7 @@ export function LineItemRow({
   };
 
   const rowDescVal = descVal || '';
+  const canReorder = fieldsLength > 1;
   const isDragging = draggedIdx === idx;
   const isDropTop = dropTargetIdx === idx && dropPosition === 'top' && draggedIdx !== idx;
   const isDropBottom = dropTargetIdx === idx && dropPosition === 'bottom' && draggedIdx !== idx;
@@ -153,51 +157,41 @@ export function LineItemRow({
         isDropBottom && "bg-slate-200/75 dark:bg-slate-800/80 [box-shadow:inset_0_-3px_0_0_#334155] dark:[box-shadow:inset_0_-3px_0_0_#94a3b8]"
       )}
     >
-      {/* Drag Handle & Keyboard Reorder */}
-      <td className="pl-2 pr-0 py-1.5 align-middle" style={colStyles.drag}>
-        <div className="flex items-center gap-0.5">
-          <div
-            draggable={fieldsLength > 1}
-            onDragStart={(e) => handleDragStart(e, idx)}
-            onDragEnd={handleDragEnd}
-            onTouchStart={(e) => handleTouchStart(e, idx)}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={handleTouchEnd}
-            className={cn(
-              "flex items-center justify-center w-4 h-6 rounded transition-all select-none touch-none",
-              fieldsLength > 1
-                ? "cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-muted/80 active:scale-95"
-                : "opacity-20 cursor-default",
-              touchDraggingIdx === idx && "bg-indigo-500/20 text-indigo-600 scale-110 shadow-xs"
-            )}
-            title={fieldsLength > 1 ? "Drag to reorder row" : undefined}
-            aria-label={fieldsLength > 1 ? `Reorder line item ${idx + 1}` : undefined}
-          >
-            <GripVertical className="size-3.5" />
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <button
-              type="button"
-              id={`move-line-up-${idx + 1}`}
-              disabled={idx === 0}
-              aria-label={`Move line ${idx + 1} up`}
-              onClick={() => handleMoveLine(idx, idx - 1, 'up')}
-              className="flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
-            >
-              <ChevronUp className="size-3" />
-            </button>
-            <button
-              type="button"
-              id={`move-line-down-${idx + 1}`}
-              disabled={idx === fieldsLength - 1}
-              aria-label={`Move line ${idx + 1} down`}
-              onClick={() => handleMoveLine(idx, idx + 1, 'down')}
-              className="flex size-3.5 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-20 disabled:pointer-events-none cursor-pointer"
-            >
-              <ChevronDown className="size-3" />
-            </button>
-          </div>
+      {/* Grip handle: the ONE reorder control. Mouse/finger drag it, or focus it (Tab) and press ↑ ↓ Home End.
+          A div with role="button" (not <button>) because Firefox won't start a native drag from a <button>. */}
+      <td className="pl-1 pr-0 py-1.5 align-middle" style={colStyles.drag}>
+        <div
+          id={lineReorderHandleId(idx)}
+          role="button"
+          tabIndex={canReorder ? 0 : -1}
+          aria-disabled={!canReorder}
+          aria-label={`Reorder line ${idx + 1}${rowDescVal.trim() ? `, ${rowDescVal.trim()}` : ''}`}
+          aria-describedby={canReorder ? LINE_REORDER_HINT_ID : undefined}
+          draggable={canReorder}
+          onDragStart={(e) => handleDragStart(e, idx)}
+          onDragEnd={handleDragEnd}
+          onKeyDown={(e) => {
+            if (!canReorder || !REORDER_KEYS.has(e.key)) return;
+            // Swallow reorder keys even at the first/last row, so ↑ ↓ Home End never scroll the page instead.
+            e.preventDefault();
+            const to = reorderTargetForKey(e.key, idx, fieldsLength);
+            if (to !== null) handleMoveLine(idx, to);
+          }}
+          onTouchStart={(e) => handleTouchStart(e, idx)}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
+          className={cn(
+            // 32×36px hit area (easy to grab with a finger) around a small icon.
+            "flex h-9 w-8 items-center justify-center rounded-md transition-all select-none touch-none focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            canReorder
+              ? "cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground hover:bg-muted/80 active:scale-95"
+              : "opacity-20 cursor-default",
+            touchDraggingIdx === idx && "bg-indigo-500/20 text-indigo-600 scale-110 shadow-xs"
+          )}
+          title={canReorder ? 'Drag to reorder · or focus and use ↑ ↓ keys' : undefined}
+        >
+          <GripVertical className="size-4" aria-hidden="true" />
         </div>
       </td>
 
