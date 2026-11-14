@@ -4,7 +4,7 @@ import { getStateAbbrByCode, stateTaxLabel } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { SignatureMark, isSignatureDataUri, AUTHORISED_SIGNATORY_LABEL } from './signature-mark';
-import { resolveHeaderSubline, TaglinePill, ContactLine } from './header-parts';
+import { resolveHeaderSubline, TaglinePill, ContactLine, BrandLockup, MetaDivider } from './header-parts';
 
 // ============================================================================
 // CONFIGURABLE DESIGN SYSTEM VARIABLES FOR TEMPLATE 2 (BOOK DEPOT)
@@ -16,7 +16,6 @@ const PRINT_STYLES = {
   cellBorder: 'border border-black',
 
   // Font sizes
-  fontTitle: 'text-2xl font-extrabold tracking-tight leading-tight',
   fontSubtitle: 'text-[12px] font-semibold text-gray-700',
   fontLabel: 'text-[11px] font-bold text-black uppercase',
   fontValue: 'text-[11px] text-black font-semibold',
@@ -24,7 +23,6 @@ const PRINT_STYLES = {
   fontTableBody: 'text-[10px] text-black font-medium p-1',
 
   // Padding & Margin spacing
-  spacingSection: 'mb-[5px]',
   spacingGrid: 'p-3',
 };
 
@@ -101,68 +99,47 @@ export function InvoiceTemplate2({ invoice, businessStateCode, hasWatermark, dis
         }
       `}</style>
 
-      {/* Header Info */}
-      <div className={`relative flex flex-col items-center w-full ${PRINT_STYLES.spacingSection}`}>
-        {/* Top Left: GSTIN (Borderless, 0px padding, Left-Justified, 12px) */}
-        <div className="absolute top-0 left-0 p-0 text-[12px] font-bold text-slate-800 text-left leading-tight">
-          GSTIN : <span className="font-mono font-black text-slate-950 uppercase">{invoice.seller_gstin_snapshot ? invoice.seller_gstin_snapshot.toUpperCase() : '—'}</span>
-        </div>
-
-        {/* Top Right Invoice Meta (Borderless, 0px padding, Right-Justified, 12px) */}
-        <div className="absolute top-0 right-0 p-0 text-[12px] font-bold text-slate-800 text-right space-y-[2.5px] leading-tight">
-          <div>Invoice No : <span className="font-bold font-mono text-slate-950 uppercase">{invoice.invoice_number}</span></div>
-          <div>Date : <span className="font-black text-slate-950">{invoice.invoice_date ? formatIstDate(invoice.invoice_date) : '—'}</span></div>
-        </div>
-
-        {/* Centered 5-Line Info Block (Shifted 1cm to the left) */}
-        <div className="flex flex-col items-center text-center" style={{ transform: 'translateX(-1cm)' }}>
-          {/* Line 1: TAX INVOICE Badge */}
-          <h2 className="text-sm font-black tracking-widest border border-black inline-block px-4 py-[3px] mb-[5px] uppercase">
-            TAX INVOICE
-          </h2>
-
-          {/* Brand Block: Business Name + Tagline with Logo Bottom-Aligned to Tagline */}
-          <div className="relative inline-flex flex-col items-center">
-            {logoSrc && (
-              // Logo height: with a tagline the pill sits under the name, so the logo must fit between the top-left
-              // GSTIN and the name's baseline (measured: TAG-B review). Without a tagline it keeps its full size.
-              <div className={`absolute right-full mr-[7px] w-[140px] ${subline?.kind === 'tagline' ? 'h-[42px]' : 'h-[70px]'} flex items-end justify-end p-0 select-none overflow-hidden ${
-                subline?.kind === 'nature' ? 'bottom-[-4.5px]' : 'bottom-0'
-              }`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={logoSrc}
-                  alt="Logo"
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
-            )}
-            {/* Line 2: Business Name */}
-            <h1 className={`${PRINT_STYLES.fontTitle} whitespace-nowrap`}>{invoice.business_name}</h1>
-
-            {/* Line 3: Nature of the Business (Conditional) */}
-            {subline?.kind === 'nature' && (
-              <p className="text-[11px] font-semibold text-black uppercase mt-[5px] leading-tight whitespace-nowrap">
-                ({subline.text})
-              </p>
-            )}
+      {/* ==================================================================== */}
+      {/* HEADER: info strip → logo + name → subline → address & phone        */}
+      {/* Shared rules live in ./header-parts (BrandLockup, MetaDivider).     */}
+      {/* ==================================================================== */}
+      <header data-hdr="header" className="flex w-full flex-col items-center mb-[8px]">
+        {/* Row 1: GSTIN (left) | TAX INVOICE (page centre) | Invoice No & Date (right) */}
+        <div data-hdr="meta" className="grid w-full grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-x-3 text-[11.5px] font-bold leading-tight text-slate-800">
+          <div className="justify-self-start whitespace-nowrap">
+            GSTIN : <span className="font-mono font-black uppercase text-slate-950">{invoice.seller_gstin_snapshot ? invoice.seller_gstin_snapshot.toUpperCase() : '—'}</span>
           </div>
-
-          {subline?.kind === 'tagline' && (
-            <div className="mt-[6px] max-w-full">
-              <TaglinePill text={subline.text} tone="black" />
-            </div>
-          )}
-
-          {/* Line 4: Single-Line Address & Phones */}
-          <ContactLine
-            // max-w: this header column is shifted 1cm left, so a full-width line would run off the left edge.
-            className="text-[11px] font-medium mt-[5px] leading-tight max-w-[85%] text-center"
-            address={template2Address}
-            phones={template2Phones}
-          />
+          <h2 className="whitespace-nowrap border border-black px-3 py-[1px] text-[12px] font-black uppercase leading-tight tracking-[0.2em] text-black">
+            <span className="-mr-[0.2em]">TAX INVOICE</span>
+          </h2>
+          <div className="justify-self-end whitespace-nowrap text-right">
+            <span className="whitespace-nowrap">Invoice No : <span className="font-mono font-bold uppercase text-slate-950">{invoice.invoice_number}</span></span>
+            <span className="whitespace-nowrap"><MetaDivider />Date : <span className="font-black text-slate-950">{invoice.invoice_date ? formatIstDate(invoice.invoice_date) : '—'}</span></span>
+          </div>
         </div>
-      </div>
+
+        {/* Row 2: logo + business name, centred together */}
+        <div className="mt-[8px] w-full">
+          <BrandLockup logoSrc={logoSrc} name={invoice.business_name} nameClassName="tracking-[0.08em] -mr-[0.08em] text-black" />
+        </div>
+
+        {/* Row 3: tagline pill, or (nature of business) */}
+        {subline?.kind === 'tagline' && (
+          <div className="mt-[5px] max-w-full">
+            <TaglinePill text={subline.text} tone="black" />
+          </div>
+        )}
+        {subline?.kind === 'nature' && (
+          <p className="mt-[4px] text-[11px] font-semibold uppercase leading-tight tracking-[0.12em] text-black">({subline.text})</p>
+        )}
+
+        {/* Row 4: address | phone */}
+        <ContactLine
+          className="mt-[5px] max-w-full text-center text-[11px] font-semibold leading-tight text-black"
+          address={template2Address}
+          phones={template2Phones}
+        />
+      </header>
 
       {/* Buyer Info & Address Box (Attached to Main Table) */}
       <div className="border-x-2 border-t-2 border-black mb-0 px-3 py-[7px] text-[12px] font-semibold text-black bg-white">

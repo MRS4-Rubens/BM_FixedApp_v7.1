@@ -4,7 +4,7 @@ import { getStateAbbrByCode, stateTaxLabel } from '@/lib/gst/indian-states';
 import { InvoiceTemplateProps } from './template-1';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { SignatureMark, isSignatureDataUri, AUTHORISED_SIGNATORY_LABEL } from './signature-mark';
-import { resolveHeaderSubline, TaglinePill, ContactLine } from './header-parts';
+import { resolveHeaderSubline, TaglinePill, ContactLine, BrandLockup } from './header-parts';
 
 // ============================================================================
 // CONFIGURABLE DESIGN SYSTEM VARIABLES FOR TEMPLATE 3 (MANUAL PAD STYLE)
@@ -21,7 +21,6 @@ const PAD_STYLES = {
   dataFont: 'font-mono font-bold tracking-wide text-xs uppercase',
 
   // Typography for pre-printed components
-  fontTitle: 'text-3xl font-black tracking-[0.1em] text-[#0e3f94] uppercase',
   fontHeaderLabels: 'text-[11px] font-black uppercase text-[#0e3f94]',
   fontPreprinted: 'text-[11px] font-bold text-[#0e3f94]',
   fontTableHead: 'text-[11px] font-black text-[#0e3f94] text-center uppercase p-1.5',
@@ -116,66 +115,51 @@ export function InvoiceTemplate3({ invoice, businessStateCode, hasWatermark, dis
         }
       `}</style>
 
-      {/* Top Header Section */}
-      <div className="flex flex-col">
-        {/* Topmost Row (GSTIN, Tax Invoice, Invoice No) */}
-        <div className="flex justify-between items-center w-full leading-none mb-3">
-          <div className="text-[12px] font-black uppercase text-[#0e3f94] leading-none whitespace-nowrap">
-            GSTIN : <span className={`${PAD_STYLES.dataTextColor} font-mono uppercase`}>{invoice.seller_gstin_snapshot ? invoice.seller_gstin_snapshot.toUpperCase() : '—'}</span>
+      {/* ==================================================================== */}
+      {/* HEADER: info strip → logo + name → subline → address & phone        */}
+      {/* Shared rules live in ./header-parts (BrandLockup, MetaDivider).     */}
+      {/* The Date stays in the buyer row below (this template's own layout). */}
+      {/* ==================================================================== */}
+      <header data-hdr="header" className="flex w-full flex-col items-center mb-[1px]">
+        {/* Row 1: GSTIN (left) | TAX INVOICE (page centre) | Invoice No (right) */}
+        <div data-hdr="meta" className="grid w-full grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)] items-center gap-x-3 text-[11.5px] font-black uppercase leading-tight text-[#0e3f94]">
+          <div className="justify-self-start whitespace-nowrap">
+            GSTIN : <span className={`${PAD_STYLES.dataTextColor} font-mono`}>{invoice.seller_gstin_snapshot ? invoice.seller_gstin_snapshot.toUpperCase() : '—'}</span>
           </div>
-          <div className="text-center leading-none">
-            <h2 className="text-[14px] font-black uppercase text-[#0e3f94] tracking-wider underline underline-offset-2 leading-none">Tax Invoice</h2>
-          </div>
-          <div className="text-[12px] font-black uppercase text-[#0e3f94] text-right leading-none whitespace-nowrap">
-            Invoice No: <span className={`${PAD_STYLES.dataTextColor} font-mono uppercase`}>{invoice.invoice_number}</span>
+          <h2 className="whitespace-nowrap text-[13px] font-black uppercase leading-tight tracking-[0.12em] text-[#0e3f94] underline underline-offset-[3px]">
+            <span className="-mr-[0.12em]">TAX INVOICE</span>
+          </h2>
+          <div className="justify-self-end whitespace-nowrap text-right">
+            Invoice No : <span className={`${PAD_STYLES.dataTextColor} font-mono`}>{invoice.invoice_number}</span>
           </div>
         </div>
 
-        {/* Business Branding & Details Block */}
-        <div className="flex flex-col items-center text-center w-full leading-none -mt-[4px]">
-          {/* Brand Block: Wraps Title + Subline (Width dynamically adapts to max(Title, Subline)) */}
-          <div className="relative inline-flex flex-col items-center mt-1">
-            {logoSrc && (
-              // Logo height: with a tagline the pill sits under the name, so the logo must fit between the top-left
-              // GSTIN and the name's baseline (measured: TAG-B review). Without a tagline it keeps its full size.
-              <div className={`absolute bottom-[-5.5px] right-full mr-[7px] w-[140px] ${subline?.kind === 'tagline' ? 'h-[44px]' : 'h-[64px]'} flex items-end justify-end p-0 select-none overflow-hidden`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={logoSrc}
-                  alt="Logo"
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
-            )}
-
-            {/* Line 1: Business Title */}
-            <h1 className={`${PAD_STYLES.fontTitle} whitespace-nowrap`}>{invoice.business_name}</h1>
-
-            {/* Line 2: Dynamic Nature of Business Subline */}
-            {subline?.kind === 'nature' && (
-              <p className="text-[10px] font-black tracking-widest text-[#0e3f94] mt-[5px] uppercase whitespace-nowrap">
-                ({subline.text})
-              </p>
-            )}
-          </div>
-
-          {subline?.kind === 'tagline' && (
-            <div className="mt-[6px] flex justify-center max-w-full">
-              <TaglinePill text={subline.text} tone="blue" />
-            </div>
-          )}
-
-          {hasContact && (
-            <div className="flex justify-center mt-[9px]">
-              <ContactLine
-                className="text-[11px] font-bold text-gray-700 leading-tight border-t border-[#0e3f94] pt-[7px] text-center"
-                address={addressParts}
-                phones={phones}
-              />
-            </div>
-          )}
+        {/* Row 2: logo + business name, centred together */}
+        <div className="mt-[8px] w-full">
+          <BrandLockup logoSrc={logoSrc} name={invoice.business_name} nameClassName="tracking-[0.08em] -mr-[0.08em] text-[#0e3f94]" />
         </div>
-      </div>
+
+        {/* Row 3: tagline pill, or (nature of business) */}
+        {subline?.kind === 'tagline' && (
+          <div className="mt-[5px] flex max-w-full justify-center">
+            <TaglinePill text={subline.text} tone="blue" />
+          </div>
+        )}
+        {subline?.kind === 'nature' && (
+          <p className="mt-[4px] text-[11px] font-semibold uppercase leading-tight tracking-[0.12em] text-[#0e3f94]">({subline.text})</p>
+        )}
+
+        {/* Row 4: address | phone, under this template's thin blue rule */}
+        {hasContact && (
+          <div className="mt-[5px] flex max-w-full justify-center">
+            <ContactLine
+              className="border-t border-[#0e3f94] pt-[4px] text-center text-[11px] font-semibold leading-tight text-gray-700"
+              address={addressParts}
+              phones={phones}
+            />
+          </div>
+        )}
+      </header>
 
       {/* Dotted Delineation Fields (Buyer details in a Single Row) */}
       <div className="mt-[7px] mb-[9px] text-[11px] font-bold text-[#0e3f94] leading-relaxed">
