@@ -296,7 +296,8 @@ export default async function DashboardPage() {
                           inv.status === 'draft' ? 'Draft' :
                             inv.status === 'sent' ? 'Sent' :
                               inv.status === 'paid' ? 'Paid' :
-                                inv.status === 'partially_paid' ? 'Partial' : 'Overdue'
+                                inv.status === 'refund_due' ? 'Refund Due' :
+                                  inv.status === 'partially_paid' ? 'Partial' : 'Overdue'
                         } />
                       </td>
                     </tr>

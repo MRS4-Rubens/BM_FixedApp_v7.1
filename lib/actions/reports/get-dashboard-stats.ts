@@ -145,7 +145,8 @@ export const getDashboardStats = createAuthenticatedAction(
             (i.payment_status = 'overdue' OR (i.due_date IS NOT NULL AND i.due_date < ${todayIso}::date)) AS is_overdue
           FROM invoices i
           LEFT JOIN (
-            SELECT invoice_id, sum(amount_paise) AS paid
+            -- NET kept from the customer: refunds (kind = 'refund') count as money paid back.
+            SELECT invoice_id, sum(CASE WHEN kind = 'refund' THEN -amount_paise ELSE amount_paise END) AS paid
             FROM payments
             WHERE business_id = ${businessId}
               AND status = 'active'

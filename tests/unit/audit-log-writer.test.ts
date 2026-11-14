@@ -153,7 +153,7 @@ describe('audit log writer unit tests', () => {
     it('defines frozen event types and actions', () => {
       expect(AUDIT_EVENTS.invoice).toEqual(['finalize']);
       expect(AUDIT_EVENTS.credit_note).toEqual(['finalize', 'void']);
-      expect(AUDIT_EVENTS.payment).toEqual(['record', 'void']);
+      expect(AUDIT_EVENTS.payment).toEqual(['record', 'void', 'record_refund']); // REFUND added record_refund
       expect(AUDIT_EVENTS.business).toContain('subscription_manual_override');
       expect(AUDIT_EVENTS.subscription_request).toEqual(['approve', 'reject']);
     });

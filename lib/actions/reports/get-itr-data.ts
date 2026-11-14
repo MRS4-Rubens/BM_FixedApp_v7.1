@@ -211,6 +211,7 @@ export const getItrExportData = createAuthenticatedAction(exportRangeSchema, asy
           invoice_id: payments.invoice_id,
           amount_paise: payments.amount_paise,
           payment_method: payments.payment_method,
+          kind: payments.kind,
         })
         .from(payments)
         .where(
@@ -229,11 +230,14 @@ export const getItrExportData = createAuthenticatedAction(exportRangeSchema, asy
       invoicePaymentMap.set(pay.invoice_id, { digitalPaise: 0, cashPaise: 0, totalPaidPaise: 0 });
     }
     const rec = invoicePaymentMap.get(pay.invoice_id)!;
-    rec.totalPaidPaise += pay.amount_paise;
+    // A refund is money paid back: it reduces receipts of ITS OWN method (a cash refund reduces cash receipts,
+    // which matters for the Section 44AD digital/cash split).
+    const signed = pay.kind === 'refund' ? -pay.amount_paise : pay.amount_paise;
+    rec.totalPaidPaise += signed;
     if (digitalMethods.has(pay.payment_method)) {
-      rec.digitalPaise += pay.amount_paise;
+      rec.digitalPaise += signed;
     } else {
-      rec.cashPaise += pay.amount_paise;
+      rec.cashPaise += signed;
     }
   }
 

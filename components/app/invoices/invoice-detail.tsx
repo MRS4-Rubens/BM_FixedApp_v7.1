@@ -14,14 +14,15 @@ import {
   ShieldCheck, 
   Receipt,
   Ban,
-  Crown
+  Crown,
+  RotateCcw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useState, useTransition, useEffect } from 'react'
 import { formatPaiseAsInr } from '@/lib/money'
-import { sumActiveCreditedPaise, sumActivePaidPaise, summarizeSettlement } from '@/lib/invoices/settlement'
+import { sumActiveCreditedPaise, sumActivePaidPaise, sumActiveRefundedPaise, summarizeSettlement } from '@/lib/invoices/settlement'
 import { emailInvoice } from '@/lib/actions/invoices/email-invoice'
 import { sendPaymentReminder } from '@/lib/actions/invoices/send-payment-reminder'
 import { getArchivedPdfUrl } from '@/lib/actions/invoices/get-archived-pdf-url'
@@ -34,7 +35,7 @@ import { generateWhatsAppInvoiceUrl } from '@/lib/subscriptions/whatsapp'
 import { canShareInvoiceOnWhatsApp } from '@/lib/subscriptions/entitlements'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs'
-import { formatIstDate } from '@/lib/invoices/ist-date'
+import { formatIstDate, formatIstDateAsIso } from '@/lib/invoices/ist-date'
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -156,6 +157,15 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
   const existingSum = settlement.activePaidPaise
   const balanceDue = settlement.balanceDuePaise
   const settlementPercentage = settlement.settledPercent
+  // REFUND: the customer paid more than the (credit-note reduced) bill and is owed money back.
+  const refundDuePaise = settlement.refundDuePaise
+  const isRefundDue = refundDuePaise > 0
+  const refundedPaise = sumActiveRefundedPaise(payments)
+  // A refund cannot be dated before the first active credit note (the server enforces the same rule).
+  const refundMinDate = creditNotes
+    .filter((n) => n.lifecycle_status === 'finalized' && (n.status || 'active') === 'active' && n.issue_date)
+    .map((n) => formatIstDateAsIso(new Date(n.issue_date as string | Date)))
+    .sort()[0] ?? null
 
   // Handle auto-printing if query param set
   useEffect(() => {
@@ -260,12 +270,16 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
     },
     {
       step: 4,
-      name: 'Settled',
-      subtext: invoice.payment_status === 'paid' ? 'Paid in full' : (existingSum > 0 ? 'Partially settled' : 'Balance unpaid'),
-      date: invoice.payment_status === 'paid' ? latestPaymentDate : null,
-      isCompleted: invoice.payment_status === 'paid',
+      // REFUND: while money is owed back, the last step is an amber "Refund Due" instead of a completed "Settled".
+      name: isRefundDue ? 'Refund Due' : 'Settled',
+      subtext: isRefundDue
+        ? 'Refund due'
+        : invoice.payment_status === 'paid' ? 'Paid in full' : (existingSum > 0 ? 'Partially settled' : 'Balance unpaid'),
+      date: !isRefundDue && invoice.payment_status === 'paid' ? latestPaymentDate : null,
+      isCompleted: !isRefundDue && invoice.payment_status === 'paid',
       isCurrent: invoice.payment_status === 'paid',
-      icon: ShieldCheck
+      isWarning: isRefundDue,
+      icon: isRefundDue ? RotateCcw : ShieldCheck
     }
   ]
 
@@ -483,9 +497,15 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                     Lifecycle &amp; Settlement
                   </h3>
                 </div>
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-                  {settlementPercentage}% Settled
-                </span>
+                {isRefundDue ? (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                    Refund Due
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                    {settlementPercentage}% Settled
+                  </span>
+                )}
               </div>
 
               {/* Modern Horizontal 4-Step Lifecycle Pipeline */}
@@ -513,6 +533,8 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                           "relative z-10 flex size-7 items-center justify-center rounded-full border text-[11px] font-bold shadow-xs transition-all",
                           step.isCompleted
                             ? "bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20"
+                            : 'isWarning' in step && step.isWarning
+                            ? "bg-amber-500 text-white border-amber-600 ring-3 ring-amber-500/20"
                             : step.isCurrent
                             ? "bg-primary text-primary-foreground border-primary ring-3 ring-primary/20"
                             : "bg-background text-muted-foreground border-border"
@@ -530,7 +552,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                       <div className="mt-1.5 w-full">
                         <p className={cn(
                           "text-[11px] sm:text-xs font-bold leading-tight whitespace-nowrap truncate",
-                          step.isCompleted ? "text-foreground" : "text-muted-foreground"
+                          step.isCompleted ? "text-foreground" : 'isWarning' in step && step.isWarning ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"
                         )}>
                           {step.name}
                         </p>
@@ -571,6 +593,11 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                   <span className={cn("text-[13px] sm:text-[15px] font-bold whitespace-nowrap", existingSum > 0 ? "text-emerald-700 dark:text-emerald-400" : "text-muted-foreground")}>
                     {formatPaiseAsInr(existingSum)}
                   </span>
+                  {refundedPaise > 0 && (
+                    <span className="block text-[10px] text-amber-700 dark:text-amber-400 font-semibold whitespace-nowrap">
+                      (−{formatPaiseAsInr(refundedPaise)} refunded)
+                    </span>
+                  )}
                 </div>
                 <div className="text-right">
                   <span className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
@@ -587,7 +614,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
             </div>
 
             {/* COMBINED CARD 2: Settlement Payment Center & Transaction History */}
-            <PaymentSection invoice={invoice} payments={payments} totalCreditedPaise={totalCreditedPaise} />
+            <PaymentSection invoice={invoice} payments={payments} totalCreditedPaise={totalCreditedPaise} refundMinDate={refundMinDate} />
 
             {/* COMBINED CARD 3: Credit Notes & Returns */}
             <div className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm space-y-1.5">

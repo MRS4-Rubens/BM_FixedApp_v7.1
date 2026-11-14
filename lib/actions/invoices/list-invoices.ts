@@ -42,6 +42,7 @@ export interface InvoiceListItem {
   readonly grand_total_paise: number;
   readonly lifecycle_status: 'draft' | 'finalized';
   readonly payment_status: 'unpaid' | 'partially_paid' | 'paid' | 'overdue';
+  readonly refund_due_paise: number;
   readonly due_date: string | null;
   readonly customer_name: string;
   readonly place_of_supply_state_code: string | null;
@@ -149,6 +150,7 @@ export const listInvoices = createAuthenticatedAction(
           grand_total_paise: invoices.grand_total_paise,
           lifecycle_status: invoices.lifecycle_status,
           payment_status: invoices.payment_status,
+          refund_due_paise: invoices.refund_due_paise,
           due_date: invoices.due_date,
           customer_name: sql<string>`coalesce(${invoices.billing_name_snapshot}, ${customers.name}, 'One-Time Customer')`,
           place_of_supply_state_code: invoices.place_of_supply_state_code,
@@ -194,6 +196,7 @@ export const listInvoices = createAuthenticatedAction(
       grand_total_paise: row.grand_total_paise,
       lifecycle_status: row.lifecycle_status,
       payment_status: row.payment_status,
+      refund_due_paise: row.refund_due_paise,
       due_date: row.due_date,
       customer_name: row.customer_name,
       place_of_supply_state_code: row.place_of_supply_state_code,

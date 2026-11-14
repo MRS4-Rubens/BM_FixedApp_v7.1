@@ -6,6 +6,9 @@ const MAX_PAYMENT_RUPEES = 99_999_999.99; // sanity bound only; the overpayment 
 
 export const recordPaymentSchema = z.object({
   invoice_id: z.string().uuid(),
+  // REFUND: 'refund' records money paid BACK to the customer (only while a refund is due). Same fields as a payment.
+  // Optional: missing => 'payment', so every existing caller is unchanged.
+  kind: z.enum(['payment', 'refund']).optional(),
   amount: z.coerce
     .number({ error: 'Enter a valid amount' })
     .min(0.01, 'Amount must be at least ₹0.01')
@@ -24,7 +27,9 @@ export const VOID_PAYMENT_REASONS = [
   { code: 'clerical_error', label: 'Clerical / Data Entry Mistake' },
   { code: 'wrong_invoice', label: 'Recorded on Wrong Invoice' },
   { code: 'customer_dispute', label: 'Customer Dispute / Reversal' },
-  { code: 'chargeback_refund', label: 'Customer Refund / Chargeback' },
+  // Code kept for history. A real refund is now RECORDED as a refund; voiding erases the receipt itself.
+  { code: 'chargeback_refund', label: 'Card Chargeback / Bank Reversal' },
+  { code: 'refund_failed', label: 'Refund Failed / Returned to Us' },
   { code: 'other', label: 'Other (Reason specified in notes)' },
 ] as const;
 
@@ -38,6 +43,7 @@ export const voidPaymentSchema = z.object({
     'wrong_invoice',
     'customer_dispute',
     'chargeback_refund',
+    'refund_failed',
     'other',
   ]),
   notes: z.string().min(3, 'Please provide an explanation (min 3 characters)').max(300),

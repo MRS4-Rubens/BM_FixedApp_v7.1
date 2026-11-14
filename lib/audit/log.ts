@@ -9,7 +9,7 @@ import { auditLog } from '@/lib/db/schema';
 export const AUDIT_EVENTS = {
   invoice: ['finalize'],
   credit_note: ['finalize', 'void'],
-  payment: ['record', 'void'],
+  payment: ['record', 'void', 'record_refund'],
   business: [
     'profile_create',
     'profile_update',
