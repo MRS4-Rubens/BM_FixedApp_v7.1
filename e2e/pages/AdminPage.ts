@@ -19,17 +19,25 @@ export class AdminPage {
     await expect(this.adminConsoleHeading).toBeVisible({ timeout: 15_000 });
   }
 
-  /** The innermost element that contains both this UTR and an "Approve" button: exactly this claim's queue row. */
+  /** Claims are approved from the "Pending Claims" tab (the Overview tab no longer has a queue). */
+  private async openPendingClaimsTab(): Promise<void> {
+    // The tab's accessible name includes its count badge, e.g. "Pending Claims 1".
+    await this.page.getByRole('button', { name: /^Pending Claims/ }).click();
+    await expect(this.page.getByRole('heading', { name: /Pending Subscription Claims/ })).toBeVisible({ timeout: 15_000 });
+  }
+
+  /** The innermost element that contains both this UTR and an "Approve Claim" button: exactly this claim's card. */
   private claimRow(utr: string): Locator {
-    const approve = this.page.getByRole('button', { name: 'Approve', exact: true });
+    const approve = this.page.getByRole('button', { name: 'Approve Claim', exact: true });
     return this.page.locator('div').filter({ hasText: utr }).filter({ has: approve }).last();
   }
 
   async approveClaimByUtr(utr: string): Promise<void> {
+    await this.openPendingClaimsTab();
     const row = this.claimRow(utr);
     await expect(row).toBeVisible({ timeout: 15_000 });
 
-    const approveBtn = row.getByRole('button', { name: 'Approve', exact: true });
+    const approveBtn = row.getByRole('button', { name: 'Approve Claim', exact: true });
     await expect(approveBtn).toHaveCount(1);
 
     await approveBtn.click();
@@ -46,6 +54,7 @@ export class AdminPage {
     }).toPass({ timeout: 60_000 });
     await reloadApp(this.page);
     await expect(this.adminConsoleHeading).toBeVisible({ timeout: 15_000 });
+    await this.openPendingClaimsTab();
     await expect(this.claimRow(utr)).toHaveCount(0, { timeout: 15_000 });
   }
 }
