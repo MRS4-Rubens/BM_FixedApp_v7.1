@@ -6,39 +6,13 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { BrandLockup, layoutBrandName } from '@/components/app/invoices/templates/header-parts';
+import { BrandLockup } from '@/components/app/invoices/templates/header-parts';
 import { InvoicePrintView } from '@/components/app/invoices/invoice-print-view';
 import { DEFAULT_INVOICE_DISPLAY_PREFS } from '@/lib/invoices/display-prefs';
 
 const LOGO = 'data:image/png;base64,iVBORw0KGgo=';
 
-describe('HDR: layoutBrandName', () => {
-  it('keeps names up to 28 characters on one line, 26px up to 24 characters', () => {
-    expect(layoutBrandName('BRAJESH KUMAR CLOTHING')).toEqual({ lines: ['BRAJESH KUMAR CLOTHING'], sizeClass: 'text-[26px]' });
-    expect(layoutBrandName('SRI BALAJI GENERAL STORES CO')).toEqual({ lines: ['SRI BALAJI GENERAL STORES CO'], sizeClass: 'text-[23px]' });
-  });
-
-  it('splits longer names into balanced lines by whole words, capped at 22px', () => {
-    expect(layoutBrandName('SHREE LAKSHMI VENKATESWARA TEXTILE TRADERS')).toEqual({
-      lines: ['SHREE LAKSHMI VENKATESWARA', 'TEXTILE TRADERS'],
-      sizeClass: 'text-[22px]',
-    });
-  });
-
-  it('collapses extra spaces and never drops or reorders words, even for 200-character names', () => {
-    const words = Array.from({ length: 40 }, (_, i) => `WORD${i}`);
-    const name = `  ${words.join('   ')}  `.slice(0, 260);
-    const { lines, sizeClass } = layoutBrandName(name);
-    expect(lines.join(' ')).toBe(name.trim().replace(/\s+/g, ' '));
-    expect(lines.length).toBeLessThanOrEqual(4);
-    expect(sizeClass).toMatch(/^text-\[\d+px\]$/);
-  });
-
-  it('handles a single very long word without throwing', () => {
-    const { lines } = layoutBrandName('X'.repeat(120));
-    expect(lines).toEqual(['X'.repeat(120)]);
-  });
-});
+// Name line breaks and sizes are width-based since the name-fit refinement: see tests/unit/brand-name-fit.test.ts.
 
 describe('HDR: BrandLockup', () => {
   it('renders the logo in the standard 52px box (fit, never cropped) beside the name', () => {
