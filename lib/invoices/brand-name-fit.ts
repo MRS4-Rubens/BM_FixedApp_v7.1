@@ -88,6 +88,11 @@ function balanceWords(words: readonly string[], count: number, fontPx: number): 
  * wrapping uses balanced lines; smaller sizes only for very long names. Two 24px lines are about the logo's height.
  */
 const LADDER: ReadonlyArray<{ lines: number; px: number }> = [
+  // One-line names may be larger: beside the 52px logo a one-line name up to ~46px adds no height, so these only
+  // fill the empty space above and below the name. 26/24 stay below, so no name wraps because of these steps.
+  { lines: 1, px: 32 },
+  { lines: 1, px: 30 },
+  { lines: 1, px: 28 },
   { lines: 1, px: 26 },
   { lines: 1, px: 24 },
   { lines: 2, px: 24 },
@@ -100,6 +105,9 @@ const LADDER: ReadonlyArray<{ lines: number; px: number }> = [
 
 /** Tailwind needs literal class names (also picked up by the print stylesheet). */
 const SIZE_CLASS: Readonly<Record<number, string>> = {
+  32: 'text-[32px]',
+  30: 'text-[30px]',
+  28: 'text-[28px]',
   26: 'text-[26px]',
   24: 'text-[24px]',
   21: 'text-[21px]',
@@ -115,10 +123,20 @@ export interface BrandNameLayout {
   readonly sizeClass: string;
 }
 
-export function fitBrandName(name: string, availableWidthPx: number): BrandNameLayout {
+/** Largest one-line size: 32px beside a logo; 28px without one (nothing taller beside it, so the header would grow). */
+export const MAX_SINGLE_LINE_PX_WITH_LOGO = 32;
+export const MAX_SINGLE_LINE_PX_WITHOUT_LOGO = 28;
+
+export function fitBrandName(
+  name: string,
+  availableWidthPx: number,
+  options: { readonly maxSingleLinePx?: number } = {},
+): BrandNameLayout {
+  const maxSingle = options.maxSingleLinePx ?? MAX_SINGLE_LINE_PX_WITH_LOGO;
   const clean = name.trim().replace(/\s+/g, ' ');
   const words = clean.split(' ');
   for (const step of LADDER) {
+    if (step.lines === 1 && step.px > maxSingle) continue;
     if (step.lines > Math.max(1, words.length)) continue;
     const lines = step.lines === 1 ? [clean] : balanceWords(words, step.lines, step.px);
     if (lines.every((line) => estimateLineWidthPx(line, step.px) <= availableWidthPx)) {
