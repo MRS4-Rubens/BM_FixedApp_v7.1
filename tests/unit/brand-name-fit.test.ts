@@ -72,9 +72,29 @@ describe('Brand name fit: geometry', () => {
 });
 
 describe('Brand name fit: layout', () => {
-  it('short and medium names stay on one line at full 26px', () => {
-    expect(fitBrandName('BRAJESH KUMAR', A4_SQUARE_LOGO)).toMatchObject({ lines: ['BRAJESH KUMAR'], fontPx: 26 });
-    expect(fitBrandName('BRAJESH KUMAR CLOTHING', A4_SQUARE_LOGO)).toMatchObject({ lines: ['BRAJESH KUMAR CLOTHING'], fontPx: 26 });
+  it('one-line names grow up to 32px beside a logo (only as large as fits)', () => {
+    expect(fitBrandName('BRAJESH KUMAR', A4_SQUARE_LOGO)).toMatchObject({ lines: ['BRAJESH KUMAR'], fontPx: 32 });
+    expect(fitBrandName('BRAJESH KUMAR CLOTHING', A4_SQUARE_LOGO)).toMatchObject({ lines: ['BRAJESH KUMAR CLOTHING'], fontPx: 32 });
+    expect(fitBrandName('MARUTHI BOOKS & STATIONERY', A4_SQUARE_LOGO)).toMatchObject({ lines: ['MARUTHI BOOKS & STATIONERY'], fontPx: 28 });
+  });
+
+  it('without a logo one-line names are capped at 28px', () => {
+    const room = availableNameWidthPx(A4_HEADER_WIDTH_PX, null);
+    expect(fitBrandName('BRAJESH KUMAR', room, { maxSingleLinePx: 28 })).toMatchObject({ fontPx: 28 });
+  });
+
+  it('the larger one-line sizes never make a name wrap and never change multi-line sizes', () => {
+    const words = ['SRI', 'BALAJI', 'GENERAL', 'STORES', 'TEXTILE', 'MARKETING', '&', 'SONS', 'TRADERS', 'MART'];
+    for (let n = 1; n <= words.length; n++) {
+      const name = words.slice(0, n).join(' ');
+      for (const room of [300, 420, 520, 608, 672]) {
+        const old = fitBrandName(name, room, { maxSingleLinePx: 26 }); // previous largest size
+        const now = fitBrandName(name, room);
+        expect(now.lines.length).toBe(old.lines.length);
+        if (old.lines.length > 1) expect(now.fontPx).toBe(old.fontPx);
+        else expect(now.fontPx).toBeGreaterThanOrEqual(old.fontPx);
+      }
+    }
   });
 
   it('a name that does not fit one line wraps into BALANCED lines (no lone last word)', () => {
