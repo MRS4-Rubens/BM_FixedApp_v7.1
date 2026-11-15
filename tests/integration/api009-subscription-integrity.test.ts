@@ -66,7 +66,7 @@ vi.mock('@/lib/rate-limit/upstash', () => ({
   checkRateLimit: async () => ({ allowed: true, retryAfterSeconds: 0 }),
   getClientIp: () => '127.0.0.1',
 }));
-vi.mock('@/lib/actions/_shared/logger', () => ({ logError: () => undefined }));
+vi.mock('@/lib/actions/_shared/logger', () => ({ logError: () => undefined, logWarn: () => undefined }));
 vi.mock('@/lib/storage/idrive', () => ({
   uploadFileToStorage: async () => undefined,
   getSignedDownloadUrl: async () => 'https://mock-storage.test/download',

@@ -28,6 +28,10 @@ vi.mock('@/lib/actions/subscriptions/update-business-subscription', () => ({
   updateBusinessSubscription: vi.fn(),
 }));
 
+vi.mock('@/lib/actions/subscriptions/update-platform-payee', () => ({
+  updatePlatformPayeeAction: vi.fn(),
+}));
+
 vi.mock('@/lib/actions/subscriptions/get-business-subscriptions', () => ({
   getBusinessSubscriptions: vi.fn(),
 }));

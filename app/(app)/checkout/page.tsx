@@ -9,7 +9,7 @@ import { isOwnerRole } from '@/lib/auth/rbac';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { loadPayeeConfig, describePayeeProblems } from '@/lib/config/payee';
+import { getAuthoritativePayeeConfig, describePayeeProblems } from '@/lib/config/payee';
 import { logWarn } from '@/lib/actions/_shared/logger';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
@@ -54,7 +54,7 @@ export default async function CheckoutPage({
   }
 
   // 3. Resolve payee details. FAIL CLOSED: never show customers placeholder or partial payment details.
-  const payee = loadPayeeConfig();
+  const payee = await getAuthoritativePayeeConfig();
   if (payee.status === 'unavailable') {
     logWarn(
       'checkout:payee-config',

@@ -25,6 +25,9 @@ export interface PendingRequestItem {
   amountPaise: number;
   paymentMethod: string;
   paymentReference: string;
+  paidToVpa?: string | null;
+  paidToAccount?: string | null;
+  paidToIfsc?: string | null;
   hasScreenshot: boolean;
   createdAt: string;
 }
@@ -81,5 +84,6 @@ export interface AdminConsoleProps {
   users: UserItem[];
   upiConfig: UpiConfig | null;
   payeeConfigIssue?: string | null;
+  payeeSource: 'database' | 'env';
 }
 

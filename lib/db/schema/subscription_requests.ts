@@ -23,10 +23,14 @@ export const subscriptionRequests = pgTable('subscription_requests', {
   amount_paise: integer('amount_paise').notNull(),
   payment_method: text('payment_method').$type<RequestPaymentMethod>().notNull(),
   payment_reference: text('payment_reference').notNull().unique(), // UTR / Transaction ID
+  paid_to_vpa: text('paid_to_vpa'),
+  paid_to_account: text('paid_to_account'),
+  paid_to_bank_ifsc: text('paid_to_bank_ifsc'),
   screenshot_storage_key: text('screenshot_storage_key'), // S3 Storage key
   status: text('status').$type<RequestStatus>().notNull().default('pending'),
   reject_reason: text('reject_reason'),
   approved_at: timestamp('approved_at', { withTimezone: true }),
+  subscription_ends_at: timestamp('subscription_ends_at', { withTimezone: true }),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => [

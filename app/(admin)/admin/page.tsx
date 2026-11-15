@@ -5,7 +5,7 @@ import { getAdminDashboardStats } from '@/lib/actions/subscriptions/get-admin-da
 import { getPendingRequests } from '@/lib/actions/subscriptions/get-pending-requests';
 import { getAllBusinesses } from '@/lib/actions/subscriptions/get-all-businesses';
 import { getAllUsers } from '@/lib/actions/subscriptions/get-all-users';
-import { loadPayeeConfig, describePayeeProblems } from '@/lib/config/payee';
+import { getAuthoritativePayeeConfig, describePayeeProblems } from '@/lib/config/payee';
 import { logWarn } from '@/lib/actions/_shared/logger';
 
 export const metadata: Metadata = {
@@ -61,7 +61,7 @@ export default async function AdminPage() {
   }));
 
   // 5. Resolve payee details. FAIL CLOSED: never fabricate values; the console shows a notice instead.
-  const payee = loadPayeeConfig();
+  const payee = await getAuthoritativePayeeConfig();
   const upiConfig = payee.status === 'configured' ? payee.config : null;
   const payeeConfigIssue =
     payee.status === 'unavailable' ? describePayeeProblems(payee.problems) : null;
@@ -78,6 +78,7 @@ export default async function AdminPage() {
         users={usersProp}
         upiConfig={upiConfig}
         payeeConfigIssue={payeeConfigIssue}
+        payeeSource={payee.source}
       />
     </div>
   );

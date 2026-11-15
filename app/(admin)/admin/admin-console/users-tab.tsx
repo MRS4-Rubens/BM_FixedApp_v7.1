@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Edit3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { getVisiblePageNumbers, ROWS_PER_PAGE } from './pagination';
@@ -18,6 +18,7 @@ interface UsersTabProps {
   onChangeUserSearch: (value: string) => void;
   onChangeUserRoleFilter: (role: 'all' | 'owner' | 'staff') => void;
   onSetUserPage: (page: number | ((p: number) => number)) => void;
+  onEditIdentity: (businessId: string) => void;
 }
 
 export function UsersTab({
@@ -32,6 +33,7 @@ export function UsersTab({
   onChangeUserSearch,
   onChangeUserRoleFilter,
   onSetUserPage,
+  onEditIdentity,
 }: UsersTabProps) {
   return (
     <div className="space-y-4">
@@ -86,12 +88,13 @@ export function UsersTab({
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Business Affiliation</th>
                 <th className="px-4 py-3">Member Since</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40 font-medium">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground font-semibold text-sm">
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground font-semibold text-sm">
                     No platform users found.
                   </td>
                 </tr>
@@ -140,6 +143,24 @@ export function UsersTab({
 
                       <td className="px-4 py-3 text-xs text-muted-foreground font-semibold">
                         {formatIstDate(u.createdAt)}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        {u.businessId ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (u.businessId) onEditIdentity(u.businessId);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md border border-indigo-300 bg-background hover:bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400 transition cursor-pointer"
+                            title="Correct GSTIN / State for affiliated business"
+                          >
+                            <Edit3 className="size-3.5" />
+                            <span>Correct GSTIN / State</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground select-none">—</span>
+                        )}
                       </td>
                     </tr>
                   );

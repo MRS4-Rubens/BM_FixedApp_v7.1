@@ -21,6 +21,7 @@ import { formatPaiseAsInr } from '@/lib/money';
 import { getRequestSession } from '@/lib/auth/request-session';
 import { classifyClaimInsertError } from '@/lib/subscriptions/claim-errors';
 import { requireValidUpload, buildUploadKey, IMAGE_MIMES } from '@/lib/security/upload';
+import { getAuthoritativePayeeConfig } from '@/lib/config/payee';
 
 const SCREENSHOT_MAX_BYTES = 4 * 1024 * 1024; // module-level const (matches the checkout UI limit)
 
@@ -127,6 +128,21 @@ export const submitPaymentClaim = createAuthenticatedAction(
       screenshotKey = key;
     }
 
+    // 4b. Capture snapshot of active payee details at time of payment (Pattern 3)
+    const activePayee = await getAuthoritativePayeeConfig();
+    let paidToVpa: string | null = null;
+    let paidToAccount: string | null = null;
+    let paidToIfsc: string | null = null;
+
+    if (activePayee.status === 'configured') {
+      if (input.payment_method === 'upi_qr' || input.payment_method === 'upi_id') {
+        paidToVpa = activePayee.config.upiId;
+      } else if (input.payment_method === 'bank_transfer') {
+        paidToAccount = activePayee.config.accNo;
+        paidToIfsc = activePayee.config.ifsc;
+      }
+    }
+
     // 5. Insert record into database using authoritative server-side price inside a transaction
     let requestRecord: typeof subscriptionRequests.$inferSelect;
     try {
@@ -154,6 +170,9 @@ export const submitPaymentClaim = createAuthenticatedAction(
             amount_paise: authoritativeAmountPaise,
             payment_method: input.payment_method,
             payment_reference: input.payment_reference,
+            paid_to_vpa: paidToVpa,
+            paid_to_account: paidToAccount,
+            paid_to_bank_ifsc: paidToIfsc,
             screenshot_storage_key: screenshotKey,
             status: 'pending',
           })
