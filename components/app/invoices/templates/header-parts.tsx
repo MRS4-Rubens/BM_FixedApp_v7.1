@@ -8,6 +8,8 @@ import {
   availableNameWidthPx,
   fitBrandName,
   logoRenderWidthPx,
+  MAX_SINGLE_LINE_PX_WITH_LOGO,
+  MAX_SINGLE_LINE_PX_WITHOUT_LOGO,
   type BrandNameLayout,
 } from '@/lib/invoices/brand-name-fit';
 
@@ -110,8 +112,10 @@ export function BrandLockup({
   nameClassName: string;
 }) {
   const logoWidth = logoRenderWidthPx(logoSrc);
-  const wide = fitBrandName(name, availableNameWidthPx(A4_HEADER_WIDTH_PX, logoWidth));
-  const narrow = fitBrandName(name, availableNameWidthPx(A5_HEADER_WIDTH_PX, logoWidth));
+  // One-line names may grow to 32px beside a logo, 28px without one (multi-line sizes are unchanged).
+  const sizeCap = { maxSingleLinePx: logoSrc ? MAX_SINGLE_LINE_PX_WITH_LOGO : MAX_SINGLE_LINE_PX_WITHOUT_LOGO };
+  const wide = fitBrandName(name, availableNameWidthPx(A4_HEADER_WIDTH_PX, logoWidth), sizeCap);
+  const narrow = fitBrandName(name, availableNameWidthPx(A5_HEADER_WIDTH_PX, logoWidth), sizeCap);
   const sameLayout = wide.fontPx === narrow.fontPx && wide.lines.join('\n') === narrow.lines.join('\n');
 
   const renderName = (layout: BrandNameLayout, visibility: string) => (
