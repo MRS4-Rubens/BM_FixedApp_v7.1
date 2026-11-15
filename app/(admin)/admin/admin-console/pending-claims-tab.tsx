@@ -46,95 +46,29 @@ export function PendingClaimsTab({
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-3.5 w-full">
           {pendingRequests.map((req) => (
             <div
               key={req.id}
-              className="rounded-xl border border-border bg-card p-5 shadow-xs space-y-4 hover:border-border/80 transition-all"
+              className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-3 hover:border-border/80 transition-all w-full"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div>
+              {/* Card Header: Business Title + Subtitle in Parenthesis on Left, Action Buttons on Right */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex flex-wrap items-baseline gap-1.5">
                   <h4 className="text-base font-bold text-foreground font-heading">{req.businessName}</h4>
-                  <p className="text-xs text-muted-foreground font-semibold mt-0.5">
-                    GSTIN: <span className="font-mono text-foreground font-bold">{req.businessGstin || 'Unregistered'}</span>
-                    {req.userName && ` · Submitted by ${req.userName}`}
-                  </p>
-                </div>
-                <span className="rounded-md bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-xs font-bold text-indigo-700 uppercase tracking-wide">
-                  {req.planName} ({req.billingCycle})
-                </span>
-              </div>
-
-              {/* Payment Details Card */}
-              <div className="grid grid-cols-2 gap-3 rounded-lg bg-muted/40 p-3 text-sm border border-border/40">
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
-                    Amount Paid
-                  </span>
-                  <span className="text-base font-extrabold text-foreground font-heading">
-                    {formatPaiseAsInr(req.amountPaise)}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    (GSTIN: <span className="font-mono text-foreground font-semibold">{req.businessGstin || 'Unregistered'}</span>
+                    {req.userName && ` · Submitted by ${req.userName}`})
                   </span>
                 </div>
 
-                <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
-                    Payment Method
-                  </span>
-                  <span className="font-semibold text-foreground capitalize">
-                    {req.paymentMethod.replace(/_/g, ' ')}
-                  </span>
-                </div>
-
-                <div className="col-span-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block">
-                    UTR / Transaction Reference No
-                  </span>
-                  <div className="flex items-center justify-between mt-0.5">
-                    <span className="font-mono text-sm font-extrabold text-indigo-600 tracking-wider">
-                      {req.paymentReference}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onCopy(req.paymentReference, `utr-${req.id}`)}
-                      className="flex items-center gap-1 rounded bg-background px-2 py-0.5 text-xs font-bold text-muted-foreground border border-border/80 hover:text-indigo-600 transition cursor-pointer"
-                    >
-                      {copiedKey === `utr-${req.id}` ? (
-                        <>
-                          <Check className="size-3.5 text-emerald-700" /> Copied
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="size-3.5" /> Copy UTR
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action row */}
-              <div className="flex items-center justify-between pt-1 border-t border-border/40">
-                {req.hasScreenshot ? (
-                  <button
-                    type="button"
-                    onClick={() => void onOpenProof(req)}
-                    className="inline-flex items-center gap-1 text-sm font-bold text-indigo-600 hover:text-indigo-700 cursor-pointer"
-                  >
-                    <Maximize2 className="size-4" /> View Payment Proof
-                  </button>
-                ) : (
-                  <span className="text-xs font-semibold text-muted-foreground italic">
-                    No image uploaded
-                  </span>
-                )}
-
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={isPending}
                     onClick={() => onReject(req)}
-                    className="h-8 text-sm font-bold text-rose-600 hover:bg-rose-50 border-rose-200"
+                    className="h-8 text-xs font-bold text-rose-600 hover:bg-rose-50 border-rose-200 cursor-pointer"
                   >
                     Reject
                   </Button>
@@ -142,10 +76,89 @@ export function PendingClaimsTab({
                     size="sm"
                     disabled={isPending}
                     onClick={() => onApprove(req.id)}
-                    className="h-8 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+                    className="h-8 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
                   >
                     Approve Claim
                   </Button>
+                </div>
+              </div>
+
+              {/* Content-Proportional Single Row Data Layout */}
+              <div className="flex flex-col sm:flex-row sm:flex-wrap lg:flex-nowrap items-start sm:items-center justify-between gap-y-3 gap-x-5 lg:gap-x-7 rounded-lg bg-muted/40 p-3.5 text-sm border border-border/40">
+                {/* 1. Plan Details */}
+                <div className="shrink-0">
+                  <span className="text-muted-foreground font-semibold text-xs sm:text-sm">Plan Details: </span>
+                  <span className="font-bold text-foreground text-xs sm:text-sm capitalize">
+                    {req.planName} ({req.billingCycle.replace('_', ' ')})
+                  </span>
+                </div>
+
+                {/* 2. Amount Paid */}
+                <div className="shrink-0">
+                  <span className="text-muted-foreground font-semibold text-xs sm:text-sm">Amount Paid: </span>
+                  <span className="font-extrabold text-foreground text-sm sm:text-base font-heading">
+                    {formatPaiseAsInr(req.amountPaise)}
+                  </span>
+                </div>
+
+                {/* 3. Payment Method & Target */}
+                <div className="text-xs sm:text-sm leading-tight shrink-0 min-w-fit">
+                  <div>
+                    <span className="text-muted-foreground font-semibold">Payment Method &amp; Target: </span>
+                    <span className="font-bold text-foreground uppercase whitespace-nowrap">
+                      {req.paymentMethod.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  {req.paidToVpa && (
+                    <span className="block font-mono text-[11px] text-muted-foreground truncate" title={req.paidToVpa}>
+                      To: {req.paidToVpa}
+                    </span>
+                  )}
+                  {req.paidToAccount && (
+                    <span
+                      className="block font-mono text-[11px] text-muted-foreground truncate"
+                      title={`A/C ${req.paidToAccount} (${req.paidToIfsc || ''})`}
+                    >
+                      To: A/C {req.paidToAccount} {req.paidToIfsc ? `(${req.paidToIfsc})` : ''}
+                    </span>
+                  )}
+                </div>
+
+                {/* 4. UTR / Ref No (with full visibility and icon-only copy button) */}
+                <div className="flex items-center gap-1.5 text-xs sm:text-sm shrink-0 min-w-fit">
+                  <span className="text-muted-foreground font-semibold shrink-0">UTR / Ref No: </span>
+                  <span className="font-mono font-extrabold text-indigo-600 dark:text-indigo-400 tracking-wider">
+                    {req.paymentReference}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onCopy(req.paymentReference, `utr-${req.id}`)}
+                    className="p-1 rounded bg-background text-muted-foreground border border-border/80 hover:text-indigo-600 transition cursor-pointer shrink-0"
+                    title="Copy UTR Reference"
+                  >
+                    {copiedKey === `utr-${req.id}` ? (
+                      <Check className="size-3.5 text-emerald-700" />
+                    ) : (
+                      <Copy className="size-3.5" />
+                    )}
+                  </button>
+                </div>
+
+                {/* 5. Payment Proof Button */}
+                <div className="flex sm:justify-start lg:justify-end items-center shrink-0 sm:ml-auto lg:ml-0">
+                  {req.hasScreenshot ? (
+                    <button
+                      type="button"
+                      onClick={() => void onOpenProof(req)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 dark:bg-indigo-950/50 dark:border-indigo-800 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:text-indigo-300 transition cursor-pointer"
+                    >
+                      <Maximize2 className="size-3.5" /> View Proof
+                    </button>
+                  ) : (
+                    <span className="text-xs font-semibold text-muted-foreground italic">
+                      No image uploaded
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

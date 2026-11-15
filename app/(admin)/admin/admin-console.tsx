@@ -18,6 +18,7 @@ import { SettingsTab } from './admin-console/settings-tab';
 import { RejectClaimDialog } from './admin-console/reject-claim-dialog';
 import { ManageSubscriptionDialog } from './admin-console/manage-subscription-dialog';
 import { ProofLightbox } from './admin-console/proof-lightbox';
+import { BusinessIdentityDialog } from './business-identity-dialog';
 import { useCopyFeedback } from './admin-console/use-copy-feedback';
 import { useBusinessDirectory } from './admin-console/use-business-directory';
 import { useUserDirectory } from './admin-console/use-user-directory';
@@ -25,6 +26,7 @@ import { useClaimActions } from './admin-console/use-claim-actions';
 import { useManageSubscription } from './admin-console/use-manage-subscription';
 import { useProofViewer } from './admin-console/use-proof-viewer';
 import { downloadBusinessesCsv } from './admin-console/businesses-csv';
+import type { BusinessItem } from './admin-console/types';
 
 export type { AdminConsoleProps };
 
@@ -35,9 +37,11 @@ export function AdminConsole({
   users,
   upiConfig,
   payeeConfigIssue = null,
+  payeeSource,
 }: AdminConsoleProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [identityBusiness, setIdentityBusiness] = useState<BusinessItem | null>(null);
   const isMounted = useIsClient();
 
   const { copiedKey, handleCopy } = useCopyFeedback();
@@ -46,6 +50,13 @@ export function AdminConsole({
   const claims = useClaimActions();
   const manageSub = useManageSubscription({ startTransition: claims.startTransition });
   const proof = useProofViewer();
+
+  const handleEditIdentityForBusiness = (businessId: string) => {
+    const biz = businesses.find((b) => b.id === businessId);
+    if (biz) {
+      setIdentityBusiness(biz);
+    }
+  };
 
   const handleTabChange = (tab: AdminTab) => {
     setActiveTab(tab);
@@ -95,17 +106,12 @@ export function AdminConsole({
       {activeTab === 'overview' && (
         <OverviewTab
           stats={stats}
-          pendingRequests={pendingRequests}
           upiConfig={upiConfig}
           payeeConfigIssue={payeeConfigIssue}
           isMounted={isMounted}
-          isPending={claims.isPending}
           copiedKey={copiedKey}
           onCopy={handleCopy}
           onSelectTab={handleTabChange}
-          onOpenProof={proof.openProof}
-          onApprove={claims.handleApprove}
-          onReject={claims.setRejectingClaim}
         />
       )}
 
@@ -157,6 +163,7 @@ export function AdminConsole({
           onChangeUserSearch={userDir.changeUserSearch}
           onChangeUserRoleFilter={userDir.changeUserRoleFilter}
           onSetUserPage={userDir.setUserPage}
+          onEditIdentity={handleEditIdentityForBusiness}
         />
       )}
 
@@ -165,8 +172,11 @@ export function AdminConsole({
         <SettingsTab
           upiConfig={upiConfig}
           payeeConfigIssue={payeeConfigIssue}
+          payeeSource={payeeSource}
           copiedKey={copiedKey}
           onCopy={handleCopy}
+          isPending={claims.isPending}
+          startTransition={claims.startTransition}
         />
       )}
 
@@ -187,8 +197,6 @@ export function AdminConsole({
         selectedBiz={manageSub.selectedBiz}
         onClose={() => manageSub.setSelectedBiz(null)}
         isPending={claims.isPending}
-        identityDialogOpen={manageSub.identityDialogOpen}
-        onOpenIdentityDialog={manageSub.setIdentityDialogOpen}
         bizHistory={manageSub.bizHistory}
         bizHistoryPage={manageSub.bizHistoryPage}
         loadingHistory={manageSub.loadingHistory}
@@ -196,12 +204,45 @@ export function AdminConsole({
         overrideStatus={manageSub.overrideStatus}
         overrideEndsAt={manageSub.overrideEndsAt}
         overrideError={manageSub.overrideError}
+        isSaveDisabled={manageSub.isSaveDisabled}
         onChangePlan={manageSub.setOverridePlan}
         onChangeStatus={manageSub.setOverrideStatus}
-        onChangeEndsAt={manageSub.setOverrideEndsAt}
+        onChangeEndsAt={manageSub.changeEndsAt}
         onSetPresetDate={manageSub.handleSetPresetDate}
+        onSetGracePeriod={manageSub.handleSetGracePeriod}
         onSaveOverride={manageSub.handleSaveOverride}
         onSetBizHistoryPage={manageSub.setBizHistoryPage}
+        onViewProof={(requestId, businessName, utr) =>
+          proof.openProof({ id: requestId, businessName, paymentReference: utr })
+        }
+        onCopy={handleCopy}
+        copiedKey={copiedKey}
+      />
+
+      {/* ========================================================================= */}
+      {/* MODAL 2B: BUSINESS IDENTITY (GSTIN / STATE) CORRECTION DIALOG */}
+      {/* ========================================================================= */}
+      <BusinessIdentityDialog
+        business={
+          identityBusiness
+            ? {
+                id: identityBusiness.id,
+                legalName: identityBusiness.legalName,
+                gstin: identityBusiness.gstin,
+                stateCode: identityBusiness.stateCode,
+              }
+            : null
+        }
+        open={!!identityBusiness}
+        onOpenChange={(open) => {
+          if (!open) setIdentityBusiness(null);
+        }}
+        onSaved={() => {
+          setIdentityBusiness(null);
+          claims.startTransition(() => {
+            router.refresh();
+          });
+        }}
       />
 
       {/* ========================================================================= */}

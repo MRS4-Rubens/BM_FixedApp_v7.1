@@ -4,6 +4,8 @@ import { useState, type TransitionStartFunction } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateBusinessSubscription } from '@/lib/actions/subscriptions/update-business-subscription';
 import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-business-subscriptions';
+import { computeGraceEndsAt } from '@/lib/subscriptions/grace-period';
+import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import { isOneOf } from '@/lib/db/domain-values';
 import { OVERRIDE_STATUSES, type OverrideStatus } from '@/lib/validations/admin-subscription';
 import type { BusinessItem, BizHistoryRow } from './types';
@@ -11,7 +13,6 @@ import type { BusinessItem, BizHistoryRow } from './types';
 export function useManageSubscription({ startTransition }: { startTransition: TransitionStartFunction }) {
   const router = useRouter();
   const [selectedBiz, setSelectedBiz] = useState<BusinessItem | null>(null);
-  const [identityDialogOpen, setIdentityDialogOpen] = useState(false);
   const [bizHistory, setBizHistory] = useState<BizHistoryRow[]>([]);
   const [bizHistoryPage, setBizHistoryPage] = useState(1);
   const [loadingHistory, setLoadingHistory] = useState(false);
@@ -19,14 +20,23 @@ export function useManageSubscription({ startTransition }: { startTransition: Tr
   const [overrideStatus, setOverrideStatus] = useState<OverrideStatus>('active');
   const [overrideEndsAt, setOverrideEndsAt] = useState('');
   const [overrideError, setOverrideError] = useState<string | null>(null);
+  const [openedAtMs, setOpenedAtMs] = useState(0);
+  const [graceEndsAtIso, setGraceEndsAtIso] = useState<string | null>(null);
+
+  const changeEndsAt = (value: string) => {
+    setGraceEndsAtIso(null);
+    setOverrideEndsAt(value);
+  };
 
   const handleOpenManageBiz = async (biz: BusinessItem) => {
+    setOpenedAtMs(Date.now());
     setSelectedBiz(biz);
     setOverrideError(null);
+    setGraceEndsAtIso(null);
     setOverridePlan(biz.subscriptionPlan);
     setOverrideStatus(isOneOf(OVERRIDE_STATUSES, biz.subscriptionStatus) ? biz.subscriptionStatus : 'active');
     setOverrideEndsAt(
-      biz.subscriptionEndsAt ? new Date(biz.subscriptionEndsAt).toISOString().split('T')[0] : ''
+      biz.subscriptionEndsAt ? formatIstDateAsIso(new Date(biz.subscriptionEndsAt)) : ''
     );
     setBizHistoryPage(1);
     setLoadingHistory(true);
@@ -54,7 +64,7 @@ export function useManageSubscription({ startTransition }: { startTransition: Tr
         business_id: selectedBiz.id,
         subscription_plan: overridePlan,
         subscription_status: overrideStatus,
-        subscription_ends_at: overrideEndsAt ? new Date(overrideEndsAt).toISOString() : '',
+        subscription_ends_at: graceEndsAtIso ?? (overrideEndsAt ? new Date(overrideEndsAt).toISOString() : ''),
       });
 
       if (result.success) {
@@ -67,16 +77,38 @@ export function useManageSubscription({ startTransition }: { startTransition: Tr
   };
 
   const handleSetPresetDate = (months: number) => {
+    setGraceEndsAtIso(null);
     const d = new Date();
     d.setMonth(d.getMonth() + months);
-    setOverrideEndsAt(d.toISOString().split('T')[0]);
+    setOverrideEndsAt(formatIstDateAsIso(d));
   };
+
+  const handleSetGracePeriod = () => {
+    if (overridePlan === 'free') {
+      setOverrideError('Choose a paid plan before granting a grace period.');
+      return;
+    }
+    const ends = computeGraceEndsAt(
+      selectedBiz?.subscriptionEndsAt ? new Date(selectedBiz.subscriptionEndsAt) : null,
+      new Date()
+    );
+    // A Trial plan only allows the "trial" status (server rule), so keep it; paid plans become "active".
+    setOverrideStatus(overridePlan === 'trial' ? 'trial' : 'active');
+    setGraceEndsAtIso(ends.toISOString());
+    setOverrideEndsAt(formatIstDateAsIso(ends));
+    setOverrideError(null);
+  };
+
+  const isDateRequired = overrideStatus === 'active' || overrideStatus === 'trial';
+  const isDateValid =
+    overrideEndsAt !== '' &&
+    !Number.isNaN(new Date(overrideEndsAt).getTime()) &&
+    new Date(overrideEndsAt).getTime() > openedAtMs;
+  const isSaveDisabled = isDateRequired && !isDateValid;
 
   return {
     selectedBiz,
     setSelectedBiz,
-    identityDialogOpen,
-    setIdentityDialogOpen,
     bizHistory,
     setBizHistory,
     bizHistoryPage,
@@ -87,12 +119,14 @@ export function useManageSubscription({ startTransition }: { startTransition: Tr
     overrideStatus,
     setOverrideStatus,
     overrideEndsAt,
-    setOverrideEndsAt,
+    setOverrideEndsAt: changeEndsAt,
+    changeEndsAt,
     overrideError,
     setOverrideError,
+    isSaveDisabled,
     handleOpenManageBiz,
     handleSaveOverride,
     handleSetPresetDate,
+    handleSetGracePeriod,
   };
 }
-

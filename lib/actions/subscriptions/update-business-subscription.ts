@@ -109,6 +109,7 @@ export const updateBusinessSubscription = createAuthenticatedAction(
           status: 'approved',
           reject_reason: `Manual Override by Platform Admin (${adminEmail})`,
           approved_at: now,
+          subscription_ends_at: endsAt,
         });
       });
     } catch (err: unknown) {

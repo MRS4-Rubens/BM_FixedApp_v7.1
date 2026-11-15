@@ -34,6 +34,7 @@ export const ACTION_ACCESS = {
   'get-claim-screenshot-url': 'platform-admin',
   'process-subscription-claim': 'platform-admin',
   'update-business-subscription': 'platform-admin',
+  'update-platform-payee': 'platform-admin',
 
   // Public
   'list-tax-rates': 'public',

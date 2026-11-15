@@ -13,4 +13,6 @@ export * from './payments';
 export * from './audit_log';
 export * from './invoice_number_counters';
 export * from './subscription_requests';
+export * from './platform_settings';
+export * from './platform_settings_history';
 export * from './_display_prefs';

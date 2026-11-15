@@ -10,43 +10,31 @@ import {
   Tooltip as RechartsTooltip,
   CartesianGrid,
 } from 'recharts';
-import { CheckCircle2, Eye, Check, Copy } from 'lucide-react';
+import { Check, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { formatPaiseAsInr } from '@/lib/money';
-import { formatIstDate } from '@/lib/invoices/ist-date';
 import { cn } from '@/lib/utils';
 import { PayeeNotConfiguredNotice } from './payee-not-configured-notice';
 import { buildRevenueChartData } from './chart-data';
-import type { AdminStats, PendingRequestItem, UpiConfig } from './types';
+import type { AdminStats, UpiConfig } from './types';
 
 interface OverviewTabProps {
   stats: AdminStats;
-  pendingRequests: PendingRequestItem[];
   upiConfig: UpiConfig | null;
   payeeConfigIssue: string | null | undefined;
   isMounted: boolean;
-  isPending: boolean;
   copiedKey: string | null;
   onCopy: (text: string, key: string) => void;
   onSelectTab: (tab: 'pending' | 'settings') => void;
-  onOpenProof: (req: { id: string; businessName: string; paymentReference: string }) => void;
-  onApprove: (id: string) => void;
-  onReject: (req: PendingRequestItem) => void;
 }
 
 export function OverviewTab({
   stats,
-  pendingRequests,
   upiConfig,
   payeeConfigIssue,
   isMounted,
-  isPending,
   copiedKey,
   onCopy,
   onSelectTab,
-  onOpenProof,
-  onApprove,
-  onReject,
 }: OverviewTabProps) {
   const chartData = useMemo(() => {
     return buildRevenueChartData(stats.monthlyRevenue);
@@ -233,94 +221,6 @@ export function OverviewTab({
             )}
           </div>
         </div>
-      </div>
-
-      {/* Bottom: Recent Pending Claims Action Queue */}
-      <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
-        <div className="flex items-center justify-between mb-3.5">
-          <div>
-            <h3 className="text-base font-bold text-foreground font-heading">
-              Priority Payment Reconciliation Queue
-            </h3>
-            <p className="text-xs font-semibold text-muted-foreground mt-0.5">
-              Recent manual claims requiring administrative confirmation
-            </p>
-          </div>
-
-          {pendingRequests.length > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onSelectTab('pending')}
-              className="h-7.5 text-xs font-bold text-indigo-600"
-            >
-              View All ({pendingRequests.length})
-            </Button>
-          )}
-        </div>
-
-        {pendingRequests.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border py-8 text-center">
-            <CheckCircle2 className="size-8 text-emerald-500 mb-1.5" />
-            <p className="text-sm font-bold text-foreground">All claims are reconciled!</p>
-            <p className="text-xs text-muted-foreground mt-0.5">No pending payment claims waiting for verification.</p>
-          </div>
-        ) : (
-          <div className="divide-y divide-border/40">
-            {pendingRequests.slice(0, 5).map((req) => (
-              <div key={req.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-foreground truncate">{req.businessName}</span>
-                    <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[11px] font-bold text-indigo-600 uppercase border border-indigo-200">
-                      {req.planName} · {req.billingCycle}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-muted-foreground font-semibold">
-                    <span>
-                      UTR:{' '}
-                      <span className="font-mono text-indigo-600 font-bold">{req.paymentReference}</span>
-                    </span>
-                    <span>•</span>
-                    <span>Amount: <b className="text-foreground">{formatPaiseAsInr(req.amountPaise)}</b></span>
-                    <span>•</span>
-                    <span>{formatIstDate(req.createdAt)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  {req.hasScreenshot && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => void onOpenProof(req)}
-                      className="h-7.5 px-2.5 text-xs font-bold text-muted-foreground hover:text-indigo-600"
-                    >
-                      <Eye className="size-3.5 mr-1" /> Proof
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() => onApprove(req.id)}
-                    className="h-7.5 px-3 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={isPending}
-                    onClick={() => onReject(req)}
-                    className="h-7.5 px-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 border-rose-200"
-                  >
-                    Reject
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

@@ -317,13 +317,20 @@ describe('API-008: serverless PDF archival claims and integrity (PGlite)', () =>
     const inv2 = await createFinalizedInvoice(pg, fx);
     const cn1 = await createFinalizedCreditNote(pg, fx, inv1);
 
+    // Both invoices can be finalized within the same clock tick, in which case claimBatch's tie-breaker
+    // (id ASC, random UUIDs) decides. Derive the expected order from the same sort instead of creation order.
+    const expectedOrder = (await pg.query<{ id: string }>(
+      'SELECT id FROM invoices WHERE id = ANY($1) ORDER BY finalized_at ASC NULLS LAST, id ASC',
+      [[inv1, inv2]],
+    )).rows.map((r) => r.id);
+
     const batchInvoices = await claimBatch(db, 'invoice', 1);
     expect(batchInvoices).toHaveLength(1);
-    expect(batchInvoices[0].id).toBe(inv1);
+    expect(batchInvoices[0].id).toBe(expectedOrder[0]);
 
     const batchInvoices2 = await claimBatch(db, 'invoice', 1);
     expect(batchInvoices2).toHaveLength(1);
-    expect(batchInvoices2[0].id).toBe(inv2);
+    expect(batchInvoices2[0].id).toBe(expectedOrder[1]);
 
     const batchCreditNotes = await claimBatch(db, 'credit_note', 5);
     expect(batchCreditNotes).toHaveLength(1);

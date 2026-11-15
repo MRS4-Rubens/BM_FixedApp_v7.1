@@ -37,6 +37,10 @@ vi.mock('@/lib/actions/subscriptions/update-business-subscription', () => ({
   updateBusinessSubscription: vi.fn(),
 }));
 
+vi.mock('@/lib/actions/subscriptions/update-platform-payee', () => ({
+  updatePlatformPayeeAction: vi.fn(),
+}));
+
 vi.mock('@/lib/actions/subscriptions/get-business-subscriptions', () => ({
   getBusinessSubscriptions: vi.fn(),
 }));
@@ -404,6 +408,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       businesses: businessesFixture,
       users: usersFixture,
       upiConfig: upiConfigFixture,
+      payeeSource: 'database',
     });
     const html = normalizeMarkup(renderToStaticMarkup(el));
     expect(html).toMatchSnapshot();
@@ -418,6 +423,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       users: usersFixture,
       upiConfig: null,
       payeeConfigIssue: 'UPI ID missing',
+      payeeSource: 'database',
     });
     const html = normalizeMarkup(renderToStaticMarkup(el));
     expect(html).toMatchSnapshot();
@@ -431,6 +437,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       businesses: businessesFixture,
       users: usersFixture,
       upiConfig: upiConfigFixture,
+      payeeSource: 'database',
     });
     const html = normalizeMarkup(renderToStaticMarkup(el));
     expect(html).toMatchSnapshot();
@@ -444,6 +451,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       businesses: businessesFixture,
       users: usersFixture,
       upiConfig: upiConfigFixture,
+      payeeSource: 'database',
     });
     const html = normalizeMarkup(renderToStaticMarkup(el));
     expect(html).toMatchSnapshot();
@@ -457,6 +465,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       businesses: businessesFixture,
       users: usersFixture,
       upiConfig: upiConfigFixture,
+      payeeSource: 'database',
     });
     const html = normalizeMarkup(renderToStaticMarkup(el));
     expect(html).toMatchSnapshot();
@@ -470,6 +479,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       businesses: businessesFixture,
       users: usersFixture,
       upiConfig: upiConfigFixture,
+      payeeSource: 'database',
     });
     const html = normalizeMarkup(renderToStaticMarkup(el));
     expect(html).toMatchSnapshot();
@@ -483,6 +493,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       businesses: businessesFixture,
       users: usersFixture,
       upiConfig: upiConfigFixture,
+      payeeSource: 'database',
     });
     const html = normalizeMarkup(renderToStaticMarkup(el));
     expect(html).toMatchSnapshot();

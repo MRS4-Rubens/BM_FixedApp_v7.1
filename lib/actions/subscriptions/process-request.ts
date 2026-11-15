@@ -107,19 +107,25 @@ export const processSubscriptionClaim = createAuthenticatedAction(
           });
         }
 
-        // 4. Flip the request atomically (the business row is already locked above).
-        const [approved] = await tx
-          .update(subscriptionRequests)
-          .set({ status: 'approved', approved_at: now, updated_at: now })
-          .where(and(eq(subscriptionRequests.id, claim.id), eq(subscriptionRequests.status, 'pending')))
-          .returning({ id: subscriptionRequests.id });
-        if (!approved) throw await alreadyProcessed(tx, claim.id); // a parallel approver won: NO business write
-
-        // 5. Extend from the LOCKED row: exactly one cycle, preserving prepaid validity.
+        // 4. Extend from the LOCKED row: exactly one cycle, preserving prepaid validity.
         const endDate = addBillingCycleUtc(
           resolveApprovalBase(business.subscription_ends_at, now),
           claim.billing_cycle,
         );
+
+        // 5. Flip the request atomically (the business row is already locked above).
+        const [approved] = await tx
+          .update(subscriptionRequests)
+          .set({
+            status: 'approved',
+            approved_at: now,
+            subscription_ends_at: endDate,
+            updated_at: now,
+          })
+          .where(and(eq(subscriptionRequests.id, claim.id), eq(subscriptionRequests.status, 'pending')))
+          .returning({ id: subscriptionRequests.id });
+        if (!approved) throw await alreadyProcessed(tx, claim.id); // a parallel approver won: NO business write
+
         await tx
           .update(businesses)
           .set({
