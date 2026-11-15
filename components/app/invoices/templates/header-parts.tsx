@@ -2,6 +2,15 @@
 // The RULES (logo box, name sizes, gaps, separator) live here so all three templates stay consistent;
 // each template passes its own colours/borders so it keeps its own look. Template 1 does not use these.
 
+import {
+  A4_HEADER_WIDTH_PX,
+  A5_HEADER_WIDTH_PX,
+  availableNameWidthPx,
+  fitBrandName,
+  logoRenderWidthPx,
+  type BrandNameLayout,
+} from '@/lib/invoices/brand-name-fit';
+
 export type TaglineTone = 'black' | 'blue' | 'slate';
 
 export function TaglinePill({ text, tone }: { text: string; tone: TaglineTone }) {
@@ -80,75 +89,15 @@ export function ContactLine({
   );
 }
 
-/** Split words into `count` lines so the longest line (in characters) is as short as possible. */
-function balanceWords(words: string[], count: number): string[] {
-  const n = words.length;
-  if (count <= 1 || n <= 1) return [words.join(' ')];
-  const lineLen = (from: number, to: number) => words.slice(from, to).join(' ').length;
-  // best[k][i] = smallest possible "longest line" when words[i..] are laid out on k lines.
-  const best: number[][] = Array.from({ length: count + 1 }, () => new Array<number>(n + 1).fill(Infinity));
-  const cut: number[][] = Array.from({ length: count + 1 }, () => new Array<number>(n + 1).fill(n));
-  for (let i = 0; i < n; i++) best[1][i] = lineLen(i, n);
-  for (let k = 2; k <= count; k++) {
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const worst = Math.max(lineLen(i, j), best[k - 1][j]);
-        if (worst < best[k][i]) {
-          best[k][i] = worst;
-          cut[k][i] = j;
-        }
-      }
-    }
-  }
-  const lines: string[] = [];
-  let i = 0;
-  for (let k = Math.min(count, n); k > 1 && i < n; k--) {
-    const j = cut[k][i];
-    lines.push(words.slice(i, j).join(' '));
-    i = j;
-  }
-  if (i < n) lines.push(words.slice(i).join(' '));
-  return lines;
-}
-
-/**
- * Lays out the business name. Names can be up to 200 characters and a tax invoice must never cut the legal
- * name, so: up to 28 characters stay on one line; longer names are split into 2–4 lines of balanced length
- * (we pick the line breaks ourselves so the name block is exactly as wide as its longest line, which keeps
- * the logo gap and the centring exact). The size steps down with the longest line; two or more lines are
- * capped at 22px so a two-line name is no taller than the 52px logo.
- * Sizes are calibrated from measurement: a capital letter in these fonts averages ~0.81em incl. spacing.
- * Literal class strings so Tailwind and the print stylesheet pick them up.
- */
-export function layoutBrandName(name: string): { lines: string[]; sizeClass: string } {
-  const clean = name.trim().replace(/\s+/g, ' ');
-  const words = clean.split(' ');
-  let lines = [clean];
-  if (clean.length > 28) {
-    let count = 2;
-    lines = balanceWords(words, count);
-    while (count < 4 && Math.max(...lines.map((l) => l.length)) > 32) {
-      count += 1;
-      lines = balanceWords(words, count);
-    }
-  }
-  const longest = Math.max(...lines.map((l) => l.length));
-  const multi = lines.length > 1;
-  let sizeClass: string;
-  if (longest <= 24) sizeClass = multi ? 'text-[22px]' : 'text-[26px]';
-  else if (longest <= 28) sizeClass = multi ? 'text-[22px]' : 'text-[23px]';
-  else if (longest <= 32) sizeClass = 'text-[20px]';
-  else if (longest <= 38) sizeClass = 'text-[17px]';
-  else if (longest <= 46) sizeClass = 'text-[14px]';
-  else sizeClass = 'text-[13px]';
-  return { lines, sizeClass };
-}
-
 /**
  * Logo + business name as ONE horizontally centred group.
  * - Logo box: 52px tall, at most 156px wide (3:1); the image is scaled to fit, never cropped or stretched.
  * - Fixed 12px gap; a longer name widens the group, so the logo moves left on its own.
  * - items-center lines the logo's centre up with the centre of the name block (measured in the HDR review).
+ * - At least 1cm of clear space on each side (px-[1cm]).
+ * - Line breaks and size come from the space actually available (lib/invoices/brand-name-fit.ts): one line at the
+ *   largest size that fits, otherwise balanced lines. The PDF can't measure, so two layouts are prepared, for A4 width
+ *   and for the narrower in-app A5 preview, and a container query shows the one matching the real width.
  * The name carries the template's colour/letter-spacing via `nameClassName`.
  */
 export function BrandLockup({
@@ -160,25 +109,43 @@ export function BrandLockup({
   name: string;
   nameClassName: string;
 }) {
-  const { lines, sizeClass } = layoutBrandName(name);
+  const logoWidth = logoRenderWidthPx(logoSrc);
+  const wide = fitBrandName(name, availableNameWidthPx(A4_HEADER_WIDTH_PX, logoWidth));
+  const narrow = fitBrandName(name, availableNameWidthPx(A5_HEADER_WIDTH_PX, logoWidth));
+  const sameLayout = wide.fontPx === narrow.fontPx && wide.lines.join('\n') === narrow.lines.join('\n');
+
+  const renderName = (layout: BrandNameLayout, visibility: string) => (
+    <h1
+      data-hdr="name"
+      className={`min-w-0 text-center font-black uppercase leading-[1.12] [overflow-wrap:anywhere] ${layout.sizeClass} ${nameClassName} ${visibility}`}
+    >
+      {layout.lines.map((line, i) => (
+        <span key={i} className="block">
+          {line}
+        </span>
+      ))}
+    </h1>
+  );
+
   return (
-    <div data-hdr="lockup" className="flex w-full items-center justify-center gap-3">
-      {logoSrc && (
-        <div data-hdr="logo" className="flex h-[52px] max-w-[156px] shrink-0 items-center justify-center select-none">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoSrc} alt="Business logo" className="block h-[52px] w-auto max-w-[156px] object-contain" />
-        </div>
-      )}
-      <h1
-        data-hdr="name"
-        className={`min-w-0 text-center font-black uppercase leading-[1.12] [overflow-wrap:anywhere] ${sizeClass} ${nameClassName}`}
-      >
-        {lines.map((line, i) => (
-          <span key={i} className="block">
-            {line}
-          </span>
-        ))}
-      </h1>
+    // @container: the layouts switch on THIS box's width (A4 layout from 748px, A5 layout below).
+    <div className="@container w-full">
+      <div data-hdr="lockup" className="flex w-full items-center justify-center gap-3 px-[1cm]">
+        {logoSrc && (
+          <div data-hdr="logo" className="flex h-[52px] max-w-[156px] shrink-0 items-center justify-center select-none">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoSrc} alt="Business logo" className="block h-[52px] w-auto max-w-[156px] object-contain" />
+          </div>
+        )}
+        {sameLayout ? (
+          renderName(wide, '')
+        ) : (
+          <>
+            {renderName(wide, '@max-[747px]:hidden')}
+            {renderName(narrow, 'hidden @max-[747px]:block')}
+          </>
+        )}
+      </div>
     </div>
   );
 }
