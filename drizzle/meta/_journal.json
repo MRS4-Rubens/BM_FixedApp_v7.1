@@ -253,6 +253,13 @@
       "when": 1794841698598,
       "tag": "0035_ca_role",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794851176888,
+      "tag": "0036_customer_gstin_unique",
+      "breakpoints": true
     }
   ]
 }

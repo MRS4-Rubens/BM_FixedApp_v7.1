@@ -1,8 +1,8 @@
 /** Single source of truth for constraint/index names that application code maps to user-facing errors. */
 export const DB_CONSTRAINTS = {
   BUSINESSES_GSTIN_UNIQUE: 'businesses_gstin_unique',
-  // Created later by DB-005 (partial unique on customers(business_id, gstin) where gstin is not null).
-  // The mapping below is inert until that constraint exists; DB-005 MUST use exactly this name.
+  // Partial unique index on customers(business_id, gstin) where gstin is not null (CUST-GSTIN-UNIQUE, migration 0036).
+  // The index name MUST stay exactly this: CUSTOMER_MAPPINGS turns its 23505 into DUPLICATE_CUSTOMER_GSTIN.
   CUSTOMERS_BUSINESS_GSTIN_UNIQUE: 'customers_biz_gstin_uq',
 } as const;
 
