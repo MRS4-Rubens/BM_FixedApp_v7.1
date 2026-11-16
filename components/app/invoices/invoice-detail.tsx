@@ -34,6 +34,7 @@ import { InvoicePrintView, type InvoicePrintViewProps } from './invoice-print-vi
 import { generateWhatsAppInvoiceUrl } from '@/lib/subscriptions/whatsapp'
 import { canShareInvoiceOnWhatsApp } from '@/lib/subscriptions/entitlements'
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal'
+import { useCanEdit } from '@/components/app/current-user-role'
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs'
 import { formatIstDate, formatIstDateAsIso } from '@/lib/invoices/ist-date'
 
@@ -103,6 +104,7 @@ interface InvoiceDetailProps {
 }
 
 export function InvoiceDetail({ invoice, payments = [], creditNotes = [], businessStateCode, business, displayPrefs }: InvoiceDetailProps) {
+  const canEdit = useCanEdit();
   const [printSize, setPrintSize] = useState<'A4' | 'A5'>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
@@ -353,7 +355,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
             {downloadError && <span className="text-xs text-destructive font-semibold">{downloadError}</span>}
             
             <div className="flex flex-wrap items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 w-full sm:w-auto">
-              {invoice.lifecycle_status === 'finalized' && (
+              {canEdit && invoice.lifecycle_status === 'finalized' && (
                 <Button 
                   type="button" 
                   size="sm" 
@@ -378,7 +380,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                 </Button>
               )}
 
-              {invoice.lifecycle_status === 'finalized' && invoice.archival_status === 'archived' && (
+              {canEdit && invoice.lifecycle_status === 'finalized' && invoice.archival_status === 'archived' && (
                 <>
                   <Button 
                     type="button" 
@@ -417,7 +419,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                 </Button>
               )}
 
-              {invoice.lifecycle_status === 'finalized' && (
+              {canEdit && invoice.lifecycle_status === 'finalized' && (
                 <Link href={`/invoices/${invoice.id}/credit-note/new`} className="shrink-0">
                   <Button 
                     type="button" 
@@ -636,7 +638,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
               {creditNotes.length === 0 ? (
                 <div className="text-center py-3 text-[13px] text-muted-foreground space-y-2">
                   <p>No credit notes issued for this invoice.</p>
-                  {invoice.lifecycle_status === 'finalized' && (
+                  {canEdit && invoice.lifecycle_status === 'finalized' && (
                     <Link href={`/invoices/${invoice.id}/credit-note/new`}>
                       <Button size="sm" variant="outline" className="text-[13px] font-semibold text-red-700 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/20">
                         Issue Credit Note
@@ -723,7 +725,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                       </div>
                     );
                   })}
-                  {invoice.lifecycle_status === 'finalized' && (
+                  {canEdit && invoice.lifecycle_status === 'finalized' && (
                     <div className="pt-1 text-right">
                       <Link href={`/invoices/${invoice.id}/credit-note/new`}>
                         <Button size="sm" variant="outline" className="w-full text-[13px] font-semibold text-red-700 dark:text-red-400 border-red-200 dark:border-red-900 hover:bg-red-50 dark:hover:bg-red-950/20 whitespace-nowrap">

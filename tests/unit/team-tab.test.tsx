@@ -29,6 +29,9 @@ vi.mock('@/lib/actions/team/revoke-team-invite', () => ({
 vi.mock('@/lib/actions/team/remove-team-member', () => ({
   removeTeamMember: vi.fn(),
 }));
+vi.mock('@/lib/actions/team/change-team-member-role', () => ({
+  changeTeamMemberRole: vi.fn(),
+}));
 
 import { SeatSummary } from '@/components/app/settings/team-tab/seat-summary';
 import { InviteForm } from '@/components/app/settings/team-tab/invite-form';
@@ -108,11 +111,30 @@ describe('Team Tab Components (A2-TEAM-UI)', () => {
         React.createElement(InviteForm, {
           canInvite: true,
           cannotInviteReason: null,
+          canInviteAccountant: true,
           onInviteSuccess: vi.fn(),
         })
       );
       expect(html).toContain('type="email"');
       expect(html).toContain('Send invite');
+      expect(html).toContain('Team member');
+      expect(html).toContain('Accountant (read-only)');
+    });
+
+    it('disables the accountant radio with Professional plan badge when canInviteAccountant is false', () => {
+      const html = renderToStaticMarkup(
+        React.createElement(InviteForm, {
+          canInvite: true,
+          cannotInviteReason: null,
+          canInviteAccountant: false,
+          onInviteSuccess: vi.fn(),
+        })
+      );
+      expect(html).toContain('Team member');
+      expect(html).toContain('Accountant (read-only)');
+      expect(html).toContain('Professional plan');
+      expect(html).toContain('value="accountant"');
+      expect(html).toContain('disabled=""');
     });
   });
 
@@ -156,6 +178,29 @@ describe('Team Tab Components (A2-TEAM-UI)', () => {
       expect(html).toContain(`https://wa.me/?text=${expectedText}`);
       expect(html).toContain('target="_blank"');
     });
+
+    it('formats WhatsApp message specifically for accountant role', () => {
+      const inviteUrl = 'https://example.com/invite/caToken';
+      const result: InviteLinkResult = {
+        invitationId: 'inv_ca',
+        email: 'ca@example.com',
+        expiresAt: '2026-11-20T10:00:00.000Z',
+        emailSent: true,
+        inviteUrl,
+      };
+      const html = renderToStaticMarkup(
+        React.createElement(InviteLinkPanel, {
+          result,
+          businessName: 'Acme Corp',
+          role: 'accountant',
+          onDone: vi.fn(),
+        })
+      );
+      const expectedText = encodeURIComponent(
+        `Join Acme Corp on Invoice BizFolio as our accountant (read-only access): ${inviteUrl}`
+      );
+      expect(html).toContain(`https://wa.me/?text=${expectedText}`);
+    });
   });
 
   describe('MembersList', () => {
@@ -193,6 +238,61 @@ describe('Team Tab Components (A2-TEAM-UI)', () => {
       expect(removeButtons).not.toBeNull();
       expect(removeButtons?.length).toBe(2); // 1 desktop + 1 mobile card for Alice
     });
+
+    it('renders role badges and change-role select for non-owner rows', () => {
+      const members: TeamMember[] = [
+        {
+          id: 'user_owner',
+          name: 'Owner Boss',
+          email: 'owner@example.com',
+          role: 'owner',
+          isYou: true,
+          createdAt: '2026-11-01T10:00:00.000Z',
+        },
+        {
+          id: 'user_ca_1',
+          name: 'CA Suresh',
+          email: 'ca@example.com',
+          role: 'accountant',
+          isYou: false,
+          createdAt: '2026-11-10T10:00:00.000Z',
+        },
+      ];
+      const html = renderToStaticMarkup(
+        React.createElement(MembersList, {
+          members,
+          canInviteAccountant: true,
+          onMemberRemoved: vi.fn(),
+          onRoleChanged: vi.fn(),
+        })
+      );
+      expect(html).toContain('Accountant (read-only)');
+      expect(html).toContain('aria-label="Role for CA Suresh"');
+      // Owner row should NOT have a change role select
+      expect(html).not.toContain('aria-label="Role for Owner Boss"');
+    });
+
+    it('disables accountant option when canInviteAccountant is false and member is staff', () => {
+      const members: TeamMember[] = [
+        {
+          id: 'user_staff_1',
+          name: 'Staff Alice',
+          email: 'alice@example.com',
+          role: 'staff',
+          isYou: false,
+          createdAt: '2026-11-10T10:00:00.000Z',
+        },
+      ];
+      const html = renderToStaticMarkup(
+        React.createElement(MembersList, {
+          members,
+          canInviteAccountant: false,
+          onMemberRemoved: vi.fn(),
+          onRoleChanged: vi.fn(),
+        })
+      );
+      expect(html).toContain('<option value="accountant" disabled="">Accountant (read-only)</option>');
+    });
   });
 
   describe('PendingInvites', () => {
@@ -216,6 +316,28 @@ describe('Team Tab Components (A2-TEAM-UI)', () => {
       );
       expect(html).toContain('expired@example.com');
       expect(html).toContain('Expired');
+    });
+
+    it('renders role badge for pending invites', () => {
+      const invites: TeamInvite[] = [
+        {
+          id: 'inv_ca',
+          email: 'ca_pending@example.com',
+          role: 'accountant',
+          expiresAt: '2026-11-20T10:00:00.000Z',
+          sentAt: '2026-11-13T10:00:00.000Z',
+          isExpired: false,
+        },
+      ];
+      const html = renderToStaticMarkup(
+        React.createElement(PendingInvites, {
+          invites,
+          onInviteRevoked: vi.fn(),
+          onResendSuccess: vi.fn(),
+        })
+      );
+      expect(html).toContain('ca_pending@example.com');
+      expect(html).toContain('Accountant (read-only)');
     });
 
     it('shows empty state when there are no pending invites', () => {

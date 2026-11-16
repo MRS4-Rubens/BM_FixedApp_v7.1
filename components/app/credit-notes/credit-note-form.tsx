@@ -41,7 +41,7 @@ import {
 import { computeNetBillPaise } from '@/lib/invoices/settlement';
 import { CREDIT_NOTE_REASONS, type CreditNoteReasonCode } from '@/lib/validations/credit-note';
 import { formatIstDate } from '@/lib/invoices/ist-date';
-import { useIsOwner } from '@/components/app/current-user-role';
+import { useIsOwner, useCanEdit } from '@/components/app/current-user-role';
 import { stateTaxLabel } from '@/lib/gst/indian-states';
 
 export interface OriginalInvoiceInfo {
@@ -96,6 +96,7 @@ export function CreditNoteForm({
 }: CreditNoteFormProps) {
   const router = useRouter();
   const isOwner = useIsOwner();
+  const canEdit = useCanEdit();
   const [reason, setReason] = useState<CreditNoteReasonCode>(initialReason);
   const [notes, setNotes] = useState(initialNotes);
 
@@ -275,40 +276,46 @@ export function CreditNoteForm({
         </div>
 
         <div className="flex items-center gap-2.5">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isPending || !preview.ok}
-            onClick={() => handleSave(false)}
-            className="h-9 px-3.5 flex items-center gap-2 text-sm font-medium shadow-xs"
-          >
-            <Save className="size-4 text-muted-foreground" />
-            Save as Draft
-          </Button>
-          {isOwner ? (
-            <Button
-              type="button"
-              disabled={isPending || !preview.ok}
-              onClick={() => handleSave(true)}
-              className="h-9 px-4 flex items-center gap-2 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors"
-            >
-              <CheckCircle className="size-4" />
-              Finalize & Issue
-            </Button>
-          ) : (
-            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+          {canEdit ? (
+            <>
               <Button
                 type="button"
-                disabled
-                className="h-9 px-4 flex items-center gap-2 text-sm font-semibold bg-red-600/50 text-white shadow-xs cursor-not-allowed"
+                variant="outline"
+                disabled={isPending || !preview.ok}
+                onClick={() => handleSave(false)}
+                className="h-9 px-3.5 flex items-center gap-2 text-sm font-medium shadow-xs"
               >
-                <CheckCircle className="size-4" />
-                Finalize & Issue
+                <Save className="size-4 text-muted-foreground" />
+                Save as Draft
               </Button>
-              <span className="text-xs text-muted-foreground font-medium">
-                Only the business owner can finalize credit notes. Save it as a draft and ask the owner.
-              </span>
-            </div>
+              {isOwner ? (
+                <Button
+                  type="button"
+                  disabled={isPending || !preview.ok}
+                  onClick={() => handleSave(true)}
+                  className="h-9 px-4 flex items-center gap-2 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors"
+                >
+                  <CheckCircle className="size-4" />
+                  Finalize & Issue
+                </Button>
+              ) : (
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+                  <Button
+                    type="button"
+                    disabled
+                    className="h-9 px-4 flex items-center gap-2 text-sm font-semibold bg-red-600/50 text-white shadow-xs cursor-not-allowed"
+                  >
+                    <CheckCircle className="size-4" />
+                    Finalize & Issue
+                  </Button>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    Only the business owner can finalize credit notes. Save it as a draft and ask the owner.
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground font-medium">Read-only access.</span>
           )}
         </div>
       </div>

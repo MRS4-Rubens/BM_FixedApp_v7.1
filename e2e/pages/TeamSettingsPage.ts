@@ -10,6 +10,8 @@ export class TeamSettingsPage {
   readonly sendInviteButton: Locator;
   readonly inviteLinkInput: Locator;
   readonly doneButton: Locator;
+  readonly staffRoleRadio: Locator;
+  readonly accountantRoleRadio: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -20,6 +22,8 @@ export class TeamSettingsPage {
     this.sendInviteButton = page.getByRole('button', { name: 'Send invite' });
     this.inviteLinkInput = page.getByLabel('Invite link');
     this.doneButton = page.getByRole('button', { name: 'Done' });
+    this.staffRoleRadio = page.locator('input[type="radio"][value="staff"]');
+    this.accountantRoleRadio = page.locator('input[type="radio"][value="accountant"]');
   }
 
   async goto(): Promise<void> {
@@ -29,8 +33,13 @@ export class TeamSettingsPage {
   }
 
   /** Sends an invite and returns the link shown in the invite-link panel (works even if the e-mail failed). */
-  async sendInvite(email: string): Promise<string> {
+  async sendInvite(email: string, role: 'staff' | 'accountant' = 'staff'): Promise<string> {
     await expect(this.inviteEmailInput).toBeEnabled({ timeout: 15_000 });
+    if (role === 'accountant') {
+      await this.accountantRoleRadio.click();
+    } else {
+      await this.staffRoleRadio.click();
+    }
     await this.inviteEmailInput.fill(email);
     await this.sendInviteButton.click();
     await expect(this.inviteLinkInput).toBeVisible({ timeout: 20_000 });
@@ -47,6 +56,19 @@ export class TeamSettingsPage {
 
   async expectMemberNotVisible(emailOrName: string): Promise<void> {
     await expect(this.memberRow(emailOrName)).toHaveCount(0, { timeout: 15_000 });
+  }
+
+  async changeMemberRole(emailOrName: string, newRole: 'staff' | 'accountant'): Promise<void> {
+    const row = this.memberRow(emailOrName);
+    const select = row.locator('select').first();
+    await select.selectOption(newRole);
+    const dialog = this.page.getByRole('alertdialog');
+    await expect(dialog).toBeVisible({ timeout: 10_000 });
+    await dialog.getByRole('button', { name: 'Change role', exact: true }).click();
+    await expect(dialog).toBeHidden({ timeout: 15_000 });
+    // The dialog can close before the server action commits. The select is controlled by the server's member list,
+    // so it only shows the new role once the change is saved and the team list has been re-fetched.
+    await expect(select).toHaveValue(newRole, { timeout: 20_000 });
   }
 
   async removeMember(emailOrName: string): Promise<void> {

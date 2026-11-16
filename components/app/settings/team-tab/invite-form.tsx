@@ -4,6 +4,7 @@ import { useState, useTransition, useId } from 'react';
 import { Mail, UserPlus, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { inviteTeamMember } from '@/lib/actions/team/invite-team-member';
+import { cn } from '@/lib/utils';
 import type { InviteLinkResult } from './types';
 
 export interface InviteFormProps {
@@ -11,7 +12,8 @@ export interface InviteFormProps {
   cannotInviteReason: string | null;
   /** From getTeam: 'TEAM_PLAN_REQUIRED' (upgrading helps) or 'TEAM_SEAT_LIMIT' (free a seat instead). */
   cannotInviteCode?: string | null;
-  onInviteSuccess: (result: InviteLinkResult) => void;
+  canInviteAccountant?: boolean;
+  onInviteSuccess: (result: InviteLinkResult, role?: 'staff' | 'accountant') => void;
   onSwitchTab?: (tab: string) => void;
 }
 
@@ -19,11 +21,13 @@ export function InviteForm({
   canInvite,
   cannotInviteReason,
   cannotInviteCode = null,
+  canInviteAccountant = false,
   onInviteSuccess,
   onSwitchTab,
 }: InviteFormProps) {
   const id = useId();
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState<'staff' | 'accountant'>('staff');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -40,11 +44,11 @@ export function InviteForm({
     }
 
     startTransition(async () => {
-      const result = await inviteTeamMember({ email: cleanEmail });
+      const result = await inviteTeamMember({ email: cleanEmail, role });
       if (result.success) {
         setEmail('');
         setError(null);
-        onInviteSuccess(result.data);
+        onInviteSuccess(result.data, role);
       } else {
         const fieldError = result.error.fieldErrors?.email?.[0];
         setError(fieldError || result.error.message);
@@ -100,6 +104,77 @@ export function InviteForm({
             </Button>
           </div>
         </div>
+
+        <fieldset className="space-y-1.5 pt-1">
+          <legend className="block text-xs font-semibold text-foreground mb-1.5">
+            Role
+          </legend>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <label
+              className={cn(
+                "flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer transition-all",
+                role === 'staff'
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                  : "border-border bg-background hover:bg-muted/40",
+                (!canInvite || isPending) && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <input
+                type="radio"
+                name="invite-role"
+                value="staff"
+                checked={role === 'staff'}
+                onChange={() => setRole('staff')}
+                disabled={!canInvite || isPending}
+                className="mt-0.5 size-4 text-primary focus:ring-primary/20"
+              />
+              <div className="space-y-0.5">
+                <span className="block text-xs sm:text-sm font-bold text-foreground">
+                  Team member
+                </span>
+                <span className="block text-[11px] text-muted-foreground leading-normal">
+                  Can create invoices, record payments, manage customers and products.
+                </span>
+              </div>
+            </label>
+
+            <label
+              className={cn(
+                "flex items-start gap-2.5 rounded-lg border p-3 transition-all",
+                !canInviteAccountant || !canInvite || isPending
+                  ? "opacity-60 cursor-not-allowed bg-muted/20 border-border"
+                  : role === 'accountant'
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20 cursor-pointer"
+                  : "border-border bg-background hover:bg-muted/40 cursor-pointer"
+              )}
+            >
+              <input
+                type="radio"
+                name="invite-role"
+                value="accountant"
+                checked={role === 'accountant'}
+                onChange={() => setRole('accountant')}
+                disabled={!canInviteAccountant || !canInvite || isPending}
+                className="mt-0.5 size-4 text-primary focus:ring-primary/20"
+              />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs sm:text-sm font-bold text-foreground">
+                    Accountant (read-only)
+                  </span>
+                  {!canInviteAccountant && (
+                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      Professional plan
+                    </span>
+                  )}
+                </div>
+                <span className="block text-[11px] text-muted-foreground leading-normal">
+                  Can view everything and download reports. Cannot change anything.
+                </span>
+              </div>
+            </label>
+          </div>
+        </fieldset>
 
         {error && (
           <div role="alert" className="flex items-center gap-1.5 text-xs font-semibold text-destructive mt-1">

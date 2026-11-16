@@ -29,6 +29,7 @@ export function TeamTab({
   const [isLoading, setIsLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [activeInviteResult, setActiveInviteResult] = useState<InviteLinkResult | null>(null);
+  const [activeInviteRole, setActiveInviteRole] = useState<'staff' | 'accountant'>('staff');
 
   const fetchTeam = useCallback(async () => {
     setIsLoading(true);
@@ -74,13 +75,15 @@ export function TeamTab({
     router.refresh();
   }, [fetchTeam, router]);
 
-  const handleInviteSuccess = (result: InviteLinkResult) => {
+  const handleInviteSuccess = (result: InviteLinkResult, role?: 'staff' | 'accountant') => {
     setActiveInviteResult(result);
+    setActiveInviteRole(role || 'staff');
     handleMutationSuccess();
   };
 
-  const handleResendSuccess = (result: InviteLinkResult) => {
+  const handleResendSuccess = (result: InviteLinkResult, role?: 'staff' | 'accountant') => {
     setActiveInviteResult(result);
+    setActiveInviteRole(role || 'staff');
     handleMutationSuccess();
   };
 
@@ -138,6 +141,7 @@ export function TeamTab({
         canInvite={data.canInvite}
         cannotInviteReason={data.cannotInviteReason}
         cannotInviteCode={data.cannotInviteCode}
+        canInviteAccountant={data.canInviteAccountant}
         onInviteSuccess={handleInviteSuccess}
         onSwitchTab={onSwitchTab}
       />
@@ -147,12 +151,18 @@ export function TeamTab({
         <InviteLinkPanel
           result={activeInviteResult}
           businessName={businessName}
+          role={activeInviteRole}
           onDone={() => setActiveInviteResult(null)}
         />
       )}
 
       {/* 4. Members List */}
-      <MembersList members={data.members} onMemberRemoved={handleMutationSuccess} />
+      <MembersList
+        members={data.members}
+        canInviteAccountant={data.canInviteAccountant}
+        onMemberRemoved={handleMutationSuccess}
+        onRoleChanged={handleMutationSuccess}
+      />
 
       {/* 5. Pending Invites */}
       <PendingInvites

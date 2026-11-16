@@ -13,6 +13,7 @@ import type { CustomerListParams } from '@/lib/invoices/list-params';
 import type { Page } from '@/lib/pagination/keyset';
 import { buildListHref } from '@/lib/pagination/url';
 import { cn } from '@/lib/utils';
+import { useCanEdit } from '@/components/app/current-user-role';
 
 export interface CustomersClientProps {
   readonly page: Page<CustomerRow>;
@@ -28,6 +29,7 @@ export function CustomersClient({
   currentParams,
 }: CustomersClientProps) {
   const router = useRouter();
+  const canEdit = useCanEdit();
   const [isPending, startTransition] = useTransition();
 
   const [search, setSearch] = useState(currentParams.q ?? '');
@@ -106,17 +108,19 @@ export function CustomersClient({
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-            <Button
-              size="sm"
-              nativeButton={false}
-              render={
-                <Link href="/customers/new" className="flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0">
-                  <Plus className="size-4 shrink-0" />
-                  Add Customer
-                </Link>
-              }
-              className="shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[15px] font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0"
-            />
+            {canEdit && (
+              <Button
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link href="/customers/new" className="flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0">
+                    <Plus className="size-4 shrink-0" />
+                    Add Customer
+                  </Link>
+                }
+                className="shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[15px] font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0"
+              />
+            )}
 
             <div className="h-5 w-px bg-border/60 hidden md:block" />
 
@@ -163,12 +167,18 @@ export function CustomersClient({
                         {initials}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <Link
-                          href={`/customers/${c.id}/edit`}
-                          className="font-bold text-base sm:text-lg text-foreground group-hover:text-indigo-600 transition-colors truncate block leading-snug"
-                        >
-                          {c.name}
-                        </Link>
+                        {canEdit ? (
+                          <Link
+                            href={`/customers/${c.id}/edit`}
+                            className="font-bold text-base sm:text-lg text-foreground group-hover:text-indigo-600 transition-colors truncate block leading-snug"
+                          >
+                            {c.name}
+                          </Link>
+                        ) : (
+                          <span className="font-bold text-base sm:text-lg text-foreground truncate block leading-snug">
+                            {c.name}
+                          </span>
+                        )}
                         <p className="mt-0.5 text-sm font-mono text-muted-foreground truncate">
                           {c.gstin ? (
                             <span>{c.gstin}</span>
@@ -228,8 +238,8 @@ export function CustomersClient({
             <EmptyState
               icon={<Users className="size-5" />}
               title={search || includeInactive ? "No matching customers found" : "No customers yet"}
-              description={search || includeInactive ? "Try adjusting your search or filters." : "Add your first customer to build your directory."}
-              action={!search && !includeInactive ? { label: 'Add Customer', href: '/customers/new' } : undefined}
+              description={search || includeInactive ? "Try adjusting your search or filters." : canEdit ? "Add your first customer to build your directory." : "No customers registered yet."}
+              action={canEdit && !search && !includeInactive ? { label: 'Add Customer', href: '/customers/new' } : undefined}
             />
           </div>
         )}

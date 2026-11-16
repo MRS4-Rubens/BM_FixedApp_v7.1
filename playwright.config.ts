@@ -95,6 +95,17 @@ export default defineConfig({
         trace: 'retain-on-failure',
       },
     },
+    {
+      name: 'ca',
+      testMatch: '09-ca.spec.ts',
+      dependencies: ['team'],
+      retries: 0,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        trace: 'retain-on-failure',
+      },
+    },
   ],
 });
 

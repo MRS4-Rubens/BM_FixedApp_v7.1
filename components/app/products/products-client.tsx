@@ -12,6 +12,7 @@ import { formatPaiseAsInr } from '@/lib/money';
 import type { Page } from '@/lib/pagination/keyset';
 import { buildListHref } from '@/lib/pagination/url';
 import { cn } from '@/lib/utils';
+import { useCanEdit } from '@/components/app/current-user-role';
 
 const tabs = ['All', 'Products', 'Services'] as const;
 type Tab = (typeof tabs)[number];
@@ -30,6 +31,7 @@ export function ProductsClient({
   currentParams,
 }: ProductsClientProps) {
   const router = useRouter();
+  const canEdit = useCanEdit();
   const [isPending, startTransition] = useTransition();
 
   const [search, setSearch] = useState(currentParams.q ?? '');
@@ -130,17 +132,19 @@ export function ProductsClient({
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-            <Button
-              size="sm"
-              nativeButton={false}
-              render={
-                <Link href="/products/new" className="flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0">
-                  <Plus className="size-4 shrink-0" />
-                  Add Product
-                </Link>
-              }
-              className="shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[15px] font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0"
-            />
+            {canEdit && (
+              <Button
+                size="sm"
+                nativeButton={false}
+                render={
+                  <Link href="/products/new" className="flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0">
+                    <Plus className="size-4 shrink-0" />
+                    Add Product
+                  </Link>
+                }
+                className="shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[15px] font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0"
+              />
+            )}
 
             <div className="h-5 w-px bg-border/60 hidden md:block" />
 
@@ -183,18 +187,14 @@ export function ProductsClient({
             const isService = Boolean(product.hsn_sac_code && product.hsn_sac_code.startsWith('99'));
             const codePrefix = isService ? 'SAC' : 'HSN';
 
-            return (
-              <Link 
-                key={product.id} 
-                href={`/products/${product.id}/edit`}
-                className={cn(
-                  "group relative rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs hover:shadow-md hover:border-indigo-500/30 transition-all duration-200 flex flex-col justify-between",
-                  !product.is_active && "opacity-60 bg-muted/20"
-                )}
-              >
+            const cardContent = (
+              <>
                 {/* Line 1: Name on Left, GST% on Complete Right */}
                 <div className="flex items-start justify-between gap-3">
-                  <p className="font-bold text-base sm:text-lg text-foreground group-hover:text-indigo-600 transition-colors truncate block leading-snug flex-1">
+                  <p className={cn(
+                    "font-bold text-base sm:text-lg text-foreground truncate block leading-snug flex-1",
+                    canEdit && "group-hover:text-indigo-600 transition-colors"
+                  )}>
                     {product.name}
                   </p>
 
@@ -236,7 +236,23 @@ export function ProductsClient({
                     </span>
                   )}
                 </div>
+              </>
+            );
+
+            const cardClassName = cn(
+              "group relative rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs transition-all duration-200 flex flex-col justify-between",
+              canEdit && "hover:shadow-md hover:border-indigo-500/30",
+              !product.is_active && "opacity-60 bg-muted/20"
+            );
+
+            return canEdit ? (
+              <Link key={product.id} href={`/products/${product.id}/edit`} className={cardClassName}>
+                {cardContent}
               </Link>
+            ) : (
+              <div key={product.id} className={cardClassName}>
+                {cardContent}
+              </div>
             );
           })}
 
@@ -250,7 +266,9 @@ export function ProductsClient({
               </p>
               <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                 {page.totalCount === 0 && !search && !includeInactive
-                  ? `Add your first ${activeTab === 'Services' ? 'service' : 'product'} to start building your catalogue.`
+                  ? canEdit
+                    ? `Add your first ${activeTab === 'Services' ? 'service' : 'product'} to start building your catalogue.`
+                    : `No ${activeTab === 'Services' ? 'services' : 'products'} available in the catalogue.`
                   : 'Try adjusting your search or filters.'}
               </p>
             </div>

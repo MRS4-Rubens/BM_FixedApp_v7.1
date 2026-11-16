@@ -57,5 +57,51 @@ export class AdminPage {
     await this.openPendingClaimsTab();
     await expect(this.claimRow(utr)).toHaveCount(0, { timeout: 15_000 });
   }
+
+  async setBusinessPlan(businessName: string, plan: 'professional' | 'essentials'): Promise<void> {
+    await this.page.getByRole('button', { name: /^Businesses Directory/ }).click();
+    await expect(this.page.getByRole('heading', { name: /Client Businesses Directory/ })).toBeVisible({ timeout: 15_000 });
+
+    const searchInput = this.page.getByPlaceholder('Search by legal name, trade name, GSTIN, or email...');
+    await searchInput.fill(businessName);
+
+    const row = this.page.locator('tbody tr').filter({ hasText: businessName }).first();
+    await expect(row).toBeVisible({ timeout: 15_000 });
+
+    await row.getByRole('button', { name: 'Manage', exact: true }).click();
+
+    const dialogHeading = this.page.getByRole('heading', { name: new RegExp(`Manage Subscription: ${businessName}`) });
+    await expect(dialogHeading).toBeVisible({ timeout: 15_000 });
+
+    // The Manage Subscription dialog is a Base UI Dialog (role=dialog); scope every control to it.
+    const dialog = this.page.getByRole('dialog').filter({ has: dialogHeading });
+
+    // Select plan tier
+    const planSelect = dialog.locator('select').first();
+    await planSelect.selectOption(plan);
+
+    // Ensure status is active
+    const statusSelect = dialog.locator('select').nth(1);
+    await statusSelect.selectOption('active');
+
+    // Click +1 Year preset if needed
+    const presetBtn = dialog.getByRole('button', { name: '+1 Year', exact: true });
+    if (await presetBtn.isVisible()) {
+      await presetBtn.click();
+    }
+
+    const saveBtn = dialog.getByRole('button', { name: 'Save Subscription Changes', exact: true });
+    await expect(saveBtn).toBeEnabled({ timeout: 5_000 });
+    await saveBtn.click();
+
+    await expect(dialogHeading).toBeHidden({ timeout: 30_000 });
+
+    await reloadApp(this.page);
+    await expect(this.adminConsoleHeading).toBeVisible({ timeout: 15_000 });
+    await this.page.getByRole('button', { name: /^Businesses Directory/ }).click();
+    await searchInput.fill(businessName);
+    const updatedRow = this.page.locator('tbody tr').filter({ hasText: businessName }).first();
+    await expect(updatedRow).toContainText(plan, { timeout: 15_000, ignoreCase: true });
+  }
 }
 
