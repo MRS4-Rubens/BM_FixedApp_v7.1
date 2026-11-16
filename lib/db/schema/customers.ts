@@ -1,4 +1,4 @@
-import { pgTable, text, varchar, timestamp, uuid, boolean, check, index, unique } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, timestamp, uuid, boolean, check, index, unique, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations, sql } from 'drizzle-orm';
 import { businesses } from './businesses';
 import { invoices } from './invoices';
@@ -27,7 +27,10 @@ export const customers = pgTable('customers', {
   index('customers_name_trgm_idx').using('gin', table.name.op('gin_trgm_ops')),
   index('customers_gstin_trgm_idx').using('gin', table.gstin.op('gin_trgm_ops')),
   // DB-002: lets other tables reference (business_id, id) so a link can never cross tenants.
-  unique('customers_biz_id_uq').on(table.business_id, table.id)
+  unique('customers_biz_id_uq').on(table.business_id, table.id),
+  // CUST-GSTIN-UNIQUE: one business can never hold two customers with the same GSTIN.
+  // Partial, so any number of customers without a GSTIN stay allowed. GSTINs are stored upper-cased.
+  uniqueIndex('customers_biz_gstin_uq').on(table.business_id, table.gstin).where(sql`${table.gstin} IS NOT NULL`)
 ]);
 
 export const customersRelations = relations(customers, ({ one, many }) => ({
