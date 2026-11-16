@@ -3,6 +3,7 @@ export type ActionAccess =
   | 'any-member' // any role of the business; no `roles` option
   | 'platform-admin' // { requirePlatformAdmin: true }; independent of business roles
   | 'owner-or-platform-admin' // in-handler check using evaluateRoleAccess + isPlatformAdmin (no `roles` option)
+  | 'signed-in' // any signed-in account, even one WITHOUT a business yet; no `roles` option (handler enforces its own rules)
   | 'public'; // createAction (unauthenticated)
 
 /** Keyed by the action's scope name (3rd argument of createAuthenticatedAction / createAction). */
@@ -24,6 +25,13 @@ export const ACTION_ACCESS = {
   // Billing: owner only
   'submit-payment-claim': 'owner',
   'get-business-subscriptions': 'owner-or-platform-admin',
+  // Team members (feature A): the owner manages the team; anyone signed in can accept an invite sent to them
+  'get-team': 'owner',
+  'invite-team-member': 'owner',
+  'resend-team-invite': 'owner',
+  'revoke-team-invite': 'owner',
+  'remove-team-member': 'owner',
+  'accept-team-invite': 'signed-in',
 
   // Platform administration (AUTH-001)
   'admin-update-business-identity': 'platform-admin',

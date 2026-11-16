@@ -13,6 +13,7 @@ import {
   type AuthActionState,
 } from '@/lib/validations/auth';
 import { logError } from '@/lib/actions/_shared/logger';
+import { takePendingInvitePath } from '@/lib/team/pending-invite-cookie';
 
 export async function loginAction(
   _prevState: AuthActionState | null,
@@ -65,6 +66,7 @@ export async function loginAction(
     };
   }
 
-  // 4. Redirect on success outside the try/catch
-  redirect('/dashboard');
+  // 4. Redirect on success outside the try/catch. Feature A: someone who started from a team invite link
+  //    goes back to that invite instead of the dashboard.
+  redirect((await takePendingInvitePath()) ?? '/dashboard');
 }

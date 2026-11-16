@@ -15,4 +15,5 @@ export * from './invoice_number_counters';
 export * from './subscription_requests';
 export * from './platform_settings';
 export * from './platform_settings_history';
+export * from './business_invitations';
 export * from './_display_prefs';

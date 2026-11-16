@@ -239,6 +239,13 @@
       "when": 1794778080847,
       "tag": "0033_history_truncate_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794831670220,
+      "tag": "0034_team_invitations",
+      "breakpoints": true
     }
   ]
 }
