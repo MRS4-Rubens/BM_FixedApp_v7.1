@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { resendTeamInvite } from '@/lib/actions/team/resend-team-invite';
 import { revokeTeamInvite } from '@/lib/actions/team/revoke-team-invite';
+import { roleLabel } from '@/components/app/current-user-role';
 import type { TeamInvite, InviteLinkResult } from './types';
 
 export interface PendingInvitesProps {
@@ -83,8 +84,17 @@ export function PendingInvites({
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-bold font-mono text-foreground">{invite.email}</span>
+                      <span
+                        className={
+                          invite.role === 'staff'
+                            ? 'inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400'
+                            : 'inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                        }
+                      >
+                        {roleLabel(invite.role)}
+                      </span>
                       {invite.isExpired ? (
                         <span className="inline-flex items-center rounded-full bg-rose-500/10 border border-rose-300 dark:border-rose-900 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-400">
                           Expired

@@ -1,6 +1,8 @@
 import { getInvoice } from '@/lib/actions/invoices/get-invoice';
 import { InvoiceForm, type InvoiceFormInitialData } from '@/components/app/invoices/invoice-form';
 import { InvoiceDetail } from '@/components/app/invoices/invoice-detail';
+import { DraftReadOnlyNotice } from '@/components/app/invoices/draft-read-only-notice';
+import { canEditBusinessData } from '@/lib/auth/rbac';
 import { db } from '@/lib/db/client';
 import { customers, taxRates, financialYears } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -42,6 +44,16 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   if (!business) redirect('/settings');
 
   if (invoice?.lifecycle_status === 'draft') {
+    if (!canEditBusinessData(appUser.role)) {
+      return (
+        <DraftReadOnlyNotice
+          invoiceDate={invoice.invoice_date}
+          customerName={invoice.customer?.name ?? invoice.billing_name_snapshot}
+          grandTotalPaise={invoice.grand_total_paise}
+        />
+      );
+    }
+
     let initialCustomer: CustomerOption | null = null;
     if (invoice.customer_id) {
       const [cRow] = await db

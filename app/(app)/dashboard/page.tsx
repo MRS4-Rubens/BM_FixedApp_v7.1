@@ -26,6 +26,7 @@ import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { stateTaxLabel } from '@/lib/gst/indian-states'
 import { getCurrentFinancialYearRange } from '@/lib/reports/period'
 import { formatPaiseAsInr } from '@/lib/money'
+import { canEditBusinessData } from '@/lib/auth/rbac'
 import { DashboardChart } from '@/components/app/dashboard-chart-lazy'
 import { cn } from '@/lib/utils'
 
@@ -37,6 +38,8 @@ export default async function DashboardPage() {
   if (!user || !user.business_id) {
     redirect('/settings')
   }
+
+  const canEdit = canEditBusinessData(user.role)
 
   const end = new Date()
   const start = new Date()
@@ -113,18 +116,20 @@ export default async function DashboardPage() {
             />
           </form>
 
-          <div className="flex gap-2">
-            <Link href="/customers/new" className="shrink-0">
-              <Button variant="outline" className="h-8.5 px-3 rounded-lg font-bold text-sm cursor-pointer transition-transform hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0">
-                <Plus className="size-3.5 shrink-0" strokeWidth={2} /> <span className="whitespace-nowrap">Add Customer</span>
-              </Button>
-            </Link>
-            <Link href="/invoices/new" className="shrink-0">
-              <Button className="h-8.5 px-3 rounded-lg font-bold text-sm bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-md hover:shadow-lg cursor-pointer transition-all hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0">
-                <Plus className="size-3.5 shrink-0" strokeWidth={2} /> <span className="whitespace-nowrap">New Invoice</span>
-              </Button>
-            </Link>
-          </div>
+          {canEdit && (
+            <div className="flex gap-2">
+              <Link href="/customers/new" className="shrink-0">
+                <Button variant="outline" className="h-8.5 px-3 rounded-lg font-bold text-sm cursor-pointer transition-transform hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0">
+                  <Plus className="size-3.5 shrink-0" strokeWidth={2} /> <span className="whitespace-nowrap">Add Customer</span>
+                </Button>
+              </Link>
+              <Link href="/invoices/new" className="shrink-0">
+                <Button className="h-8.5 px-3 rounded-lg font-bold text-sm bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-md hover:shadow-lg cursor-pointer transition-all hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0">
+                  <Plus className="size-3.5 shrink-0" strokeWidth={2} /> <span className="whitespace-nowrap">New Invoice</span>
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
 
@@ -319,7 +324,8 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+          {/* The read-only accountant only gets the Reports shortcut, so it spans the full width. */}
+          <div className={cn('mt-2.5 grid gap-2.5', canEdit ? 'grid-cols-2' : 'grid-cols-1')}>
             {[
               {
                 icon: FilePlus,
@@ -349,7 +355,7 @@ export default async function DashboardPage() {
                 href: '/reports',
                 color: 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-md shadow-blue-500/25'
               }
-            ].map((act) => {
+            ].filter((act) => canEdit || act.href === '/reports').map((act) => {
               const Icon = act.icon
               return (
                 <Link

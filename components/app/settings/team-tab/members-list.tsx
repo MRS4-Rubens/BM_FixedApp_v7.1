@@ -4,17 +4,31 @@ import { useState, useTransition } from 'react';
 import { UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { INVITABLE_ROLES, isOneOf } from '@/lib/db/domain-values';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { removeTeamMember } from '@/lib/actions/team/remove-team-member';
+import { changeTeamMemberRole } from '@/lib/actions/team/change-team-member-role';
+import { roleLabel } from '@/components/app/current-user-role';
 import type { TeamMember } from './types';
 
 export interface MembersListProps {
   members: TeamMember[];
+  canInviteAccountant?: boolean;
   onMemberRemoved: () => void;
+  onRoleChanged?: () => void;
 }
 
-export function MembersList({ members, onMemberRemoved }: MembersListProps) {
+export function MembersList({
+  members,
+  canInviteAccountant = false,
+  onMemberRemoved,
+  onRoleChanged,
+}: MembersListProps) {
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
+  const [pendingRoleChange, setPendingRoleChange] = useState<{
+    member: TeamMember;
+    newRole: 'staff' | 'accountant';
+  } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +44,47 @@ export function MembersList({ members, onMemberRemoved }: MembersListProps) {
         setError(result.error.message);
       }
     });
+  };
+
+  const handleConfirmRoleChange = async () => {
+    if (!pendingRoleChange) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await changeTeamMemberRole({
+        user_id: pendingRoleChange.member.id,
+        role: pendingRoleChange.newRole,
+      });
+      if (result.success) {
+        setPendingRoleChange(null);
+        onRoleChanged?.();
+      } else {
+        setError(result.error.message);
+        setPendingRoleChange(null);
+      }
+    });
+  };
+
+  const renderRoleBadge = (role: unknown) => {
+    const label = roleLabel(role);
+    if (role === 'owner') {
+      return (
+        <span className="inline-flex items-center rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400">
+          {label}
+        </span>
+      );
+    }
+    if (role === 'staff') {
+      return (
+        <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+          {label}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+        {label}
+      </span>
+    );
   };
 
   return (
@@ -62,7 +117,7 @@ export function MembersList({ members, onMemberRemoved }: MembersListProps) {
           <tbody className="divide-y divide-border/60">
             {members.map((member) => {
               const displayName = member.name || member.email || 'Team member';
-              const isStaff = member.role === 'staff';
+              const canManage = member.role !== 'owner' && !member.isYou;
               const joinedText = formatIstDate(member.createdAt, {
                 day: 'numeric',
                 month: 'short',
@@ -83,19 +138,35 @@ export function MembersList({ members, onMemberRemoved }: MembersListProps) {
                   </td>
                   <td className="py-3 pr-3 font-mono text-muted-foreground">{member.email || '—'}</td>
                   <td className="py-3 pr-3">
-                    <span
-                      className={
-                        member.role === 'owner'
-                          ? 'inline-flex items-center rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400'
-                          : 'inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400'
-                      }
-                    >
-                      {member.role === 'owner' ? 'Owner' : 'Team member'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {renderRoleBadge(member.role)}
+                      {canManage && (
+                        <select
+                          aria-label={`Role for ${displayName}`}
+                          value={member.role}
+                          disabled={isPending}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (isOneOf(INVITABLE_ROLES, val) && val !== member.role) {
+                              setPendingRoleChange({ member, newRole: val });
+                            }
+                          }}
+                          className="h-6 rounded border border-border bg-background px-1.5 text-[11px] font-semibold text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          <option value="staff">Team member</option>
+                          <option
+                            value="accountant"
+                            disabled={!canInviteAccountant && member.role !== 'accountant'}
+                          >
+                            Accountant (read-only)
+                          </option>
+                        </select>
+                      )}
+                    </div>
                   </td>
                   <td className="py-3 pr-3 text-muted-foreground">{joinedText}</td>
                   <td className="py-3 text-right">
-                    {isStaff && (
+                    {canManage && (
                       <Button
                         type="button"
                         variant="ghost"
@@ -120,7 +191,7 @@ export function MembersList({ members, onMemberRemoved }: MembersListProps) {
       <div className="sm:hidden space-y-2.5">
         {members.map((member) => {
           const displayName = member.name || member.email || 'Team member';
-          const isStaff = member.role === 'staff';
+          const canManage = member.role !== 'owner' && !member.isYou;
           const joinedText = formatIstDate(member.createdAt, {
             day: 'numeric',
             month: 'short',
@@ -142,27 +213,43 @@ export function MembersList({ members, onMemberRemoved }: MembersListProps) {
                   <p className="text-[11px] font-mono text-muted-foreground mt-0.5">{member.email || '—'}</p>
                 </div>
 
-                <span
-                  className={
-                    member.role === 'owner'
-                      ? 'inline-flex items-center rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400'
-                      : 'inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400'
-                  }
-                >
-                  {member.role === 'owner' ? 'Owner' : 'Team member'}
-                </span>
+                <div className="flex flex-col items-end gap-1.5">
+                  {renderRoleBadge(member.role)}
+                  {canManage && (
+                    <select
+                      aria-label={`Role for ${displayName}`}
+                      value={member.role}
+                      disabled={isPending}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (isOneOf(INVITABLE_ROLES, val) && val !== member.role) {
+                          setPendingRoleChange({ member, newRole: val });
+                        }
+                      }}
+                      className="h-6 rounded border border-border bg-background px-1.5 text-[11px] font-semibold text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="staff">Team member</option>
+                      <option
+                        value="accountant"
+                        disabled={!canInviteAccountant && member.role !== 'accountant'}
+                      >
+                        Accountant (read-only)
+                      </option>
+                    </select>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px] text-muted-foreground">
                 <span>Joined {joinedText}</span>
-                {isStaff && (
+                {canManage && (
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     disabled={isPending}
                     onClick={() => setMemberToRemove(member)}
-                        aria-label={`Remove ${member.name || member.email || "member"}`}
+                    aria-label={`Remove ${member.name || member.email || "member"}`}
                     className="h-6 px-2 text-xs font-semibold text-destructive hover:bg-destructive/10"
                   >
                     Remove
@@ -185,6 +272,18 @@ export function MembersList({ members, onMemberRemoved }: MembersListProps) {
         description="They lose access to this business immediately. Their account and everything they created stay."
         confirmLabel="Remove member"
         onConfirm={handleConfirmRemove}
+      />
+
+      {/* Role Change Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(pendingRoleChange)}
+        onOpenChange={(open) => {
+          if (!open && !isPending) setPendingRoleChange(null);
+        }}
+        title="Change role?"
+        description={`${pendingRoleChange?.member.name || pendingRoleChange?.member.email || 'This member'} will become ${pendingRoleChange ? roleLabel(pendingRoleChange.newRole) : ''}. This takes effect on their next page load.`}
+        confirmLabel="Change role"
+        onConfirm={handleConfirmRoleChange}
       />
     </div>
   );

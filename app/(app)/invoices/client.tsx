@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/app/empty-state';
 import { PaginationControls } from '@/components/app/pagination-controls';
 import { DeleteDraftButton } from '@/components/app/invoices/delete-draft-button';
+import { useCanEdit } from '@/components/app/current-user-role';
 import { openSignedPdf } from '@/lib/pdf/open-signed-pdf';
 import { getArchivedPdfUrl } from '@/lib/actions/invoices/get-archived-pdf-url';
 import { getArchivedCreditNotePdfUrl } from '@/lib/actions/credit-notes/get-archived-credit-note-pdf-url';
@@ -96,6 +97,7 @@ export function InvoicesClient({
   currentParams,
 }: InvoicesClientProps) {
   const router = useRouter();
+  const canEdit = useCanEdit();
   const [isPending, startTransition] = useTransition();
   const [listError, setListError] = useState<string | null>(null);
 
@@ -325,14 +327,16 @@ export function InvoicesClient({
           </button>
         </div>
 
-        <Link href="/invoices/new" className="w-full sm:w-auto">
-          <Button
-            className="w-full sm:w-auto shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[13px] sm:text-sm font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px flex items-center justify-center gap-1.5"
-          >
-            <Plus className="size-4" />
-            New Invoice
-          </Button>
-        </Link>
+        {canEdit && (
+          <Link href="/invoices/new" className="w-full sm:w-auto">
+            <Button
+              className="w-full sm:w-auto shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[13px] sm:text-sm font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px flex items-center justify-center gap-1.5"
+            >
+              <Plus className="size-4" />
+              New Invoice
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Main Tab Content */}
@@ -347,8 +351,12 @@ export function InvoicesClient({
               <EmptyState
                 icon={<FileText className="size-6" />}
                 title="No invoices found"
-                description={`No invoices registered for ${MONTHS[currentParams.month - 1]} ${currentParams.year}. Try a different period or create one.`}
-                action={{ label: 'Create Invoice', href: '/invoices/new' }}
+                description={
+                  canEdit
+                    ? `No invoices registered for ${MONTHS[currentParams.month - 1]} ${currentParams.year}. Try a different period or create one.`
+                    : `No invoices registered for ${MONTHS[currentParams.month - 1]} ${currentParams.year}. Try a different period.`
+                }
+                action={canEdit ? { label: 'Create Invoice', href: '/invoices/new' } : undefined}
               />
             ) : (
               <>
@@ -434,16 +442,26 @@ export function InvoicesClient({
                               <td className="px-3.5 py-1">
                                 <div className="flex items-center justify-center gap-1">
                                   {inv.lifecycle_status === 'draft' ? (
-                                    <>
+                                    canEdit ? (
+                                      <>
+                                        <Link
+                                          href={`/invoices/${inv.id}`}
+                                          title="Edit Draft"
+                                          className="flex size-7.5 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-sm"
+                                        >
+                                          <Pencil className="size-3.5" />
+                                        </Link>
+                                        <DeleteDraftButton invoiceId={inv.id} variant="icon" onError={setListError} />
+                                      </>
+                                    ) : (
                                       <Link
                                         href={`/invoices/${inv.id}`}
-                                        title="Edit Draft"
+                                        title="View Draft"
                                         className="flex size-7.5 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-all hover:bg-accent hover:text-foreground shadow-sm"
                                       >
-                                        <Pencil className="size-3.5" />
+                                        <Eye className="size-3.5" />
                                       </Link>
-                                      <DeleteDraftButton invoiceId={inv.id} variant="icon" onError={setListError} />
-                                    </>
+                                    )
                                   ) : (
                                     <>
                                       <Link
@@ -560,16 +578,26 @@ export function InvoicesClient({
                         {/* Bottom Action Row */}
                         <div className="pt-2 border-t border-border/50 flex items-center justify-end gap-1.5">
                           {inv.lifecycle_status === 'draft' ? (
-                            <>
+                            canEdit ? (
+                              <>
+                                <Link
+                                  href={`/invoices/${inv.id}`}
+                                  className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-border bg-background text-foreground text-xs font-bold shadow-2xs hover:bg-accent transition-colors"
+                                >
+                                  <Pencil className="size-3.5 text-muted-foreground" />
+                                  <span>Edit Draft</span>
+                                </Link>
+                                <DeleteDraftButton invoiceId={inv.id} variant="icon" onError={setListError} />
+                              </>
+                            ) : (
                               <Link
                                 href={`/invoices/${inv.id}`}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg border border-border bg-background text-foreground text-xs font-bold shadow-2xs hover:bg-accent transition-colors"
+                                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg border border-border bg-background text-foreground text-xs font-bold shadow-2xs hover:bg-accent transition-colors"
                               >
-                                <Pencil className="size-3.5 text-muted-foreground" />
-                                <span>Edit Draft</span>
+                                <Eye className="size-3.5 text-muted-foreground" />
+                                <span>View</span>
                               </Link>
-                              <DeleteDraftButton invoiceId={inv.id} variant="icon" onError={setListError} />
-                            </>
+                            )
                           ) : (
                             <>
                               <Link

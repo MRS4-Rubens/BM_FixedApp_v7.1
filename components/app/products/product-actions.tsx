@@ -5,10 +5,16 @@ import { Button } from '@/components/ui/button';
 import type { products } from '@/lib/db/schema';
 import { deactivateProduct } from '@/lib/actions/products/deactivate-product';
 import { reactivateProduct } from '@/lib/actions/products/reactivate-product';
+import { useCanEdit } from '@/components/app/current-user-role';
 
 export function ProductActions({ product }: { product: typeof products.$inferSelect }) {
+  const canEdit = useCanEdit();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (!canEdit) {
+    return null;
+  }
 
   const handleToggleActive = async () => {
     setIsPending(true);

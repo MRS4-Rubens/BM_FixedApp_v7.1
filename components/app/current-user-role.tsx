@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, type ReactNode } from 'react';
-import { type AppRole, isOwnerRole } from '@/lib/auth/rbac';
+import { type AppRole, canEditBusinessData, isOwnerRole } from '@/lib/auth/rbac';
 
 const CurrentUserRoleContext = createContext<AppRole>('owner');
 
@@ -25,6 +25,11 @@ export function useCurrentUserRole(): AppRole {
 export function useIsOwner(): boolean {
   const role = useCurrentUserRole();
   return isOwnerRole(role);
+}
+
+export function useCanEdit(): boolean {
+  const role = useCurrentUserRole();
+  return canEditBusinessData(role);
 }
 
 /**

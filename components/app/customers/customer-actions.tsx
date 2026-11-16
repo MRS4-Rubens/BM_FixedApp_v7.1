@@ -7,12 +7,18 @@ import { deactivateCustomer } from '@/lib/actions/customers/deactivate-customer'
 import { reactivateCustomer } from '@/lib/actions/customers/reactivate-customer';
 import { useRouter } from 'next/navigation';
 import { Power, PowerOff } from 'lucide-react';
+import { useCanEdit } from '@/components/app/current-user-role';
 
 export function CustomerActions({ customerId, isActive }: { customerId: string; isActive: boolean }) {
+  const canEdit = useCanEdit();
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  if (!canEdit) {
+    return null;
+  }
 
   const confirmMessage = isActive 
     ? 'Are you sure you want to deactivate this customer? They will not appear in active lists but their history will be preserved.'

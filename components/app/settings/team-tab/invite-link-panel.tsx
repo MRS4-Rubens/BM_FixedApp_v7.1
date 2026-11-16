@@ -9,10 +9,11 @@ import type { InviteLinkResult } from './types';
 export interface InviteLinkPanelProps {
   result: InviteLinkResult;
   businessName: string;
+  role?: 'staff' | 'accountant';
   onDone: () => void;
 }
 
-export function InviteLinkPanel({ result, businessName, onDone }: InviteLinkPanelProps) {
+export function InviteLinkPanel({ result, businessName, role = 'staff', onDone }: InviteLinkPanelProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -31,9 +32,12 @@ export function InviteLinkPanel({ result, businessName, onDone }: InviteLinkPane
     year: 'numeric',
   });
 
-  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(
-    `Join ${businessName} on Invoice BizFolio: ${result.inviteUrl}`
-  )}`;
+  const shareMessage =
+    role === 'accountant'
+      ? `Join ${businessName} on Invoice BizFolio as our accountant (read-only access): ${result.inviteUrl}`
+      : `Join ${businessName} on Invoice BizFolio: ${result.inviteUrl}`;
+
+  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(shareMessage)}`;
 
   return (
     <div

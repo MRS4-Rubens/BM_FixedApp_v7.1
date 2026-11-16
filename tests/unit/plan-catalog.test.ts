@@ -83,6 +83,13 @@ describe('Plan Catalog (CLEAN-002)', () => {
     expect(proTeamFeature).toBeDefined();
     expect(proTeamFeature?.status).toBe('included');
 
+    // Professional includes read-only access for your CA (shipped in B2)
+    const proCaFeature = PLAN_CATALOG.professional.features.find(
+      (f) => f.label === 'Read-only access for your CA'
+    );
+    expect(proCaFeature).toBeDefined();
+    expect(proCaFeature?.status).toBe('included');
+
     // Professional remains coming soon and not purchasable
     expect(PLAN_CATALOG.professional.purchasable).toBe(false);
   });

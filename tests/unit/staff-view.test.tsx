@@ -25,6 +25,7 @@ vi.mock('@/lib/actions/team/invite-team-member', () => ({ inviteTeamMember: vi.f
 vi.mock('@/lib/actions/team/resend-team-invite', () => ({ resendTeamInvite: vi.fn() }));
 vi.mock('@/lib/actions/team/revoke-team-invite', () => ({ revokeTeamInvite: vi.fn() }));
 vi.mock('@/lib/actions/team/remove-team-member', () => ({ removeTeamMember: vi.fn() }));
+vi.mock('@/lib/actions/team/change-team-member-role', () => ({ changeTeamMemberRole: vi.fn() }));
 
 vi.mock('@/lib/actions/business/save-business-profile', () => ({ saveBusinessProfile: vi.fn() }));
 vi.mock('@/lib/actions/business/upload-logo', () => ({ uploadBusinessLogo: vi.fn() }));

@@ -4,15 +4,23 @@ import { useState, useMemo } from 'react';
 import type { UserItem } from './types';
 import { ROWS_PER_PAGE } from './pagination';
 
+export type UserRoleFilter = 'all' | 'owner' | 'staff' | 'accountant';
+
 export function useUserDirectory(users: UserItem[]) {
   const [userSearch, setUserSearch] = useState('');
-  const [userRoleFilter, setUserRoleFilter] = useState<'all' | 'owner' | 'staff'>('all');
+  const [userRoleFilter, setUserRoleFilter] = useState<UserRoleFilter>('all');
   const [userPage, setUserPage] = useState(1);
 
-  const roleFilterOptions = useMemo(
-    () => (users.some((u) => u.role === 'staff') ? (['all', 'owner', 'staff'] as const) : (['all', 'owner'] as const)),
-    [users],
-  );
+  const roleFilterOptions = useMemo(() => {
+    const options: UserRoleFilter[] = ['all', 'owner'];
+    if (users.some((u) => u.role === 'staff')) {
+      options.push('staff');
+    }
+    if (users.some((u) => u.role === 'accountant')) {
+      options.push('accountant');
+    }
+    return options;
+  }, [users]);
   const effectiveRoleFilter = roleFilterOptions.some((option) => option === userRoleFilter) ? userRoleFilter : 'all';
 
   const changeUserSearch = (value: string) => {
@@ -20,7 +28,7 @@ export function useUserDirectory(users: UserItem[]) {
     setUserPage(1);
   };
 
-  const changeUserRoleFilter = (role: 'all' | 'owner' | 'staff') => {
+  const changeUserRoleFilter = (role: UserRoleFilter) => {
     setUserRoleFilter(role);
     setUserPage(1);
   };

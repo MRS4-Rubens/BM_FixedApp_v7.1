@@ -5,18 +5,19 @@ import { cn } from '@/lib/utils';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { getVisiblePageNumbers, ROWS_PER_PAGE } from './pagination';
 import type { UserItem } from './types';
+import type { UserRoleFilter } from './use-user-directory';
 
 interface UsersTabProps {
   totalUsersCount: number;
   filteredUsers: UserItem[];
   paginatedUsers: UserItem[];
   userSearch: string;
-  roleFilterOptions: readonly ('all' | 'owner' | 'staff')[];
-  effectiveRoleFilter: 'all' | 'owner' | 'staff';
+  roleFilterOptions: readonly UserRoleFilter[];
+  effectiveRoleFilter: UserRoleFilter;
   totalUserPages: number;
   safeUserPage: number;
   onChangeUserSearch: (value: string) => void;
-  onChangeUserRoleFilter: (role: 'all' | 'owner' | 'staff') => void;
+  onChangeUserRoleFilter: (role: UserRoleFilter) => void;
   onSetUserPage: (page: number | ((p: number) => number)) => void;
   onEditIdentity: (businessId: string) => void;
 }

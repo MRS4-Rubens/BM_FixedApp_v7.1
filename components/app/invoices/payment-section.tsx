@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip';
-import { useIsOwner } from '@/components/app/current-user-role';
+import { useIsOwner, useCanEdit } from '@/components/app/current-user-role';
 
 export interface PaymentItem {
   id: string;
@@ -79,6 +79,7 @@ const PAYMENT_METHODS = [
 
 export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refundMinDate = null }: PaymentSectionProps) {
   const isOwner = useIsOwner();
+  const canEdit = useCanEdit();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -227,7 +228,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
             </div>
           </div>
         </div>
-      ) : (
+      ) : canEdit ? (
         /* Record Payment / Record Refund Form Card */
         <div className={cn("rounded-xl border bg-card px-3 py-2 shadow-xs", isRefundMode ? "border-amber-400/60" : "border-border")}>
           <div className="flex items-center justify-between pb-1 mb-1.5 border-b border-border">
@@ -421,7 +422,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
             </div>
           </form>
         </div>
-      )}
+      ) : null}
 
       {/* Payment & Audit Ledger */}
       <div className="rounded-xl border border-border bg-card px-3 py-2 shadow-xs">
@@ -453,7 +454,9 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
               <Wallet2 className="size-[18px]" />
             </div>
             <p className="text-[13px] font-semibold text-muted-foreground">No payments recorded yet</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Use the form above to record incoming settlements.</p>
+            {canEdit && (
+              <p className="text-[11px] text-muted-foreground mt-0.5">Use the form above to record incoming settlements.</p>
+            )}
           </div>
         ) : (
           <TooltipProvider>
