@@ -66,6 +66,9 @@ export class TeamSettingsPage {
     await expect(dialog).toBeVisible({ timeout: 10_000 });
     await dialog.getByRole('button', { name: 'Change role', exact: true }).click();
     await expect(dialog).toBeHidden({ timeout: 15_000 });
+    // The dialog can close before the server action commits. The select is controlled by the server's member list,
+    // so it only shows the new role once the change is saved and the team list has been re-fetched.
+    await expect(select).toHaveValue(newRole, { timeout: 20_000 });
   }
 
   async removeMember(emailOrName: string): Promise<void> {
