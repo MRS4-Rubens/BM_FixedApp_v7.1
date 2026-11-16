@@ -51,6 +51,7 @@ describe('CLEAN-002: Flag Enforcement & Plan Hygiene', () => {
       canExportExcelReports: 'canExportStatutoryReport',
       canCustomizeInvoiceFormat: 'canCustomizeInvoiceNumberFormat',
       canUseAccountantRole: 'canUseAccountantRole', // lib/team/role-rules.ts (feature B)
+      canImportData: 'canImportData', // lib/actions/import/* (feature D)
     };
 
     // Check that every key is in the map

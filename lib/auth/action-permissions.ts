@@ -80,6 +80,9 @@ export const ACTION_ACCESS = {
   'reactivate-product': 'editor',
   'list-products': 'any-member',
   'search-product-options': 'any-member',
+  // Feature D: bulk import (Professional). Checking is part of importing, so both are editor-only.
+  'check-bulk-import': 'editor',
+  'run-bulk-import': 'editor',
   'send-feedback': 'any-member',
   // Reports (read): any member
   'get-dashboard-stats': 'any-member',

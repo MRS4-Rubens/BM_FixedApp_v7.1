@@ -38,7 +38,7 @@ describe('accountant role (feature B)', () => {
     expect(evaluateRoleAccess('accountant', EDITOR_ROLES)).toEqual({ allowed: false, reason: 'role_not_permitted' });
   });
 
-  it('the 16 data-changing day-to-day actions are editor-only', () => {
+  it('the 18 data-changing day-to-day actions are editor-only', () => {
     const editors = scopesWith('editor').sort();
     expect(editors).toEqual(
       [
@@ -58,6 +58,9 @@ describe('accountant role (feature B)', () => {
         'send-payment-reminder',
         'update-customer',
         'update-product',
+        // Feature D: bulk import (check is part of importing)
+        'check-bulk-import',
+        'run-bulk-import',
       ].sort(),
     );
   });

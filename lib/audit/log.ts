@@ -22,6 +22,9 @@ export const AUDIT_EVENTS = {
     'business_identity_changed_by_admin',
     'data_export',
     'account_closure_requested',
+    // Feature D: one entry per bulk import (counts only, never row data).
+    'customers_imported',
+    'products_imported',
   ],
   subscription_request: ['approve', 'reject'],
   // Feature A (team members): entity_id is the invitation id for invite_*, the member's users.id for member_*.
