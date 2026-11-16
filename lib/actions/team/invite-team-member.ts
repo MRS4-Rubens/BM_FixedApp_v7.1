@@ -16,6 +16,8 @@ import { inviteTeamMemberSchema } from '@/lib/validations/team';
 import { generateInviteToken, hashInviteToken } from '@/lib/team/invite-token';
 import { computeInviteExpiry, isInviteExpired } from '@/lib/team/invite-format';
 import { evaluateNewInvite } from '@/lib/team/seats';
+import { evaluateRoleGrant } from '@/lib/team/role-rules';
+import { getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 import {
   assertBusinessNotSuspendedForTeam,
   businessDisplayName,
@@ -67,6 +69,10 @@ export const inviteTeamMember = createAuthenticatedAction(
           const now = new Date();
           const business = await lockBusinessForTeam(tx, businessId);
           assertBusinessNotSuspendedForTeam(business);
+          const grant = evaluateRoleGrant(input.role, getPlanEntitlements(business));
+          if (!grant.allowed) {
+            throw new ActionError(grant.message, { code: grant.code });
+          }
 
           const [existingMember] = await tx
             .select({ id: users.id })
@@ -163,6 +169,7 @@ export const inviteTeamMember = createAuthenticatedAction(
       inviteUrl,
       expiresAt: result.expiresAt,
       invitationId: result.invitationId,
+      role: input.role,
     });
 
     revalidatePath('/settings');

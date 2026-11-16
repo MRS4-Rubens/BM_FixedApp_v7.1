@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { CustomerForm } from '@/components/app/customers/customer-form'
 import { getCurrentAppUser } from '@/lib/auth/session'
+import { redirectReadOnlyRole } from '@/lib/auth/page-guards'
 import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { redirect, notFound } from 'next/navigation'
 import { db } from '@/lib/db/client'
@@ -19,6 +20,7 @@ export default async function EditCustomerPage({ params }: { params: Promise<{ i
   if (!appUser.business_id) {
     redirect('/settings')
   }
+  redirectReadOnlyRole(appUser.role, '/customers')
 
   const { id } = await params
 

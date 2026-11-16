@@ -28,8 +28,10 @@ export function useIsOwner(): boolean {
 }
 
 /**
- * Returns human-readable role label: "Owner" for 'owner' and "Team member" for 'staff'.
+ * Human-readable role label: "Owner", "Team member" (staff) or "Accountant (read-only)".
  */
 export function roleLabel(role: unknown): string {
-  return role === 'staff' ? 'Team member' : 'Owner';
+  if (role === 'staff') return 'Team member';
+  if (role === 'accountant') return 'Accountant (read-only)';
+  return 'Owner';
 }

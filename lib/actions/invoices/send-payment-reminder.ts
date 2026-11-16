@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { toBusyActionError, withTransactionRetry } from '@/lib/db/transaction';
@@ -115,6 +116,7 @@ export const sendPaymentReminder = createAuthenticatedAction(
   },
   'send-payment-reminder',
   {
+    roles: EDITOR_ROLES,
     rateLimit: { limiter: emailBurstLimiter, keyPrefix: 'payment-reminder', outage: 'fail-closed' },
     requireActiveSubscription: true,
   },

@@ -4,7 +4,7 @@ export interface HarnessUser {
   readonly id: string;
   readonly email: string;
   readonly businessId: string | null;
-  readonly role?: 'owner' | 'staff';
+  readonly role?: 'owner' | 'staff' | 'accountant';
 }
 
 export const harnessState: { db: unknown } = {
@@ -59,7 +59,7 @@ export function sessionModule(): {
   getCurrentAppUser: () => Promise<{
     id: string;
     business_id: string | null;
-    role: 'owner' | 'staff';
+    role: 'owner' | 'staff' | 'accountant';
     email: string;
   }>;
 } {

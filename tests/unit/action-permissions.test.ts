@@ -195,6 +195,22 @@ describe('Action Permissions AST Drift Guard (lib/auth/action-permissions.ts)', 
           break;
         }
 
+        case 'editor': {
+          expect(
+            action.factory,
+            `Editor action "${action.scope}" in ${action.filePath} must use createAuthenticatedAction`
+          ).toBe('createAuthenticatedAction');
+          expect(
+            action.hasRolesProperty,
+            `Editor action "${action.scope}" in ${action.filePath} must pass "roles: EDITOR_ROLES"`
+          ).toBe(true);
+          expect(
+            action.rolesText,
+            `Editor action "${action.scope}" in ${action.filePath} must specify roles as exactly EDITOR_ROLES`
+          ).toBe('EDITOR_ROLES');
+          break;
+        }
+
         case 'signed-in': {
           expect(
             action.factory,

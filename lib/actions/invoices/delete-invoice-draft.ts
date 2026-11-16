@@ -4,6 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { logError } from '@/lib/actions/_shared/logger';
 import { db } from '@/lib/db/client';
@@ -58,6 +59,7 @@ export const deleteInvoiceDraft = createAuthenticatedAction(
   },
   'delete-invoice-draft',
   {
+    roles: EDITOR_ROLES,
     rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'delete-invoice-draft', outage: 'fail-open' },
     requireActiveSubscription: true,
   },

@@ -1,6 +1,7 @@
 'use server'
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { CUSTOMER_MAPPINGS } from '@/lib/actions/_shared/pg-constraint-mappings';
@@ -54,4 +55,4 @@ export const updateCustomer = createAuthenticatedAction(updateCustomerSchema, as
   revalidatePath(`/customers/${id}/edit`);
 
   return { success: true };
-}, 'update-customer', { requireActiveSubscription: true });
+}, 'update-customer', { roles: EDITOR_ROLES, requireActiveSubscription: true });

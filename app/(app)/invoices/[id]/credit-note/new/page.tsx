@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation';
+import { getCurrentAppUser } from '@/lib/auth/session';
+import { redirectReadOnlyRole } from '@/lib/auth/page-guards';
 import { getCreditNoteFormData } from '@/lib/actions/credit-notes/get-credit-note-form-data';
 import { CreditNoteForm } from '@/components/app/credit-notes/credit-note-form';
 
@@ -11,6 +13,10 @@ export default async function NewCreditNotePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+
+  // Feature B: the read-only accountant cannot issue credit notes; send them back to the invoice.
+  const appUser = await getCurrentAppUser();
+  redirectReadOnlyRole(appUser.role, `/invoices/${id}`);
 
   const result = await getCreditNoteFormData({ invoiceId: id });
 

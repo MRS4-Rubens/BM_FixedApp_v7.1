@@ -28,6 +28,7 @@ vi.mock('@/lib/auth/session', () => ({
     business_id: state.businessId,
     email: 'user@test.dev',
     display_name: 'Test Actor',
+    role: 'owner',
   }),
 }));
 

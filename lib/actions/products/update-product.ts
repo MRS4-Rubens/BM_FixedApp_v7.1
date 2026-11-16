@@ -1,6 +1,7 @@
 'use server';
 
 import { createAuthenticatedAction } from '../_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { productSchema } from '@/lib/validations/product';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
@@ -46,5 +47,5 @@ export const updateProduct = createAuthenticatedAction(
     return updatedProduct[0];
   },
   'update-product',
-  { requireActiveSubscription: true }
+  { roles: EDITOR_ROLES, requireActiveSubscription: true }
 );

@@ -35,6 +35,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   const [invite] = await db
     .select({
       status: businessInvitations.status,
+      role: businessInvitations.role,
       email: businessInvitations.email,
       expiresAt: businessInvitations.expires_at,
       businessId: businessInvitations.business_id,
@@ -108,10 +109,18 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     return (
       <InviteShell>
         <InviteHeading businessName={businessName} />
-        <p className="text-sm text-muted-foreground">
-          You will join as a <strong className="text-foreground">team member</strong>. You can create invoices, record
-          payments and manage customers and products. Business settings and billing stay with the owner.
-        </p>
+        {invite.role === 'accountant' ? (
+          <p className="text-sm text-muted-foreground">
+            You will join as an <strong className="text-foreground">accountant with read-only access</strong>. You can
+            view invoices, credit notes, payments and reports, and download PDFs and GST / ITR exports. You cannot
+            change anything.
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            You will join as a <strong className="text-foreground">team member</strong>. You can create invoices, record
+            payments and manage customers and products. Business settings and billing stay with the owner.
+          </p>
+        )}
         <AcceptInviteButton token={token} businessName={businessName} />
       </InviteShell>
     );

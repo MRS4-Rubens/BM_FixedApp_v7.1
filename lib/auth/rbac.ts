@@ -1,9 +1,22 @@
 /** Application roles. MUST stay identical to `roleEnum` in lib/db/schema/enums.ts (enforced by tests/unit/rbac.test.ts). */
-export const APP_ROLES = ['owner', 'staff'] as const;
+export const APP_ROLES = ['owner', 'staff', 'accountant'] as const;
 export type AppRole = (typeof APP_ROLES)[number];
 
 /** Convention: owner-only actions pass exactly this constant as `roles` (the drift-guard test enforces it). */
 export const OWNER_ONLY = ['owner'] as const satisfies readonly AppRole[];
+
+/**
+ * Feature B: roles that may CHANGE business data (create, edit, finalize, delete, record, send).
+ * The read-only 'accountant' (CA) role is deliberately excluded. Convention: 'editor' actions pass exactly this
+ * constant as `roles` (the drift-guard test enforces it). Actions without `roles` are open to EVERY role,
+ * including the accountant, so they must only read.
+ */
+export const EDITOR_ROLES = ['owner', 'staff'] as const satisfies readonly AppRole[];
+
+/** True for roles that may change business data (owner, staff); false for the read-only accountant. */
+export function canEditBusinessData(role: unknown): boolean {
+  return evaluateRoleAccess(role, EDITOR_ROLES).allowed;
+}
 
 export const FORBIDDEN_ROLE_CODE = 'FORBIDDEN_ROLE';
 export const FORBIDDEN_ROLE_MESSAGE =

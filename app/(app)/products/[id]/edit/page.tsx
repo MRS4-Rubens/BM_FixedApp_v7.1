@@ -1,4 +1,5 @@
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { redirectReadOnlyRole } from '@/lib/auth/page-guards';
 import { redirect, notFound } from 'next/navigation';
 import { listTaxRates } from '@/lib/actions/products/list-tax-rates';
 import { db } from '@/lib/db/client';
@@ -19,6 +20,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   if (!appUser.business_id) {
     redirect('/settings');
   }
+  redirectReadOnlyRole(appUser.role, '/products');
 
   const [product, taxRatesResult] = await Promise.all([
     db.query.products.findFirst({

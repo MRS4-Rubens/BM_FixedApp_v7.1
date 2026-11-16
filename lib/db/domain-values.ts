@@ -54,7 +54,7 @@ export const INVITATION_STATUSES = ['pending', 'accepted', 'revoked'] as const;
 export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
 
 /** Roles an owner may invite someone into. Ownership is never granted by invite (no ownership transfer). */
-export const INVITABLE_ROLES = ['staff'] as const;
+export const INVITABLE_ROLES = ['staff', 'accountant'] as const;
 export type InvitableRole = (typeof INVITABLE_ROLES)[number];
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 

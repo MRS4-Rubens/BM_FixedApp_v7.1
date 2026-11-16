@@ -102,6 +102,8 @@ export const getTeam = createAuthenticatedAction(
       cannotInviteReason: canInvite.allowed ? null : canInvite.message,
       // Lets the UI offer "Upgrade plan" only when upgrading actually helps (not for a full Essentials team).
       cannotInviteCode: canInvite.allowed ? null : canInvite.code,
+      // Feature B: may the owner invite / assign the read-only accountant (CA) role on this plan?
+      canInviteAccountant: getPlanEntitlements(business).canUseAccountantRole,
     };
   },
   'get-team',

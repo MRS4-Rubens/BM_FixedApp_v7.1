@@ -24,3 +24,8 @@ export const removeTeamMemberSchema = z.object({
 export const acceptTeamInviteSchema = z.object({
   token: z.string().refine(isWellFormedInviteToken, 'This invite link is not valid.'),
 });
+
+export const changeTeamMemberRoleSchema = z.object({
+  user_id: z.string().uuid('Invalid team member.'),
+  role: z.enum(INVITABLE_ROLES),
+});

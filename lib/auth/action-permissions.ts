@@ -1,6 +1,7 @@
 export type ActionAccess =
   | 'owner' // createAuthenticatedAction(..., { roles: OWNER_ONLY })
-  | 'any-member' // any role of the business; no `roles` option
+  | 'editor' // owner or staff: changes business data; { roles: EDITOR_ROLES } (the read-only accountant is refused)
+  | 'any-member' // ANY role of the business, including the read-only accountant: must only READ; no `roles` option
   | 'platform-admin' // { requirePlatformAdmin: true }; independent of business roles
   | 'owner-or-platform-admin' // in-handler check using evaluateRoleAccess + isPlatformAdmin (no `roles` option)
   | 'signed-in' // any signed-in account, even one WITHOUT a business yet; no `roles` option (handler enforces its own rules)
@@ -31,6 +32,7 @@ export const ACTION_ACCESS = {
   'resend-team-invite': 'owner',
   'revoke-team-invite': 'owner',
   'remove-team-member': 'owner',
+  'change-team-member-role': 'owner',
   'accept-team-invite': 'signed-in',
 
   // Platform administration (AUTH-001)
@@ -47,34 +49,35 @@ export const ACTION_ACCESS = {
   // Public
   'list-tax-rates': 'public',
 
-  // Day-to-day operations: any member (owner or staff)
-  'save-invoice-draft': 'any-member',
-  'delete-invoice-draft': 'any-member',
-  'finalize-invoice': 'any-member',
+  // Day-to-day operations. Feature B: 'editor' = owner or staff (changes data); 'any-member' = every role,
+  // including the read-only accountant (CA), so it must only read.
+  'save-invoice-draft': 'editor',
+  'delete-invoice-draft': 'editor',
+  'finalize-invoice': 'editor',
   'get-invoice': 'any-member',
   'list-invoices': 'any-member',
   'get-next-sequence': 'any-member',
   'get-archived-pdf-url': 'any-member',
-  'email-invoice': 'any-member',
-  'send-payment-reminder': 'any-member',
-  'record-payment': 'any-member',
+  'email-invoice': 'editor',
+  'send-payment-reminder': 'editor',
+  'record-payment': 'editor',
   'list-payments': 'any-member',
-  'save-credit-note-draft': 'any-member',
-  'delete-credit-note-draft': 'any-member',
+  'save-credit-note-draft': 'editor',
+  'delete-credit-note-draft': 'editor',
   'get-credit-note': 'any-member',
   'list-credit-notes': 'any-member',
   'get-credit-note-form-data': 'any-member',
   'get-archived-credit-note-pdf-url': 'any-member',
-  'create-customer': 'any-member',
-  'update-customer': 'any-member',
-  'deactivate-customer': 'any-member',
-  'reactivate-customer': 'any-member',
+  'create-customer': 'editor',
+  'update-customer': 'editor',
+  'deactivate-customer': 'editor',
+  'reactivate-customer': 'editor',
   'list-customers': 'any-member',
   'search-customer-options': 'any-member',
-  'create-product': 'any-member',
-  'update-product': 'any-member',
-  'deactivate-product': 'any-member',
-  'reactivate-product': 'any-member',
+  'create-product': 'editor',
+  'update-product': 'editor',
+  'deactivate-product': 'editor',
+  'reactivate-product': 'editor',
   'list-products': 'any-member',
   'search-product-options': 'any-member',
   'send-feedback': 'any-member',

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { lockBusinessRow } from '@/lib/actions/_shared/business-lock';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { CUSTOMER_MAPPINGS } from '@/lib/actions/_shared/pg-constraint-mappings';
 import { db } from '@/lib/db/client';
@@ -73,5 +74,5 @@ export const createCustomer = createAuthenticatedAction(
     return { success: true };
   },
   'create-customer',
-  { requireActiveSubscription: true },
+  { roles: EDITOR_ROLES, requireActiveSubscription: true },
 );
