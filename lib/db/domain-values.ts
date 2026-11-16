@@ -48,6 +48,14 @@ export type RequestPaymentMethod = (typeof REQUEST_PAYMENT_METHODS)[number];
 
 /** subscription_requests.status */
 export const REQUEST_STATUSES = ['pending', 'approved', 'rejected'] as const;
+
+/** business_invitations.status. "Expired" is not stored: it is a pending invite whose expires_at has passed. */
+export const INVITATION_STATUSES = ['pending', 'accepted', 'revoked'] as const;
+export type InvitationStatus = (typeof INVITATION_STATUSES)[number];
+
+/** Roles an owner may invite someone into. Ownership is never granted by invite (no ownership transfer). */
+export const INVITABLE_ROLES = ['staff'] as const;
+export type InvitableRole = (typeof INVITABLE_ROLES)[number];
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 
 /** Type guard: narrows an unknown value to a member of a readonly string tuple. No casts. */

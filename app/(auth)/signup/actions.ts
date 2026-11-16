@@ -13,6 +13,7 @@ import {
   type AuthActionState,
 } from '@/lib/validations/auth';
 import { logError } from '@/lib/actions/_shared/logger';
+import { takePendingInvitePath } from '@/lib/team/pending-invite-cookie';
 
 export async function signupAction(
   _prevState: AuthActionState | null,
@@ -85,5 +86,6 @@ export async function signupAction(
     return { notice: 'Account created. Please check your e-mail to verify your address, then log in.' };
   }
 
-  redirect('/dashboard');
+  // Feature A: someone who started from a team invite link goes back to that invite instead of the dashboard.
+  redirect((await takePendingInvitePath()) ?? '/dashboard');
 }

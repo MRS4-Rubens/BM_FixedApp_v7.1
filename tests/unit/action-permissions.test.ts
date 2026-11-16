@@ -195,6 +195,22 @@ describe('Action Permissions AST Drift Guard (lib/auth/action-permissions.ts)', 
           break;
         }
 
+        case 'signed-in': {
+          expect(
+            action.factory,
+            `Signed-in action "${action.scope}" in ${action.filePath} must use createAuthenticatedAction`
+          ).toBe('createAuthenticatedAction');
+          expect(
+            action.hasRolesProperty,
+            `Signed-in action "${action.scope}" in ${action.filePath} must not specify roles property`
+          ).toBe(false);
+          expect(
+            action.hasRequirePlatformAdmin,
+            `Signed-in action "${action.scope}" in ${action.filePath} must not specify requirePlatformAdmin`
+          ).toBe(false);
+          break;
+        }
+
         case 'platform-admin': {
           expect(
             action.factory,
