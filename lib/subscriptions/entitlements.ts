@@ -86,6 +86,8 @@ export interface PlanEntitlements {
   canCustomizeInvoiceFormat: boolean;
   /** Feature B: may invite / assign the read-only accountant (CA) role. Professional only. */
   canUseAccountantRole: boolean;
+  /** Feature D: bulk customer / product import from Excel or CSV. Professional only. */
+  canImportData: boolean;
 }
 
 /**
@@ -285,6 +287,7 @@ export function getPlanEntitlements(business?: BusinessSubscriptionSource | null
     canExportExcelReports: isProLevel,
     canCustomizeInvoiceFormat: isProLevel,
     canUseAccountantRole: isEnterpriseLevel,
+    canImportData: isEnterpriseLevel,
   };
 }
 
