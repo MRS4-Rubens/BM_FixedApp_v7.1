@@ -74,7 +74,6 @@ export const PLAN_CATALOG: Record<PlanTier, PlanCatalogEntry> = {
       { label: 'Unlimited team members', status: 'included' },
       { label: 'Read-only access for your CA', status: 'included' },
       { label: 'Bulk customer and product import', status: 'included' },
-      { label: 'Multiple invoice number series', status: 'coming_soon' },
     ],
   },
 };
