@@ -74,7 +74,7 @@ export interface PlanEntitlements {
   invoiceMonthlyLimit: number | null;
   customerLimit: number | null;
   productLimit: number | null;
-  /** RESERVED — enforced when team invites ship (no invite flow exists yet); the plan catalogue lists team members as coming_soon. */
+  /** Max users (owner + members + open invites); null = unlimited. Enforced by lib/team/seats.ts via lib/team/team-db.ts. */
   teamUserLimit: number | null;
 
   // Feature Flags
@@ -84,6 +84,8 @@ export interface PlanEntitlements {
   canDirectWhatsApp: boolean;
   canExportExcelReports: boolean;
   canCustomizeInvoiceFormat: boolean;
+  /** Feature B: may invite / assign the read-only accountant (CA) role. Professional only. */
+  canUseAccountantRole: boolean;
 }
 
 /**
@@ -282,6 +284,7 @@ export function getPlanEntitlements(business?: BusinessSubscriptionSource | null
     canDirectWhatsApp: isProLevel,
     canExportExcelReports: isProLevel,
     canCustomizeInvoiceFormat: isProLevel,
+    canUseAccountantRole: isEnterpriseLevel,
   };
 }
 

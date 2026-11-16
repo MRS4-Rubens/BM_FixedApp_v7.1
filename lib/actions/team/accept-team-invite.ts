@@ -16,6 +16,8 @@ import { acceptTeamInviteSchema } from '@/lib/validations/team';
 import { hashInviteToken } from '@/lib/team/invite-token';
 import { evaluateAccept } from '@/lib/team/accept-rules';
 import { evaluateJoin } from '@/lib/team/seats';
+import { evaluateRoleGrant } from '@/lib/team/role-rules';
+import { getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 import { assertBusinessNotSuspendedForTeam, lockBusinessForTeam, readSeatUsage } from '@/lib/team/team-db';
 import { clearPendingInviteCookie } from '@/lib/team/pending-invite-cookie';
 
@@ -102,6 +104,11 @@ export const acceptTeamInvite = createAuthenticatedAction(
 
           assertBusinessNotSuspendedForTeam(business);
           const usage = await readSeatUsage(tx, business, now);
+          // An accountant invite needs Professional at JOIN time too (decision 6: no new CA after a downgrade).
+          const grant = evaluateRoleGrant(invite.role, getPlanEntitlements(business));
+          if (!grant.allowed) {
+            throw new ActionError(grant.message, { code: grant.code });
+          }
           const seat = evaluateJoin(usage);
           if (!seat.allowed) {
             throw new ActionError(seat.message, { code: seat.code });

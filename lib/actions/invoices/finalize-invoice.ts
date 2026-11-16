@@ -1,6 +1,7 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
@@ -51,6 +52,7 @@ export const finalizeInvoice = createAuthenticatedAction(
   },
   'finalize-invoice',
   {
+    roles: EDITOR_ROLES,
     rateLimit: { limiter: sensitiveActionLimiter, keyPrefix: 'finalize-invoice', outage: 'fail-open' },
     requireActiveSubscription: true,
   },

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { lockBusinessRow } from '@/lib/actions/_shared/business-lock';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { products } from '@/lib/db/schema';
@@ -78,5 +79,5 @@ export const createProduct = createAuthenticatedAction(
     return insertedProduct;
   },
   'create-product',
-  { requireActiveSubscription: true },
+  { roles: EDITOR_ROLES, requireActiveSubscription: true },
 );

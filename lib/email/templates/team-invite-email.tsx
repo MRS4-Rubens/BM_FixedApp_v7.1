@@ -7,9 +7,11 @@ export interface TeamInviteEmailProps {
   inviteUrl: string;
   /** Pre-formatted IST date, e.g. "23 Nov 2026". */
   expiresOn: string;
+  /** Feature B: the read-only accountant gets different wording. */
+  role?: 'staff' | 'accountant';
 }
 
-export const TeamInviteEmail = ({ businessName, inviterName, inviteUrl, expiresOn }: TeamInviteEmailProps) => (
+export const TeamInviteEmail = ({ businessName, inviterName, inviteUrl, expiresOn, role = 'staff' }: TeamInviteEmailProps) => (
   <Html>
     <Head />
     <Preview>{`${inviterName} invited you to join ${businessName} on Invoice BizFolio`}</Preview>
@@ -19,9 +21,19 @@ export const TeamInviteEmail = ({ businessName, inviterName, inviteUrl, expiresO
 
         <Section style={section}>
           <Text style={text}>
-            <strong>{inviterName}</strong> has invited you to work on <strong>{businessName}</strong> as a team
-            member on Invoice BizFolio. You will be able to create invoices, record payments and manage customers and
-            products for this business.
+            {role === 'accountant' ? (
+              <>
+                <strong>{inviterName}</strong> has given you <strong>read-only accountant access</strong> to{' '}
+                <strong>{businessName}</strong> on Invoice BizFolio. You will be able to view invoices, credit notes,
+                payments and reports, and download PDFs and GST / ITR Excel exports. You cannot change anything.
+              </>
+            ) : (
+              <>
+                <strong>{inviterName}</strong> has invited you to work on <strong>{businessName}</strong> as a team
+                member on Invoice BizFolio. You will be able to create invoices, record payments and manage customers
+                and products for this business.
+              </>
+            )}
           </Text>
 
           <Section style={btnSection}>

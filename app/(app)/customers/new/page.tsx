@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { CustomerForm } from '@/components/app/customers/customer-form'
 import { getCurrentAppUser } from '@/lib/auth/session'
+import { redirectReadOnlyRole } from '@/lib/auth/page-guards'
 import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { redirect } from 'next/navigation'
 
@@ -15,6 +16,7 @@ export default async function NewCustomerPage() {
   if (!appUser.business_id) {
     redirect('/settings')
   }
+  redirectReadOnlyRole(appUser.role, '/customers')
 
   const business = await getCurrentBusiness()
   const sellerStateCode = business?.state_code || ''

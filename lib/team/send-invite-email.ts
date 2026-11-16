@@ -6,6 +6,7 @@ import { formatIstDate } from '@/lib/invoices/ist-date';
 import { logError } from '@/lib/actions/_shared/logger';
 import { toLoggableError } from '@/lib/actions/_shared/action-error-mapping';
 import { buildInvitePath } from '@/lib/team/invite-format';
+import type { InvitableRole } from '@/lib/db/domain-values';
 
 export function buildInviteUrl(token: string): string {
   return `${getAppEnv().NEXT_PUBLIC_APP_URL}${buildInvitePath(token)}`;
@@ -22,6 +23,7 @@ export async function sendTeamInviteEmail(input: {
   readonly inviteUrl: string;
   readonly expiresAt: Date;
   readonly invitationId: string;
+  readonly role: InvitableRole;
 }): Promise<boolean> {
   try {
     const result = await getResend().emails.send({
@@ -33,6 +35,7 @@ export async function sendTeamInviteEmail(input: {
         inviterName: input.inviterName,
         inviteUrl: input.inviteUrl,
         expiresOn: formatIstDate(input.expiresAt, { day: 'numeric', month: 'short', year: 'numeric' }),
+        role: input.role,
       }),
     });
     if (result.error) {

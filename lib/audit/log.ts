@@ -25,7 +25,7 @@ export const AUDIT_EVENTS = {
   ],
   subscription_request: ['approve', 'reject'],
   // Feature A (team members): entity_id is the invitation id for invite_*, the member's users.id for member_*.
-  team: ['invite_create', 'invite_resend', 'invite_revoke', 'member_join', 'member_remove'],
+  team: ['invite_create', 'invite_resend', 'invite_revoke', 'member_join', 'member_remove', 'member_role_change'],
 } as const;
 
 export type AuditEntityType = keyof typeof AUDIT_EVENTS;

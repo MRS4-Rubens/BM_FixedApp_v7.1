@@ -1,6 +1,7 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { creditNotes, creditNoteLineItems } from '@/lib/db/schema';
@@ -48,5 +49,5 @@ export const deleteCreditNoteDraft = createAuthenticatedAction(
     return { success: true };
   },
   'delete-credit-note-draft',
-  { requireActiveSubscription: true }
+  { roles: EDITOR_ROLES, requireActiveSubscription: true }
 );

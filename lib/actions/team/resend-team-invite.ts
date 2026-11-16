@@ -17,6 +17,9 @@ import { teamInvitationIdSchema } from '@/lib/validations/team';
 import { generateInviteToken, hashInviteToken } from '@/lib/team/invite-token';
 import { computeInviteExpiry, isInviteExpired } from '@/lib/team/invite-format';
 import { evaluateNewInvite } from '@/lib/team/seats';
+import type { InvitableRole } from '@/lib/db/domain-values';
+import { evaluateRoleGrant } from '@/lib/team/role-rules';
+import { getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 import {
   assertBusinessNotSuspendedForTeam,
   businessDisplayName,
@@ -44,7 +47,7 @@ export const resendTeamInvite = createAuthenticatedAction(
     const token = generateInviteToken();
     const tokenHash = hashInviteToken(token);
 
-    let result: { email: string; expiresAt: Date; businessName: string };
+    let result: { email: string; role: InvitableRole; expiresAt: Date; businessName: string };
     try {
       result = await withTransactionRetry(() =>
         db.transaction(async (tx) => {
@@ -57,6 +60,7 @@ export const resendTeamInvite = createAuthenticatedAction(
             .select({
               id: businessInvitations.id,
               email: businessInvitations.email,
+              role: businessInvitations.role,
               status: businessInvitations.status,
               expires_at: businessInvitations.expires_at,
               updated_at: businessInvitations.updated_at,
@@ -72,6 +76,11 @@ export const resendTeamInvite = createAuthenticatedAction(
               invite.status === 'accepted' ? 'This invite has already been accepted.' : 'This invite was cancelled.',
               { code: 'INVITE_NOT_PENDING' },
             );
+          }
+
+          const grant = evaluateRoleGrant(invite.role, getPlanEntitlements(business));
+          if (!grant.allowed) {
+            throw new ActionError(grant.message, { code: grant.code });
           }
 
           const cooldown = evaluateCooldown(invite.updated_at, now, TEAM_INVITE_RESEND_COOLDOWN_SECONDS);
@@ -105,7 +114,7 @@ export const resendTeamInvite = createAuthenticatedAction(
             metadata: { email: invite.email, expires_at: expiresAt.toISOString() },
           });
 
-          return { email: invite.email, expiresAt, businessName: businessDisplayName(business) };
+          return { email: invite.email, role: invite.role, expiresAt, businessName: businessDisplayName(business) };
         }),
       );
     } catch (error: unknown) {
@@ -121,6 +130,7 @@ export const resendTeamInvite = createAuthenticatedAction(
       inviteUrl,
       expiresAt: result.expiresAt,
       invitationId: input.invitation_id,
+      role: result.role,
     });
 
     revalidatePath('/settings');

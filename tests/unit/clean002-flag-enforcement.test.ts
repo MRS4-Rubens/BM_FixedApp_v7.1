@@ -43,13 +43,14 @@ describe('CLEAN-002: Flag Enforcement & Plan Hygiene', () => {
       invoiceMonthlyLimit: 'canCreateInvoice',
       customerLimit: 'canAddCustomer',
       productLimit: 'canAddProduct',
-      teamUserLimit: 'RESERVED',
+      teamUserLimit: 'teamUserLimit', // enforced by lib/team/team-db.ts readSeatUsage (feature A)
       canUseAllTemplates: 'canUseTemplate',
       canUploadLogo: 'canUploadBusinessLogo',
       hasWatermark: 'hasWatermark',
       canDirectWhatsApp: 'canShareInvoiceOnWhatsApp',
       canExportExcelReports: 'canExportStatutoryReport',
       canCustomizeInvoiceFormat: 'canCustomizeInvoiceNumberFormat',
+      canUseAccountantRole: 'canUseAccountantRole', // lib/team/role-rules.ts (feature B)
     };
 
     // Check that every key is in the map

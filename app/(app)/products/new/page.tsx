@@ -1,4 +1,5 @@
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { redirectReadOnlyRole } from '@/lib/auth/page-guards';
 import { redirect } from 'next/navigation';
 import { listTaxRates } from '@/lib/actions/products/list-tax-rates';
 import { ProductForm } from '@/components/app/products/product-form';
@@ -13,6 +14,7 @@ export default async function NewProductPage() {
   if (!appUser.business_id) {
     redirect('/settings');
   }
+  redirectReadOnlyRole(appUser.role, '/products');
 
   const taxRatesResult = await listTaxRates({});
   

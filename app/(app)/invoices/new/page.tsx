@@ -4,6 +4,7 @@ import { taxRates, financialYears } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { redirectReadOnlyRole } from '@/lib/auth/page-guards';
 import { getCurrentBusiness } from '@/lib/auth/current-business';
 import { loadSignatureDataUri } from '@/lib/storage/signature';
 
@@ -15,6 +16,7 @@ export default async function NewInvoicePage() {
   if (!appUser?.business_id) {
     redirect('/settings');
   }
+  redirectReadOnlyRole(appUser.role, '/invoices');
 
   const business = await getCurrentBusiness();
   if (!business) {

@@ -16,7 +16,7 @@ import { removeTeamMemberSchema } from '@/lib/validations/team';
 import { lockBusinessForTeam } from '@/lib/team/team-db';
 
 /**
- * Owner removes a STAFF member (feature A). The account is unlinked, never deleted: business_id -> null and the
+ * Owner removes a team member or accountant (features A/B); never the owner. The account is unlinked, never deleted: business_id -> null and the
  * role goes back to 'owner' (the default for an account without a business), so the person can later create
  * their own business. Everything they created stays, and the audit log still names them. Access ends on their
  * next request, because every request re-reads the users row.
@@ -49,7 +49,7 @@ export const removeTeamMember = createAuthenticatedAction(
           if (!member) {
             throw new ActionError('This person is not a member of your business.', { code: 'NOT_FOUND' });
           }
-          if (member.role !== 'staff') {
+          if (member.role === 'owner') {
             throw new ActionError('Only team members can be removed. The owner account always stays with the business.', {
               code: 'CANNOT_REMOVE_OWNER',
             });

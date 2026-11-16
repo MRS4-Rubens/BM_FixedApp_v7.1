@@ -1,6 +1,7 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { assertOwnedCustomer, assertOwnedProducts } from '@/lib/actions/_shared/ownership';
@@ -235,4 +236,4 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
   } catch (error: unknown) {
     throw toThrowable(error);
   }
-}, 'save-invoice-draft', { requireActiveSubscription: true });
+}, 'save-invoice-draft', { roles: EDITOR_ROLES, requireActiveSubscription: true });

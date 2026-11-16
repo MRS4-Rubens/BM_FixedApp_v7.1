@@ -1,6 +1,7 @@
 'use server'
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { db } from '@/lib/db/client';
 import { customers } from '@/lib/db/schema';
@@ -32,4 +33,4 @@ export const deactivateCustomer = createAuthenticatedAction(deactivateSchema, as
   revalidatePath(`/customers/${input.id}/edit`);
 
   return { success: true };
-}, 'deactivate-customer', { requireActiveSubscription: true });
+}, 'deactivate-customer', { roles: EDITOR_ROLES, requireActiveSubscription: true });

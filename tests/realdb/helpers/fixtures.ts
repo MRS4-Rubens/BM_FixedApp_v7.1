@@ -9,7 +9,7 @@ export interface TestUserRecord {
   readonly authUserId: string;
   readonly email: string;
   readonly businessId: string | null;
-  readonly role: 'owner' | 'staff';
+  readonly role: 'owner' | 'staff' | 'accountant';
 }
 
 export async function createTestUser(
@@ -17,7 +17,7 @@ export async function createTestUser(
   opts: {
     readonly email: string;
     readonly businessId?: string | null;
-    readonly role?: 'owner' | 'staff';
+    readonly role?: 'owner' | 'staff' | 'accountant';
     readonly displayName?: string;
   },
 ): Promise<TestUserRecord> {

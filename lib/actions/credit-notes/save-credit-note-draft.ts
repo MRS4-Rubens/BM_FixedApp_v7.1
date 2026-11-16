@@ -3,6 +3,7 @@
 import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { loadCreditContext } from '@/lib/actions/_shared/credit-note-context';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
 import { ActionError } from '@/lib/actions/_shared/errors';
@@ -167,5 +168,5 @@ export const saveCreditNoteDraft = createAuthenticatedAction(
     }
   },
   'save-credit-note-draft',
-  { requireActiveSubscription: true },
+  { roles: EDITOR_ROLES, requireActiveSubscription: true },
 );

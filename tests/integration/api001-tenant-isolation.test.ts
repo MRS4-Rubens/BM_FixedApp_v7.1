@@ -22,7 +22,7 @@ vi.mock('@/lib/db/client', () => ({
   },
 }));
 vi.mock('@/lib/auth/session', () => ({
-  getCurrentAppUser: async () => ({ id: '00000000-0000-0000-0000-000000000001', business_id: state.businessId }),
+  getCurrentAppUser: async () => ({ id: '00000000-0000-0000-0000-000000000001', business_id: state.businessId, role: 'owner' }),
 }));
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
