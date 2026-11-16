@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { getCurrentBusiness } from '@/lib/auth/current-business';
+import { getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 import { listProducts } from '@/lib/actions/products/list-products';
 import { ProductsClient } from '@/components/app/products/products-client';
 import { parseProductListParams, type RawSearchParams } from '@/lib/invoices/list-params';
@@ -56,12 +58,16 @@ export default async function ProductsPage({
       ? buildListHref('/products', { ...baseFilterParams, after: page.pageInfo.endCursor })
       : null;
 
+  const business = await getCurrentBusiness();
+  const canImport = business ? getPlanEntitlements(business).canImportData : false;
+
   return (
     <ProductsClient
       page={page}
       previousHref={previousHref}
       nextHref={nextHref}
       currentParams={params}
+      canImport={canImport}
     />
   );
 }

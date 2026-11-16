@@ -73,7 +73,7 @@ export const PLAN_CATALOG: Record<PlanTier, PlanCatalogEntry> = {
       { label: 'Everything in Essentials Pro', status: 'included' },
       { label: 'Unlimited team members', status: 'included' },
       { label: 'Read-only access for your CA', status: 'included' },
-      { label: 'Bulk customer and product import', status: 'coming_soon' },
+      { label: 'Bulk customer and product import', status: 'included' },
       { label: 'Multiple invoice number series', status: 'coming_soon' },
     ],
   },

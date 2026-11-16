@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { getCurrentBusiness } from '@/lib/auth/current-business';
+import { getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 import { listCustomers } from '@/lib/actions/customers/list-customers';
 import { CustomersClient } from '@/components/app/customers/customers-client';
 import { parseCustomerListParams, type RawSearchParams } from '@/lib/invoices/list-params';
@@ -56,12 +58,16 @@ export default async function CustomersPage({
       ? buildListHref('/customers', { ...baseFilterParams, after: page.pageInfo.endCursor })
       : null;
 
+  const business = await getCurrentBusiness();
+  const canImport = business ? getPlanEntitlements(business).canImportData : false;
+
   return (
     <CustomersClient
       page={page}
       previousHref={previousHref}
       nextHref={nextHref}
       currentParams={params}
+      canImport={canImport}
     />
   );
 }
