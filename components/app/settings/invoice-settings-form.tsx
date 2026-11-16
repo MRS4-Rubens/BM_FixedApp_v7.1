@@ -275,9 +275,10 @@ export function InvoiceSettingsForm({
         </div>
       )}
 
-      <LegacyDisplayPrefsImport />
+      {isOwner && <LegacyDisplayPrefsImport />}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <fieldset disabled={!isOwner} className="space-y-4 border-0 p-0 m-0">
         {/* -- SECTION 1: Invoice & Credit Note Numbering (Dark Navy / Blue - blue-900) -- */}
         <div className={sectionClass}>
           <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
@@ -814,6 +815,8 @@ export function InvoiceSettingsForm({
           </p>
         </div>
 
+        </fieldset>
+
         {/* -- Form Actions & Feedback ----------------------------------- */}
         <div className="flex items-center justify-between pt-2">
           <div>
@@ -824,14 +827,16 @@ export function InvoiceSettingsForm({
             )}
           </div>
 
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-lg bg-emerald-800 px-4 py-2 h-9 text-sm font-bold text-white transition-all hover:bg-emerald-900 disabled:opacity-50 shadow-xs hover:shadow-sm cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0"
-          >
-            <Check className="size-4 shrink-0" />
-            <span className="whitespace-nowrap">{isSubmitting ? 'Saving...' : 'Save Invoice Settings'}</span>
-          </button>
+          {isOwner && (
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="rounded-lg bg-emerald-800 px-4 py-2 h-9 text-sm font-bold text-white transition-all hover:bg-emerald-900 disabled:opacity-50 shadow-xs hover:shadow-sm cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0"
+            >
+              <Check className="size-4 shrink-0" />
+              <span className="whitespace-nowrap">{isSubmitting ? 'Saving...' : 'Save Invoice Settings'}</span>
+            </button>
+          )}
         </div>
       </form>
 

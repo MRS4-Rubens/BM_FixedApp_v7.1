@@ -84,6 +84,17 @@ export default defineConfig({
         trace: 'on-first-retry',
       },
     },
+    {
+      name: 'team',
+      testMatch: '08-team.spec.ts',
+      dependencies: ['journey'],
+      retries: 0,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        trace: 'retain-on-failure',
+      },
+    },
   ],
 });
 

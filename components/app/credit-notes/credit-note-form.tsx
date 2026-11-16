@@ -41,6 +41,7 @@ import {
 import { computeNetBillPaise } from '@/lib/invoices/settlement';
 import { CREDIT_NOTE_REASONS, type CreditNoteReasonCode } from '@/lib/validations/credit-note';
 import { formatIstDate } from '@/lib/invoices/ist-date';
+import { useIsOwner } from '@/components/app/current-user-role';
 import { stateTaxLabel } from '@/lib/gst/indian-states';
 
 export interface OriginalInvoiceInfo {
@@ -94,6 +95,7 @@ export function CreditNoteForm({
   initialNotes = '',
 }: CreditNoteFormProps) {
   const router = useRouter();
+  const isOwner = useIsOwner();
   const [reason, setReason] = useState<CreditNoteReasonCode>(initialReason);
   const [notes, setNotes] = useState(initialNotes);
 
@@ -283,15 +285,31 @@ export function CreditNoteForm({
             <Save className="size-4 text-muted-foreground" />
             Save as Draft
           </Button>
-          <Button
-            type="button"
-            disabled={isPending || !preview.ok}
-            onClick={() => handleSave(true)}
-            className="h-9 px-4 flex items-center gap-2 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors"
-          >
-            <CheckCircle className="size-4" />
-            Finalize & Issue
-          </Button>
+          {isOwner ? (
+            <Button
+              type="button"
+              disabled={isPending || !preview.ok}
+              onClick={() => handleSave(true)}
+              className="h-9 px-4 flex items-center gap-2 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors"
+            >
+              <CheckCircle className="size-4" />
+              Finalize & Issue
+            </Button>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+              <Button
+                type="button"
+                disabled
+                className="h-9 px-4 flex items-center gap-2 text-sm font-semibold bg-red-600/50 text-white shadow-xs cursor-not-allowed"
+              >
+                <CheckCircle className="size-4" />
+                Finalize & Issue
+              </Button>
+              <span className="text-xs text-muted-foreground font-medium">
+                Only the business owner can finalize credit notes. Save it as a draft and ask the owner.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

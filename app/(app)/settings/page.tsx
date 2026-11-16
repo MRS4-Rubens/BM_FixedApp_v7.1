@@ -10,6 +10,7 @@ import { hasFinalizedInvoices } from '@/lib/business/identity-lock';
 import { getCurrentFinancialYearLabel } from '@/lib/invoices/financial-year';
 import { getRequestTimeMs } from '@/lib/time/request-time';
 import { loadSignatureDataUri } from '@/lib/storage/signature';
+import { isOwnerRole } from '@/lib/auth/rbac';
 
 export default async function SettingsPage({
   searchParams,
@@ -119,7 +120,9 @@ export default async function SettingsPage({
           .where(eq(products.business_id, business.id)),
       ]);
 
-      subscriptionHistory = historyRows;
+      // Billing history (payment references, amounts) is owner-only data (get-business-subscriptions is
+      // owner-or-platform-admin), so it never reaches a staff member's browser, even though their tab is hidden.
+      subscriptionHistory = isOwnerRole(appUser.role) ? historyRows : [];
 
       usageStats.invoicesThisMonth = Number(invoicesMonthRes[0]?.count || 0);
       usageStats.invoicesTotal = Number(invoicesTotalRes[0]?.count || 0);

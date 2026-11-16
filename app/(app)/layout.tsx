@@ -6,6 +6,8 @@ import { getCurrentAppUser } from '@/lib/auth/session'
 import { isPlatformAdmin } from '@/lib/auth/admin'
 import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { buildLogoUrl } from '@/lib/storage/logo-url'
+import { isAppRole } from '@/lib/auth/rbac'
+import { CurrentUserRoleProvider } from '@/components/app/current-user-role'
 
 export const metadata: Metadata = {
   robots: {
@@ -72,7 +74,11 @@ export default async function AppLayout({
         <div className="relative z-40 print:hidden">
           <AppTopbar />
         </div>
-        <main className="flex-1 overflow-y-auto touch-momentum px-3 py-4 sm:pt-2.5 sm:pb-6 sm:px-6 lg:pt-3 lg:pb-8 lg:px-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] print:overflow-visible print:p-0">{children}</main>
+        <main className="flex-1 overflow-y-auto touch-momentum px-3 py-4 sm:pt-2.5 sm:pb-6 sm:px-6 lg:pt-3 lg:pb-8 lg:px-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] print:overflow-visible print:p-0">
+          <CurrentUserRoleProvider role={user && isAppRole(user.role) ? user.role : 'owner'}>
+            {children}
+          </CurrentUserRoleProvider>
+        </main>
       </div>
     </div>
   )

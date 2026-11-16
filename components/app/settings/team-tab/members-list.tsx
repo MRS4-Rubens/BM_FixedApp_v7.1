@@ -1,0 +1,191 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+import { UserCheck } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { formatIstDate } from '@/lib/invoices/ist-date';
+import { removeTeamMember } from '@/lib/actions/team/remove-team-member';
+import type { TeamMember } from './types';
+
+export interface MembersListProps {
+  members: TeamMember[];
+  onMemberRemoved: () => void;
+}
+
+export function MembersList({ members, onMemberRemoved }: MembersListProps) {
+  const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConfirmRemove = async () => {
+    if (!memberToRemove) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await removeTeamMember({ user_id: memberToRemove.id });
+      if (result.success) {
+        setMemberToRemove(null);
+        onMemberRemoved();
+      } else {
+        setError(result.error.message);
+      }
+    });
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <UserCheck className="size-4 text-primary shrink-0" />
+          <h3 className="text-sm font-bold text-foreground">Team Members ({members.length})</h3>
+        </div>
+      </div>
+
+      {error && (
+        <div role="alert" className="rounded-lg bg-destructive/10 border border-destructive/20 p-2.5 text-xs font-semibold text-destructive">
+          {error}
+        </div>
+      )}
+
+      {/* Desktop Table (>= sm) */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-left text-xs">
+          <thead>
+            <tr className="border-b border-border text-muted-foreground font-semibold">
+              <th className="py-2.5 pr-3">Name</th>
+              <th className="py-2.5 pr-3">E-mail</th>
+              <th className="py-2.5 pr-3">Role</th>
+              <th className="py-2.5 pr-3">Joined</th>
+              <th className="py-2.5 text-right w-24">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/60">
+            {members.map((member) => {
+              const displayName = member.name || member.email || 'Team member';
+              const isStaff = member.role === 'staff';
+              const joinedText = formatIstDate(member.createdAt, {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              });
+
+              return (
+                <tr key={member.id} className="hover:bg-muted/30 transition-colors">
+                  <td className="py-3 pr-3 font-semibold text-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <span>{displayName}</span>
+                      {member.isYou && (
+                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                          You
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3 pr-3 font-mono text-muted-foreground">{member.email || '—'}</td>
+                  <td className="py-3 pr-3">
+                    <span
+                      className={
+                        member.role === 'owner'
+                          ? 'inline-flex items-center rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400'
+                          : 'inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400'
+                      }
+                    >
+                      {member.role === 'owner' ? 'Owner' : 'Team member'}
+                    </span>
+                  </td>
+                  <td className="py-3 pr-3 text-muted-foreground">{joinedText}</td>
+                  <td className="py-3 text-right">
+                    {isStaff && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => setMemberToRemove(member)}
+                        aria-label={`Remove ${member.name || member.email || "member"}`}
+                        className="h-7 px-2 text-xs font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile Stacked Cards (< sm) */}
+      <div className="sm:hidden space-y-2.5">
+        {members.map((member) => {
+          const displayName = member.name || member.email || 'Team member';
+          const isStaff = member.role === 'staff';
+          const joinedText = formatIstDate(member.createdAt, {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+          });
+
+          return (
+            <div key={member.id} className="rounded-lg border border-border p-3 space-y-2 bg-muted/20">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-foreground">{displayName}</span>
+                    {member.isYou && (
+                      <span className="rounded bg-primary/10 px-1 py-0.5 text-[9px] font-bold text-primary">
+                        You
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] font-mono text-muted-foreground mt-0.5">{member.email || '—'}</p>
+                </div>
+
+                <span
+                  className={
+                    member.role === 'owner'
+                      ? 'inline-flex items-center rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400'
+                      : 'inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400'
+                  }
+                >
+                  {member.role === 'owner' ? 'Owner' : 'Team member'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px] text-muted-foreground">
+                <span>Joined {joinedText}</span>
+                {isStaff && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => setMemberToRemove(member)}
+                        aria-label={`Remove ${member.name || member.email || "member"}`}
+                    className="h-6 px-2 text-xs font-semibold text-destructive hover:bg-destructive/10"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(memberToRemove)}
+        onOpenChange={(open) => {
+          if (!open && !isPending) setMemberToRemove(null);
+        }}
+        tone="destructive"
+        title={`Remove ${memberToRemove?.name || memberToRemove?.email || 'this member'}?`}
+        description="They lose access to this business immediately. Their account and everything they created stay."
+        confirmLabel="Remove member"
+        onConfirm={handleConfirmRemove}
+      />
+    </div>
+  );
+}

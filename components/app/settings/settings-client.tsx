@@ -18,6 +18,8 @@ import { BillingTab, type SubscriptionHistoryItem } from './billing-tab';
 import { LogoUploadCard } from './logo-upload-card';
 import { UserFeedbackForm } from './user-feedback-form';
 import { AccountDataSection } from './account-data-section';
+import { TeamTab } from './team-tab/team-tab';
+import { useCurrentUserRole } from '@/components/app/current-user-role';
 import type { businesses } from '@/lib/db/schema';
 import type { AppRole } from '@/lib/auth/rbac';
 
@@ -53,6 +55,8 @@ const navItems = [
 
 type NavItem = (typeof navItems)[number];
 
+const STAFF_HIDDEN_TABS: readonly NavItem[] = ['Users & Roles', 'Billing & Usage', 'General'];
+
 const NAV_ICONS: Record<NavItem, LucideIcon> = {
   'Business Profile': Building2,
   'Invoice Settings': FileSpreadsheet,
@@ -71,10 +75,15 @@ export function SettingsClient({
   usageStats,
   identityLocked = false,
   nowMs,
-  userRole = 'owner',
+  userRole,
   signatureDataUri,
 }: SettingsClientProps) {
+  const contextRole = useCurrentUserRole();
+  const effectiveRole = userRole ?? contextRole;
+  const isOwner = effectiveRole === 'owner';
+
   const resolveInitialTab = (): NavItem => {
+    let resolved: NavItem = 'Business Profile';
     if (initialTab) {
       const normalized = initialTab.toLowerCase().trim();
       if (
@@ -83,31 +92,33 @@ export function SettingsClient({
         normalized === 'billing and usage' ||
         normalized === 'billing-usage'
       ) {
-        return 'Billing & Usage';
-      }
-      if (
+        resolved = 'Billing & Usage';
+      } else if (
         normalized === 'feedback' ||
         normalized === 'user feedback' ||
         normalized === 'user-feedback'
       ) {
-        return 'User Feedback';
-      }
-      if (
+        resolved = 'User Feedback';
+      } else if (
         normalized === 'invoice' ||
         normalized === 'invoice settings' ||
         normalized === 'invoice-settings'
       ) {
-        return 'Invoice Settings';
+        resolved = 'Invoice Settings';
+      } else {
+        const match = navItems.find((t) => t.toLowerCase() === normalized);
+        if (match) resolved = match;
       }
-      const match = navItems.find((t) => t.toLowerCase() === normalized);
-      if (match) return match;
     }
-    return 'Business Profile';
+    if (!isOwner && STAFF_HIDDEN_TABS.includes(resolved)) {
+      return 'Business Profile';
+    }
+    return resolved;
   };
 
   const [active, setActive] = useState<NavItem>(resolveInitialTab);
 
-  const isOwner = userRole === 'owner';
+  const visibleNavItems = navItems.filter((item) => isOwner || !STAFF_HIDDEN_TABS.includes(item));
 
   return (
     <div className="space-y-6">
@@ -131,7 +142,7 @@ export function SettingsClient({
             aria-label="Settings sections"
             className="flex w-max min-w-full gap-1.5 rounded-lg border border-border bg-card p-1 shadow-xs"
           >
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = NAV_ICONS[item];
               const isActive = active === item;
               return (
@@ -153,7 +164,7 @@ export function SettingsClient({
                     )}
                   />
                   <span>{item}</span>
-                  {(item === 'Users & Roles' || item === 'Notifications') && (
+                  {item === 'Notifications' && (
                     <span className="rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 text-[10px] font-semibold">
                       Coming soon
                     </span>
@@ -167,7 +178,7 @@ export function SettingsClient({
         {/* -- Settings Navigation Sidebar (Desktop >= 640px) ---------------- */}
         <aside className="hidden w-[168px] shrink-0 sm:block">
           <nav aria-label="Settings sections" className="flex flex-col gap-1">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <button
                 key={item}
                 type="button"
@@ -180,7 +191,7 @@ export function SettingsClient({
                 )}
               >
                 <span>{item}</span>
-                {(item === 'Users & Roles' || item === 'Notifications') && (
+                {item === 'Notifications' && (
                   <span className="rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap">
                     Coming soon
                   </span>
@@ -209,6 +220,15 @@ export function SettingsClient({
               currentFyLabel={currentFyLabel}
               onSwitchTab={(tab) => setActive(tab as NavItem)}
               identityLocked={identityLocked}
+              readOnly={!isOwner}
+            />
+          )}
+
+          {/* -- USERS & ROLES TAB ------------------------------------------- */}
+          {active === 'Users & Roles' && (
+            <TeamTab
+              onSwitchTab={(tab) => setActive(tab as NavItem)}
+              businessName={business?.trade_name || business?.legal_name || 'your business'}
             />
           )}
 
@@ -239,7 +259,8 @@ export function SettingsClient({
             active !== 'General' &&
             active !== 'Business Profile' &&
             active !== 'Billing & Usage' &&
-            active !== 'User Feedback' && (
+            active !== 'User Feedback' &&
+            active !== 'Users & Roles' && (
               <div className="flex items-center justify-center rounded-xl border border-dashed border-border bg-card p-16 text-center">
                 <div>
                   <p className="text-base font-bold text-foreground">{active}</p>

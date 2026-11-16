@@ -55,21 +55,46 @@ describe('Plan Catalog (CLEAN-002)', () => {
     }
   });
 
-  it('INVARIANT: a plan is purchasable only if it has at least one unique included feature not in the previous tier', () => {
-    // Professional has 'Everything in Essentials Pro' as its only included feature,
-    // and no other unique included features shipped yet -> must NOT be purchasable.
-    const proIncluded = PLAN_CATALOG.professional.features.filter(
-      (f) => f.status === 'included' && !f.label.startsWith('Everything in')
+  it('team tiering and purchasability invariants', () => {
+    // Essentials includes team feature
+    const essTeamFeature = PLAN_CATALOG.essentials.features.find(
+      (f) => f.label === 'Team members: you + 2 staff'
     );
-    expect(proIncluded.length).toBe(0);
-    expect(PLAN_CATALOG.professional.purchasable).toBe(false);
+    expect(essTeamFeature).toBeDefined();
+    expect(essTeamFeature?.status).toBe('included');
 
-    // Essentials has unique included features -> purchasable
+    // No essentials feature is coming_soon
+    const essComingSoon = PLAN_CATALOG.essentials.features.filter(
+      (f) => f.status === 'coming_soon'
+    );
+    expect(essComingSoon.length).toBe(0);
+
+    // Essentials is purchasable and has unique included features
     const essIncluded = PLAN_CATALOG.essentials.features.filter(
       (f) => f.status === 'included' && !f.label.startsWith('Everything in')
     );
     expect(essIncluded.length).toBeGreaterThan(0);
     expect(PLAN_CATALOG.essentials.purchasable).toBe(true);
+
+    // Professional includes unlimited team members
+    const proTeamFeature = PLAN_CATALOG.professional.features.find(
+      (f) => f.label === 'Unlimited team members'
+    );
+    expect(proTeamFeature).toBeDefined();
+    expect(proTeamFeature?.status).toBe('included');
+
+    // Professional remains coming soon and not purchasable
+    expect(PLAN_CATALOG.professional.purchasable).toBe(false);
+  });
+
+  it('INVARIANT: every purchasable plan has at least one unique included feature not in the previous tier', () => {
+    // (The converse no longer holds: Professional now has a shipped unique feature but stays unpurchasable until
+    // its remaining features ship, roadmap item G.)
+    for (const plan of Object.values(PLAN_CATALOG)) {
+      if (!plan.purchasable) continue;
+      const unique = plan.features.filter((f) => f.status === 'included' && !f.label.startsWith('Everything in'));
+      expect(unique.length, `${plan.id} is purchasable but has no unique included feature`).toBeGreaterThan(0);
+    }
   });
 });
 

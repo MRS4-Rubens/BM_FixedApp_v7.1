@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip';
+import { useIsOwner } from '@/components/app/current-user-role';
 
 export interface PaymentItem {
   id: string;
@@ -77,6 +78,7 @@ const PAYMENT_METHODS = [
 ] as const;
 
 export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refundMinDate = null }: PaymentSectionProps) {
+  const isOwner = useIsOwner();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -640,7 +642,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
                                 <ShieldAlert className="size-4" />
                               </div>
                             </Tooltip>
-                          ) : (
+                          ) : isOwner ? (
                             <Tooltip content={isRefund ? 'Void this refund, e.g. it failed (Audit Trail)' : 'Void this payment (Audit Trail)'} side="left" sideOffset={6}>
                               <button
                                 type="button"
@@ -651,7 +653,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
                                 <Ban className="size-4" />
                               </button>
                             </Tooltip>
-                          )}
+                          ) : null}
                         </td>
                       </tr>
                     );
