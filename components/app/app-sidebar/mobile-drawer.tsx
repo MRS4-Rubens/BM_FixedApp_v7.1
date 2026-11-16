@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { mainNav, accountNav, adminNavItem } from './nav-items'
 import { NavLink } from './nav-link'
 import { SubscriptionCard } from './subscription-card'
+import { roleLabel } from '@/components/app/current-user-role'
 
 export interface MobileDrawerProps {
   mobileOpen: boolean
@@ -125,6 +126,7 @@ export function MobileDrawer({
             daysRemaining={daysRemaining}
             isCollapsed={false}
             onCardNavigate={() => setMobileOpen(false)}
+            isOwner={user ? user.role === 'owner' : undefined}
           />
         </nav>
 
@@ -160,8 +162,8 @@ export function MobileDrawer({
               <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
                 {user?.name || 'User'}
               </p>
-              <p className="text-[11px] font-semibold text-muted-foreground capitalize mt-0.5">
-                {user?.role || 'Owner'}
+              <p className="text-[11px] font-semibold text-muted-foreground mt-0.5">
+                {roleLabel(user?.role)}
               </p>
             </div>
 

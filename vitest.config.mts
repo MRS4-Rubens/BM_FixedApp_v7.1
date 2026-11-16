@@ -10,7 +10,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
     exclude: ['node_modules/**', '.next/**', 'tests/realdb/**'],
     // An empty suite must fail CI loudly instead of passing silently.
     passWithNoTests: false,

@@ -4,6 +4,7 @@ import type { RefObject, Dispatch, SetStateAction } from 'react'
 import Link from 'next/link'
 import { ChevronsUpDown, Settings, CreditCard, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { roleLabel } from '@/components/app/current-user-role'
 
 export interface UserMenuPopoverProps {
   user?: { name: string; role: string; initials: string }
@@ -74,8 +75,8 @@ export function UserMenuPopover({
           <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
             {user?.name || 'User'}
           </p>
-          <p className="text-[11px] font-semibold text-muted-foreground capitalize mt-0.5">
-            {user?.role || 'Owner'}
+          <p className="text-[11px] font-semibold text-muted-foreground mt-0.5">
+            {roleLabel(user?.role)}
           </p>
         </div>
 
@@ -113,8 +114,8 @@ export function UserMenuPopover({
                 {user?.name || 'User'}
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 capitalize">
-                  {user?.role || 'Owner'}
+                <span className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                  {roleLabel(user?.role)}
                 </span>
                 {subscription?.plan && (
                   <span className="text-[10px] text-muted-foreground capitalize">

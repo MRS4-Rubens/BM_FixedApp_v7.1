@@ -33,6 +33,7 @@ import { getCreditNoteReasonLabel, VOID_CREDIT_NOTE_REASONS } from '@/lib/valida
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { cn } from '@/lib/utils';
 import { formatIstDate } from '@/lib/invoices/ist-date';
+import { useIsOwner } from '@/components/app/current-user-role';
 
 interface CreditNoteDetailProps {
   creditNote: CreditNotePrintViewProps['creditNote'] & {
@@ -52,6 +53,7 @@ interface CreditNoteDetailProps {
 
 export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
   const router = useRouter();
+  const isOwner = useIsOwner();
   const [printSize, setPrintSize] = useState<'A4' | 'A5'>('A4');
   const [isPending, startTransition] = useTransition();
   const [isDownloading, setIsDownloading] = useState(false);
@@ -235,7 +237,7 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
               <Printer className="size-[18px]" />
             </button>
 
-            {isFinalized && !isVoided && (
+            {isFinalized && !isVoided && isOwner && (
               <Button
                 variant="outline"
                 size="sm"
@@ -273,15 +275,31 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
                   <Trash2 className="size-3.5" />
                   Discard Draft
                 </Button>
-                <Button
-                  size="sm"
-                  disabled={isPending}
-                  onClick={handleFinalize}
-                  className="h-7 text-xs flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white"
-                >
-                  <CheckCircle className="size-3.5" />
-                  Finalize & Lock
-                </Button>
+                {isOwner ? (
+                  <Button
+                    size="sm"
+                    disabled={isPending}
+                    onClick={handleFinalize}
+                    className="h-7 text-xs flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <CheckCircle className="size-3.5" />
+                    Finalize & Lock
+                  </Button>
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5">
+                    <Button
+                      size="sm"
+                      disabled
+                      className="h-7 text-xs flex items-center gap-1.5 bg-red-600/50 text-white cursor-not-allowed"
+                    >
+                      <CheckCircle className="size-3.5" />
+                      Finalize & Lock
+                    </Button>
+                    <span className="text-[11px] text-muted-foreground font-medium">
+                      Only the business owner can finalize credit notes. Save it as a draft and ask the owner.
+                    </span>
+                  </div>
+                )}
               </>
             )}
           </div>

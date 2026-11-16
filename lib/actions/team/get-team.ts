@@ -100,6 +100,8 @@ export const getTeam = createAuthenticatedAction(
       },
       canInvite: canInvite.allowed,
       cannotInviteReason: canInvite.allowed ? null : canInvite.message,
+      // Lets the UI offer "Upgrade plan" only when upgrading actually helps (not for a full Essentials team).
+      cannotInviteCode: canInvite.allowed ? null : canInvite.code,
     };
   },
   'get-team',

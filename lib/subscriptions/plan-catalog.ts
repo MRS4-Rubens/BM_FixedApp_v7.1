@@ -61,7 +61,7 @@ export const PLAN_CATALOG: Record<PlanTier, PlanCatalogEntry> = {
       { label: 'GSTR-1, HSN, Sales Register and ITR 44AD Excel exports', status: 'included' },
       { label: 'Custom invoice number format and prefix', status: 'included' },
       { label: 'E-mail invoices (PDF) and payment reminders', status: 'included' },
-      { label: 'Team members and roles', status: 'coming_soon' },
+      { label: 'Team members: you + 2 staff', status: 'included' },
     ],
   },
   professional: {
@@ -71,7 +71,7 @@ export const PLAN_CATALOG: Record<PlanTier, PlanCatalogEntry> = {
     purchasable: false,
     features: [
       { label: 'Everything in Essentials Pro', status: 'included' },
-      { label: 'Unlimited team members', status: 'coming_soon' },
+      { label: 'Unlimited team members', status: 'included' },
       { label: 'Read-only access for your CA', status: 'coming_soon' },
       { label: 'Bulk customer and product import', status: 'coming_soon' },
       { label: 'Multiple invoice number series', status: 'coming_soon' },

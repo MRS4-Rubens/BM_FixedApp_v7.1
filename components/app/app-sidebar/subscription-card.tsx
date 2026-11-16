@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Crown, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { useIsOwner } from '@/components/app/current-user-role'
 
 export interface SubscriptionCardProps {
   subscription?: {
@@ -14,6 +15,7 @@ export interface SubscriptionCardProps {
   daysRemaining: number | null
   isCollapsed: boolean
   onCardNavigate?: () => void
+  isOwner?: boolean
 }
 
 export function SubscriptionCard({
@@ -21,7 +23,10 @@ export function SubscriptionCard({
   daysRemaining,
   isCollapsed,
   onCardNavigate,
+  isOwner: isOwnerProp,
 }: SubscriptionCardProps) {
+  const contextIsOwner = useIsOwner();
+  const isOwner = isOwnerProp ?? contextIsOwner;
 
   return subscription?.status === 'active' ? (
     <div
@@ -96,16 +101,22 @@ export function SubscriptionCard({
         Unlock unlimited invoices, all templates and WhatsApp sharing.
       </p>
 
-      <Link href="/checkout" onClick={onCardNavigate} className="block w-full">
-        <Button
-          className="w-full text-[10.5px] font-bold h-7 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-xs hover:shadow-md hover:translate-y-[-1px] active:translate-y-px transition-all cursor-pointer rounded-xl flex items-center justify-center gap-1.5 group/btn"
-          variant="default"
-          size="sm"
-        >
-          <span>Upgrade Now</span>
-          <ArrowRight className="size-3 transition-transform group-hover/btn:translate-x-0.5" />
-        </Button>
-      </Link>
+      {isOwner ? (
+        <Link href="/checkout" onClick={onCardNavigate} className="block w-full">
+          <Button
+            className="w-full text-[10.5px] font-bold h-7 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-xs hover:shadow-md hover:translate-y-[-1px] active:translate-y-px transition-all cursor-pointer rounded-xl flex items-center justify-center gap-1.5 group/btn"
+            variant="default"
+            size="sm"
+          >
+            <span>Upgrade Now</span>
+            <ArrowRight className="size-3 transition-transform group-hover/btn:translate-x-0.5" />
+          </Button>
+        </Link>
+      ) : (
+        <p className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 leading-snug py-1">
+          Ask your business owner to upgrade the plan.
+        </p>
+      )}
     </div>
   )
 }

@@ -154,6 +154,7 @@ export function DesktopSidebar({
           subscription={subscription}
           daysRemaining={daysRemaining}
           isCollapsed={isCollapsed}
+          isOwner={user ? user.role === 'owner' : undefined}
         />
       </nav>
 

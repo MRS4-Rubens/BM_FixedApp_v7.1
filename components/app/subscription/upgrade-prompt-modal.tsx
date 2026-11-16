@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useIsOwner } from '@/components/app/current-user-role';
 import { useIsClient } from '@/lib/hooks/use-is-client';
 import { PLAN_CATALOG, formatPlanPrice } from '@/lib/subscriptions/plan-catalog';
 
@@ -38,6 +39,7 @@ export function UpgradePromptModal({
   featureName,
 }: UpgradePromptModalProps) {
   const isClient = useIsClient();
+  const isOwner = useIsOwner();
   const [selectedPlan] = useState<'essentials'>('essentials');
 
   if (!isClient) return null;
@@ -198,21 +200,27 @@ export function UpgradePromptModal({
 
               {/* Action CTAs */}
               <div className="pt-1.5 flex flex-col sm:flex-row gap-2">
-                <Link
-                  href={`/checkout?plan=${selectedPlan}`}
-                  className="flex-1 min-w-0"
-                  onClick={onClose}
-                >
-                  <Button
-                    className="w-full h-10 gap-2 text-white font-bold text-xs sm:text-[13px] shadow-md cursor-pointer rounded-xl transition-all px-3 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600"
+                {isOwner ? (
+                  <Link
+                    href={`/checkout?plan=${selectedPlan}`}
+                    className="flex-1 min-w-0"
+                    onClick={onClose}
                   >
-                    <Sparkles className="size-3.5 sm:size-4 text-amber-300 shrink-0" />
-                    <span className="truncate">
-                      Upgrade to {PLAN_CATALOG.essentials.name} ({ESSENTIALS_MONTHLY.headline}/mo)
-                    </span>
-                    <ArrowRight className="size-3.5 sm:size-4 shrink-0" />
-                  </Button>
-                </Link>
+                    <Button
+                      className="w-full h-10 gap-2 text-white font-bold text-xs sm:text-[13px] shadow-md cursor-pointer rounded-xl transition-all px-3 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600"
+                    >
+                      <Sparkles className="size-3.5 sm:size-4 text-amber-300 shrink-0" />
+                      <span className="truncate">
+                        Upgrade to {PLAN_CATALOG.essentials.name} ({ESSENTIALS_MONTHLY.headline}/mo)
+                      </span>
+                      <ArrowRight className="size-3.5 sm:size-4 shrink-0" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <p className="flex-1 min-w-0 flex items-center text-xs sm:text-sm font-medium text-muted-foreground px-1">
+                    Ask your business owner to upgrade the plan.
+                  </p>
+                )}
 
                 <Button
                   type="button"
