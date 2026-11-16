@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
+import { CUSTOMER_MAPPINGS } from '@/lib/actions/_shared/pg-constraint-mappings';
 import { lockBusinessRow } from '@/lib/actions/_shared/business-lock';
 import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { writeAudit } from '@/lib/audit/log';
@@ -115,7 +116,7 @@ export const runBulkImport = createAuthenticatedAction(
       );
     } catch (error: unknown) {
       if (error instanceof ActionError) throw error;
-      throw toThrowable(error);
+      throw toThrowable(error, input.kind === 'customers' ? CUSTOMER_MAPPINGS : []);
     }
 
     revalidatePath(input.kind === 'customers' ? '/customers' : '/products');

@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PackageOpen, Plus, Search } from 'lucide-react';
+import { PackageOpen, Plus, Search, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PaginationControls } from '@/components/app/pagination-controls';
 import type { ProductListItem } from '@/lib/actions/products/list-products';
@@ -13,6 +13,7 @@ import type { Page } from '@/lib/pagination/keyset';
 import { buildListHref } from '@/lib/pagination/url';
 import { cn } from '@/lib/utils';
 import { useCanEdit } from '@/components/app/current-user-role';
+import { BulkImportDialog } from '@/components/app/import/bulk-import-dialog';
 
 const tabs = ['All', 'Products', 'Services'] as const;
 type Tab = (typeof tabs)[number];
@@ -22,6 +23,7 @@ export interface ProductsClientProps {
   readonly previousHref: string | null;
   readonly nextHref: string | null;
   readonly currentParams: ProductListParams;
+  readonly canImport: boolean;
 }
 
 export function ProductsClient({
@@ -29,10 +31,12 @@ export function ProductsClient({
   previousHref,
   nextHref,
   currentParams,
+  canImport,
 }: ProductsClientProps) {
   const router = useRouter();
   const canEdit = useCanEdit();
   const [isPending, startTransition] = useTransition();
+  const [importOpen, setImportOpen] = useState(false);
 
   const [search, setSearch] = useState(currentParams.q ?? '');
   const [prevQ, setPrevQ] = useState(currentParams.q ?? '');
@@ -133,17 +137,29 @@ export function ProductsClient({
 
           <div className="flex flex-wrap items-center gap-4">
             {canEdit && (
-              <Button
-                size="sm"
-                nativeButton={false}
-                render={
-                  <Link href="/products/new" className="flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0">
-                    <Plus className="size-4 shrink-0" />
-                    Add Product
-                  </Link>
-                }
-                className="shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[15px] font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0"
-              />
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImportOpen(true)}
+                  className="h-9 gap-1.5 font-bold cursor-pointer whitespace-nowrap shrink-0"
+                >
+                  <Upload className="size-4 shrink-0" />
+                  Import
+                </Button>
+                <Button
+                  size="sm"
+                  nativeButton={false}
+                  render={
+                    <Link href="/products/new" className="flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0">
+                      <Plus className="size-4 shrink-0" />
+                      Add Product
+                    </Link>
+                  }
+                  className="shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[15px] font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0"
+                />
+              </>
             )}
 
             <div className="h-5 w-px bg-border/60 hidden md:block" />
@@ -285,6 +301,13 @@ export function ProductsClient({
           />
         )}
       </div>
+
+      <BulkImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        kind="products"
+        canImport={canImport}
+      />
     </div>
   );
 }

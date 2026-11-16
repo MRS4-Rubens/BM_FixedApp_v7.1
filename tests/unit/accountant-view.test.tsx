@@ -41,6 +41,8 @@ vi.mock('@/lib/actions/customers/deactivate-customer', () => ({ deactivateCustom
 vi.mock('@/lib/actions/customers/reactivate-customer', () => ({ reactivateCustomer: vi.fn() }));
 vi.mock('@/lib/actions/products/deactivate-product', () => ({ deactivateProduct: vi.fn() }));
 vi.mock('@/lib/actions/products/reactivate-product', () => ({ reactivateProduct: vi.fn() }));
+vi.mock('@/lib/actions/import/check-bulk-import', () => ({ checkBulkImport: vi.fn() }));
+vi.mock('@/lib/actions/import/run-bulk-import', () => ({ runBulkImport: vi.fn() }));
 
 import { CurrentUserRoleProvider } from '@/components/app/current-user-role';
 import { CustomersClient } from '@/components/app/customers/customers-client';
@@ -218,12 +220,14 @@ describe('Accountant Read-Only View Across App (B2-CA-UI)', () => {
             previousHref={null}
             nextHref={null}
             currentParams={{ q: null, includeInactive: false, size: 20 }}
+            canImport
           />
         </CurrentUserRoleProvider>
       );
 
       expect(html).toContain('Beta Industries');
       expect(html).not.toContain('Add Customer');
+      expect(html).not.toMatch(/>Import</); // D2: never offered to the read-only CA, even on Professional
       expect(html).not.toContain('/customers/c0000000-0000-0000-0000-000000000001/edit');
     });
 
@@ -236,11 +240,13 @@ describe('Accountant Read-Only View Across App (B2-CA-UI)', () => {
               previousHref={null}
               nextHref={null}
               currentParams={{ q: null, includeInactive: false, size: 20 }}
+            canImport
             />
           </CurrentUserRoleProvider>
         );
 
         expect(html).toContain('Add Customer');
+        expect(html).toMatch(/>Import</);
         expect(html).toContain('/customers/c0000000-0000-0000-0000-000000000001/edit');
       }
     });
@@ -255,12 +261,14 @@ describe('Accountant Read-Only View Across App (B2-CA-UI)', () => {
             previousHref={null}
             nextHref={null}
             currentParams={{ q: null, includeInactive: false, size: 20, kind: 'all' }}
+            canImport
           />
         </CurrentUserRoleProvider>
       );
 
       expect(html).toContain('Industrial Widget');
       expect(html).not.toContain('Add Product');
+      expect(html).not.toMatch(/>Import</);
       expect(html).not.toContain('/products/p0000000-0000-0000-0000-000000000001/edit');
     });
 
@@ -273,11 +281,13 @@ describe('Accountant Read-Only View Across App (B2-CA-UI)', () => {
               previousHref={null}
               nextHref={null}
               currentParams={{ q: null, includeInactive: false, size: 20, kind: 'all' }}
+            canImport
             />
           </CurrentUserRoleProvider>
         );
 
         expect(html).toContain('Add Product');
+        expect(html).toMatch(/>Import</);
         expect(html).toContain('/products/p0000000-0000-0000-0000-000000000001/edit');
       }
     });
