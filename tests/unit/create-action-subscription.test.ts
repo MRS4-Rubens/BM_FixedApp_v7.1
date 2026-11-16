@@ -37,6 +37,7 @@ describe('createAuthenticatedAction - Subscription Guard (API-010)', () => {
     role: 'owner' as const,
     created_at: new Date(),
     updated_at: new Date(),
+    notification_prefs: {},
   };
 
   beforeEach(() => {

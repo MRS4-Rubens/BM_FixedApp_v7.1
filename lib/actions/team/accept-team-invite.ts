@@ -20,6 +20,8 @@ import { evaluateRoleGrant } from '@/lib/team/role-rules';
 import { getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 import { assertBusinessNotSuspendedForTeam, lockBusinessForTeam, readSeatUsage } from '@/lib/team/team-db';
 import { clearPendingInviteCookie } from '@/lib/team/pending-invite-cookie';
+import { memberJoinedDraft } from '@/lib/notifications/messages';
+import { notifyInTransaction } from '@/lib/notifications/notify';
 
 /**
  * A signed-in person accepts a team invite (feature A). Runs for accounts WITHOUT a business, so it is
@@ -136,6 +138,17 @@ export const acceptTeamInvite = createAuthenticatedAction(
             action: 'member_join',
             requestContext,
             metadata: { invitation_id: invite.id, email: invite.email, role: invite.role },
+          });
+
+          // Feature C: tell the owner who joined (savepoint: never blocks the join itself; goes in the daily summary).
+          await notifyInTransaction(tx, {
+            businessId: invite.business_id,
+            draft: memberJoinedDraft(
+              freshUser.id,
+              invite.id,
+              context.appUser.display_name?.trim() || invite.email,
+              invite.role,
+            ),
           });
 
           return { businessId: invite.business_id };

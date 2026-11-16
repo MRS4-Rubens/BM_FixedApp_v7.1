@@ -38,6 +38,7 @@ describe('createAuthenticatedAction - Role-based Access Control (AUTH-003)', () 
     role: 'owner' as const,
     created_at: new Date(),
     updated_at: new Date(),
+    notification_prefs: {},
   };
 
   const dummyStaff = {
@@ -49,6 +50,7 @@ describe('createAuthenticatedAction - Role-based Access Control (AUTH-003)', () 
     role: 'staff' as const,
     created_at: new Date(),
     updated_at: new Date(),
+    notification_prefs: {},
   };
 
   /**

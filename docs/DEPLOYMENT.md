@@ -205,6 +205,9 @@ Configure the following 6 alert rules in the production Sentry project:
 6. **Cron monitor missed or failed**:
    - Filter: Sentry Cron Monitor `retry-invoice-archival` (registered with schedule `0 20 * * *` matching `vercel.json`).
    - Trigger: Missed check-in or execution error / timeout. *(Note: Created automatically on the first check-in).*
+7. **Daily notifications cron missed or failed** (feature C):
+   - Filter: Sentry Cron Monitor `daily-notifications` (schedule `30 3 * * *` UTC = 09:00 IST, matching `vercel.json`).
+   - Trigger: Missed check-in or execution error. A missed day means that day's reminders (overdue invoices, GST due dates, plan expiry) are not created; nothing wrong is ever sent. Urgent e-mails left pending are retried by the next run (up to 3 tries within 3 days).
 
 > **Note**: These monitors and alert rules are configured on launch day with the final Sentry account and chosen uptime provider.
 

@@ -26,6 +26,8 @@ vi.mock('@/lib/actions/team/resend-team-invite', () => ({ resendTeamInvite: vi.f
 vi.mock('@/lib/actions/team/revoke-team-invite', () => ({ revokeTeamInvite: vi.fn() }));
 vi.mock('@/lib/actions/team/remove-team-member', () => ({ removeTeamMember: vi.fn() }));
 vi.mock('@/lib/actions/team/change-team-member-role', () => ({ changeTeamMemberRole: vi.fn() }));
+vi.mock('@/lib/actions/notifications/notification-settings', () => ({ getNotificationSettings: vi.fn(), saveNotificationPreferences: vi.fn() }));
+vi.mock('@/lib/actions/notifications/save-gst-filing-frequency', () => ({ saveGstFilingFrequency: vi.fn() }));
 
 vi.mock('@/lib/actions/business/save-business-profile', () => ({ saveBusinessProfile: vi.fn() }));
 vi.mock('@/lib/actions/business/upload-logo', () => ({ uploadBusinessLogo: vi.fn() }));
@@ -171,7 +173,7 @@ describe('Staff View Across App (A2-TEAM-UI)', () => {
       expect(html).toContain('disabled=""');
     });
 
-    it('renders for owner: shows all tabs, Users & Roles has no "Coming soon", Notifications still has "Coming soon"', () => {
+    it('renders for owner: shows all tabs, and no tab says "Coming soon" (Notifications shipped in feature C)', () => {
       const html = renderToStaticMarkup(
         React.createElement(
           CurrentUserRoleProvider,
@@ -194,8 +196,8 @@ describe('Staff View Across App (A2-TEAM-UI)', () => {
       expect(html).toContain('Notifications');
       expect(html).toContain('>General<');
 
-      // Notifications has "Coming soon" pill
-      expect(html).toContain('Coming soon');
+      // Feature C: Notifications is live, so no settings tab carries a "Coming soon" pill any more
+      expect(html).not.toContain('Coming soon');
 
       // Neutral staff banner is NOT shown for owner
       expect(html).not.toContain('Only the business owner can change these details.');

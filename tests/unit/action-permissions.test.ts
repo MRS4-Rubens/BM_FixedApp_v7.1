@@ -13,6 +13,7 @@ interface DiscoveredAction {
   readonly hasRequirePlatformAdmin: boolean;
   readonly fileContainsEvaluateRoleAccess: boolean;
   readonly fileContainsIsPlatformAdmin: boolean;
+  readonly fileScopesToCaller: boolean;
 }
 
 function collectSourceFiles(dir: string): string[] {
@@ -100,6 +101,7 @@ function parseActionsInFile(filePath: string): DiscoveredAction[] {
           hasRequirePlatformAdmin,
           fileContainsEvaluateRoleAccess: fileText.includes('evaluateRoleAccess('),
           fileContainsIsPlatformAdmin: fileText.includes('isPlatformAdmin('),
+          fileScopesToCaller: fileText.includes('context.appUser.id'),
         });
       }
     }
@@ -211,6 +213,25 @@ describe('Action Permissions AST Drift Guard (lib/auth/action-permissions.ts)', 
           break;
         }
 
+        case 'self': {
+          expect(
+            action.factory,
+            `Self action "${action.scope}" in ${action.filePath} must use createAuthenticatedAction`
+          ).toBe('createAuthenticatedAction');
+          expect(
+            action.hasRolesProperty,
+            `Self action "${action.scope}" in ${action.filePath} must not specify roles property`
+          ).toBe(false);
+          expect(
+            action.hasRequirePlatformAdmin,
+            `Self action "${action.scope}" in ${action.filePath} must not specify requirePlatformAdmin`
+          ).toBe(false);
+          expect(
+            action.fileScopesToCaller,
+            `Self action "${action.scope}" in ${action.filePath} must scope its queries to context.appUser.id`
+          ).toBe(true);
+          break;
+        }
         case 'signed-in': {
           expect(
             action.factory,

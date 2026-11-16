@@ -63,3 +63,40 @@ export function isOneOf<const T extends readonly string[]>(values: T, value: unk
   return typeof value === 'string' && values.some((candidate) => candidate === value);
 }
 
+
+/**
+ * Feature C (notifications). notifications.kind: every kind of message the app can raise.
+ * The kind decides the category (who receives it, which e-mail switch controls it); see lib/notifications/catalog.ts.
+ */
+export const NOTIFICATION_KINDS = [
+  'invoices_overdue',
+  'invoices_due_soon',
+  'gst_return_due',
+  'gst_frequency_missing',
+  'fy_ending',
+  'trial_ending',
+  'plan_expiring',
+  'plan_expired',
+  'payment_approved',
+  'payment_rejected',
+  'member_joined',
+  'role_changed',
+  'pdf_archival_failed',
+] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
+
+/** notifications.category: the four groups a person can switch e-mails on/off for. */
+export const NOTIFICATION_CATEGORIES = ['money', 'gst', 'account', 'team'] as const;
+export type NotificationCategory = (typeof NOTIFICATION_CATEGORIES)[number];
+
+/**
+ * notifications.email_state. 'skipped' = no e-mail wanted (switched off, digest off, or no address);
+ * 'pending' = waiting to be sent; 'sending' = claimed by a sender (a stale claim is re-taken);
+ * 'sent' = delivered to the e-mail provider; 'failed' = gave up after the retry limit.
+ */
+export const NOTIFICATION_EMAIL_STATES = ['skipped', 'pending', 'sending', 'sent', 'failed'] as const;
+export type NotificationEmailState = (typeof NOTIFICATION_EMAIL_STATES)[number];
+
+/** businesses.gst_filing_frequency (NULL = not chosen yet). Drives the GST deadline reminders. */
+export const GST_FILING_FREQUENCIES = ['monthly', 'quarterly', 'not_filing'] as const;
+export type GstFilingFrequency = (typeof GST_FILING_FREQUENCIES)[number];

@@ -15,6 +15,8 @@ import {
   SUBSCRIPTION_PLANS,
   SUBSCRIPTION_STATUSES,
   INVOICE_TEMPLATE_IDS,
+  GST_FILING_FREQUENCIES,
+  type GstFilingFrequency,
   type SubscriptionPlanValue,
   type SubscriptionStatusValue,
   type InvoiceTemplateValue,
@@ -57,6 +59,8 @@ export const businesses = pgTable('businesses', {
   subscription_activated_at: timestamp('subscription_activated_at', { withTimezone: true }),
   subscription_ends_at: timestamp('subscription_ends_at', { withTimezone: true }),
   active_utr_no: text('active_utr_no'),
+  // Feature C: how often this business files GSTR-1/3B (NULL = not chosen yet). Drives GST deadline reminders.
+  gst_filing_frequency: text('gst_filing_frequency').$type<GstFilingFrequency>(),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull()
 }, (table) => [
@@ -65,7 +69,8 @@ export const businesses = pgTable('businesses', {
   // DB-004: CHECK constraints for state columns
   check('businesses_subscription_plan_valid', inList(table.subscription_plan, SUBSCRIPTION_PLANS)),
   check('businesses_subscription_status_valid', inList(table.subscription_status, SUBSCRIPTION_STATUSES)),
-  check('businesses_default_invoice_template_valid', inList(table.default_invoice_template, INVOICE_TEMPLATE_IDS))
+  check('businesses_default_invoice_template_valid', inList(table.default_invoice_template, INVOICE_TEMPLATE_IDS)),
+  check('businesses_gst_filing_frequency_valid', sql`${table.gst_filing_frequency} IS NULL OR ${inList(table.gst_filing_frequency, GST_FILING_FREQUENCIES)}`)
 ]);
 
 // MVP supports one row in this table (single business/GSTIN), but the schema itself is not artificially restricted to one row, so multi-business support is possible later without a schema rewrite.

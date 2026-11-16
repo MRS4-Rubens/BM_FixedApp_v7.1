@@ -23,7 +23,8 @@ test.describe.configure({ mode: 'serial' });
  *    - Direct URL access to /new routes redirects to matching list views
  *    - Invoice detail hides share/remind/credit-note and payment recording
  *    - Settings displays read-only banner and Accountant role badge
- * 5. Owner switches the CA to Team member and back (enforced on the next page load), then removes them.
+ * 5. Owner switches the CA to Team member and back (enforced on the next page load; the person is told in their
+ *    notifications bell), then removes them.
  * 6. Admin restores the plan to Essentials in a finally block.
  */
 test.describe('09 - Accountant (CA) Read-Only Collaboration Journey', () => {
@@ -176,6 +177,17 @@ test.describe('09 - Accountant (CA) Read-Only Collaboration Journey', () => {
       await caPage.waitForLoadState('networkidle');
       await expect(caPage).toHaveURL(/\/invoices\/new$/, { timeout: 20_000 });
       await expect(caPage.getByText('Team member', { exact: true }).first()).toBeAttached();
+
+      // Feature C: the person is told about the change in their own bell (a real owner-triggered event).
+      const caBell = caPage.getByRole('button', { name: /^Notifications, \d+ unread$/ });
+      await expect(caBell).toBeVisible({ timeout: 20_000 });
+      await caBell.click();
+      const caPanel = caPage.getByRole('dialog', { name: 'Notifications' });
+      await expect(caPanel.getByText('Your role was changed to Team member')).toBeVisible({ timeout: 10_000 });
+      await caPanel.getByRole('button', { name: 'Mark all as read' }).click();
+      await expect(caPage.getByRole('button', { name: 'Notifications', exact: true })).toBeVisible({ timeout: 10_000 });
+      await caPage.keyboard.press('Escape');
+      await expect(caPanel).toHaveCount(0);
 
       await teamSettings.goto();
       await teamSettings.changeMemberRole(caEmail, 'accountant');

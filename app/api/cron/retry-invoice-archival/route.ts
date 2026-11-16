@@ -1,8 +1,7 @@
-import crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { getCronEnv, isEnvConfigError } from '@/lib/env';
 import { logError } from '@/lib/actions/_shared/logger';
+import { verifyCronRequest } from '@/lib/cron/verify-cron-request';
 import { runArchivalSweep } from '@/lib/storage/archival-sweep';
 import {
   ARCHIVAL_CRON_MONITOR_SLUG,
@@ -17,29 +16,8 @@ export const runtime = 'nodejs';
 
 async function handleCron(request: NextRequest): Promise<NextResponse> {
   // 1. Verify Vercel Cron Secret (fail-closed if unset/weak + constant-time check)
-  let cronSecret: string;
-  try {
-    cronSecret = getCronEnv().CRON_SECRET;
-  } catch (error: unknown) {
-    if (isEnvConfigError(error)) {
-      logError('archival-cron', error, { reason: 'CRON_SECRET is not configured properly' });
-      return new NextResponse('Server Configuration Error', { status: 500 });
-    }
-    throw error;
-  }
-
-  const authHeader = request.headers.get('authorization') ?? '';
-  const expectedHeader = `Bearer ${cronSecret}`;
-
-  const authBuf = Buffer.from(authHeader, 'utf8');
-  const expectedBuf = Buffer.from(expectedHeader, 'utf8');
-
-  if (
-    authBuf.length !== expectedBuf.length ||
-    !crypto.timingSafeEqual(authBuf, expectedBuf)
-  ) {
-    return new NextResponse('Unauthorized', { status: 401 });
-  }
+  const denied = verifyCronRequest(request, 'archival-cron');
+  if (denied) return denied;
 
   try {
     const summary = await Sentry.withMonitor(

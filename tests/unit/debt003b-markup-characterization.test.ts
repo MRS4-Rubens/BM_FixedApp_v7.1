@@ -541,6 +541,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       subscription_ends_at: new Date('2027-05-31T23:59:59.000Z'),
       trial_ends_at: null,
       active_utr_no: 'UTR-987654321',
+      gst_filing_frequency: null,
       created_at: new Date('2026-01-01T00:00:00Z'),
       updated_at: new Date('2026-06-01T00:00:00Z'),
       ...overrides,

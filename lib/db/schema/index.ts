@@ -16,4 +16,5 @@ export * from './subscription_requests';
 export * from './platform_settings';
 export * from './platform_settings_history';
 export * from './business_invitations';
+export * from './notifications';
 export * from './_display_prefs';
