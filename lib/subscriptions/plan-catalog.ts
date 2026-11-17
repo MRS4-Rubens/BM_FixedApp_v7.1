@@ -68,7 +68,7 @@ export const PLAN_CATALOG: Record<PlanTier, PlanCatalogEntry> = {
     id: 'professional',
     name: 'Professional',
     tagline: 'For accountants and multi-user teams',
-    purchasable: false,
+    purchasable: true,
     features: [
       { label: 'Everything in Essentials Pro', status: 'included' },
       { label: 'Unlimited team members', status: 'included' },

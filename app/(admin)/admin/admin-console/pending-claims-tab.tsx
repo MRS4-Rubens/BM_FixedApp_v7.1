@@ -3,7 +3,38 @@
 import { CheckCircle2, Maximize2, Check, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatPaiseAsInr } from '@/lib/money';
+import { PLAN_CATALOG } from '@/lib/subscriptions/plan-catalog';
+import { formatIstDate } from '@/lib/invoices/ist-date';
 import type { PendingRequestItem } from './types';
+
+function formatPlanChangeSummary(req: PendingRequestItem): string | null {
+  if (!req.planChange) return null;
+  const { kind, fromPlan, unusedDays, creditedDays, endsAt } = req.planChange;
+  const date = formatIstDate(endsAt, { day: 'numeric', month: 'short', year: 'numeric' });
+  const targetPlanName =
+    req.planName in PLAN_CATALOG
+      ? PLAN_CATALOG[req.planName as keyof typeof PLAN_CATALOG].name
+      : req.planName;
+
+  if (kind === 'upgrade' || kind === 'downgrade') {
+    const sourcePlan = fromPlan ?? req.currentPlan;
+    const sourcePlanName =
+      sourcePlan in PLAN_CATALOG
+        ? PLAN_CATALOG[sourcePlan as keyof typeof PLAN_CATALOG].name
+        : sourcePlan;
+    return `${sourcePlanName} \u2192 ${targetPlanName}: ${unusedDays} unused days \u2192 ${creditedDays} days, then the paid cycle. Expiry if approved now: ${date}`;
+  }
+
+  if (kind === 'renewal') {
+    return `Renewal: adds after current expiry. Expiry if approved now: ${date}`;
+  }
+
+  if (kind === 'new') {
+    return `New subscription. Expiry if approved now: ${date}`;
+  }
+
+  return null;
+}
 
 interface PendingClaimsTabProps {
   pendingRequests: PendingRequestItem[];
@@ -161,6 +192,26 @@ export function PendingClaimsTab({
                   )}
                 </div>
               </div>
+
+              {/* Plan Change Conversion Estimate */}
+              {req.planChange && (() => {
+                const isPlanChange =
+                  req.planChange.kind === 'upgrade' || req.planChange.kind === 'downgrade';
+                const summary = formatPlanChangeSummary(req);
+                if (!summary) return null;
+                return (
+                  <div
+                    className={
+                      isPlanChange
+                        ? 'rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200'
+                        : 'rounded-lg border border-border/60 bg-muted/30 p-2.5 text-xs text-muted-foreground'
+                    }
+                  >
+                    <p className="font-semibold">{summary}</p>
+                    <p className="text-[11px] opacity-80 mt-0.5">estimate — recalculated when you approve</p>
+                  </div>
+                );
+              })()}
             </div>
           ))}
         </div>

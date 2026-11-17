@@ -18,6 +18,7 @@ import { PaymentMethodCard } from './checkout-form/payment-method-card';
 import { ClaimSubmitCard } from './checkout-form/claim-submit-card';
 import { OrderSummaryCard } from './checkout-form/order-summary-card';
 import { useScreenshotUpload } from './checkout-form/use-screenshot-upload';
+import type { PlanPurchaseSummary } from './checkout-form/plan-change-note';
 
 interface CheckoutFormProps {
   business: {
@@ -48,6 +49,7 @@ interface CheckoutFormProps {
     ifsc: string;
   };
   upiPayments: UpiPaymentsMap;
+  planPurchases?: Record<string, PlanPurchaseSummary>;
   initialPlan?: string;
   initialCycle?: string;
   initialAction?: string;
@@ -58,6 +60,7 @@ export function CheckoutForm({
   pendingRequest,
   upiConfig,
   upiPayments,
+  planPurchases,
   initialPlan,
   initialCycle,
 }: CheckoutFormProps) {
@@ -99,8 +102,18 @@ export function CheckoutForm({
   // Calculate annual savings
   const annualSavingsPaise = planDetails.monthlyPricePaise * 12 - planDetails.yearlyPricePaise;
 
+  // Active plan conversion / purchase calculation
+  const currentPurchase = planPurchases?.[`${selectedPlan}:${billingCycle}`];
+
   // Projected validity extension
   const projectedExpiryString = useMemo(() => {
+    if (currentPurchase?.endsAt) {
+      return formatIstDate(currentPurchase.endsAt, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
     const nowTime = new Date().getTime();
     const baseDate = targetExpiry && new Date(targetExpiry).getTime() > nowTime
       ? new Date(targetExpiry)
@@ -116,7 +129,7 @@ export function CheckoutForm({
       month: 'short',
       year: 'numeric',
     });
-  }, [targetExpiry, billingCycle]);
+  }, [currentPurchase, targetExpiry, billingCycle]);
 
   // React Hook Form setup
   const {
@@ -267,6 +280,8 @@ export function CheckoutForm({
       <OrderSummaryCard
         business={business}
         planDetails={planDetails}
+        selectedPlan={selectedPlan}
+        currentPurchase={currentPurchase}
         billingCycle={billingCycle}
         activePricePaise={activePricePaise}
         projectedExpiryString={projectedExpiryString}

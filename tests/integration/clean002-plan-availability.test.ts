@@ -4,6 +4,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as schema from '@/lib/db/schema';
+import * as planCatalog from '@/lib/subscriptions/plan-catalog';
 import { count } from 'drizzle-orm';
 
 const { mockUpload, state } = vi.hoisted(() => {
@@ -146,9 +147,34 @@ describe('CLEAN-002: Plan Availability & Payment Claim Guard', () => {
     });
   });
 
-  it('rejects professional plan claim with PLAN_NOT_AVAILABLE, no storage upload, and no DB insert', async () => {
+  it('accepts professional plan claim and inserts pending row with correct amount', async () => {
     const res = await submitPaymentClaim({
       plan_name: 'professional' as unknown as 'essentials',
+      billing_cycle: 'yearly',
+      payment_method: 'upi_id',
+      payment_reference: 'UTR123456789012',
+    });
+
+    expect(res.success).toBe(true);
+
+    const [rowCount] = await drizzleDb
+      .select({ count: count() })
+      .from(schema.subscriptionRequests);
+    expect(Number(rowCount.count)).toBe(1);
+
+    const [row] = await drizzleDb
+      .select()
+      .from(schema.subscriptionRequests);
+    expect(row?.plan_name).toBe('professional');
+    expect(row?.billing_cycle).toBe('yearly');
+    expect(row?.amount_paise).toBe(499900);
+    expect(row?.status).toBe('pending');
+  });
+
+  it('rejects unpurchasable plan claim with PLAN_NOT_AVAILABLE, no storage upload, and no DB insert', async () => {
+    vi.spyOn(planCatalog, 'isPurchasablePlan').mockReturnValueOnce(false);
+    const res = await submitPaymentClaim({
+      plan_name: 'professional',
       billing_cycle: 'yearly',
       payment_method: 'upi_id',
       payment_reference: 'UTR123456789012',
@@ -157,7 +183,7 @@ describe('CLEAN-002: Plan Availability & Payment Claim Guard', () => {
     expect(res.success).toBe(false);
     if (!res.success) {
       expect(res.error.code).toBe('PLAN_NOT_AVAILABLE');
-      expect(res.error.message).toContain('This plan is not available yet. Please choose Essentials Pro.');
+      expect(res.error.message).toContain('This plan is not available.');
     }
 
     // Storage upload was never called

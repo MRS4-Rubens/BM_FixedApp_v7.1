@@ -137,6 +137,8 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       paymentReference: 'UPI-REF-123456',
       hasScreenshot: true,
       createdAt: '2026-06-14T10:00:00.000Z',
+      currentPlan: 'free',
+      planChange: null,
     },
     {
       id: 'req-2',
@@ -153,6 +155,8 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       paymentReference: 'NEFT-REF-789012',
       hasScreenshot: false,
       createdAt: '2026-06-15T04:30:00.000Z',
+      currentPlan: 'free',
+      planChange: null,
     },
   ];
 
