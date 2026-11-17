@@ -116,3 +116,15 @@ I created three real notifications with the app's own `notify()`: overdue, the G
 Gate re-run after the fixes: all green (1995 tests, lint 0/0, knip clean, Turbopack build OK).
 
 **CI note:** GitHub did not start any CI job for this PR: *"recent account payments have failed or your spending limit needs to be increased"*. Once billing is fixed, re-run the checks.
+
+### CI E2E finding and fix — 2026-11-17
+Once GitHub ran the Playwright suite, `01-journey` failed at "Step 6: record payment 1". The page snapshot shows the test entered **₹3,54,01,500**: its "1500" was appended to the pre-filled balance "3540", because the form re-filled itself while the test was typing.
+
+**Cause:** the bell loaded its list through a **server action** as soon as each page opened. Next.js runs server actions one at a time per tab and refreshes the page around them, so this background read interfered with the user's own actions on the same page.
+
+**Fix:** the bell now reads `GET /api/notifications`, a plain route that never touches the page's actions. "Mark as read" stays a server action, because it only runs when the user clicks. The `get-notifications` action was removed.
+
+**Tested:**
+- the route returns 401 when signed out;
+- each person sees only their own items;
+- the bell flow was re-checked in the browser.

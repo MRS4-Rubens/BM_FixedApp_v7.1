@@ -31,6 +31,17 @@ vi.mock('@/lib/auth/session', () => ({
     return row;
   },
 }));
+vi.mock('@/lib/auth/request-session', () => ({
+  // GET /api/notifications reads the session; map it to the signed-in test user's auth id.
+  getRequestSession: async () => {
+    if (!state.userId) return null;
+    const { eq } = await import('drizzle-orm');
+    const { users } = await import('@/lib/db/schema');
+    const database = state.db as ReturnType<typeof drizzle<typeof schema>>;
+    const [row] = await database.select({ auth: users.auth_user_id }).from(users).where(eq(users.id, state.userId)).limit(1);
+    return row ? { data: { user: { id: row.auth } } } : null;
+  },
+}));
 vi.mock('@/lib/auth/server', () => ({
   auth: { getSession: async () => ({ data: { user: { id: 'auth-id', email: 'x@test.dev', emailVerified: true } } }) },
 }));
@@ -59,7 +70,7 @@ import { runDailyNotifications } from '@/lib/notifications/daily';
 import { deliverNotificationEmails, type OutgoingEmail } from '@/lib/notifications/deliver';
 import { notify } from '@/lib/notifications/notify';
 import { gstReturnDueDraft, invoicesOverdueDraft, paymentApprovedDraft } from '@/lib/notifications/messages';
-import { getNotifications } from '@/lib/actions/notifications/get-notifications';
+import { GET as getNotificationsRoute } from '@/app/api/notifications/route';
 import { markNotificationsRead } from '@/lib/actions/notifications/mark-notifications-read';
 import {
   getNotificationSettings,
@@ -216,6 +227,17 @@ describe('Feature C: notifications (PGlite)', () => {
         JSON.stringify({ line1: '1 Road', city: 'Bengaluru', pincode: '560001' }),
       ],
     );
+  }
+
+  async function bell(): Promise<{ status: number; unreadCount: number; titles: string[]; ids: string[] }> {
+    const response = await getNotificationsRoute();
+    const body = (await response.json()) as { unreadCount?: number; items?: { id: string; title: string }[] };
+    return {
+      status: response.status,
+      unreadCount: body.unreadCount ?? -1,
+      titles: (body.items ?? []).map((item) => item.title),
+      ids: (body.items ?? []).map((item) => item.id),
+    };
   }
 
   async function rows(businessId: string) {
@@ -418,10 +440,14 @@ describe('Feature C: notifications (PGlite)', () => {
     const staffRow = (await rows(biz)).find((row) => row.user_id === staff);
     if (!staffRow) throw new Error('missing staff row');
 
+    state.userId = '';
+    expect((await bell()).status).toBe(401); // signed out
+
     state.userId = owner;
-    const list = await getNotifications({});
-    expect(list.success && list.data.unreadCount).toBe(2);
-    expect(list.success && list.data.items.map((item) => item.title)).toEqual([
+    const list = await bell();
+    expect(list.status).toBe(200);
+    expect(list.unreadCount).toBe(2);
+    expect(list.titles).toEqual([
       '2 invoices became overdue today',
       '1 invoice became overdue today',
     ]);
@@ -429,17 +455,15 @@ describe('Feature C: notifications (PGlite)', () => {
     // The owner cannot mark the staff member's item as read.
     const foreign = await markNotificationsRead({ ids: [staffRow.id] });
     expect(foreign.success && foreign.data.updated).toBe(0);
-    const firstId = list.success ? list.data.items[0]?.id : undefined;
+    const firstId = list.ids[0];
     if (!firstId) throw new Error('no item');
     expect((await markNotificationsRead({ ids: [firstId] })).success).toBe(true);
-    const afterOne = await getNotifications({});
-    expect(afterOne.success && afterOne.data.unreadCount).toBe(1);
+    expect((await bell()).unreadCount).toBe(1);
     const all = await markNotificationsRead({ all: true });
     expect(all.success && all.data.updated).toBe(1);
 
     state.userId = staff;
-    const staffList = await getNotifications({});
-    expect(staffList.success && staffList.data.unreadCount).toBe(2); // untouched by the owner
+    expect((await bell()).unreadCount).toBe(2); // untouched by the owner
 
     // Preferences: saved for the caller only, validated strictly.
     const saved = await saveNotificationPreferences({ email: { money: false, gst: true, account: true, team: true }, digest: 'off' });

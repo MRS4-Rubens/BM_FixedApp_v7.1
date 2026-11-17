@@ -36,7 +36,6 @@ export const ACTION_ACCESS = {
   'change-team-member-role': 'owner',
   'accept-team-invite': 'signed-in',
   // Notifications (feature C): each person's own bell items and e-mail choices; the GST frequency is a business setting
-  'get-notifications': 'self',
   'mark-notifications-read': 'self',
   'get-notification-settings': 'self',
   'save-notification-preferences': 'self',

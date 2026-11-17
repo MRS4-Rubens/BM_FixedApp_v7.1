@@ -5,12 +5,33 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, CheckCheck, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getNotifications, type NotificationListItem } from '@/lib/actions/notifications/get-notifications';
+import type { NotificationList, NotificationListItem } from '@/lib/notifications/list';
 import { markNotificationsRead } from '@/lib/actions/notifications/mark-notifications-read';
 import { badgeText, relativeTime, safeInternalLink } from './notification-format';
 
 /** Re-check for new items this often while the tab is visible (and whenever the window regains focus). */
 const REFRESH_MS = 120_000;
+
+function isNotificationList(value: unknown): value is NotificationList {
+  if (typeof value !== 'object' || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return Array.isArray(record.items) && typeof record.unreadCount === 'number';
+}
+
+/**
+ * Reads the list from GET /api/notifications. A plain fetch, NOT a server action: Next.js runs server actions one at
+ * a time per tab, so background polling through an action could delay or disturb what the user is doing.
+ */
+async function fetchNotifications(): Promise<NotificationList | null> {
+  try {
+    const response = await fetch('/api/notifications', { cache: 'no-store', credentials: 'same-origin' });
+    if (!response.ok) return null;
+    const data: unknown = await response.json();
+    return isNotificationList(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Feature C: the bell in the top bar. Shows an unread badge; clicking opens the newest 20 items.
@@ -34,12 +55,12 @@ export function NotificationBell() {
   const refresh = useCallback(async () => {
     generation.current += 1;
     const mine = generation.current;
-    const result = await getNotifications({});
+    const result = await fetchNotifications();
     if (mine !== generation.current) return;
     setNow(new Date());
-    if (result.success) {
-      setItems(result.data.items);
-      setUnread(result.data.unreadCount);
+    if (result) {
+      setItems(result.items);
+      setUnread(result.unreadCount);
       setFailed(false);
     } else {
       setFailed(true);
