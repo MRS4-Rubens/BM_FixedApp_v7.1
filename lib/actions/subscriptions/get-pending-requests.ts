@@ -5,6 +5,18 @@ import { db } from '@/lib/db/client';
 import { subscriptionRequests, businesses, users } from '@/lib/db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { isBillingCycle, isPaidPlanName } from '@/lib/subscriptions/billing-period';
+import { computePlanPurchase, type PlanPurchaseKind } from '@/lib/subscriptions/plan-change';
+
+/** Feature G: what approving this claim would do right now (an estimate: the approval recomputes it under lock). */
+export interface PendingClaimPlanChange {
+  readonly kind: PlanPurchaseKind;
+  readonly fromPlan: string | null;
+  readonly unusedDays: number;
+  readonly creditedDays: number;
+  /** ISO timestamp of the new expiry if approved now. */
+  readonly endsAt: string;
+}
 
 export const getPendingRequests = createAuthenticatedAction(
   z.object({}),
@@ -30,6 +42,9 @@ export const getPendingRequests = createAuthenticatedAction(
         hasScreenshot: sql<boolean>`${subscriptionRequests.screenshot_storage_key} IS NOT NULL`.mapWith(Boolean),
         status: subscriptionRequests.status,
         createdAt: subscriptionRequests.created_at,
+        currentPlan: businesses.subscription_plan,
+        currentStatus: businesses.subscription_status,
+        currentEndsAt: businesses.subscription_ends_at,
       })
       .from(subscriptionRequests)
       .innerJoin(businesses, eq(subscriptionRequests.business_id, businesses.id))
@@ -37,7 +52,26 @@ export const getPendingRequests = createAuthenticatedAction(
       .where(eq(subscriptionRequests.status, 'pending'))
       .orderBy(desc(subscriptionRequests.created_at));
 
-    return results;
+    const now = new Date();
+    return results.map(({ currentPlan, currentStatus, currentEndsAt, ...row }) => {
+      let planChange: PendingClaimPlanChange | null = null;
+      if (isPaidPlanName(row.planName) && isBillingCycle(row.billingCycle)) {
+        const purchase = computePlanPurchase(
+          { subscription_plan: currentPlan, subscription_status: currentStatus, subscription_ends_at: currentEndsAt },
+          row.planName,
+          row.billingCycle,
+          now,
+        );
+        planChange = {
+          kind: purchase.kind,
+          fromPlan: purchase.fromPlan,
+          unusedDays: purchase.unusedDays,
+          creditedDays: purchase.creditedDays,
+          endsAt: purchase.endsAt.toISOString(),
+        };
+      }
+      return { ...row, currentPlan, planChange };
+    });
   },
   'get-pending-requests',
   { requirePlatformAdmin: true }

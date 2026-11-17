@@ -90,6 +90,7 @@ vi.mock('@/lib/env', () => ({
 import { processSubscriptionClaim } from '@/lib/actions/subscriptions/process-request';
 import { updateBusinessSubscription } from '@/lib/actions/subscriptions/update-business-subscription';
 import { submitPaymentClaim } from '@/lib/actions/subscriptions/submit-payment-claim';
+import { getPendingRequests } from '@/lib/actions/subscriptions/get-pending-requests';
 
 const DRIZZLE_DIR = join(process.cwd(), 'drizzle');
 
@@ -740,5 +741,73 @@ describe('API-009: Subscription approval race and manual override integrity', ()
       payment_reference: 'UTR-TENANT-B-FRESH',
     });
     expect(freshClaimAfterApprove.success).toBe(true);
+  });
+  it('8. Feature G plan change: Essentials -> Professional converts unused time by value; the reverse gives more time, never a free cycle', async () => {
+    const DAY = 86_400_000;
+    const before = Date.now();
+    const { businessId, ownerUserId } = await createBusinessWithOwner(
+      '29GGGGG8888G1Z5',
+      'Plan Change Corp',
+      'owner8@test.dev',
+      'essentials',
+      'active',
+      new Date(before + 300 * DAY).toISOString(),
+    );
+    const upgradeId = await insertOne(
+      pg,
+      `INSERT INTO subscription_requests (
+        business_id, user_id, plan_name, billing_cycle, amount_paise,
+        payment_method, payment_reference, status
+      ) VALUES ($1, $2, 'professional', 'monthly', 59900, 'upi_qr', 'UTR_UPGRADE_001', 'pending') RETURNING id`,
+      [businessId, ownerUserId],
+    );
+
+    // The admin list shows what approving would do, before approving.
+    const pending = await getPendingRequests({});
+    expect(pending.success).toBe(true);
+    const row = pending.success ? pending.data.find((r) => r.id === upgradeId) : undefined;
+    expect(row?.planChange).toMatchObject({ kind: 'upgrade', fromPlan: 'essentials', creditedDays: 199 });
+    expect(row?.currentPlan).toBe('essentials');
+
+    const res = await processSubscriptionClaim({ request_id: upgradeId, action: 'approve' });
+    expect(res.success).toBe(true);
+    const after = Date.now();
+
+    const [biz] = (await pg.query<BusinessRow>('SELECT * FROM businesses WHERE id = $1', [businessId])).rows;
+    expect(biz?.subscription_plan).toBe('professional');
+    const ends = new Date(biz?.subscription_ends_at ?? 0).getTime();
+    // 300 days x 399/599 = 199.83 days of Professional, then one paid month on top. NOT 300 days + a month.
+    const credit = Math.floor((300 * DAY * 399) / 599);
+    const low = addBillingCycleUtc(new Date(before + credit - 60_000), 'monthly').getTime();
+    const high = addBillingCycleUtc(new Date(after + credit + 60_000), 'monthly').getTime();
+    expect(ends).toBeGreaterThan(low);
+    expect(ends).toBeLessThan(high);
+    expect(ends).toBeLessThan(addBillingCycleUtc(new Date(before + 300 * DAY), 'monthly').getTime());
+
+    const audit = await pg.query<{ metadata: { plan_change: { kind: string; from_plan: string; credited_ms: number } } }>(
+      "SELECT metadata FROM audit_log WHERE entity_id = $1 AND action = 'approve'",
+      [upgradeId],
+    );
+    expect(audit.rows[0]?.metadata.plan_change).toMatchObject({ kind: 'upgrade', from_plan: 'essentials' });
+
+    // Downgrade back to Essentials: the unused Professional time becomes MORE Essentials time (x 599/399).
+    const remaining = ends - Date.now();
+    const downgradeId = await insertOne(
+      pg,
+      `INSERT INTO subscription_requests (
+        business_id, user_id, plan_name, billing_cycle, amount_paise,
+        payment_method, payment_reference, status
+      ) VALUES ($1, $2, 'essentials', 'monthly', 39900, 'upi_qr', 'UTR_DOWNGRADE_001', 'pending') RETURNING id`,
+      [businessId, ownerUserId],
+    );
+    const t0 = Date.now();
+    expect((await processSubscriptionClaim({ request_id: downgradeId, action: 'approve' })).success).toBe(true);
+    const t1 = Date.now();
+    const [down] = (await pg.query<BusinessRow>('SELECT * FROM businesses WHERE id = $1', [businessId])).rows;
+    expect(down?.subscription_plan).toBe('essentials');
+    const downEnds = new Date(down?.subscription_ends_at ?? 0).getTime();
+    const downCredit = (remaining * 599) / 399;
+    expect(downEnds).toBeGreaterThan(addBillingCycleUtc(new Date(t0 + downCredit - 120_000), 'monthly').getTime());
+    expect(downEnds).toBeLessThan(addBillingCycleUtc(new Date(t1 + downCredit + 120_000), 'monthly').getTime());
   });
 });

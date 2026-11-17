@@ -1082,3 +1082,18 @@ The details are in "Monitoring & Logging" above. The alert rules and uptime moni
   - GST reminders only for `registration_type = 'regular'`; composition dealers get none. Government date extensions are not known (the normal date is shown). Suspended businesses get nothing from the daily job.
   - Retention: rows older than 90 days are deleted by the daily job.
 - **Enforced by**: `tests/integration/notifications.test.ts` (roles, amounts, GST/trial/plan, idempotency, e-mail queue, self-scoped actions), notification assertions in `tests/integration/{api009-subscription-integrity,ca-role,team-invites}.test.ts`, `tests/unit/notifications-rules.test.ts`, `tests/unit/notifications-cron.test.ts`, `tests/unit/notification-bell-format.test.ts`, `tests/unit/action-permissions.test.ts` (`'self'` must scope to `context.appUser.id`), E2E `e2e/specs/11-notifications.spec.ts` and the bell step in `09-ca.spec.ts`.
+
+## Plan changes between paid plans (feature G1)
+
+- **Rule** (`lib/subscriptions/plan-change.ts` `computePlanPurchase`, PURE): what an approved paid claim buys, from the business's LOCKED row at approval time:
+  - `new`: nothing paid is running (trial, free, expired, suspended, or an ended plan) → the cycle starts now;
+  - `renewal`: the same paid plan is running → the cycle is added after the current expiry (unchanged behaviour);
+  - `upgrade` / `downgrade`: a different paid plan is running → its unused time is converted BY VALUE (at the prices of the cycle being bought, `PLAN_PRICING`) into time on the new plan, using exact BigInt maths rounded down. The new plan starts now, and the paid cycle is added on top. There are no refunds and no partial payments; the claim amount stays the list price.
+- **Where**:
+  - `process-request.ts` (approve) uses it under the business row lock, and the approve audit metadata records `plan_change` (`kind`, `from_plan`, `unused_ms`, `credited_ms`);
+  - `get-pending-requests.ts` returns `currentPlan` and `planChange` (an estimate; approval recomputes it) for the admin console.
+- **Why**: before this, approval always extended from the current expiry, whatever the plan. Essentials with 300 days left plus one paid month of Professional would have given 300 days and a month of Professional.
+- **Enforced by**:
+  - `tests/unit/plan-change.test.ts` (kinds, prices per cycle, rounding never gains value, no overflow);
+  - `tests/integration/api009-subscription-integrity.test.ts` test 8 (upgrade + downgrade through the action, admin figures, audit);
+  - `tests/realdb/api009-double-approval.test.ts` 1b (8 concurrent upgrade approvals convert exactly once).

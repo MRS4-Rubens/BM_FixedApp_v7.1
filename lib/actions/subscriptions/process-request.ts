@@ -15,12 +15,8 @@ import { formatIstDate } from '@/lib/invoices/ist-date';
 import { paymentApprovedDraft, paymentRejectedDraft } from '@/lib/notifications/messages';
 import { notifyInTransaction } from '@/lib/notifications/notify';
 import { scheduleNotificationEmails } from '@/lib/notifications/schedule';
-import {
-  addBillingCycleUtc,
-  resolveApprovalBase,
-  isBillingCycle,
-  isPaidPlanName,
-} from '@/lib/subscriptions/billing-period';
+import { isBillingCycle, isPaidPlanName } from '@/lib/subscriptions/billing-period';
+import { computePlanPurchase } from '@/lib/subscriptions/plan-change';
 
 const DEFAULT_REJECT_REASON = 'Verification failed. Please check details.';
 
@@ -117,11 +113,10 @@ export const processSubscriptionClaim = createAuthenticatedAction(
           });
         }
 
-        // 4. Extend from the LOCKED row: exactly one cycle, preserving prepaid validity.
-        const endDate = addBillingCycleUtc(
-          resolveApprovalBase(business.subscription_ends_at, now),
-          claim.billing_cycle,
-        );
+        // 4. From the LOCKED row: exactly one cycle. A renewal of the same plan extends from the current expiry; a
+        //    change between paid plans converts the unused time BY VALUE into the new plan (feature G, decisions 2-3).
+        const purchase = computePlanPurchase(business, claim.plan_name, claim.billing_cycle, now);
+        const endDate = purchase.endsAt;
 
         // 5. Flip the request atomically (the business row is already locked above).
         const [approved] = await tx
@@ -168,6 +163,12 @@ export const processSubscriptionClaim = createAuthenticatedAction(
                 : null,
             },
             subscription_ends_at: endDate.toISOString(),
+            plan_change: {
+              kind: purchase.kind,
+              from_plan: purchase.fromPlan,
+              unused_ms: purchase.unusedMs,
+              credited_ms: purchase.creditedMs,
+            },
           },
         });
 
