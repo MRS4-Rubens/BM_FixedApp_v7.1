@@ -138,11 +138,11 @@ export function BulkImportDialog({
                   </div>
                   <div className="pt-2">
                     <Link
-                      href="/settings?tab=Billing & Usage"
+                      href="/checkout?plan=professional"
                       onClick={() => handleOpenChange(false)}
                       className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
                     >
-                      See plans
+                      See Professional
                     </Link>
                   </div>
                 </div>

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useTransition, useId } from 'react';
+import Link from 'next/link';
 import { Mail, UserPlus, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { inviteTeamMember } from '@/lib/actions/team/invite-team-member';
 import { cn } from '@/lib/utils';
+import { useIsOwner } from '@/components/app/current-user-role';
 import type { InviteLinkResult } from './types';
 
 export interface InviteFormProps {
@@ -26,12 +28,13 @@ export function InviteForm({
   onSwitchTab,
 }: InviteFormProps) {
   const id = useId();
+  const isOwner = useIsOwner();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<'staff' | 'accountant'>('staff');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Only the Free plan can be upgraded to get team seats today (Professional is not purchasable yet).
+  // Free plan can be upgraded to Essentials or Professional to get team seats.
   const isUpgradeReason = cannotInviteCode === 'TEAM_PLAN_REQUIRED';
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -163,9 +166,18 @@ export function InviteForm({
                     Accountant (read-only)
                   </span>
                   {!canInviteAccountant && (
-                    <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                      Professional plan
-                    </span>
+                    isOwner ? (
+                      <Link
+                        href="/checkout?plan=professional"
+                        className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 transition cursor-pointer"
+                      >
+                        Professional plan
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                        Professional plan
+                      </span>
+                    )
                   )}
                 </div>
                 <span className="block text-[11px] text-muted-foreground leading-normal">

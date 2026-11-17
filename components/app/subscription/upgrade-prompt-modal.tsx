@@ -139,35 +139,46 @@ export function UpgradePromptModal({
                     </div>
                   </div>
 
-                  {/* Card 2: Professional (Disabled / Coming Soon) */}
+                  {/* Card 2: Professional (Active) */}
                   <div
-                    aria-disabled="true"
-                    className="relative rounded-xl border border-dashed px-2.5 py-1.5 sm:px-2.5 sm:py-2 select-none text-left border-slate-300 bg-slate-50 cursor-not-allowed"
+                    className="relative rounded-xl border px-2.5 py-1.5 sm:px-2.5 sm:py-2 select-none text-left border-slate-200/80 bg-slate-50/70 shadow-xs"
                   >
                     <div className="flex items-center gap-[7px] mb-1">
-                      <span className="text-xs sm:text-[12.5px] font-black tracking-tight text-slate-700 uppercase font-heading">
+                      <span className="text-xs sm:text-[12.5px] font-black tracking-tight text-slate-900 uppercase font-heading">
                         {PLAN_CATALOG.professional.name}
                       </span>
-                      <span className="inline-flex items-center gap-0.5 rounded-full bg-slate-200 border border-slate-300 px-1.5 py-0.2 text-[9.5px] sm:text-[10px] font-black text-slate-700 shrink-0">
-                        Coming soon
+                      <span className="inline-flex items-center gap-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 px-1.5 py-0.2 text-[9.5px] sm:text-[10px] font-black text-indigo-800 shrink-0">
+                        For Teams & CAs
                       </span>
                     </div>
 
                     <div className="flex items-center border-t border-slate-200/70 pt-1 mb-0.5">
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-[15px] sm:text-base font-black text-slate-700 font-heading">{PROFESSIONAL_MONTHLY.headline}</span>
+                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">{PROFESSIONAL_MONTHLY.headline}</span>
                         <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600">/month</span>
                       </div>
                       <span aria-hidden="true" className="text-slate-300 mx-[5px] text-xs font-light select-none">|</span>
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-[15px] sm:text-base font-black text-slate-700 font-heading">{PROFESSIONAL_YEARLY.yearlyTotal}</span>
+                        <span className="text-[15px] sm:text-base font-black text-slate-950 font-heading">{PROFESSIONAL_YEARLY.yearlyTotal}</span>
                         <span className="text-[10.5px] sm:text-[11px] font-semibold text-slate-600">/year</span>
                       </div>
                     </div>
 
-                    <div className="text-[10.5px] sm:text-[11px] font-bold text-slate-600">
+                    <div className="text-[10.5px] sm:text-[11px] font-bold text-emerald-700">
                       Save {PROFESSIONAL_YEARLY.savingsPercent}% on Annual ({PROFESSIONAL_YEARLY.headline}/mo)
                     </div>
+
+                    {isOwner && (
+                      <div className="mt-1.5 pt-1 border-t border-slate-200/60">
+                        <Link
+                          href="/checkout?plan=professional"
+                          onClick={onClose}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                        >
+                          Upgrade to Professional <ArrowRight className="size-3" />
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

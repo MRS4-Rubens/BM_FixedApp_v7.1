@@ -10,7 +10,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const { openSignup } = useAuthModal()
 
-  const handlePlanSelect = (plan: 'free' | 'essentials') => {
+  const handlePlanSelect = (plan: 'free' | 'essentials' | 'professional') => {
     if (plan === 'free') {
       if (isLoggedIn) {
         router.push('/dashboard')
@@ -34,6 +34,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
   const professionalPlan = PLAN_CATALOG.professional
 
   const essPrice = formatPlanPrice('essentials', cycle)
+  const proPrice = formatPlanPrice('professional', cycle)
 
   return (
     <section id="pricing" aria-labelledby="pricing-heading" className="scroll-mt-24 px-5 py-8 sm:px-8 sm:py-10 relative overflow-hidden">
@@ -162,14 +163,14 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               <div className="font-semibold text-zinc-500 text-sm uppercase tracking-wide">
                 {professionalPlan.name}
               </div>
-              {/* Not on sale yet (purchasable: false), so no price is shown. */}
               <div className="mt-2 flex items-baseline gap-1">
                 <span className="text-5xl font-bold heading text-zinc-900">
-                  Coming soon
+                  {proPrice.headline}
                 </span>
+                <span className="text-zinc-600 text-base">/mo</span>
               </div>
               <p className="text-zinc-600 text-sm mt-1.5">
-                Price announced at launch
+                {proPrice.note}
               </p>
               <div className="border-t border-zinc-100 my-3.5"></div>
               <ul className="space-y-2 text-zinc-700 text-base leading-snug">
@@ -193,10 +194,10 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               </ul>
             </div>
             <button
-              disabled
-              className="block w-full text-center border-2 border-zinc-200 bg-zinc-50 text-zinc-600 font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base cursor-not-allowed"
+              type="button" onClick={() => handlePlanSelect('professional')}
+              className="block w-full text-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base glow-btn cursor-pointer"
             >
-              Coming soon
+              Get Started →
             </button>
           </div>
         </div>

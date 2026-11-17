@@ -6,6 +6,7 @@ import { ShieldCheck, Sparkles, CheckCircle2, Check, ArrowRight } from 'lucide-r
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatPlanPrice } from '@/lib/subscriptions/plan-catalog';
+import { useIsOwner } from '@/components/app/current-user-role';
 import { PLAN_CONFIGS, type PlanDefinition } from './plan-configs';
 
 interface PlanPrivilegesProps {
@@ -15,6 +16,7 @@ interface PlanPrivilegesProps {
 
 export function PlanPrivileges({ planConfig, currentPlanKey }: PlanPrivilegesProps) {
   const [activeTab, setActiveTab] = useState<'current' | 'compare'>('current');
+  const isOwner = useIsOwner();
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-5 shadow-xs">
@@ -97,7 +99,17 @@ export function PlanPrivileges({ planConfig, currentPlanKey }: PlanPrivilegesPro
                   Your Current Plan
                 </span>
               ) : (
-                <span className="text-sm font-bold text-slate-800">{formatPlanPrice('essentials', 'monthly').headline}/mo</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-800">{formatPlanPrice('essentials', 'monthly').headline}/mo</span>
+                  {isOwner && (
+                    <Link
+                      href="/checkout?plan=essentials"
+                      className="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline"
+                    >
+                      {currentPlanKey === 'professional' ? 'Switch' : 'Upgrade'}
+                    </Link>
+                  )}
+                </div>
               )}
             </div>
             <ul className="space-y-2 mt-3 text-sm">
@@ -127,18 +139,23 @@ export function PlanPrivileges({ planConfig, currentPlanKey }: PlanPrivilegesPro
             )}
           >
             <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-1.5">
-                <h4 className="text-base font-extrabold text-slate-900">{PLAN_CONFIGS.professional.name}</h4>
-                <span className="text-xs font-bold uppercase bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded">
-                  Coming soon
-                </span>
-              </div>
+              <h4 className="text-base font-extrabold text-slate-900">{PLAN_CONFIGS.professional.name}</h4>
               {currentPlanKey === 'professional' ? (
                 <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
                   Your Current Plan
                 </span>
               ) : (
-                <span className="text-sm font-bold text-slate-600">{formatPlanPrice('professional', 'monthly').headline}/mo</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-800">{formatPlanPrice('professional', 'monthly').headline}/mo</span>
+                  {isOwner && (
+                    <Link
+                      href="/checkout?plan=professional"
+                      className="text-xs font-bold text-indigo-600 hover:text-indigo-800 underline"
+                    >
+                      Upgrade
+                    </Link>
+                  )}
+                </div>
               )}
             </div>
             <ul className="space-y-2 mt-3 text-sm">

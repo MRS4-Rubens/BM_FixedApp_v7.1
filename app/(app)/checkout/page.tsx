@@ -14,6 +14,8 @@ import { logWarn } from '@/lib/actions/_shared/logger';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
 import { PURCHASABLE_PLAN_IDS, isPurchasablePlan } from '@/lib/subscriptions/plan-catalog';
+import { computePlanPurchase } from '@/lib/subscriptions/plan-change';
+import type { PlanPurchaseSummary } from './checkout-form/plan-change-note';
 import { buildUpiPaymentUri } from '@/lib/payments/upi-intent';
 import { buildUpiQrDataUrl } from '@/lib/payments/upi-qr';
 import type { UpiPaymentsMap } from '@/lib/payments/types';
@@ -134,6 +136,21 @@ export default async function CheckoutPage({
     active_utr_no: business.active_utr_no,
   };
 
+  const now = new Date();
+  const planPurchases: Record<string, PlanPurchaseSummary> = {};
+  for (const plan of PURCHASABLE_PLAN_IDS) {
+    for (const cycle of ['monthly', 'yearly'] as const) {
+      const purchase = computePlanPurchase(business, plan, cycle, now);
+      planPurchases[`${plan}:${cycle}`] = {
+        kind: purchase.kind,
+        fromPlan: purchase.fromPlan,
+        unusedDays: purchase.unusedDays,
+        creditedDays: purchase.creditedDays,
+        endsAt: purchase.endsAt.toISOString(),
+      };
+    }
+  }
+
   return (
     <div className="w-full space-y-5">
       <div className="flex flex-col gap-1 border-b border-border/40 pb-3 mb-5">
@@ -153,6 +170,7 @@ export default async function CheckoutPage({
         pendingRequest={pending}
         upiConfig={payee.config}
         upiPayments={upiPayments}
+        planPurchases={planPurchases}
         initialPlan={initialPlan}
         initialCycle={initialCycle}
         initialAction={initialAction}

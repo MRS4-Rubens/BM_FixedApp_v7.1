@@ -41,7 +41,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
     }
 
     if (!isPurchasablePlan(input.plan_name)) {
-      throw new ActionError('This plan is not available yet. Please choose Essentials Pro.', {
+      throw new ActionError('This plan is not available.', {
         code: 'PLAN_NOT_AVAILABLE',
       });
     }

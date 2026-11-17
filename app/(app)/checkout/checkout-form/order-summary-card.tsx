@@ -2,11 +2,14 @@
 
 import { CheckCircle, ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
 import { formatPaiseAsInr } from '@/lib/money';
-import type { BillingCycle } from './plans';
+import type { PlanId, BillingCycle } from './plans';
+import { PlanChangeNote, type PlanPurchaseSummary } from './plan-change-note';
 
 export function OrderSummaryCard({
   business,
   planDetails,
+  selectedPlan,
+  currentPurchase,
   billingCycle,
   activePricePaise,
   projectedExpiryString,
@@ -21,6 +24,8 @@ export function OrderSummaryCard({
   planDetails: {
     name: string;
   };
+  selectedPlan: PlanId;
+  currentPurchase?: PlanPurchaseSummary | null;
   billingCycle: BillingCycle;
   activePricePaise: number;
   projectedExpiryString: string;
@@ -86,6 +91,8 @@ export function OrderSummaryCard({
               <span className="font-bold text-emerald-700">{projectedExpiryString}</span>
             </div>
           </div>
+
+          <PlanChangeNote purchase={currentPurchase} plan={selectedPlan} cycle={billingCycle} />
 
           <div className="-mx-5 border-t border-slate-100 my-2.5" />
 

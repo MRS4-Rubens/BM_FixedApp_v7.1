@@ -5,6 +5,9 @@ export class CheckoutPage {
   readonly page: Page;
 
   readonly planEssentialsButton: Locator;
+  readonly planProfessionalButton: Locator;
+  readonly monthlyCycleButton: Locator;
+  readonly yearlyCycleButton: Locator;
   readonly utrInput: Locator;
   readonly submitButton: Locator;
   readonly successNotice: Locator;
@@ -14,8 +17,11 @@ export class CheckoutPage {
   constructor(page: Page) {
     this.page = page;
 
-    // CLEAN-002: plan names come from lib/subscriptions/plan-catalog.ts; Professional is not purchasable (no locator).
+    // Feature G: plan names come from lib/subscriptions/plan-catalog.ts; Essentials Pro and Professional are purchasable.
     this.planEssentialsButton = page.locator('button:has-text("Essentials Pro")');
+    this.planProfessionalButton = page.locator('button:has-text("Professional")');
+    this.monthlyCycleButton = page.locator('button:has-text("Monthly")');
+    this.yearlyCycleButton = page.locator('button:has-text("Yearly")');
     this.utrInput = page.locator('#payment_reference');
     this.submitButton = page.locator('button[type="submit"]:has-text("Submit Payment Claim")');
     this.successNotice = page.locator('text=Claim Submitted Successfully!');

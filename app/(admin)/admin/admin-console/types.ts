@@ -30,6 +30,14 @@ export interface PendingRequestItem {
   paidToIfsc?: string | null;
   hasScreenshot: boolean;
   createdAt: string;
+  currentPlan: string;
+  planChange: {
+    kind: 'new' | 'renewal' | 'upgrade' | 'downgrade';
+    fromPlan: string | null;
+    unusedDays: number;
+    creditedDays: number;
+    endsAt: string;
+  } | null;
 }
 
 export interface BusinessItem {

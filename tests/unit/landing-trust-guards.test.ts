@@ -51,10 +51,17 @@ describe('Landing trust pass: header, footer and pricing', () => {
     expect(footer).toContain('Contact support')
   })
 
-  it('shows no price for a plan that is not on sale', () => {
+  it('shows price for professional on sale and no price for plans not on sale', () => {
     const pricing = read('components/landing/pricing-section.tsx')
-    expect(PLAN_CATALOG.professional.purchasable).toBe(false)
-    expect(pricing).not.toContain("formatPlanPrice('professional'")
+    expect(PLAN_CATALOG.professional.purchasable).toBe(true)
+    expect(pricing).toContain("formatPlanPrice('professional'")
+
+    // Generic guard: any unpurchasable plan must not render a price in the pricing section
+    for (const [id, entry] of Object.entries(PLAN_CATALOG)) {
+      if (!entry.purchasable) {
+        expect(pricing).not.toContain(`formatPlanPrice('${id}'`)
+      }
+    }
   })
 })
 

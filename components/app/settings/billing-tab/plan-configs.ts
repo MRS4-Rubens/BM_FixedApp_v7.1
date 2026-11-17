@@ -58,7 +58,7 @@ export const PLAN_CONFIGS: Record<string, PlanDefinition> = {
     yearlyPaise: PLAN_PRICING.professional.yearlyPaise,
     invoiceMonthlyLimit: null,
     features: PLAN_CATALOG.professional.features,
-    badge: 'Coming soon',
+    badge: 'For teams & CAs',
   },
 };
 

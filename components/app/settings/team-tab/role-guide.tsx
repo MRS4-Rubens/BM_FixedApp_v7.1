@@ -1,6 +1,9 @@
+import Link from 'next/link';
 import { Shield, ShieldAlert, Eye } from 'lucide-react';
+import { useIsOwner } from '@/components/app/current-user-role';
 
 export function RoleGuide() {
+  const isOwner = useIsOwner();
   return (
     <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-3">
       <h3 className="text-sm font-bold text-foreground">Role Permissions Guide</h3>
@@ -32,9 +35,18 @@ export function RoleGuide() {
               <Eye className="size-3.5" />
               <span>Accountant (read-only)</span>
             </div>
-            <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-              Professional plan
-            </span>
+            {isOwner ? (
+              <Link
+                href="/checkout?plan=professional"
+                className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 transition cursor-pointer"
+              >
+                Professional plan
+              </Link>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                Professional plan
+              </span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed">
             <strong className="text-foreground">Can:</strong> view the dashboard, invoices, credit notes, payments, customers, products and reports; download PDFs and GST / ITR Excel exports. <strong className="text-foreground">Cannot:</strong> create, edit, finalize, delete or send anything, record payments, or see billing and team settings.

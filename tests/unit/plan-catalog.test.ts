@@ -34,10 +34,10 @@ describe('Plan Catalog (CLEAN-002)', () => {
     expect(proYearly.note).toBe('Billed yearly (₹4,999/yr — save 30%)');
   });
 
-  it('PURCHASABLE_PLAN_IDS equals ["essentials"]', () => {
-    expect(PURCHASABLE_PLAN_IDS).toEqual(['essentials']);
+  it('PURCHASABLE_PLAN_IDS equals ["essentials", "professional"]', () => {
+    expect(PURCHASABLE_PLAN_IDS).toEqual(['essentials', 'professional']);
     expect(isPurchasablePlan('essentials')).toBe(true);
-    expect(isPurchasablePlan('professional')).toBe(false);
+    expect(isPurchasablePlan('professional')).toBe(true);
     expect(isPurchasablePlan('free')).toBe(false);
     expect(isPurchasablePlan('trial')).toBe(false);
   });
@@ -90,13 +90,12 @@ describe('Plan Catalog (CLEAN-002)', () => {
     expect(proCaFeature).toBeDefined();
     expect(proCaFeature?.status).toBe('included');
 
-    // Professional remains coming soon and not purchasable
-    expect(PLAN_CATALOG.professional.purchasable).toBe(false);
+    // Professional is purchasable (shipped in G2)
+    expect(PLAN_CATALOG.professional.purchasable).toBe(true);
   });
 
   it('INVARIANT: every purchasable plan has at least one unique included feature not in the previous tier', () => {
-    // (The converse no longer holds: Professional now has a shipped unique feature but stays unpurchasable until
-    // its remaining features ship, roadmap item G.)
+    // Professional is purchasable as of Feature G and has unique included features.
     for (const plan of Object.values(PLAN_CATALOG)) {
       if (!plan.purchasable) continue;
       const unique = plan.features.filter((f) => f.status === 'included' && !f.label.startsWith('Everything in'));
