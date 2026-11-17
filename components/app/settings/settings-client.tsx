@@ -19,6 +19,7 @@ import { LogoUploadCard } from './logo-upload-card';
 import { UserFeedbackForm } from './user-feedback-form';
 import { AccountDataSection } from './account-data-section';
 import { TeamTab } from './team-tab/team-tab';
+import { NotificationsTab } from './notifications-tab/notifications-tab';
 import { useCurrentUserRole } from '@/components/app/current-user-role';
 import type { businesses } from '@/lib/db/schema';
 import type { AppRole } from '@/lib/auth/rbac';
@@ -99,6 +100,8 @@ export function SettingsClient({
         normalized === 'user-feedback'
       ) {
         resolved = 'User Feedback';
+      } else if (normalized === 'users' || normalized === 'team' || normalized === 'users-roles') {
+        resolved = 'Users & Roles';
       } else if (
         normalized === 'invoice' ||
         normalized === 'invoice settings' ||
@@ -164,11 +167,6 @@ export function SettingsClient({
                     )}
                   />
                   <span>{item}</span>
-                  {item === 'Notifications' && (
-                    <span className="rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 text-[10px] font-semibold">
-                      Coming soon
-                    </span>
-                  )}
                 </button>
               );
             })}
@@ -191,11 +189,6 @@ export function SettingsClient({
                 )}
               >
                 <span>{item}</span>
-                {item === 'Notifications' && (
-                  <span className="rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap">
-                    Coming soon
-                  </span>
-                )}
               </button>
             ))}
           </nav>
@@ -254,22 +247,8 @@ export function SettingsClient({
           {/* -- USER FEEDBACK TAB ------------------------------------------- */}
           {active === 'User Feedback' && <UserFeedbackForm />}
 
-          {/* -- PLACEHOLDER TABS ------------------------------------------- */}
-          {active !== 'Invoice Settings' &&
-            active !== 'General' &&
-            active !== 'Business Profile' &&
-            active !== 'Billing & Usage' &&
-            active !== 'User Feedback' &&
-            active !== 'Users & Roles' && (
-              <div className="flex items-center justify-center rounded-xl border border-dashed border-border bg-card p-16 text-center">
-                <div>
-                  <p className="text-base font-bold text-foreground">{active}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    This section will be available in a future update.
-                  </p>
-                </div>
-              </div>
-            )}
+          {/* -- NOTIFICATIONS TAB (feature C): every role manages their own e-mail choices -- */}
+          {active === 'Notifications' && <NotificationsTab />}
         </div>
       </div>
     </div>

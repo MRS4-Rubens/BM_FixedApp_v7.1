@@ -273,6 +273,16 @@ describe('API-009: Subscription approval race and manual override integrity', ()
     const reqRows = await pg.query<RequestRow>('SELECT * FROM subscription_requests WHERE id = $1', [requestId]);
     expect(reqRows.rows.length).toBe(1);
     expect(reqRows.rows[0]?.status).toBe('approved');
+
+    // Feature C: the owner is told exactly once (the losing approval rolled back), urgently, with an e-mail queued.
+    const told = await pg.query<{ user_id: string; kind: string; urgent: boolean; email_state: string; body: string }>(
+      'SELECT user_id, kind, urgent, email_state, body FROM notifications WHERE business_id = $1',
+      [businessId],
+    );
+    expect(told.rows.map((r) => [r.user_id, r.kind, r.urgent, r.email_state])).toEqual([
+      [ownerUserId, 'payment_approved', true, 'pending'],
+    ]);
+    expect(told.rows[0]?.body).toMatch(/^Your Essentials Pro plan is active until \d{1,2} \w{3} \d{4}\. Thank you!$/);
   });
 
   it('2. Early renewal: business active with expiry now+10d extends from old expiry, not now', async () => {
@@ -342,6 +352,19 @@ describe('API-009: Subscription approval race and manual override integrity', ()
 
     const bizRows = await pg.query<BusinessRow>('SELECT * FROM businesses WHERE id = $1', [businessId]);
     expect(bizRows.rows[0]?.subscription_status).toBe('expired');
+
+    // Feature C: a rejection tells the owner why, at once; the failed approve added nothing.
+    const rejected = await pg.query<{ kind: string; urgent: boolean; body: string }>(
+      'SELECT kind, urgent, body FROM notifications WHERE business_id = $1',
+      [businessId],
+    );
+    expect(rejected.rows).toEqual([
+      {
+        kind: 'payment_rejected',
+        urgent: true,
+        body: 'Reason: Invalid reference You can check the details and submit the payment again from Billing.',
+      },
+    ]);
 
     const req2 = await insertOne(
       pg,

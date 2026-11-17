@@ -260,6 +260,13 @@
       "when": 1794851176888,
       "tag": "0036_customer_gstin_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794858803258,
+      "tag": "0037_notifications",
+      "breakpoints": true
     }
   ]
 }

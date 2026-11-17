@@ -5,6 +5,7 @@ export type ActionAccess =
   | 'platform-admin' // { requirePlatformAdmin: true }; independent of business roles
   | 'owner-or-platform-admin' // in-handler check using evaluateRoleAccess + isPlatformAdmin (no `roles` option)
   | 'signed-in' // any signed-in account, even one WITHOUT a business yet; no `roles` option (handler enforces its own rules)
+  | 'self' // any role, but reads/writes ONLY the caller's own rows (WHERE user_id/id = context.appUser.id); no `roles` option
   | 'public'; // createAction (unauthenticated)
 
 /** Keyed by the action's scope name (3rd argument of createAuthenticatedAction / createAction). */
@@ -34,6 +35,11 @@ export const ACTION_ACCESS = {
   'remove-team-member': 'owner',
   'change-team-member-role': 'owner',
   'accept-team-invite': 'signed-in',
+  // Notifications (feature C): each person's own bell items and e-mail choices; the GST frequency is a business setting
+  'mark-notifications-read': 'self',
+  'get-notification-settings': 'self',
+  'save-notification-preferences': 'self',
+  'save-gst-filing-frequency': 'owner',
 
   // Platform administration (AUTH-001)
   'admin-update-business-identity': 'platform-admin',

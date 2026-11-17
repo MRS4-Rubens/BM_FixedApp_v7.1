@@ -25,6 +25,8 @@ export const AUDIT_EVENTS = {
     // Feature D: one entry per bulk import (counts only, never row data).
     'customers_imported',
     'products_imported',
+    // Feature C: GST filing frequency (drives deadline reminders); metadata holds previous/new.
+    'gst_filing_frequency_change',
   ],
   subscription_request: ['approve', 'reject'],
   // Feature A (team members): entity_id is the invitation id for invite_*, the member's users.id for member_*.

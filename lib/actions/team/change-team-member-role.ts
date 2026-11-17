@@ -1,5 +1,6 @@
 'use server';
 
+import { randomUUID } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
@@ -15,6 +16,8 @@ import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { getPlanEntitlements } from '@/lib/subscriptions/entitlements';
 import { changeTeamMemberRoleSchema } from '@/lib/validations/team';
 import { evaluateRoleGrant } from '@/lib/team/role-rules';
+import { roleChangedDraft } from '@/lib/notifications/messages';
+import { notifyInTransaction } from '@/lib/notifications/notify';
 import { assertBusinessNotSuspendedForTeam, lockBusinessForTeam } from '@/lib/team/team-db';
 
 /**
@@ -78,6 +81,12 @@ export const changeTeamMemberRole = createAuthenticatedAction(
             action: 'member_role_change',
             requestContext,
             metadata: { email: member.email, previous_role: member.role, new_role: input.role },
+          });
+          // Feature C: tell the member their role changed (savepoint: never blocks the change itself).
+          await notifyInTransaction(tx, {
+            businessId,
+            draft: roleChangedDraft(randomUUID(), input.role),
+            recipientUserIds: [member.id],
           });
           return true;
         }),

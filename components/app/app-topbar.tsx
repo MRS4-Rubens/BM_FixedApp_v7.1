@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { Search, Bell, HelpCircle, MessageSquare, ExternalLink, Mail, Menu } from 'lucide-react'
+import { Search, HelpCircle, MessageSquare, ExternalLink, Mail, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SUPPORT_EMAIL } from '@/lib/config/contact'
+import { NotificationBell } from '@/components/app/notifications/notification-bell'
 
 const getPageTitleAndPlaceholder = (pathname: string): { title: string; placeholder: string } => {
   if (pathname === '/dashboard') {
@@ -58,7 +59,12 @@ const getPageTitleAndPlaceholder = (pathname: string): { title: string; placehol
   return { title: 'Invoice BizFolio', placeholder: 'Search...' }
 }
 
-export function AppTopbar() {
+export interface AppTopbarProps {
+  /** Feature C: show the notifications bell (only for people who belong to a business). */
+  readonly notificationsEnabled?: boolean
+}
+
+export function AppTopbar({ notificationsEnabled = false }: AppTopbarProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
   const { title, placeholder } = getPageTitleAndPlaceholder(pathname)
@@ -152,15 +158,8 @@ export function AppTopbar() {
           </kbd>
         </form>
 
-        {/* Bell notification button */}
-        <button
-          type="button"
-          aria-label="Notifications"
-          title="No unread notifications"
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-indigo-500/10 hover:text-indigo-600 transition-all duration-200 border border-transparent hover:border-indigo-500/20 relative cursor-pointer"
-        >
-          <Bell className="size-4" />
-        </button>
+        {/* Feature C: notifications bell */}
+        {notificationsEnabled && <NotificationBell />}
 
         {/* Interactive Help Pill & Popover Menu */}
         <div className="relative" ref={helpRef}>

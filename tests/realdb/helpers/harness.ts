@@ -121,8 +121,13 @@ function describeLoggedError(scope: string, error: unknown): string {
 
 export function loggerModule(): {
   logError: (scope: string, error: unknown, meta?: Record<string, unknown>) => void;
+  logWarn: (scope: string, message: string, meta?: Record<string, unknown>) => void;
 } {
   return {
+    // Warnings are expected operational notes (e.g. no request scope for an immediate e-mail send), never failures.
+    logWarn: (scope: string, message: string) => {
+      console.info(`[realdb warn] ${scope}: ${message}`);
+    },
     logError: (scope: string, error: unknown, meta?: Record<string, unknown>) => {
       loggedErrors.push({ scope, error, meta });
       // Unexpected errors are otherwise invisible (actions return a generic INTERNAL_ERROR). Surface the real

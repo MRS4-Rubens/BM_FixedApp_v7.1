@@ -72,7 +72,7 @@ export default async function AppLayout({
       </div>
       <div className="flex flex-1 min-w-0 flex-col overflow-hidden print:overflow-visible">
         <div className="relative z-40 print:hidden">
-          <AppTopbar />
+          <AppTopbar notificationsEnabled={Boolean(user?.business_id)} />
         </div>
         <main className="flex-1 overflow-y-auto touch-momentum px-3 py-4 sm:pt-2.5 sm:pb-6 sm:px-6 lg:pt-3 lg:pb-8 lg:px-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] print:overflow-visible print:p-0">
           <CurrentUserRoleProvider role={user && isAppRole(user.role) ? user.role : 'owner'}>

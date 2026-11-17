@@ -11,6 +11,10 @@ import { subscriptionRequests, businesses } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { processSubscriptionRequestSchema } from '@/lib/validations/admin-subscription';
+import { formatIstDate } from '@/lib/invoices/ist-date';
+import { paymentApprovedDraft, paymentRejectedDraft } from '@/lib/notifications/messages';
+import { notifyInTransaction } from '@/lib/notifications/notify';
+import { scheduleNotificationEmails } from '@/lib/notifications/schedule';
 import {
   addBillingCycleUtc,
   resolveApprovalBase,
@@ -35,9 +39,9 @@ export const processSubscriptionClaim = createAuthenticatedAction(
   async (input, context) => {
     const now = new Date();
     const requestContext = await getAuditRequestContext();
-    let outcome: { requestId: string; status: 'approved' | 'rejected' };
+    let outcome: { requestId: string; status: 'approved' | 'rejected'; emailNowIds: string[] };
     try {
-      outcome = await withTransactionRetry(() => db.transaction(async (tx): Promise<{ requestId: string; status: 'approved' | 'rejected' }> => {
+      outcome = await withTransactionRetry(() => db.transaction(async (tx): Promise<{ requestId: string; status: 'approved' | 'rejected'; emailNowIds: string[] }> => {
         await setLocalLockTimeout(tx);
 
         // 1. Locate the claim (unlocked read, only to learn its business and validate immutable fields).
@@ -92,7 +96,13 @@ export const processSubscriptionClaim = createAuthenticatedAction(
             },
           });
 
-          return { requestId: claim.id, status: 'rejected' as const };
+          // Feature C: tell the business owner at once (savepoint: a notification problem never blocks the decision).
+          const emailNowIds = await notifyInTransaction(tx, {
+            businessId: claim.business_id,
+            draft: paymentRejectedDraft(claim.id, rejectReason),
+          });
+
+          return { requestId: claim.id, status: 'rejected' as const, emailNowIds };
         }
 
         // 3. APPROVE — validate what we are about to grant.
@@ -161,7 +171,14 @@ export const processSubscriptionClaim = createAuthenticatedAction(
           },
         });
 
-        return { requestId: claim.id, status: 'approved' as const };
+        const emailNowIds = await notifyInTransaction(tx, {
+          businessId: claim.business_id,
+          draft: paymentApprovedDraft(claim.id, claim.plan_name, endDate, (date) =>
+            formatIstDate(date, { day: 'numeric', month: 'short', year: 'numeric' }),
+          ),
+        });
+
+        return { requestId: claim.id, status: 'approved' as const, emailNowIds };
       }));
     } catch (err: unknown) {
       if (err instanceof ActionError) throw err;
@@ -172,12 +189,14 @@ export const processSubscriptionClaim = createAuthenticatedAction(
       throw new ActionError('Failed to process request. Please try again.', { code: 'TRANSACTION_FAILED' });
     }
 
+    scheduleNotificationEmails(outcome.emailNowIds);
+
     revalidatePath('/admin');
     revalidatePath('/checkout');
     revalidatePath('/settings');
     revalidatePath('/dashboard');
 
-    return outcome;
+    return { requestId: outcome.requestId, status: outcome.status };
   },
   'process-subscription-claim',
   { requirePlatformAdmin: true }

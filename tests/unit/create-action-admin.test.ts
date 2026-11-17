@@ -38,6 +38,7 @@ describe('createAuthenticatedAction - Platform Admin & Redirects (AUTH-001)', ()
     role: 'owner' as const,
     created_at: new Date(),
     updated_at: new Date(),
+    notification_prefs: {},
   };
 
   beforeEach(() => {

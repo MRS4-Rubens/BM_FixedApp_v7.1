@@ -276,7 +276,7 @@ describe('A1: team invites (PGlite, all migrations)', () => {
   });
 
   it('accept: the invited, verified, business-less account joins as staff; the link then stops working', async () => {
-    const { businessId } = await createBusiness();
+    const { businessId, ownerId } = await createBusiness();
     const { token, invitationId } = await inviteAndGetToken('joiner@example.com');
     const joinerId = await createUser('joiner@example.com', null);
     signIn(joinerId, 'Joiner@Example.com');
@@ -296,6 +296,15 @@ describe('A1: team invites (PGlite, all migrations)', () => {
       [businessId],
     );
     expect(audit.rows.map((r) => r.entity_id)).toEqual([joinerId]);
+
+    // Feature C: the owner (not the joiner) is told who joined; routine, so it waits for the daily summary e-mail.
+    const told = await pg.query<{ user_id: string; kind: string; urgent: boolean; email_state: string; title: string }>(
+      'SELECT user_id, kind, urgent, email_state, title FROM notifications WHERE business_id = $1',
+      [businessId],
+    );
+    expect(told.rows).toEqual([
+      { user_id: ownerId, kind: 'member_joined', urgent: false, email_state: 'pending', title: expect.stringMatching(/ joined your business$/) },
+    ]);
 
     expect(await errorCode(acceptTeamInvite({ token }))).toBe('ALREADY_MEMBER');
     const otherId = await createUser('joiner2@example.com', null);

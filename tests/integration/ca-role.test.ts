@@ -255,6 +255,17 @@ describe('B1: accountant role (PGlite, all migrations)', () => {
     expect(await errorCode(changeTeamMemberRole({ user_id: memberId, role: 'staff' }))).toBe('OK');
     expect(await errorCode(changeTeamMemberRole({ user_id: memberId, role: 'accountant' }))).toBe('ACCOUNTANT_PLAN_REQUIRED');
 
+    // Feature C: the member (only) is told about each real change; the no-op and the refused change add nothing.
+    const told = await pg.query<{ user_id: string; title: string }>(
+      "SELECT user_id, title FROM notifications WHERE business_id = $1 AND kind = 'role_changed' ORDER BY created_at, title",
+      [pro.businessId],
+    );
+    expect(told.rows.map((r) => r.user_id)).toEqual([memberId, memberId]);
+    expect(told.rows.map((r) => r.title).sort()).toEqual([
+      'Your role was changed to Accountant (read-only)',
+      'Your role was changed to Team member',
+    ]);
+
     expect(await errorCode(changeTeamMemberRole({ user_id: pro.ownerId, role: 'staff' }))).toBe('CANNOT_CHANGE_OWN_ROLE');
     const otherOwner = await createUser('co@firm.test', pro.businessId, 'owner');
     expect(await errorCode(changeTeamMemberRole({ user_id: otherOwner, role: 'staff' }))).toBe('CANNOT_CHANGE_OWNER');
