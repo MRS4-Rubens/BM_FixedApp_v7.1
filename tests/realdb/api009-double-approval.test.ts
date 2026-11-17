@@ -171,6 +171,42 @@ describe('API-009: Double Approval & Claim Concurrency (REAL Postgres)', () => {
     expect(unexpectedLoggedErrors()).toEqual([]);
   });
 
+  it('1b. Feature G: 8 concurrent APPROVE calls on an Essentials -> Professional UPGRADE convert the unused time exactly once', async () => {
+    const DAY = 86_400_000;
+    const biz = await createFreePlanBusiness(testDb);
+    createdBusinessIds.push(biz.id);
+    const start = Date.now();
+    await testDb
+      .update(schema.businesses)
+      .set({ subscription_plan: 'essentials', subscription_status: 'active', subscription_ends_at: new Date(start + 300 * DAY) })
+      .where(eq(schema.businesses.id, biz.id));
+    const owner = await createTestUser(testDb, { email: `owner-${randomUUID()}@example.com`, businessId: biz.id });
+    const claim = await createPendingClaim(testDb, {
+      businessId: biz.id,
+      userId: owner.id,
+      plan: 'professional',
+      cycle: 'monthly',
+      amountPaise: 59900,
+    });
+
+    const results = await runConcurrently(8, () =>
+      runAs(adminUser, () => processSubscriptionClaim({ request_id: claim.id, action: 'approve' })),
+    );
+    const done = Date.now();
+    const outcomes = results.map((r) => (r.status === 'fulfilled' ? r.value : null));
+    expect(outcomes.filter((o) => o?.success === true)).toHaveLength(1);
+    expect(outcomes.filter((o) => o?.success === false)).toHaveLength(7);
+
+    const [bizRow] = await testDb.select().from(schema.businesses).where(eq(schema.businesses.id, biz.id));
+    expect(bizRow?.subscription_plan).toBe('professional');
+    const ends = new Date(bizRow!.subscription_ends_at!).getTime();
+    // Converted once: 300 days x 399/599 (= 199.83 days) of Professional, then one paid month. Never 300 days + a month.
+    const credit = Math.floor((300 * DAY * 399) / 599);
+    expect(ends).toBeGreaterThan(addBillingCycleUtc(new Date(start + credit - 60_000), 'monthly').getTime());
+    expect(ends).toBeLessThan(addBillingCycleUtc(new Date(done + credit + 60_000), 'monthly').getTime());
+    expect(unexpectedLoggedErrors()).toEqual([]);
+  });
+
   it('2. Approve vs reject race (4 approve + 4 reject concurrent): exactly one terminal outcome', async () => {
     const biz = await createFreePlanBusiness(testDb);
     createdBusinessIds.push(biz.id);
