@@ -57,7 +57,7 @@ test.describe('11 - Notifications bell and settings', () => {
       await expect(page.getByText('Coming soon', { exact: true })).toHaveCount(0);
 
       // ── 2. E-mail choices persist ─────────────────────────────────────────────
-      const money = page.getByRole('switch', { name: /Money to collect/ });
+      const money = page.getByRole('switch', { name: 'Money to collect' });
       await expect(money).toBeChecked();
       await money.uncheck();
       await page.getByRole('radio', { name: /No summary e-mail/ }).check();
@@ -65,7 +65,7 @@ test.describe('11 - Notifications bell and settings', () => {
       await expect(page.getByText('Your e-mail choices are saved.')).toBeVisible({ timeout: 15_000 });
 
       await reloadApp(page);
-      await expect(page.getByRole('switch', { name: /Money to collect/ })).not.toBeChecked({ timeout: 15_000 });
+      await expect(page.getByRole('switch', { name: 'Money to collect' })).not.toBeChecked({ timeout: 15_000 });
       await expect(page.getByRole('radio', { name: /No summary e-mail/ })).toBeChecked();
       const [savedPrefs] = await queryRows(
         `SELECT u.notification_prefs FROM users u JOIN businesses b ON b.id = u.business_id
@@ -97,7 +97,7 @@ test.describe('11 - Notifications bell and settings', () => {
         if (context) {
           const page = context.pages()[0] ?? (await context.newPage());
           await gotoApp(page, '/settings?tab=notifications');
-          const money = page.getByRole('switch', { name: /Money to collect/ });
+          const money = page.getByRole('switch', { name: 'Money to collect' });
           await expect(money).toBeVisible({ timeout: 15_000 });
           await money.check();
           await page.getByRole('radio', { name: /One summary e-mail every morning/ }).check();

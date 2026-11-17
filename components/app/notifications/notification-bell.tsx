@@ -27,9 +27,15 @@ export function NotificationBell() {
   const [now, setNow] = useState<Date | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // Every refresh and every read-change takes a new number. A refresh only applies its result if nothing newer
+  // started meanwhile, so a slow refresh can never overwrite a newer "marked as read" on screen.
+  const generation = useRef(0);
 
   const refresh = useCallback(async () => {
+    generation.current += 1;
+    const mine = generation.current;
     const result = await getNotifications({});
+    if (mine !== generation.current) return;
     setNow(new Date());
     if (result.success) {
       setItems(result.data.items);
@@ -85,7 +91,8 @@ export function NotificationBell() {
     if (!item.read) {
       setItems((current) => current.map((entry) => (entry.id === item.id ? { ...entry, read: true } : entry)));
       setUnread((count) => Math.max(0, count - 1));
-      void markNotificationsRead({ ids: [item.id] });
+      generation.current += 1; // discard any refresh already in flight
+      void markNotificationsRead({ ids: [item.id] }).then(() => refresh());
     }
     const link = safeInternalLink(item.link);
     if (link) {
@@ -97,8 +104,9 @@ export function NotificationBell() {
   async function markAll() {
     setItems((current) => current.map((entry) => ({ ...entry, read: true })));
     setUnread(0);
-    const result = await markNotificationsRead({ all: true });
-    if (!result.success) void refresh();
+    generation.current += 1; // discard any refresh already in flight
+    await markNotificationsRead({ all: true });
+    void refresh();
   }
 
   const badge = badgeText(unread);
@@ -135,7 +143,7 @@ export function NotificationBell() {
         <div
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 top-full mt-2 z-50 w-[360px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border/70 bg-card shadow-2xl shadow-slate-900/15 dark:shadow-black/50 animate-in fade-in-0 zoom-in-95"
+          className="fixed inset-x-3 top-14 z-50 sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[360px] rounded-2xl border border-border/70 bg-card shadow-2xl shadow-slate-900/15 dark:shadow-black/50 animate-in fade-in-0 zoom-in-95"
         >
           <div className="flex items-center justify-between gap-2 border-b border-border/60 px-4 py-3">
             <p className="text-sm font-extrabold text-foreground font-heading">Notifications</p>

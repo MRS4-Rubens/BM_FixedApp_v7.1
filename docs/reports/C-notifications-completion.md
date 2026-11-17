@@ -96,4 +96,23 @@
 - Gate `pnpm typecheck && pnpm lint:ratchet && pnpm knip && pnpm test && pnpm print-css:build && pnpm build` (Turbopack, `NEXT_PUBLIC_APP_URL=https://bm-local.test`): all green. 239 test files, 1995 tests passed (12 skipped); lint 0/0; knip clean.
 - Migration 0037 applied to bm_dev; the table and both columns are verified present.
 - E2E (`11-notifications`, plus the bell step in `09-ca`) runs in CI against staging.
-- NOT yet done: a live click-through of the bell and the settings tab in the browser on the dev server.
+
+### Live browser check (dev server on bm_dev, signed in as the owner) — 2026-11-17
+I created three real notifications with the app's own `notify()`: overdue, the GST frequency nudge, and trial ending. I set their e-mails to `skipped` afterwards so nothing is ever sent.
+- The bell showed **3**, and the panel listed all three with the correct text, ₹42,500.00, and "Just now".
+- Opening an item went to its page (`/invoices?status=overdue`, `/settings?tab=notifications`) and lowered the count (3 → 2 → 1).
+- "Mark all as read" cleared the badge.
+- Escape closed the panel and returned focus to the bell.
+- Settings → Notifications:
+  - switching "Money to collect" off and the summary off, saving, then reloading kept both choices (the database matched); I then restored the defaults;
+  - choosing GST filing frequency **Monthly** saved it, the nudge disappeared, and the database plus the audit entry (`previous: null → monthly`) were confirmed.
+- No browser console errors; correct layout at phone width and at 1280 px.
+
+**Bugs found and fixed during the live check:**
+1. **The panel hung off the left edge on phones** (360 px anchored under the bell, which is not at the right edge). On small screens it now spans the screen with a 12 px margin; on larger screens it stays under the bell.
+2. **The badge could show a stale count after opening an item.** A routine refresh (on window focus) started before the "mark read" save finished, and its old answer overwrote the screen. Fixed with a generation counter: a refresh only applies its answer if nothing newer has started since. After a read-change is saved, the bell refreshes again. Re-tested with a refresh forced mid-click: the count stayed correct.
+3. **The four e-mail switches had no proper accessible name**, so a screen reader could not tell them apart. Each is now `aria-labelledby` its title and `aria-describedby` its description. The E2E finds them by exact name.
+
+Gate re-run after the fixes: all green (1995 tests, lint 0/0, knip clean, Turbopack build OK).
+
+**CI note:** GitHub did not start any CI job for this PR: *"recent account payments have failed or your spending limit needs to be increased"*. Once billing is fixed, re-run the checks.

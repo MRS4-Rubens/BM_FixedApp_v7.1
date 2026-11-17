@@ -117,12 +117,18 @@ export function NotificationsTab() {
             <li key={category}>
               <label className="flex items-start justify-between gap-4 rounded-lg border border-border px-3 py-2.5 cursor-pointer hover:bg-accent/40">
                 <span>
-                  <span className="block text-sm font-bold text-foreground">{CATEGORY_LABELS[category].label}</span>
-                  <span className="block text-xs text-muted-foreground">{CATEGORY_LABELS[category].description}</span>
+                  <span id={`notify-${category}-label`} className="block text-sm font-bold text-foreground">
+                    {CATEGORY_LABELS[category].label}
+                  </span>
+                  <span id={`notify-${category}-hint`} className="block text-xs text-muted-foreground">
+                    {CATEGORY_LABELS[category].description}
+                  </span>
                 </span>
                 <input
                   type="checkbox"
                   role="switch"
+                  aria-labelledby={`notify-${category}-label`}
+                  aria-describedby={`notify-${category}-hint`}
                   aria-checked={prefs.email[category]}
                   checked={prefs.email[category]}
                   onChange={(event) => toggleCategory(category, event.target.checked)}
