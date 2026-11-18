@@ -46,9 +46,12 @@ export async function resetAuthRateLimits(env: E2eEnv): Promise<number> {
   for (const pattern of patterns) {
     let cursor = '0';
     do {
-      const scanRes = await fetch(`${baseUrl}/scan/${cursor}/match/${encodeURIComponent(pattern)}/count/100`, {
-        method: 'GET',
+      // Command in the POST body (Upstash REST format): works on Upstash and on the CI look-alike (SRH), which does
+      // not support the /scan/... path form.
+      const scanRes = await fetch(baseUrl, {
+        method: 'POST',
         headers,
+        body: JSON.stringify(['SCAN', cursor, 'MATCH', pattern, 'COUNT', '100']),
       });
 
       if (!scanRes.ok) {

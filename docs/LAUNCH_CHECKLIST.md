@@ -30,7 +30,7 @@
 | 7 | PDF generation | **CustomJS Free**, production key only | 20 PDFs/day, 600/month, **watermark** | ~15+ PDFs/day or watermark not OK → **Pro $9/month** (100/day, no watermark) |
 | 8 | File storage | **IDrive e2 Free**, Singapore, private buckets `bizfolio-prod-files`, `bizfolio-test-files`, `bizfolio-backups`; **no Object Lock** for the pilot | 10 GB total; downloads ≤ 3× stored (free-plan permanence unverified) | Near 8 GB or free plan ends → paid ($6/TB) or move to Backblaze B2 (settings only) |
 | 9 | Backups | Neon 6 h history **+ nightly encrypted `pg_dump`** of production via GitHub Actions to `bizfolio-backups`, keep 7 daily + 4 weekly, restore drill every 3 months | Neon 5 GB transfer/month | Database > ~150 MB → weekly dumps, or Neon paid for longer history |
-| 10 | Rate limiting | **Upstash Redis Free**, Singapore, one database (flushed at the switch). No code change | 500K commands/month, 1 free database per account | Over ~400K/month → add card (PAYG $0.20 per 100K) |
+| 10 | Rate limiting | **Upstash Redis Free**, Singapore, **one account, one database** for production (flushed at the switch). CI uses a local look-alike, never Upstash. No code change | 500K commands/month; **one free account per person** and one free database (Upstash terms) | Over ~400K/month → add card (PAYG $0.20 per 100K) |
 | 11 | Error monitoring | **Sentry Developer Free**, EU region, one project; environments `test` / `production`. Cron monitor only for the PDF archive job | 5K errors/month, 1 user, 1 cron monitor | Regularly > 5K errors or a second person → Team (~$26/month) |
 | 12 | Uptime | **UptimeRobot Free** (commercial use allowed): `/ping` every 5 min, `/health-db` every 6 h, e-mail after 2 failures | 50 monitors, 5-min checks | Need faster checks/SMS → paid |
 | 13 | Scheduled jobs | **cron-job.org Free**: 2 daily jobs with secret header, failure + recovery e-mails. Manual GitHub "Run cron now" fallback | 30-second timeout | None expected |
@@ -38,7 +38,7 @@
 | 15 | Business inbox | **One Gmail** (receives support, feedback, payment claims) | — | With domain → Cloudflare Email Routing (free) forwards `support@` to Gmail |
 | 16 | Payments | Existing **manual UPI QR + bank transfer**, admin approves | — | Gateway later |
 | 17 | Code + CI | GitHub, **public repo** (free unlimited minutes), CI + browser tests on every PR | — | None while public |
-| 18 | Test services | Browser tests run the app **inside GitHub's machine** + **Neon test project** + **local Redis + Upstash look-alike** (serverless-redis-http). Mailosaur dropped | — | — |
+| 18 | Test services | Browser tests run the app **inside GitHub's machine** + **Neon test project** + **local Redis + Upstash look-alike** (serverless-redis-http) behind a small CI-only proxy that removes the Upstash-only `allow-key-locking` script flag. Mailosaur dropped | — | — |
 | 19 | Web analytics | **Removed** (Vercel Analytics deleted) | — | Cloudflare Web Analytics later if wanted |
 | 20 | Notification bell | **Option C**: refresh on page change, window focus, bell click, plus every 30 min | — | — |
 | 21 | Secrets | Render env for the app, GitHub Secrets for CI/backups/tests, cron-job.org header for `CRON_SECRET`. All fresh; test and production values always different | — | — |
@@ -65,7 +65,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [x] **2.5 Cron routes reply first:** *(done: L2 PR; schedules in `lib/cron/schedules.ts`, workflow `run-cron-now.yml`)* both `app/api/cron/*` routes check the secret, reply **202** immediately, then run the work with `after()`. The archive job stays inside `Sentry.withMonitor`; **remove** `Sentry.withMonitor` from daily-notifications. Delete the crons from `vercel.json`. Add a manual GitHub workflow "Run cron now".
 - [x] **2.6 Bell Option C** *(done: PR #68)* in `components/app/notifications/notification-bell.tsx` (replace `REFRESH_MS = 120_000`).
 - [x] **2.7 Backup workflow** `.github/workflows/backup-db.yml` *(done: L5)*: 21:00 UTC (02:30 IST) + manual button; Postgres 17 `pg_dump` (custom format, compressed; checked to contain `invoices`) → encrypt (gpg AES-256) with `BACKUP_ENCRYPTION_PASSPHRASE` → upload to `bizfolio-backups` under `daily/` (+ `weekly/` on Sundays) → prune to 7 daily + 4 weekly. **Off until the variable `BACKUPS_ENABLED=true`** is set (section 7); once on, a missing secret fails the run. Restore steps are in the workflow header.
-- [x] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml` *(done: L5)*: build + `next start` on the runner (`http://localhost:3000`); Neon test database + its Neon Auth (new secret `E2E_NEON_AUTH_BASE_URL`); `E2E_VERIFY_MODE=db`; removed the Vercel preview lookup, trusted-domain script, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; every PR + manual button; fork-PR guard kept; fake CustomJS/Brevo/IDrive keys. **Changed from the plan:** Redis uses the **test Upstash database** (the existing `E2E_UPSTASH_*` secrets), not a serverless-redis-http container, because the app only accepts an `https://` Redis address. The runner app sets `SKIP_ENV_VALIDATION=1` because production validation rejects `http://localhost` (never possible on Render).
+- [x] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml` *(done: L5)*: build + `next start` on the runner (`http://localhost:3000`); Neon test database + its Neon Auth (new secret `E2E_NEON_AUTH_BASE_URL`); `E2E_VERIFY_MODE=db`; removed the Vercel preview lookup, trusted-domain script, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; every PR + manual button; fork-PR guard kept; fake CustomJS/Brevo/IDrive keys. Redis: **local Redis + serverless-redis-http** service containers (empty every run) behind `scripts/ci/upstash-local-proxy.ts`, which removes the Upstash-only `allow-key-locking` script flag (PR #76). `lib/env.ts` accepts its `http://localhost` address only when validation is skipped, never on Render. The runner app sets `SKIP_ENV_VALIDATION=1` because production validation rejects `http://localhost` (never possible on Render).
 - [x] **2.9 E-mail provider swap:** *(done: L3 PR; `lib/email/mailer.ts`, Brevo HTTPS API)* Resend → **Brevo web API** in `lib/email/resend.ts` / `send-customer-email.ts`; rename env vars (e.g. `BREVO_API_KEY`, `EMAIL_FROM`).
 - [x] **2.10 Brand clean-up:** *(done: L2 PR; production now refuses to boot without `NEXT_PUBLIC_SUPPORT_EMAIL`)* `lib/config/contact.ts` fallback `support@billmatrix.in`; `.env.example` "Bill Matrix" → Invoice BizFolio, matching section 4 (fake values only).
 - [x] **2.11 Docs:** *(done: L6)* `docs/DEPLOYMENT.md`: removed the 8-year Object Lock, 7-day PITR, RPO ≤ 5 min and weekly-dump claims; now describes Render, cron-job.org, UptimeRobot (`/ping`, `/health-db`), the nightly encrypted backup + restore drill, honest recovery targets, and the 7 PR checks. `docs/e2e-staging-setup.md` rewritten for the runner-based E2E. `README.md` env table, background jobs and deploy sections updated.
@@ -119,9 +119,16 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [ ] Note the exact S3 endpoint host for Singapore (expected `s3.ap-southeast-1.idrivee2.com`; confirm in the dashboard).
 - [ ] Save endpoint, region, bucket names and keys (app key: both folders; backup key: PRODUCTION).
 
-### 3.6 Upstash — one database
-> **Open item (CodeRabbit, PR #73):** E2E needs its **own** Upstash database (`E2E_UPSTASH_*`), but the free plan allows one database per account and this step creates only the production one. Decide before 3.14: a local Upstash look-alike for E2E (small code change, the original decision 18) or a second free Upstash account for testing.
-- [ ] Sign up → Create Redis database → name `bizfolio` → region **AWS ap-southeast-1 (Singapore)** → Free.
+### 3.6 Upstash — one account, one database
+> **Upstash terms:** one free account per person and one free database. So: no second (alias) account for tests, and
+> **delete the old development Upstash account first** (Upstash console → Account → Delete account) so you never hold
+> two free accounts at once. CI browser tests do not need Upstash: they use a local look-alike on GitHub's machine.
+>
+> **Inactivity:** Upstash may treat a free database as inactive after 1 week without requests and delete unused
+> accounts. Every sign-in or sign-up uses it (rate limits), so normal use keeps it active. The cron jobs and uptime checks do **not** touch Redis, so in a quiet week sign in once yourself (weekly check in section 9).
+
+- [ ] Delete the **old development** Upstash account (after copying nothing: rate-limit counters are throwaway).
+- [ ] Sign up (your Gmail) → Create Redis database → name `bizfolio` → region **AWS ap-southeast-1 (Singapore)** → Free.
 - [ ] Copy the **REST URL** and **REST token** (PRODUCTION folder; it is also used during testing and flushed at the switch).
 
 ### 3.7 CustomJS
@@ -165,8 +172,8 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 
 ### 3.14 GitHub Secrets and Variables
 - [ ] Settings → Secrets and variables → Actions → add everything in section 4.2.
-- [ ] **Replace every old development value.** Until now the E2E secrets (`E2E_STAGING_DATABASE_URL`, `E2E_STAGING_DATABASE_URL_UNPOOLED`, `E2E_NEON_AUTH_BASE_URL`, `E2E_UPSTASH_*`) and the variables `E2E_DB_HOST_ALLOWLIST` / `E2E_UPSTASH_HOST_ALLOWLIST` point at the **old development** accounts. Overwrite all of them with the new **test** values, and set `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` to the new **production** host and address. Then run E2E once (Actions → E2E (runner app) → Run workflow) and check it passes.
-- [ ] Delete the unused secrets/variables: `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_API_KEY`, `MAILOSAUR_SERVER_ID`, `E2E_VERIFY_MODE`.
+- [ ] **Replace every old development value.** Until now the E2E secrets (`E2E_STAGING_DATABASE_URL`, `E2E_STAGING_DATABASE_URL_UNPOOLED`, `E2E_NEON_AUTH_BASE_URL`) and the variable `E2E_DB_HOST_ALLOWLIST` point at the **old development** accounts. Overwrite all of them with the new **test** values, and set `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` to the new **production** host and address. Then run E2E once (Actions → E2E (runner app) → Run workflow) and check it passes.
+- [ ] Delete the unused secrets/variables: `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_API_KEY`, `MAILOSAUR_SERVER_ID`, `E2E_VERIFY_MODE`, `E2E_UPSTASH_REST_URL`, `E2E_UPSTASH_REST_TOKEN`, `E2E_UPSTASH_HOST_ALLOWLIST`.
 - [ ] Variable `E2E_EXPECT_ARCHIVAL=false` (the E2E workflow already forces `E2E_VERIFY_MODE=db`). Leave `BACKUPS_ENABLED` unset until section 7.
 - [ ] `E2E_FORBIDDEN_DB_HOSTS` = the **production** Neon host(s); `E2E_FORBIDDEN_HOSTS` = the production address. These guards stop tests from ever touching production.
 
@@ -211,12 +218,11 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `BACKUP_S3_BUCKET` (optional, default `bizfolio-backups`), `BACKUPS_ENABLED=true` (**only from section 7**) | Variable | — | Backup workflow |
 | `CRON_SECRET` + `CRON_APP_URL` (`https://<name>.onrender.com`) | Secret | **Prod** value after the switch | Manual "Run cron now" workflow (`run-cron-now.yml`) |
 | `E2E_STAGING_DATABASE_URL` (pooled), `E2E_STAGING_DATABASE_URL_UNPOOLED` (direct), `E2E_NEON_AUTH_BASE_URL` | Secret | **Test** Neon project | E2E (app on the runner + tests) |
-| `E2E_UPSTASH_REST_URL` / `E2E_UPSTASH_REST_TOKEN` + variable `E2E_UPSTASH_HOST_ALLOWLIST` | Secret / Variable | **Test** Upstash database | E2E (rate limits; flushed between runs) |
 | `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`, `E2E_CONFIRM_STAGING` | Secret | Test values only | E2E |
 | `E2E_DB_HOST_ALLOWLIST` | Variable | **Test** Neon host | E2E safety guard |
 | `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` | Variable | **Prod** Neon host / prod address | E2E safety guard |
 | `E2E_EXPECT_ARCHIVAL=false` | Variable | — | E2E |
-| ~~`NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_*`~~ | — | **No longer used** (L5): delete them from GitHub after L5 merges | — |
+| ~~`NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_*`, `E2E_UPSTASH_REST_URL`, `E2E_UPSTASH_REST_TOKEN`, `E2E_UPSTASH_HOST_ALLOWLIST`~~ | — | **No longer used** (L5): delete them from GitHub after L5 merges | — |
 | Cookie secret / cron secret for the runner app | — | Generated fresh **every run** by `e2e.yml` (never stored) | E2E app on the runner |
 
 ### 4.3 Elsewhere
@@ -308,6 +314,7 @@ Do this in one sitting, in order. Each step has a proof check.
 | Weekly | Sentry new issues | Fix |
 | Weekly | GitHub → Actions → **Nightly database backup**: one green run per night | A missed or failed night → run it by hand and find out why |
 | Monthly | Upstash commands, IDrive GB, Brevo daily sends | Near limits → section 1 triggers |
+| Weekly | Upstash console: database still listed and active (free databases can be removed after a week without requests) | Quiet week → sign in once; gone → recreate it and update Render |
 | Month 1 | Review "Failed to fetch" errors | Filter only harmless ones |
 | Every 3 months | **Restore drill** (latest prod backup → Neon branch of the test project) | Record the result |
 | Every 3 months | Rotate `CRON_SECRET` (optional) | Update Render + cron-job.org + GitHub |
@@ -349,11 +356,10 @@ At 100+ businesses, compare these costs with revenue, and consider server-side P
 ## 12. Still unverified (check on the day)
 
 - Brevo free limit and branding on its own pricing page
-- Neon built-in sender rate limit; Neon Auth accepting `http://localhost:3000` as a trusted origin
+- Neon built-in sender rate limit
 - IDrive free 10 GB permanence; per-bucket keys; exact Singapore endpoint host
 - Upstash behaviour at the free limit
 - Sentry Spike Protection on the Developer plan
-- serverless-redis-http compatibility with our Upstash code
 - Render larger-instance prices; Brevo paid prices; domain price
 
 ---
