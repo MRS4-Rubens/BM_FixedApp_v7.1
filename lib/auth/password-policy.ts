@@ -8,6 +8,7 @@ const COMMON_PASSWORDS: ReadonlySet<string> = new Set([
   'iloveyou123', 'welcome123', 'welcome1234', 'admin12345', 'administrator',
   'letmein123', 'changeme123', 'abcdefghij', 'abc1234567', 'billmatrix',
   'billmatrix1', 'billmatrix123', 'billmatrix@123', 'india12345',
+  'invoicebizfolio', 'invoicebizfolio1', 'invoicebizfolio123', 'bizfolio123', 'bizfolio@123',
   'india@12345', 'test123456', 'sunshine123', 'football123', 'monkey1234',
 ]);
 

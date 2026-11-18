@@ -4,6 +4,7 @@ import { Building, Check, Copy, ExternalLink, QrCode, Smartphone } from 'lucide-
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatPaiseAsInr } from '@/lib/money';
+import { BRAND_NAME } from '@/lib/config/brand';
 import type { UpiPaymentOption } from '@/lib/payments/types';
 import type { PaymentMethod } from './plans';
 
@@ -126,7 +127,7 @@ export function PaymentMethodCard({
           <div className="w-full max-w-md space-y-3">
             <div className="flex justify-between items-center text-sm pb-1 border-b border-slate-200">
               <span className="font-semibold text-slate-500">Payee Name:</span>
-              <span className="font-bold text-slate-900">{upiConfig.upiName || 'Bill Matrix'}</span>
+              <span className="font-bold text-slate-900">{upiConfig.upiName || BRAND_NAME}</span>
             </div>
 
             <div className="flex justify-between items-center bg-white border border-slate-200 rounded-xl px-4 py-2.5 shadow-xs">

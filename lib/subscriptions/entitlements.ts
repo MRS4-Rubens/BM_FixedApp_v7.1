@@ -1,5 +1,5 @@
 /**
- * Pure Entitlements & Subscription Engine for Bill Matrix
+ * Pure Entitlements & Subscription Engine for Invoice BizFolio
  * 
  * Central source of truth for:
  * 1. Plan tiers ('free', 'trial', 'essentials', 'professional')
