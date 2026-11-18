@@ -13,8 +13,15 @@ export interface AuthActionState {
 /** LAUNCH-L4: Neon Auth's verification codes expire after 15 minutes (neon.com/docs/auth/guides/email-verification). */
 export const VERIFICATION_CODE_TTL_MINUTES = 15;
 
-/** Better Auth error code returned by sign-in when "Verify at Sign-up" is on and the address is unconfirmed. */
-export const EMAIL_NOT_VERIFIED_CODE = 'EMAIL_NOT_VERIFIED';
+/**
+ * Sign-in with an unconfirmed address ("Verify at Sign-up" on). Neon Auth's API answers `EMAIL_NOT_VERIFIED`; the
+ * @neondatabase/auth server client renames it to `email_not_confirmed` (BETTER_AUTH_ERROR_MAP). Accept both.
+ */
+const EMAIL_NOT_VERIFIED_CODES: ReadonlySet<string> = new Set(['EMAIL_NOT_VERIFIED', 'email_not_confirmed']);
+
+export function isEmailNotVerifiedCode(code: unknown): boolean {
+  return typeof code === 'string' && EMAIL_NOT_VERIFIED_CODES.has(code);
+}
 
 export const verifyCodeFormSchema = z.object({
   email: z.string().trim().min(1, 'Please sign up again.').max(254, 'Email address is too long.').email('Please sign up again.'),

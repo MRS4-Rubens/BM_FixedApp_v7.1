@@ -102,10 +102,13 @@ describe('LAUNCH-L4 sign-up opens the code screen', () => {
   });
 
   it('sign-in with the right password but an unconfirmed e-mail also opens the code screen (not a dead end)', async () => {
-    state.signInResponse = { data: null, error: { message: 'Email not verified', status: 403, code: 'EMAIL_NOT_VERIFIED' } };
-    const result = await loginAction(null, form({ email: EMAIL, password: 'correct horse battery' }));
-    expect(result.verifyEmail).toBe(EMAIL);
-    expect(result.error).toBeUndefined();
+    // The raw API code and the name the @neondatabase/auth server client turns it into (seen live on Neon).
+    for (const code of ['EMAIL_NOT_VERIFIED', 'email_not_confirmed']) {
+      state.signInResponse = { data: null, error: { message: 'Email not verified', status: 403, code } };
+      const result = await loginAction(null, form({ email: EMAIL, password: 'correct horse battery' }));
+      expect(result.verifyEmail).toBe(EMAIL);
+      expect(result.error).toBeUndefined();
+    }
   });
 
   it('other sign-in errors stay plain errors', async () => {
