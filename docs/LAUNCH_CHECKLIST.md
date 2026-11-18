@@ -50,24 +50,24 @@
 
 One launch-prep branch, one review, one PR. Never commit to `main` directly.
 
-- [ ] **2.1 Customer e-mails off (keep code):** one switch; hide the **Email** and **Reminder** buttons in `components/app/invoices/invoice-detail.tsx`; guard `lib/actions/invoices/email-invoice.ts` and `send-payment-reminder.ts` so they refuse while off.
-- [ ] **2.2 Wording:**
+- [x] **2.1 Customer e-mails off (keep code):** *(done: PR #68, switch in `lib/config/features.ts`)* one switch; hide the **Email** and **Reminder** buttons in `components/app/invoices/invoice-detail.tsx`; guard `lib/actions/invoices/email-invoice.ts` and `send-payment-reminder.ts` so they refuse while off.
+- [ ] **2.2 Wording:** *(plan + landing done in PR #68; privacy page ships with 2.9)*
   - `lib/subscriptions/plan-catalog.ts`: Free + Essentials rows stop promising "E-mail invoices (PDF) and payment reminders"; Free says "Download and print invoice PDFs".
   - `components/landing/features-section.tsx`, `comparison-table.tsx`, `how-it-works.tsx`.
   - Privacy page: Resend → Brevo; add Render, UptimeRobot, cron-job.org; Neon and IDrive now in Singapore; Sentry EU.
 - [ ] **2.3 Sign-up verification code screen** (auth, high risk, built in Claude Code, not Antigravity): code-entry box after sign-up (`authClient.emailOtp.verifyEmail({ email, otp })`), "Resend code" button, 15-minute expiry message. Replace the "check your e-mail… then log in" notice in `app/(auth)/signup/actions.ts`.
-- [ ] **2.4 Render readiness:**
+- [x] **2.4 Render readiness:** *(done: L2 PR)*
   - Make `isEnvValidationSkipped` safe off Vercel (today it only checks `VERCEL_ENV`).
-  - Sentry release from `RENDER_GIT_COMMIT` (`lib/observability/sentry-config.ts`, `next.config.mjs`); allow an explicit `SENTRY_ENVIRONMENT` (`test` / `production`).
+  - Sentry release from `RENDER_GIT_COMMIT` (`lib/observability/sentry-config.ts`, `next.config.mjs`); explicit environment via `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (`test` / `production`, read at build time).
   - Remove `@vercel/analytics` (`app/layout.tsx`, `package.json`).
   - New routes: **`/ping`** (no database, no Redis) and **`/health-db`** (database check).
   - Sentry ignores errors from `/ping` and `/health-db`. Do **not** filter "Failed to fetch" until the month-1 review.
-- [ ] **2.5 Cron routes reply first:** both `app/api/cron/*` routes check the secret, reply **202** immediately, then run the work with `after()`. The archive job stays inside `Sentry.withMonitor`; **remove** `Sentry.withMonitor` from daily-notifications. Delete the crons from `vercel.json`. Add a manual GitHub workflow "Run cron now".
-- [ ] **2.6 Bell Option C** in `components/app/notifications/notification-bell.tsx` (replace `REFRESH_MS = 120_000`).
+- [x] **2.5 Cron routes reply first:** *(done: L2 PR; schedules in `lib/cron/schedules.ts`, workflow `run-cron-now.yml`)* both `app/api/cron/*` routes check the secret, reply **202** immediately, then run the work with `after()`. The archive job stays inside `Sentry.withMonitor`; **remove** `Sentry.withMonitor` from daily-notifications. Delete the crons from `vercel.json`. Add a manual GitHub workflow "Run cron now".
+- [x] **2.6 Bell Option C** *(done: PR #68)* in `components/app/notifications/notification-bell.tsx` (replace `REFRESH_MS = 120_000`).
 - [ ] **2.7 Backup workflow** `.github/workflows/backup-db.yml`: 21:00 UTC (02:30 IST) + manual button; Postgres 17 `pg_dump` → compress → encrypt with `BACKUP_ENCRYPTION_PASSPHRASE` → upload to `bizfolio-backups` → prune to 7 daily + 4 weekly.
 - [ ] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml`: build + `next start` on the runner; Redis + serverless-redis-http service containers; Neon test project; `E2E_VERIFY_MODE=db`; remove the Vercel preview lookup, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; run on every PR + manual button; keep the fork-PR guard; no real CustomJS or Brevo keys.
 - [ ] **2.9 E-mail provider swap:** Resend → **Brevo web API** in `lib/email/resend.ts` / `send-customer-email.ts`; rename env vars (e.g. `BREVO_API_KEY`, `EMAIL_FROM`).
-- [ ] **2.10 Brand clean-up:** `lib/config/contact.ts` fallback `support@billmatrix.in`; `.env.example` "Bill Matrix" → Invoice BizFolio, matching section 4 (fake values only).
+- [x] **2.10 Brand clean-up:** *(done: L2 PR; production now refuses to boot without `NEXT_PUBLIC_SUPPORT_EMAIL`)* `lib/config/contact.ts` fallback `support@billmatrix.in`; `.env.example` "Bill Matrix" → Invoice BizFolio, matching section 4 (fake values only).
 - [ ] **2.11 Docs:** `docs/DEPLOYMENT.md`: remove the claims of an 8-year Object Lock, 7-day PITR, RPO ≤ 5 min and a weekly dump; describe the real setup (Render, cron-job.org, UptimeRobot, nightly backup, test/prod switch). Update the `README.md` env table.
 - [ ] **2.12 Tests + gate:** tests for every item; snapshots updated; run `pnpm typecheck && pnpm lint:ratchet && pnpm knip && pnpm test && pnpm build` (+ `pnpm print-css:build` if UI changed). Check line endings (CRLF → LF) before commit.
 
@@ -191,9 +191,9 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `EMAIL_FROM` (name fixed in 2.9) | `"Invoice BizFolio <yourapp@gmail.com>"` | same | No |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Upstash DB | same (**flushed** at switch) | Token **Yes** |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | DSN | same | No (public by design) |
-| `SENTRY_ENVIRONMENT` (added in 2.4) | `test` | **`production`** | No |
+| `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (added in 2.4; build time, so redeploy after changing) | `test` | **`production`** | No |
 | `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | Build upload | same | Token **Yes** |
-| `NEXT_PUBLIC_SUPPORT_EMAIL` / `FEEDBACK_RECIPIENT_EMAIL` | Your Gmail | same | No |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` / `FEEDBACK_RECIPIENT_EMAIL` | Your Gmail (**required**: the server won't start without the first one) | same | No |
 | `ADMIN_UPI_ID` / `ADMIN_UPI_NAME` | Your real UPI (to test the QR) | same (**shown to customers**) | No |
 | `ADMIN_BANK_NAME` / `ADMIN_BANK_ACC_NAME` / `ADMIN_BANK_ACC_NO` / `ADMIN_BANK_IFSC` | Your bank details | same (**shown to customers**, double-check) | No |
 | ~~`SKIP_ENV_VALIDATION`~~ | **never** | **never** | — |
@@ -205,7 +205,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `DATABASE_URL_UNPOOLED` | Secret | **Prod** direct URL | Production migration workflow + backup workflow |
 | `BACKUP_ENCRYPTION_PASSPHRASE` | Secret | — (also in password manager; without it backups can't be opened) | Backup workflow |
 | IDrive backup key + endpoint + `bizfolio-backups` (names fixed in 2.7) | Secret | Backups bucket | Backup workflow |
-| `CRON_SECRET` + app URL (names fixed in 2.5) | Secret | **Prod** value after the switch | Manual "Run cron now" workflow |
+| `CRON_SECRET` + `CRON_APP_URL` (`https://<name>.onrender.com`) | Secret | **Prod** value after the switch | Manual "Run cron now" workflow (`run-cron-now.yml`) |
 | `NEON_API_KEY`, `NEON_PROJECT_ID`, test DB URLs (pooled + direct) | Secret / Variable | **Test** project | E2E |
 | `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`, `E2E_CONFIRM_STAGING` | Secret | Test values only | E2E |
 | `E2E_DB_HOST_ALLOWLIST` | Variable | **Test** Neon host | E2E safety guard |
@@ -260,14 +260,14 @@ Do this in one sitting, in order. Each step has a proof check.
 
 - [ ] **7.1** cron-job.org: confirm both jobs are **paused**.
 - [ ] **7.2** Generate new production `NEON_AUTH_COOKIE_SECRET` and `CRON_SECRET` (`openssl rand -hex 32`) → save in PRODUCTION folder.
-- [ ] **7.3** Render → Environment → change to the **"After switch"** column (section 4.1): `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `CRON_SECRET`, `IDRIVE_E2_BUCKET_NAME`, `SENTRY_ENVIRONMENT=production`. Remove the test `PLATFORM_ADMIN_USER_IDS` for now.
+- [ ] **7.3** Render → Environment → change to the **"After switch"** column (section 4.1): `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `CRON_SECRET`, `IDRIVE_E2_BUCKET_NAME`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT=production`. Remove the test `PLATFORM_ADMIN_USER_IDS` for now.
 - [ ] **7.4** Upstash → database → **Flush** (clears test rate-limit counters). Proof: key count **0**.
 - [ ] **7.5** Proof before redeploy — production database: **0** businesses, users, invoices, payments, audit_log rows. Production bucket `bizfolio-prod-files`: **empty**.
 - [ ] **7.6** Render → **Manual deploy** (redeploy with new values). Proof: `/ping` OK and `/health-db` OK.
 - [ ] **7.7** Sign up yourself on production (code e-mail works) → copy your new user ID → Render `PLATFORM_ADMIN_USER_IDS` → redeploy. Proof: admin pages open.
 - [ ] **7.8** Smoke test **without finalizing anything**: log in, open dashboard, customers, settings; upload your logo/signature if wanted. Your first real invoice will get number 1.
 - [ ] **7.9** cron-job.org: update both headers to the **production** `CRON_SECRET` → **resume** both jobs. Proof: next run succeeds (or "Run now" → 202).
-- [ ] **7.10** GitHub: update `CRON_SECRET` secret for the manual cron workflow; confirm `DATABASE_URL_UNPOOLED` = **prod**.
+- [ ] **7.10** GitHub: update the `CRON_SECRET` and `CRON_APP_URL` secrets for the manual cron workflow; confirm `DATABASE_URL_UNPOOLED` = **prod**.
 - [ ] **7.11** First nightly backup runs after the switch. Proof: `bizfolio-backups` contains **only** post-switch files.
 - [ ] **7.12** Sentry: resolve/delete test issues. Proof: no open issues tagged `test`.
 - [ ] **7.13** Invite the 2 shops; tell them to check spam for the first e-mail, mark **"Not spam"** and add the sender to contacts.

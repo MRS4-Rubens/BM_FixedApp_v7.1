@@ -88,13 +88,13 @@ export function buildAppCspPolicy(options) {
   /** @type {(readonly [string, readonly string[]])[]} */
   const directives = [
     ['default-src', ["'self'"]],
-    ['script-src', ["'self'", "'unsafe-inline'", 'https://va.vercel-scripts.com', ...(options.isProduction ? [] : ["'unsafe-eval'"])]],
+    ['script-src', ["'self'", "'unsafe-inline'", ...(options.isProduction ? [] : ["'unsafe-eval'"])]],
     // fonts.googleapis.com: inline @import in invoice templates 1-4 (tracked debt: self-host Lora).
     ['style-src', ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com']],
     ['font-src', ["'self'", 'data:', 'https://fonts.gstatic.com']],
     // api.qrserver.com: checkout QR (REMOVE when FE-005 lands, before enforcing). Storage origins: admin payment-proof lightbox.
     ['img-src', ["'self'", 'data:', 'blob:', 'https://api.qrserver.com', ...storageOrigins]],
-    ['connect-src', ["'self'", 'https://*.sentry.io', ...(sentry !== null ? [sentry.origin] : []), 'https://vitals.vercel-insights.com',
+    ['connect-src', ["'self'", 'https://*.sentry.io', ...(sentry !== null ? [sentry.origin] : []),
       ...(options.isProduction ? [] : ['ws://localhost:*', 'ws://127.0.0.1:*', 'http://localhost:*'])]],
     ['worker-src', ["'self'", 'blob:']],
     ['manifest-src', ["'self'"]],

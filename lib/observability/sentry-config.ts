@@ -10,6 +10,12 @@ export interface SentryEnvSource {
   readonly NEXT_PUBLIC_VERCEL_ENV?: string | undefined;
   readonly VERCEL_GIT_COMMIT_SHA?: string | undefined;
   readonly NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?: string | undefined;
+  /** LAUNCH-L2: explicit environment name (`test` / `production`); inlined for the browser at build time. */
+  readonly NEXT_PUBLIC_SENTRY_ENVIRONMENT?: string | undefined;
+  /** LAUNCH-L2: release name inlined by next.config.mjs (Vercel or Render commit SHA). */
+  readonly NEXT_PUBLIC_SENTRY_RELEASE?: string | undefined;
+  /** Set by Render on every service, at build time and at runtime. */
+  readonly RENDER_GIT_COMMIT?: string | undefined;
 }
 
 export interface SentryRuntimeConfig {
@@ -44,11 +50,21 @@ export function resolveSentryRuntimeConfig(
   const dsn = rawDsn !== undefined && parseSentryDsn(rawDsn) !== null ? rawDsn : undefined;
 
   const rawEnvironment = (
-    firstNonEmpty(source.VERCEL_ENV, source.NEXT_PUBLIC_VERCEL_ENV, source.NODE_ENV) ?? 'development'
+    firstNonEmpty(
+      source.NEXT_PUBLIC_SENTRY_ENVIRONMENT,
+      source.VERCEL_ENV,
+      source.NEXT_PUBLIC_VERCEL_ENV,
+      source.NODE_ENV,
+    ) ?? 'development'
   ).toLowerCase();
   const environment = ENVIRONMENT_PATTERN.test(rawEnvironment) ? rawEnvironment : 'unknown';
 
-  const rawRelease = firstNonEmpty(source.VERCEL_GIT_COMMIT_SHA, source.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA);
+  const rawRelease = firstNonEmpty(
+    source.NEXT_PUBLIC_SENTRY_RELEASE,
+    source.VERCEL_GIT_COMMIT_SHA,
+    source.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
+    source.RENDER_GIT_COMMIT,
+  );
   const release = rawRelease !== undefined && RELEASE_PATTERN.test(rawRelease) ? rawRelease : undefined;
 
   return {

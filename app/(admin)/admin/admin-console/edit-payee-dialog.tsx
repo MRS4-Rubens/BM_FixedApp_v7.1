@@ -154,7 +154,7 @@ export function EditPayeeDialog({
                       id="payee-upi-name"
                       type="text"
                       required
-                      placeholder="e.g. Bill Matrix Billing"
+                      placeholder="e.g. Invoice BizFolio Billing"
                       value={form.upiName}
                       onChange={(e) => setForm({ ...form, upiName: e.target.value })}
                       className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm font-semibold outline-none focus:border-indigo-500"
@@ -194,7 +194,7 @@ export function EditPayeeDialog({
                       id="payee-acc-name"
                       type="text"
                       required
-                      placeholder="e.g. Bill Matrix Current A/C"
+                      placeholder="e.g. Invoice BizFolio Current A/C"
                       value={form.accName}
                       onChange={(e) => setForm({ ...form, accName: e.target.value })}
                       className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm font-semibold outline-none focus:border-emerald-500"

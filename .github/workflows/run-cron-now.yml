@@ -1,0 +1,55 @@
+name: Run cron job now (manual)
+
+# LAUNCH-L2 fallback: cron-job.org normally triggers these jobs (docs/LAUNCH_CHECKLIST.md 3.12).
+# Use this button only if cron-job.org is down or a run must be repeated. Manual only, never scheduled,
+# so it can't double the normal runs. Running a job twice is safe (archival leases, notification de-duplication).
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job to run'
+        required: true
+        type: choice
+        options: ['retry-invoice-archival', 'daily-notifications']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: run-cron-now
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    name: Trigger ${{ inputs.job }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call the cron route
+        env:
+          # Repository secrets: CRON_APP_URL (e.g. https://<name>.onrender.com, no trailing slash) and the
+          # PRODUCTION CRON_SECRET. Values are never printed.
+          CRON_APP_URL: ${{ secrets.CRON_APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          JOB: ${{ inputs.job }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_APP_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "::error::Set the CRON_APP_URL and CRON_SECRET repository secrets first."
+            exit 1
+          fi
+          case "$JOB" in
+            retry-invoice-archival|daily-notifications) ;;
+            *) echo "::error::Unknown job"; exit 1 ;;
+          esac
+          # Allow ~90 s so a sleeping Render Free service can wake up.
+          status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+            --max-time 90 --retry 2 --retry-delay 10 \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
+            "${CRON_APP_URL}/api/cron/${JOB}")
+          echo "HTTP status: ${status}"
+          if [ "$status" != "202" ]; then
+            echo "::error::Expected 202 (accepted), got ${status}."
+            exit 1
+          fi
+          echo "Accepted. The job now runs in the background; check Sentry / the app for the result."

@@ -119,6 +119,7 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 | `ADMIN_BANK_IFSC` | Ops: Payments | No | **Yes** (Checkout) | Platform collection bank IFSC code (e.g. `SBIN0000000`). | `/checkout` fails closed (`status: 'unavailable'`) if missing or placeholder. |
 | `SENTRY_DSN` | Ops: Monitoring | No | Recommended | Private Sentry DSN for server-side error capturing (Node.js and Edge runtimes). | Server Sentry initialization skipped; server errors unmonitored. |
 | `NEXT_PUBLIC_SENTRY_DSN` | Ops: Monitoring | Yes | Recommended | Public Sentry DSN for browser-side error reporting and CSP report-uri endpoint. | Browser Sentry initialization skipped; client errors unmonitored. |
+| `NEXT_PUBLIC_SENTRY_ENVIRONMENT` | Ops: Monitoring | Yes | Recommended | Sentry environment name (`test` during go-live testing, `production` after the switch). Read at build time. | Falls back to `VERCEL_ENV`, then `NODE_ENV`. |
 | `SENTRY_AUTH_TOKEN` | Build: Sentry | No | **Yes** (Build) | Sentry authentication token for uploading source maps during production builds. | Build issues a console warning; source maps are not uploaded to Sentry. |
 | `SENTRY_ORG` | Build: Sentry | No | **Yes** (Build) | Sentry organization slug used by `withSentryConfig` in `next.config.mjs`. | Build issues a console warning; source maps are not uploaded to Sentry. |
 | `SENTRY_PROJECT` | Build: Sentry | No | **Yes** (Build) | Sentry project slug used by `withSentryConfig` in `next.config.mjs`. | Build issues a console warning; source maps are not uploaded to Sentry. |
@@ -185,7 +186,7 @@ Migrations are **never applied automatically during deployment**. Schema changes
 ## Background Jobs
 
 Bill Matrix runs scheduled maintenance jobs via Vercel Cron:
-- **Cron path**: `/api/cron/retry-invoice-archival` (configured in `vercel.json`).
+- **Cron path**: `/api/cron/retry-invoice-archival` (schedule in `lib/cron/schedules.ts`; triggered by cron-job.org, which must send `Authorization: Bearer <CRON_SECRET>`; the route replies 202 and runs the sweep in the background).
 - **Schedule**: `0 20 * * *` (Daily at 20:00 UTC / 01:30 IST).
 - **Function**: Scans finalized invoices and credit notes that failed or are pending PDF archival to iDrive e2 object storage. Uses distributed lease claims (`archival_claimed_at` with `SKIP LOCKED`) to safely retry archival up to a maximum of 5 attempts. Emits operational alerts if unarchived records remain stale (> 60 minutes).
 - **Monitoring**: Monitored via Sentry Crons (`retry-invoice-archival` monitor, OPT-001) with automatic check-in tracking and missed-execution alerts.

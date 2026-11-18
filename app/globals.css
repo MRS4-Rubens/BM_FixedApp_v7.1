@@ -13,7 +13,7 @@
 
 @variant dark (&:where(.dark, .dark *));
 
-/* Bill Matrix design system — deep navy primary, emerald accent, Inter, light mode only */
+/* Invoice BizFolio design system — deep navy primary, emerald accent, Inter, light mode only */
 
 @theme inline {
   --font-heading: var(--font-lora), 'Century Schoolbook', 'Georgia', serif;

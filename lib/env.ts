@@ -141,9 +141,17 @@ const DEV_DEFAULT_APP_URL = 'http://localhost:3000';
 const text = () => z.string().trim().min(1, 'must not be empty');
 const secret = () => z.string().trim().min(32, 'must be at least 32 characters');
 
-/** SKIP_ENV_VALIDATION=1 is honoured for local/CI only, never on Vercel production. */
+/**
+ * SKIP_ENV_VALIDATION=1 is honoured for local/CI builds only. It is ignored on any hosted deployment:
+ * Vercel production (VERCEL_ENV=production) and every Render service (Render always sets RENDER=true,
+ * at build time and at runtime). LAUNCH-L2: without the Render rule a mistaken variable would switch off
+ * the startup safety checks in production.
+ */
 export function isEnvValidationSkipped(source: EnvSource = process.env): boolean {
-  return source.SKIP_ENV_VALIDATION === '1' && source.VERCEL_ENV !== 'production';
+  if (source.SKIP_ENV_VALIDATION !== '1') return false;
+  if (source.VERCEL_ENV === 'production') return false;
+  if (source.RENDER === 'true') return false;
+  return true;
 }
 
 /* ------------------------------------------------------------------ */
@@ -284,6 +292,37 @@ const cronEnv: EnvGroup<CronEnv> = defineGroup(
 
 export const adminEnv: EnvGroup<AdminEnv> = defineGroup('admin', parseAdminEnv);
 
+/**
+ * LAUNCH-L2: the support / feedback inbox is shown on legal pages, checkout and settings. In production it must be
+ * set explicitly (no silent placeholder); outside production the placeholder in lib/config/contact.ts is used.
+ */
+export type ContactEnv = Readonly<{ NEXT_PUBLIC_SUPPORT_EMAIL?: string; FEEDBACK_RECIPIENT_EMAIL?: string }>;
+
+function parseContactEnv(source: EnvSource): ParseOutcome<ContactEnv> {
+  const strict = source.NODE_ENV === 'production' && !isEnvValidationSkipped(source);
+  const support = source.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ?? '';
+  const feedback = source.FEEDBACK_RECIPIENT_EMAIL?.trim() ?? '';
+  const issues: EnvIssue[] = [];
+  if (support === '') {
+    if (strict) issues.push({ group: 'contact', name: 'NEXT_PUBLIC_SUPPORT_EMAIL', message: 'is required in production' });
+  } else if (!EMAIL_PATTERN.test(support)) {
+    issues.push({ group: 'contact', name: 'NEXT_PUBLIC_SUPPORT_EMAIL', message: 'must be a single e-mail address' });
+  }
+  if (feedback !== '' && !EMAIL_PATTERN.test(feedback)) {
+    issues.push({ group: 'contact', name: 'FEEDBACK_RECIPIENT_EMAIL', message: 'must be a single e-mail address' });
+  }
+  if (issues.length > 0) return { ok: false, issues };
+  return {
+    ok: true,
+    value: {
+      ...(support !== '' ? { NEXT_PUBLIC_SUPPORT_EMAIL: support } : {}),
+      ...(feedback !== '' ? { FEEDBACK_RECIPIENT_EMAIL: feedback } : {}),
+    },
+  };
+}
+
+const contactEnv: EnvGroup<ContactEnv> = defineGroup('contact', parseContactEnv);
+
 /* ------------------------------------------------------------------ */
 /* FEATURE groups (lazy; reported at boot, never thrown at boot)        */
 /* ------------------------------------------------------------------ */
@@ -362,7 +401,7 @@ export function getRateLimitEnv(): RateLimitEnv { return rateLimitEnv.get(); }
 /* Boot-time checks                                                     */
 /* ------------------------------------------------------------------ */
 
-const CORE_GROUPS: readonly EnvGroup<unknown>[] = [appEnv, databaseEnv, authEnv, cronEnv, adminEnv];
+const CORE_GROUPS: readonly EnvGroup<unknown>[] = [appEnv, databaseEnv, authEnv, cronEnv, adminEnv, contactEnv];
 const FEATURE_GROUPS: readonly EnvGroup<unknown>[] = [storageEnv, pdfEnv, emailEnv, rateLimitEnv];
 
 function collectIssues(groups: readonly EnvGroup<unknown>[], source: EnvSource): readonly EnvIssue[] {

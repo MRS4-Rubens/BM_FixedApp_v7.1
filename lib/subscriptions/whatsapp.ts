@@ -1,5 +1,5 @@
 /**
- * WhatsApp Click-to-Chat Helper for Bill Matrix
+ * WhatsApp Click-to-Chat Helper for Invoice BizFolio
  * 
  * Lightweight, zero-dependency helper constructing direct WhatsApp dispatch links
  * using the official https://wa.me/ protocol.

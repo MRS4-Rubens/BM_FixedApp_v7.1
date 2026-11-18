@@ -4,7 +4,7 @@ import { getCronEnv, isEnvConfigError } from '@/lib/env';
 import { logError } from '@/lib/actions/_shared/logger';
 
 /**
- * Verifies the Vercel Cron secret: fail-closed when CRON_SECRET is unset/weak (500), constant-time comparison,
+ * Verifies the cron secret (sent by cron-job.org as `Authorization: Bearer <CRON_SECRET>`): fail-closed when CRON_SECRET is unset/weak (500), constant-time comparison,
  * 401 on mismatch. Returns null when the request may proceed, otherwise the response to send.
  */
 export function verifyCronRequest(request: NextRequest, scope: string): NextResponse | null {

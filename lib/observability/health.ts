@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { getRedis } from '@/lib/rate-limit/upstash';
-import { logError } from '@/lib/actions/_shared/logger';
+import { logError, logWarn } from '@/lib/actions/_shared/logger';
 
 // OPT-001: dependency checks behind GET /api/health. Lives outside app/api/health/route.ts because a route file may
 // only export HTTP handlers and route config.
@@ -117,4 +117,48 @@ export async function getHealthStatus(): Promise<HealthCheckResult> {
   })();
 
   return inflightCheck;
+}
+
+/* ------------------------------------------------------------------ */
+/* LAUNCH-L2: uptime-monitor checks (UptimeRobot)                       */
+/* ------------------------------------------------------------------ */
+
+export interface DatabaseHealthResult {
+  readonly status: 'ok' | 'error';
+  readonly statusCode: 200 | 503;
+}
+
+let cachedDatabaseHealth: { result: DatabaseHealthResult; expiresAt: number } | null = null;
+
+export function resetDatabaseHealthCacheForTests(): void {
+  cachedDatabaseHealth = null;
+}
+
+/**
+ * Database-only check behind GET /health-db (polled every 6 h by the uptime monitor, so Neon Free can sleep).
+ * Failures go to the server log (logWarn: a breadcrumb, never a Sentry issue): the uptime monitor already alerts on a 503, and a sleeping
+ * or restarting database must not create Sentry issues.
+ */
+export async function getDatabaseHealth(): Promise<DatabaseHealthResult> {
+  const now = Date.now();
+  if (cachedDatabaseHealth && now < cachedDatabaseHealth.expiresAt) {
+    return cachedDatabaseHealth.result;
+  }
+  let result: DatabaseHealthResult;
+  try {
+    await withTimeout(
+      (async () => {
+        await db.execute(sql`select 1`);
+      })(),
+      CHECK_TIMEOUT_MS,
+      'Database health check timed out',
+    );
+    result = { status: 'ok', statusCode: 200 };
+  } catch (error: unknown) {
+    const reason = error instanceof Error ? error.name : 'UnknownError';
+    logWarn('health-db', 'database check failed', { reason }); // breadcrumb only, never a Sentry issue
+    result = { status: 'error', statusCode: 503 };
+  }
+  cachedDatabaseHealth = { result, expiresAt: Date.now() + CACHE_TTL_MS };
+  return result;
 }
