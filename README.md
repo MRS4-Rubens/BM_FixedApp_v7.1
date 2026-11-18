@@ -4,7 +4,7 @@ A GST billing and invoicing web application for Indian small businesses.
 
 ## Prerequisites
 
-- **Node.js** — Node 24 (exact version pinned in `.nvmrc`; `package.json` engines is `24.x`, matching Vercel runtime). If you have [nvm](https://github.com/nvm-sh/nvm) installed, run `nvm use` to select the version automatically.
+- **Node.js** — Node 24 (exact version pinned in `.nvmrc`; `package.json` engines is `24.x`; use the same major on Render). If you have [nvm](https://github.com/nvm-sh/nvm) installed, run `nvm use` to select the version automatically.
 - **pnpm** — pnpm 11 (pinned in `package.json` as `pnpm@11.9.0`). Run `corepack enable` to ensure the correct package manager is active. Do not use npm or yarn.
 
 ## Local Setup
@@ -91,7 +91,7 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 
 | Variable Name | Group | Public? | Required in Prod? | Purpose | Missing / Failure Behavior |
 |---|---|---|---|---|---|
-| `NEXT_PUBLIC_APP_URL` | Core: App | Yes | **Yes** | Fully qualified canonical origin of the application (e.g. `https://app.billmatrix.in`). | Fails boot / build (`EnvConfigError`). Non-prod falls back to `http://localhost:3000`; Vercel preview falls back to `https://$VERCEL_URL`. |
+| `NEXT_PUBLIC_APP_URL` | Core: App | Yes | **Yes** | Fully qualified canonical origin of the application (e.g. `https://<name>.onrender.com`). | Fails boot / build (`EnvConfigError`). Non-prod falls back to `http://localhost:3000`; Vercel preview falls back to `https://$VERCEL_URL`. |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | Core: Contact | Yes | No | Customer-facing support email address rendered in navigation, footer, and help text. | Falls back to `support@billmatrix.in` (`lib/config/contact.ts`). |
 | `FEEDBACK_RECIPIENT_EMAIL` | Core: Contact | No | No | Internal recipient address for user feedback submissions. | Falls back to `NEXT_PUBLIC_SUPPORT_EMAIL` (`lib/config/contact.ts`). |
 | `DATABASE_URL` | Core: Database | No | **Yes** | Neon pooled PostgreSQL connection string used for all application queries. | Fails boot (`EnvConfigError`). Must be valid `postgres://` or `postgresql://`. |
@@ -108,7 +108,7 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 | `EMAIL_FROM` | Feature: Email | No | **Yes** (Email) | Sender verified in Brevo, as `email` or `Name <email>` (pilot: your Gmail). | Fails callers on use. Must match sender format pattern. |
 | `UPSTASH_REDIS_REST_URL` | Feature: Rate Limit | No | **Yes** (Rate Limit) | HTTPS REST endpoint for Upstash Redis used in distributed rate limiting. | Fails callers on use; logged at boot. Rate limit enforcement fails closed or open per policy. |
 | `UPSTASH_REDIS_REST_TOKEN` | Feature: Rate Limit | No | **Yes** (Rate Limit) | REST authentication token for Upstash Redis. | Fails callers on use; logged at boot. |
-| `CRON_SECRET` | Core: Cron | No | **Yes** | Bearer secret authorizing the Vercel cron endpoint (`/api/cron/retry-invoice-archival`). | Fails boot (`EnvConfigError`). Must be at least 32 characters long. |
+| `CRON_SECRET` | Core: Cron | No | **Yes** | Bearer secret authorizing the cron endpoints (`/api/cron/retry-invoice-archival`, `/api/cron/daily-notifications`), sent by cron-job.org. | Fails boot (`EnvConfigError`). Must be at least 32 characters long. |
 | `PLATFORM_ADMIN_USER_IDS` | Core: Admin | No | **Yes** (or emails) | Comma-separated list of platform administrator user IDs (preferred). | Fails boot if both admin IDs and admin emails are unset. |
 | `PLATFORM_ADMIN_EMAILS` | Core: Admin | No | **Yes** (or IDs) | Comma-separated list of platform administrator emails (fallback for verified emails). | Fails boot if both admin IDs and admin emails are unset. |
 | `ADMIN_UPI_ID` | Ops: Payments | No | **Yes** (Checkout) | Platform payee UPI VPA address (e.g. `merchant@upi`) for manual subscription QR. | `/checkout` fails closed (`status: 'unavailable'`) if missing or placeholder. |
@@ -123,26 +123,23 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 | `SENTRY_AUTH_TOKEN` | Build: Sentry | No | **Yes** (Build) | Sentry authentication token for uploading source maps during production builds. | Build issues a console warning; source maps are not uploaded to Sentry. |
 | `SENTRY_ORG` | Build: Sentry | No | **Yes** (Build) | Sentry organization slug used by `withSentryConfig` in `next.config.mjs`. | Build issues a console warning; source maps are not uploaded to Sentry. |
 | `SENTRY_PROJECT` | Build: Sentry | No | **Yes** (Build) | Sentry project slug used by `withSentryConfig` in `next.config.mjs`. | Build issues a console warning; source maps are not uploaded to Sentry. |
-| `SKIP_ENV_VALIDATION` | Build: CI | No | No | Skips boot-time environment validation during local builds and CI quality jobs (`1`). | Strictly ignored in production (`VERCEL_ENV === 'production'`). |
+| `SKIP_ENV_VALIDATION` | Build: CI | No | No | Skips boot-time environment validation during local builds and CI quality jobs (`1`). | Strictly ignored on Render (`RENDER=true`) and on Vercel production (`VERCEL_ENV === 'production'`). |
 | `TEST_DATABASE_URL` | Tests: RealDB | No | No | Connection string for dedicated disposable test database used in `pnpm test:realdb`. | Real-database tests fail immediately if unset (`url-guard.ts`). |
 | `TEST_DATABASE_IS_DISPOSABLE` | Tests: RealDB | No | No | Explicit confirmation flag (`1`) required when running real-DB tests on remote hosts. | Real-database tests refuse execution against non-localhost targets. |
-| `E2E_BASE_URL` | Tests: E2E | No | No | Target URL of the Vercel Preview deployment under test. | Required: the suite refuses to start (env validation in `e2e/support/env.ts`). |
+| `E2E_BASE_URL` | Tests: E2E | No | No | Address of the app under test: `http://localhost:3000` (the PR built and started on the CI runner). | Required: the suite refuses to start (env validation in `e2e/support/env.ts`). |
 | `E2E_CONFIRM_STAGING` | Tests: E2E | No | No | Affirmative safety string (`yes-this-is-not-production`) required before running E2E. | E2E suite aborts immediately if absent or invalid. |
 | `E2E_FORBIDDEN_HOSTS` | Tests: E2E | No | No | Comma-separated deny list of production hostnames to prevent targeting production. | E2E suite aborts if target matches any forbidden host. |
 | `E2E_DATABASE_URL` | Tests: E2E | No | No | Database connection string for the isolated staging Neon branch (used for verification queries). | Required: the suite refuses to start. |
 | `E2E_DB_HOST_ALLOWLIST` | Tests: E2E | No | No | Comma-separated allowlist of permitted staging database hostnames. | Required; the suite aborts if the database host is not allowlisted. |
 | `E2E_FORBIDDEN_DB_HOSTS` | Tests: E2E | No | No | Comma-separated deny list of production database hostnames. | Required; the suite aborts if the database host matches one. |
-| `E2E_VERIFY_MODE` | Tests: E2E | No | No | How signup e-mails are verified: `db` (mark verified directly in the staging DB; `direct_db` is an alias) or `mailbox` (real inbox via Mailosaur). | Defaults to `db`. |
+| `E2E_VERIFY_MODE` | Tests: E2E | No | No | How signup e-mails are verified: `db` (mark verified directly in the test DB; `direct_db` is an alias). The CI workflow forces `db`. | Defaults to `db`. |
 | `E2E_EXPECT_VERIFICATION_REQUIRED` | Tests: E2E | No | No | Flag indicating whether email verification is enforced on signup (`true`/`false`). | Defaults to `true`. |
 | `E2E_ADMIN_EMAIL` | Tests: E2E | No | No | Email address of the dedicated platform admin account used in E2E tests (must also be in the preview's `PLATFORM_ADMIN_EMAILS`). | Required: the suite refuses to start. |
 | `E2E_ADMIN_PASSWORD` | Tests: E2E | No | No | Password of the E2E platform admin account (8+ characters). | Required: the suite refuses to start. |
-| `E2E_VERCEL_BYPASS_SECRET` | Tests: E2E | No | No | Secret passed in `x-vercel-protection-bypass` header to access password-protected previews. | E2E requests receive 401/403 from Vercel protection if unset. |
 | `E2E_UPSTASH_REST_URL` | Tests: E2E | No | No | Staging Upstash Redis endpoint for clearing rate limits before test runs. | Rate limit cleanup skipped if absent. |
 | `E2E_UPSTASH_REST_TOKEN` | Tests: E2E | No | No | Staging Upstash Redis authentication token. | Rate limit cleanup skipped if absent. |
 | `E2E_UPSTASH_ALLOW_FLUSH` | Tests: E2E | No | No | Permission flag allowing flush of test rate-limit keys on staging Redis. | Defaults to `false`. |
 | `E2E_UPSTASH_HOST_ALLOWLIST` | Tests: E2E | No | No | Hostname allowlist for staging Redis instances permitted to be flushed. | Flush aborted if host not allowlisted. |
-| `E2E_MAILOSAUR_API_KEY` | Tests: E2E | No | No | API key for Mailosaur live email delivery testing (`MAILOSAUR_API_KEY` is also accepted). | Mailbox verification suite skipped if unset. |
-| `E2E_MAILOSAUR_SERVER_ID` | Tests: E2E | No | No | Server ID for Mailosaur live email delivery testing (`MAILOSAUR_SERVER_ID` is also accepted). | Mailbox verification suite skipped if unset. |
 | `E2E_EXPECT_ARCHIVAL` | Tests: E2E | No | No | `true` makes the journey require that finalized PDFs are actually archived. Keep `false` while the PDF provider quota is too small (see the launch-day notes). | Defaults to `false`: archival is checked but not required. |
 | `E2E_UPDATE_A11Y_BASELINE` | Tests: E2E | No | No | Flag (`true`/`1`) to update the axe-core accessibility baseline file `e2e/a11y-baseline.json`. | Baseline is verified without updating when false. |
 | `E2E_STAGING_DATABASE_URL_UNPOOLED` | Tests: E2E | No | No | Direct compute unpooled database connection string for running staging migrations. | Staging migration runner fails if unset. |
@@ -151,7 +148,7 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 
 - **Production rules**: `NEXT_PUBLIC_APP_URL` must use `https://` and be a publicly reachable host (not localhost, `.local`, or `.internal`). `NEON_AUTH_COOKIE_SECRET` and `CRON_SECRET` must be at least 32 characters. At least one administrator must be configured in `PLATFORM_ADMIN_USER_IDS` or `PLATFORM_ADMIN_EMAILS` (comma-separated valid emails).
 - **Development defaults**: In non-production environments (`NODE_ENV !== 'production'`), `NEXT_PUBLIC_APP_URL` defaults to `http://localhost:3000` if omitted.
-- **Build time bypass**: `SKIP_ENV_VALIDATION=1` skips the boot-time check and relaxes production URL strictness for local and CI builds. It is strictly ignored when `VERCEL_ENV === 'production'`. It never fabricates missing variables; builds still require syntactically valid auth and database variables (dummy-valid values are acceptable in CI).
+- **Build time bypass**: `SKIP_ENV_VALIDATION=1` skips the boot-time check and relaxes production URL strictness for local and CI builds. It is strictly ignored on Render (`RENDER=true`) and when `VERCEL_ENV === 'production'`. It never fabricates missing variables; builds still require syntactically valid auth and database variables (dummy-valid values are acceptable in CI).
 
 ## Database & Migrations
 
@@ -185,21 +182,27 @@ Migrations are **never applied automatically during deployment**. Schema changes
 
 ## Background Jobs
 
-Bill Matrix runs scheduled maintenance jobs via Vercel Cron:
-- **Cron path**: `/api/cron/retry-invoice-archival` (schedule in `lib/cron/schedules.ts`; triggered by cron-job.org, which must send `Authorization: Bearer <CRON_SECRET>`; the route replies 202 and runs the sweep in the background).
-- **Schedule**: `0 20 * * *` (Daily at 20:00 UTC / 01:30 IST).
-- **Function**: Scans finalized invoices and credit notes that failed or are pending PDF archival to iDrive e2 object storage. Uses distributed lease claims (`archival_claimed_at` with `SKIP LOCKED`) to safely retry archival up to a maximum of 5 attempts. Emits operational alerts if unarchived records remain stale (> 60 minutes).
-- **Monitoring**: Monitored via Sentry Crons (`retry-invoice-archival` monitor, OPT-001) with automatic check-in tracking and missed-execution alerts.
-- **Preview Isolation**: Vercel Preview deployments do not execute cron jobs; crons run exclusively on the production deployment.
+Invoice BizFolio runs two scheduled jobs (schedules in `lib/cron/schedules.ts`). **cron-job.org** calls them with
+`Authorization: Bearer <CRON_SECRET>`; each route replies **202** at once and finishes the work in the background.
+- **`/api/cron/retry-invoice-archival`**, daily `0 20 * * *` (20:00 UTC / 01:30 IST): retries PDF archival of
+  finalized invoices and credit notes to IDrive e2 object storage, using lease claims (`archival_claimed_at` with
+  `SKIP LOCKED`) and up to 5 attempts. Monitored by the Sentry cron monitor `retry-invoice-archival`; reports
+  documents still unarchived after 60 minutes.
+- **`/api/cron/daily-notifications`**, daily `30 3 * * *` (03:30 UTC / 09:00 IST): creates the bell reminders
+  (overdue invoices, GST due dates, plan expiry). Watched by cron-job.org failure e-mails.
+- **Fallback**: GitHub → Actions → "Run cron job now (manual)" (`.github/workflows/run-cron-now.yml`).
 
 ## Deploying & Operating
 
-Production deployment is managed on Vercel with automated CI quality gates on GitHub. Consult the following sections in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for full operational procedures:
+Production runs on **Render** (one Free web service, Singapore, `next start`), with uptime checks from UptimeRobot
+(`/ping`, `/health-db`), a nightly encrypted database backup (`.github/workflows/backup-db.yml`) and the CI checks on
+GitHub. Set-up, environment variables and the test → production switch: [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md).
+Operational procedures in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md):
 - [Build Configuration Decisions](docs/DEPLOYMENT.md#build-configuration-decisions-opt-003): TypeScript target ES2022, Node 24 pinning, native image rendering, and standalone build decisions.
-- [Monitoring & Alerting](docs/DEPLOYMENT.md#monitoring--alerting-opt-001): `/api/health` uptime polling, request ID correlation, and Sentry production alert rules.
+- [Monitoring & Alerting](docs/DEPLOYMENT.md#monitoring--alerting-opt-001): UptimeRobot checks, request ID correlation, and Sentry production alert rules.
 - [Data Requests & Account Closure](docs/DEPLOYMENT.md#data-requests-export-and-account-closure-opt-002a): DPDP self-serve JSON export, owner verification, account closure workflow, and statutory 8-year record retention under Section 36 of the CGST Act.
-- [Backup & Restore](docs/DEPLOYMENT.md#backup-and-restore-opt-002): Neon Continuous Point-in-Time Recovery (PITR), weekly logical dumps, S3 Object Lock compliance mode, the quarterly restore drill, and the recovery targets to confirm at launch.
-- *Launch-Day Note*: All external SaaS provider accounts (Sentry, Brevo, Upstash, iDrive e2, Neon, Render) are provisioned and credential-rotated on launch day.
+- [Backup & Restore](docs/DEPLOYMENT.md#backup-and-restore-opt-002): Neon's 6-hour history, the nightly encrypted dump (7 daily + 4 weekly), the quarterly restore drill, and honest recovery targets.
+- *Launch-Day Note*: All external provider accounts (Neon, Render, Upstash, IDrive e2, Brevo, Sentry, CustomJS, cron-job.org, UptimeRobot) are created fresh on launch day; nothing from development is reused.
 
 ## Documentation Map
 
@@ -208,7 +211,8 @@ Production deployment is managed on Vercel with automated CI quality gates on Gi
 - [docs/TESTING.md](docs/TESTING.md): Testing strategy, Unit / PGlite / Real-Postgres suites, concurrency test harness, and guard test catalog.
 - [docs/GST_COMPLIANCE_NOTES.md](docs/GST_COMPLIANCE_NOTES.md): Indian GST statutory compliance logic (B2CL/B2CS turnover thresholds, CDNUR return netting, UTGST rules).
 - [docs/STATUTORY_ARCHIVAL_BLUEPRINT.md](docs/STATUTORY_ARCHIVAL_BLUEPRINT.md): Long-term legal retention architecture and planned 8-year financial year archival design.
-- [docs/e2e-staging-setup.md](docs/e2e-staging-setup.md): Playwright E2E staging environment setup, Vercel Preview integration, and trusted Neon Auth origin management.
+- [docs/e2e-staging-setup.md](docs/e2e-staging-setup.md): Playwright E2E set-up: the PR built and started on the CI runner, the test database, secrets and safety guards.
+- [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md): Launch decisions, account set-up for test and production, environment variables, go-live tests and the switch.
 - [docs/security/dependencies.md](docs/security/dependencies.md): Dependency security policy, `@neondatabase/auth` pinning, server component cookie patch, and CI audit gate.
 - [e2e/README.md](e2e/README.md): Playwright end-to-end test suite structure, Page Object Models, test execution modes, and safety models.
 
