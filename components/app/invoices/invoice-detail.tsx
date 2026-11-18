@@ -265,9 +265,9 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
     {
       step: 3,
       name: 'Dispatched',
-      subtext: invoice.emailed_at
-        ? `Sent (${invoice.email_send_count || 1}x)`
-        : CUSTOMER_EMAILS_ENABLED ? 'Pending email' : 'Download to share',
+      subtext: invoice.emailed_at ? `Sent (${invoice.email_send_count || 1}x)` : 'Pending email',
+      // LAUNCH-L1: with customer e-mails off this step would read "Pending" forever; show a neutral status instead.
+      pendingLabel: CUSTOMER_EMAILS_ENABLED ? undefined : 'Not e-mailed',
       date: invoice.emailed_at,
       isCompleted: !!invoice.emailed_at,
       isCurrent: !!invoice.emailed_at && invoice.payment_status !== 'paid',
@@ -567,7 +567,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                           </p>
                         ) : (
                           <p className="text-[10px] text-muted-foreground font-medium mt-0.5 whitespace-nowrap truncate">
-                            Pending
+                            {('pendingLabel' in step && step.pendingLabel) || 'Pending'}
                           </p>
                         )}
                       </div>
