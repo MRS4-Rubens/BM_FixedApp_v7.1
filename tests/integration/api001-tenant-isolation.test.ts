@@ -292,6 +292,14 @@ describe('API-001: tenant isolation of customers, products and invoices', () => 
       expect(row.rows[0]?.customer_id).toBe(a.customerId);
     });
 
+    it('re-saving a draft records the time in updated_at (CodeRabbit, PR #73)', async () => {
+      const draft = expectSuccess(await saveInvoiceDraft(draftInput({ customerId: a.customerId, productId: a.productId })));
+      await pg.query(`UPDATE invoices SET updated_at = '2020-01-01T00:00:00Z' WHERE id = $1`, [draft.invoiceId]);
+      expectSuccess(await saveInvoiceDraft(draftInput({ id: draft.invoiceId, customerId: a.customerId, productId: a.productId })));
+      const row = await pg.query<{ updated_at: Date }>(`SELECT updated_at FROM invoices WHERE id = $1`, [draft.invoiceId]);
+      expect(new Date(row.rows[0]?.updated_at ?? 0).getUTCFullYear()).toBeGreaterThan(2020);
+    });
+
     it('accepts own customer and own product, and also walk-in customers / ad-hoc lines', async () => {
       const own = expectSuccess(await saveInvoiceDraft(draftInput({ customerId: a.customerId, productId: a.productId })));
       expect(own.invoiceId).toMatch(/^[0-9a-f-]{36}$/);

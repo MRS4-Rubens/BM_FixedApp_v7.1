@@ -112,7 +112,8 @@ export const saveCreditNoteDraft = createAuthenticatedAction(
         if (input.id) {
           const [updated] = await tx
             .update(creditNotes)
-            .set(cnData)
+            // Record every draft save (line items are replaced below); finalized rows are never matched here.
+            .set({ ...cnData, updated_at: new Date() })
             .where(
               and(
                 eq(creditNotes.id, input.id),

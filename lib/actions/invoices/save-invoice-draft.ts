@@ -182,6 +182,8 @@ export const saveInvoiceDraft = createAuthenticatedAction(invoiceDraftSchema, as
           .set({
             ...invoiceData,
             financial_year_id: activeFy.id,
+            // Record every draft save (line items are replaced below); finalized rows are never matched here.
+            updated_at: new Date(),
           })
           .where(
             and(

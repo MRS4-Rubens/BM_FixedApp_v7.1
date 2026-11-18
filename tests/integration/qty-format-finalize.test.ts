@@ -234,6 +234,22 @@ describe('Quantity Format: enforced at finalize', () => {
     expectSuccess(await finalizeCreditNote({ id: nosGood.id }));
   });
 
+  it('re-saving a credit note draft records the time in updated_at (CodeRabbit, PR #73)', async () => {
+    await setQuantityDecimals(null);
+    const inv = await createDraft([{ qty: '4', pricePaise: 1000, unit: 'NOS' }]);
+    await finalizeInvoice(inv.id);
+    const lineId = inv.lineIds[0] as string;
+    const draft = expectSuccess(
+      await saveCreditNoteDraft({ original_invoice_id: inv.id, reason: '01-sales-return', line_items: [{ original_line_item_id: lineId, quantity: 1 }] }),
+    );
+    await pg.query(`UPDATE credit_notes SET updated_at = '2020-01-01T00:00:00Z' WHERE id = $1`, [draft.id]);
+    expectSuccess(
+      await saveCreditNoteDraft({ id: draft.id, original_invoice_id: inv.id, reason: '01-sales-return', line_items: [{ original_line_item_id: lineId, quantity: 2 }] }),
+    );
+    const row = await pg.query<{ updated_at: Date }>(`SELECT updated_at FROM credit_notes WHERE id = $1`, [draft.id]);
+    expect(new Date(row.rows[0]?.updated_at ?? 0).getUTCFullYear()).toBeGreaterThan(2020);
+  });
+
   it('stored quantities are never rewritten by the setting', async () => {
     const res = await pg.query<{ quantity: string }>(
       `SELECT ili.quantity FROM invoice_line_items ili JOIN invoices i ON i.id = ili.invoice_id
