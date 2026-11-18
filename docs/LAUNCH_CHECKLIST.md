@@ -68,8 +68,8 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [x] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml` *(done: L5)*: build + `next start` on the runner (`http://localhost:3000`); Neon test database + its Neon Auth (new secret `E2E_NEON_AUTH_BASE_URL`); `E2E_VERIFY_MODE=db`; removed the Vercel preview lookup, trusted-domain script, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; every PR + manual button; fork-PR guard kept; fake CustomJS/Brevo/IDrive keys. **Changed from the plan:** Redis uses the **test Upstash database** (the existing `E2E_UPSTASH_*` secrets), not a serverless-redis-http container, because the app only accepts an `https://` Redis address. The runner app sets `SKIP_ENV_VALIDATION=1` because production validation rejects `http://localhost` (never possible on Render).
 - [x] **2.9 E-mail provider swap:** *(done: L3 PR; `lib/email/mailer.ts`, Brevo HTTPS API)* Resend → **Brevo web API** in `lib/email/resend.ts` / `send-customer-email.ts`; rename env vars (e.g. `BREVO_API_KEY`, `EMAIL_FROM`).
 - [x] **2.10 Brand clean-up:** *(done: L2 PR; production now refuses to boot without `NEXT_PUBLIC_SUPPORT_EMAIL`)* `lib/config/contact.ts` fallback `support@billmatrix.in`; `.env.example` "Bill Matrix" → Invoice BizFolio, matching section 4 (fake values only).
-- [ ] **2.11 Docs:** `docs/DEPLOYMENT.md`: remove the claims of an 8-year Object Lock, 7-day PITR, RPO ≤ 5 min and a weekly dump; describe the real setup (Render, cron-job.org, UptimeRobot, nightly backup, test/prod switch). Update the `README.md` env table.
-- [ ] **2.12 Tests + gate:** tests for every item; snapshots updated; run `pnpm typecheck && pnpm lint:ratchet && pnpm knip && pnpm test && pnpm build` (+ `pnpm print-css:build` if UI changed). Check line endings (CRLF → LF) before commit.
+- [x] **2.11 Docs:** *(done: L6)* `docs/DEPLOYMENT.md`: removed the 8-year Object Lock, 7-day PITR, RPO ≤ 5 min and weekly-dump claims; now describes Render, cron-job.org, UptimeRobot (`/ping`, `/health-db`), the nightly encrypted backup + restore drill, honest recovery targets, and the 7 PR checks. `docs/e2e-staging-setup.md` rewritten for the runner-based E2E. `README.md` env table, background jobs and deploy sections updated.
+- [x] **2.12 Tests + gate:** *(done in every L-PR)* tests for every item; snapshots updated; `pnpm typecheck && pnpm lint:ratchet && pnpm knip && pnpm test && pnpm build` (+ `pnpm print-css:build` if UI changed); line endings checked (CRLF → LF) before each commit.
 
 ---
 
@@ -120,6 +120,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [ ] Save endpoint, region, bucket names and keys (app key: both folders; backup key: PRODUCTION).
 
 ### 3.6 Upstash — one database
+> **Open item (CodeRabbit, PR #73):** E2E needs its **own** Upstash database (`E2E_UPSTASH_*`), but the free plan allows one database per account and this step creates only the production one. Decide before 3.14: a local Upstash look-alike for E2E (small code change, the original decision 18) or a second free Upstash account for testing.
 - [ ] Sign up → Create Redis database → name `bizfolio` → region **AWS ap-southeast-1 (Singapore)** → Free.
 - [ ] Copy the **REST URL** and **REST token** (PRODUCTION folder; it is also used during testing and flushed at the switch).
 
@@ -164,6 +165,8 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 
 ### 3.14 GitHub Secrets and Variables
 - [ ] Settings → Secrets and variables → Actions → add everything in section 4.2.
+- [ ] **Replace every old development value.** Until now the E2E secrets (`E2E_STAGING_DATABASE_URL`, `E2E_STAGING_DATABASE_URL_UNPOOLED`, `E2E_NEON_AUTH_BASE_URL`, `E2E_UPSTASH_*`) and the variables `E2E_DB_HOST_ALLOWLIST` / `E2E_UPSTASH_HOST_ALLOWLIST` point at the **old development** accounts. Overwrite all of them with the new **test** values, and set `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` to the new **production** host and address. Then run E2E once (Actions → E2E (runner app) → Run workflow) and check it passes.
+- [ ] Delete the unused secrets/variables: `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_API_KEY`, `MAILOSAUR_SERVER_ID`, `E2E_VERIFY_MODE`.
 - [ ] Variable `E2E_EXPECT_ARCHIVAL=false` (the E2E workflow already forces `E2E_VERIFY_MODE=db`). Leave `BACKUPS_ENABLED` unset until section 7.
 - [ ] `E2E_FORBIDDEN_DB_HOSTS` = the **production** Neon host(s); `E2E_FORBIDDEN_HOSTS` = the production address. These guards stop tests from ever touching production.
 
@@ -289,6 +292,7 @@ Do this in one sitting, in order. Each step has a proof check.
 | GitHub test reports | Auto-delete after **7 days** (`retention-days: 7` in `e2e.yml`) | Nothing to do |
 | Local temp files: `coverage/`, `playwright-report/`, `test-results/`, `repomix-output-P2.md`, `tsconfig.tsbuildinfo`, `.env*.local` | Ignored by git (checked 2026-11-18), never reach GitHub; delete locally whenever you like | `git status` clean |
 | **Dev test accounts** (Neon `bm_dev`: `l4-code-check-1119@example.com`, `tilak.verma@inboxorigin.com`, `l4-unverified-probe-1119@example.com`, plus any made later) | Delete **all at once at the end of the code batch** (before section 3), click-by-click, after confirming the list | Neon Auth → Users shows none of them |
+| **Old development accounts** (old Neon account with `bm_dev` + `staging-e2e`, the Vercel project, old Upstash / IDrive / Resend / Mailosaur accounts) | Delete **after** the switch is proven (section 7 done, E2E green on the new test project) and after copying anything you still need | The old Neon and Vercel dashboards no longer list the projects |
 | **Stays on purpose:** Neon test project, `bizfolio-test-files` | Used by CI browser tests and restore drills | — |
 | **Stays on purpose:** `tests/`, `e2e/`, `docs/reports/` | Protect future changes / fix history; never shipped to users | — |
 
@@ -302,6 +306,7 @@ Do this in one sitting, in order. Each step has a proof check.
 | Weekly | Neon prod CU-hours | On pace for > 80 → Launch plan |
 | Weekly | CustomJS daily usage / failed archives | Often near 20/day → Pro $9 |
 | Weekly | Sentry new issues | Fix |
+| Weekly | GitHub → Actions → **Nightly database backup**: one green run per night | A missed or failed night → run it by hand and find out why |
 | Monthly | Upstash commands, IDrive GB, Brevo daily sends | Near limits → section 1 triggers |
 | Month 1 | Review "Failed to fetch" errors | Filter only harmless ones |
 | Every 3 months | **Restore drill** (latest prod backup → Neon branch of the test project) | Record the result |

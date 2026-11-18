@@ -214,6 +214,16 @@ describe('e2e support helpers', () => {
       ).toThrow(E2eSafetyError);
     });
 
+    it('Upstash flush needs the host in a NON-EMPTY allowlist (empty never means "any host")', () => {
+      const flush = { ...validConfig, E2E_UPSTASH_ALLOW_FLUSH: true, E2E_UPSTASH_REST_URL: 'https://test-redis.upstash.io' };
+      expect(() => assertSafeTarget({ ...flush, E2E_UPSTASH_HOST_ALLOWLIST: 'test-redis.upstash.io' })).not.toThrow();
+      expect(() => assertSafeTarget({ ...flush, E2E_UPSTASH_HOST_ALLOWLIST: 'other.upstash.io' })).toThrow(E2eSafetyError);
+      expect(() => assertSafeTarget({ ...flush, E2E_UPSTASH_HOST_ALLOWLIST: '' })).toThrow(E2eSafetyError);
+      expect(() => assertSafeTarget(flush)).toThrow(E2eSafetyError);
+      // Flush off: no Upstash check needed.
+      expect(() => assertSafeTarget({ ...flush, E2E_UPSTASH_ALLOW_FLUSH: false })).not.toThrow();
+    });
+
     it('schema rejects missing required fields such as E2E_FORBIDDEN_HOSTS', () => {
       const invalid = { ...validConfig, E2E_FORBIDDEN_HOSTS: '' };
       const parsed = e2eEnvSchema.safeParse(invalid);

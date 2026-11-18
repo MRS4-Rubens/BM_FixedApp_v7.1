@@ -1,9 +1,26 @@
 # Delivery pipeline and deployments
 
+> **Launch setup (LAUNCH-L6, 2026-11-19).** The live app runs on **Render** (one Free web service, Singapore, `next start`).
+> Scheduled jobs are called by **cron-job.org**, uptime is watched by **UptimeRobot**, and the production database is
+> backed up nightly by GitHub Actions. Accounts, settings and the test → production switch are in
+> [`docs/LAUNCH_CHECKLIST.md`](LAUNCH_CHECKLIST.md) (sections 3–8). Until launch, Vercel still builds previews of pull
+> requests; it is not used for production and is removed after the switch.
+
 ## Everyday flow
 1. Work happens on a branch (never directly on `main`).
-2. Open a pull request. GitHub runs **CI / Quality gates** automatically (typecheck, lint ratchet, migration-history check, tests, production build).
-3. Merge only when **Quality gates** is green. Vercel deploys `main` after the merge.
+2. Open a pull request. GitHub runs **7 checks**: Quality gates (typecheck, lint ratchet, migration-history check, tests, production build), Dependency audit, Real-Postgres integration tests, E2E staging configuration, Playwright E2E Suite (the PR built and started on the runner, against the test database), and the two Vercel preview checks (until Vercel is removed).
+3. Merge only when **all checks are green on the latest commit**. After every new push, wait for all of them again.
+4. Render deploys `main` automatically after the merge (build `pnpm install --frozen-lockfile && pnpm build`, start `pnpm start`).
+
+## Hosting (Render) and scheduled jobs
+- **Render Free web service**, region Singapore: 512 MB RAM, 0.1 CPU, sleeps after 15 minutes without traffic (the first request then takes up to about a minute), 5 GB outbound bandwidth per month. Upgrade path: Starter ($7/month) when the first shop pays or pages feel slow (checklist section 10).
+- **Environment variables** live in the Render service settings (checklist section 4.1). Never set `SKIP_ENV_VALIDATION` there: on Render it is ignored anyway (`RENDER=true`), and the server refuses to start if a required variable is missing.
+- **Release tag for Sentry**: taken from `RENDER_GIT_COMMIT`; the environment name from `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (`test` while testing, `production` after the switch).
+- **E-mail**: Brevo's HTTPS API (Render Free blocks SMTP ports). Customer e-mails are switched off for the pilot (`lib/config/features.ts`).
+- **Scheduled jobs** (`lib/cron/schedules.ts`), called by cron-job.org with the header `Authorization: Bearer <CRON_SECRET>`:
+  - `GET /api/cron/retry-invoice-archival`, daily **20:00 UTC** (01:30 IST);
+  - `GET /api/cron/daily-notifications`, daily **03:30 UTC** (09:00 IST).
+  Both reply **202** at once and finish the work in the background (cron-job.org gives up after 30 s). Running a job twice is safe. If cron-job.org is down, use GitHub → Actions → **Run cron job now (manual)** (`.github/workflows/run-cron-now.yml`, secrets `CRON_APP_URL` + `CRON_SECRET`).
 
 ## What the gates mean
 - **Typecheck / tests / db:check / build**: must pass.
@@ -25,16 +42,17 @@ Migrations are NOT applied automatically. Use GitHub -> Actions -> "Production D
 
 ## Required GitHub settings (done in the GitHub website)
 - Branch ruleset on `main`: require a pull request and require the **Quality gates** check.
-- Repository secret `DATABASE_URL_UNPOOLED` (only needed for the migration workflow).
+- Secret scanning, push protection and fork-PR approval: checklist section 3.3.
+- Secrets and variables (migration, backup, cron fallback, E2E): the full list is in checklist section 4.2.
 
 ## Environment variables
 
 The authoritative reference for every configuration variable is the table in [`README.md`](../README.md#environment-variables), which documents all variables in `.env.example`, their group, production requirement, and missing-variable behavior.
 
 Key deployment requirements:
-- **Production Variables**: Set in Vercel Project Settings -> Environment Variables (Production environment). Ensure `NEXT_PUBLIC_APP_URL` points to the canonical production URL (e.g. `https://app.billmatrix.in`).
-- **Direct Database Access**: `DATABASE_URL_UNPOOLED` must be configured as a GitHub Repository Secret for the manual production migration workflow (`.github/workflows/migrate-production.yml`).
-- **Staging & Previews**: Configured with isolated preview credentials as detailed in [`docs/e2e-staging-setup.md`](e2e-staging-setup.md).
+- **Production variables**: set in the Render service (checklist section 4.1, "During testing" vs "After switch"). `NEXT_PUBLIC_APP_URL` is the Render address (`https://<name>.onrender.com`) and `NEXT_PUBLIC_SUPPORT_EMAIL` is required.
+- **Direct database access**: `DATABASE_URL_UNPOOLED` is a GitHub repository secret, used by the manual production migration workflow (`.github/workflows/migrate-production.yml`) and the nightly backup (`.github/workflows/backup-db.yml`).
+- **Browser tests (E2E)**: run against the separate test Neon project, as described in [`docs/e2e-staging-setup.md`](e2e-staging-setup.md).
 
 ## Database integrity guards (DB-001)
 - CHECK constraints reject negative money, zero/negative payments, non-positive quantities, and finalized invoices/credit notes missing their number, finalization time or date.
@@ -156,16 +174,17 @@ If any query returns a non-zero count, remediate legacy rows before migrating:
 ## Build configuration decisions (OPT-003)
 
 - TypeScript target ES2022 affects type-checking only; browser output is controlled by Next.js/SWC and its browserslist.
-- Node: .nvmrc is the exact version (local + CI); package.json engines "24.x" is what Vercel uses; a unit test keeps the majors equal. Upgrading Node = change both in one PR.
+- Node: .nvmrc is the exact version (local and CI; set the same major on Render); package.json engines is "24.x"; a unit test keeps the majors equal. Upgrading Node = change both in one PR.
 - Images: plain <img> is deliberate (data/blob URLs, expiring signed URLs, print templates); no next/image, so no images config. If next/image is ever added for remote images, configure images.remotePatterns at that time.
-- Not used, on purpose: output: 'standalone' (only for self-hosting; we deploy on Vercel); Renovate (Dependabot already configured in .github/dependabot.yml); experimental.serverActions.allowedOrigins (only needed if a proxy/CDN in front of Vercel changes the Host header — re-check on launch day).
+- Not used, on purpose: output: 'standalone' (Render runs `next start` from the normal build); Renovate (Dependabot already configured in .github/dependabot.yml); experimental.serverActions.allowedOrigins (only needed if a proxy/CDN in front of the app changes the Host header; re-check if one is ever added).
 
 ## Monitoring & alerting (OPT-001)
 
-### Uptime monitoring
-- **Endpoint**: Configure an external uptime monitor (e.g. Better Uptime, Datadog Synthetics, or Pingdom) to poll `GET <origin>/api/health` once every minute (`1m` interval).
-- **Alert trigger**: Alert on non-`200` HTTP status (e.g. `503 Service Unavailable`) for **2 consecutive checks** (prevents alerting on transient network hiccups).
-- **Response structure**:
+### Uptime monitoring (UptimeRobot)
+- **`GET /ping`** every **5 minutes**: answers 200 without touching the database or Redis, so it never wakes Neon or uses Upstash commands. It also keeps the Render service awake.
+- **`GET /health-db`** every **6 hours**: checks the database only (10 s cache); 200 `{"status":"ok"}` or 503 `{"status":"error"}`. Infrequent on purpose: each check wakes Neon and uses compute hours.
+- **Alert** after **2 failed checks**, to your Gmail (checklist 3.13).
+- **`GET /api/health`** (database + Redis) still exists for manual checks and is not polled; polling it every minute would keep Neon awake all day. Its response:
   ```json
   {
     "status": "ok",
@@ -182,7 +201,7 @@ If any query returns a non-zero count, remediate legacy rows before migrating:
 
 ### Request correlation & logs
 - **Request IDs**: Every server action (via `runValidatedHandler` in `lib/actions/_shared/create-action.ts`) and the API routes we own (`/api/health`, `/api/cron/retry-invoice-archival`, `/api/reports/export`, `/api/business/[id]/logo`) run inside a request context, so their error log lines carry `requestId` and their Sentry events carry the tag `request_id`. The Neon Auth routes under `/api/auth/**` are library-owned and not wrapped.
-- **Vercel correlation**: When deployed on Vercel, the ID automatically adopts Vercel's incoming `x-vercel-id` (if valid), allowing 1:1 cross-referencing directly in Vercel Function logs. Otherwise, it falls back to `x-request-id` or generates a cryptographically secure UUID (`node:crypto`).
+- **Incoming IDs**: the ID adopts a valid incoming `x-vercel-id` (Vercel previews) or `x-request-id`; otherwise it generates a cryptographically secure UUID (`node:crypto`). On Render the server logs (Render dashboard → Logs) carry the same `requestId`.
 - **Response header**: `/api/health`, the cron route and the report export return it as `x-request-id`. The logo route deliberately does not, because its responses are cached publicly for a year and the header would be frozen into every cached copy.
 
 ### Sentry alert rules (production)
@@ -201,7 +220,7 @@ Configure the following 6 alert rules in the production Sentry project:
    - Trigger: Upstash Redis is unreachable or timing out during rate limit evaluation.
 5. **Health check degradation**:
    - Filter: `event.environment:production` AND `scope:health-check`
-   - Trigger: `/api/health` dependency check failed (database or Redis unreachable or timing out).
+   - Trigger: `/api/health` dependency check failed (database or Redis unreachable or timing out). `/health-db` failures are only logged as warnings (no Sentry issue); UptimeRobot alerts on them.
 6. **Cron monitor missed or failed**:
    - Filter: Sentry Cron Monitor `retry-invoice-archival` (registered with schedule `0 20 * * *`, matching `lib/cron/schedules.ts`).
    - Trigger: Missed check-in or execution error / timeout. *(Note: Created automatically on the first check-in).*
@@ -209,13 +228,13 @@ Configure the following 6 alert rules in the production Sentry project:
    - No Sentry cron monitor (the free Sentry plan includes one, used by the archival job). Watched instead by cron-job.org failure e-mails (schedule `30 3 * * *` UTC = 09:00 IST, in `lib/cron/schedules.ts`) and by `notifications-cron` errors in Sentry.
    - Trigger: failed call or execution error. A missed day means that day's reminders (overdue invoices, GST due dates, plan expiry) are not created; nothing wrong is ever sent. Urgent e-mails left pending are retried by the next run (up to 3 tries within 3 days).
 
-> **Note**: These monitors and alert rules are configured on launch day with the final Sentry account and chosen uptime provider.
+> **Note**: These alert rules are configured on launch day with the new Sentry account (checklist 3.9); uptime monitors with UptimeRobot (3.13).
 
 ## Data requests: export and account closure (OPT-002a)
 
 ### How requests arrive
 - **Data Export**: Generated self-serve by business owners via `GET /api/account/export`. Each export logs an audit row with `action = 'data_export'` (`AUDIT_EVENTS.business.data_export`) inside `audit_log`.
-- **Account Closure**: Submitted self-serve by business owners via Settings → General → "Request account closure" modal. This creates an audit row with `action = 'account_closure_requested'` (`AUDIT_EVENTS.business.account_closure_requested`) containing the requester's IP, user agent, and optional reason, and automatically dispatches a notification email via Resend to `SUPPORT_EMAIL`.
+- **Account Closure**: Submitted self-serve by business owners via Settings → General → "Request account closure" modal. This creates an audit row with `action = 'account_closure_requested'` (`AUDIT_EVENTS.business.account_closure_requested`) containing the requester's IP, user agent, and optional reason, and automatically dispatches a notification email via Brevo to `SUPPORT_EMAIL`.
 
 ### SLAs and identity verification
 - **SLA**: Acknowledge and review closure requests within **5 business days**; complete operational processing within **30 days**.
@@ -264,34 +283,46 @@ Follow this checklist when processing an account closure request:
 
 ## Backup and restore (OPT-002)
 
-### Database backups (Neon Postgres)
-- **Continuous Point-in-Time Recovery (PITR)**:
-  - Neon automatic continuous WAL-based point-in-time recovery is enabled with a minimum **7-day retention window** on the production branch.
-  - Allows restoring the database to any millisecond within the past 7 days.
-- **Weekly Logical Backups (pg_dump)**:
-  - An automated scheduled GitHub Actions workflow (or external cron worker) takes a weekly logical snapshot using `pg_dump` with `--clean --if-exists --no-owner --no-privileges`.
-  - Encrypted dumps are offloaded to secondary cold storage in an S3-compatible bucket on IDrive e2.
-- **Quarterly Restoration Drill Checklist**:
-  1. Spin up a temporary Neon database branch from a specific PITR timestamp (e.g. 24 hours prior).
-  2. Point a staging/test environment at the temporary branch connection string.
-  3. Run validation gates:
-     ```bash
-     pnpm typecheck
-     pnpm exec vitest run tests/integration
-     ```
-  4. Run invariant audits: verify sequence counters (`invoice_number_counters`), tenant foreign keys, and audit log sequence continuity.
-  5. Tear down the temporary Neon branch after recording the drill outcome.
+> Rewritten for the launch (LAUNCH-L6). Earlier versions of this page described a 7-day point-in-time window, weekly
+> dumps, an 8-year Object Lock and a 5-minute recovery point. **None of those exist on the pilot setup.** What is
+> real is below.
 
-### Archival PDF storage (IDrive e2)
-- **Object Lock Compliance Mode**:
-  - The production invoice PDF archive bucket is configured with S3 Object Lock in **Compliance Mode** with an **8-year retention policy**.
-  - In compliance mode, a protected object version cannot be overwritten or deleted by any user, including the root account or AWS/S3 access keys, until the retention period expires.
-  - This satisfies statutory preservation requirements under Indian tax regulations.
+### What protects the data
+| Layer | What it covers | Kept for |
+|---|---|---|
+| **Neon history (Free plan)** | Restore the production database to any moment in the last **6 hours** (Neon console → Restore, or a branch from a past time) | 6 hours |
+| **Nightly encrypted dump** (`.github/workflows/backup-db.yml`) | Whole production database, **including users** (the `neon_auth` schema is in the same database), every night at 21:00 UTC (02:30 IST) | 7 daily + 4 weekly (Sunday) copies |
+| **Invoice PDFs** | Stored privately in IDrive e2 `bizfolio-prod-files`; **no Object Lock** on the pilot, so a deleted file cannot be recovered | Until deleted |
 
-### Disaster recovery RPO / RTO targets (to confirm at launch)
+- The dump is `pg_dump` (Postgres 17, custom format, compressed), checked to contain the `invoices` table, encrypted with gpg AES-256 using `BACKUP_ENCRYPTION_PASSPHRASE`, and uploaded to the private bucket `bizfolio-backups` (`daily/`, `weekly/`). The plain copy never leaves the runner.
+- **Off until launch**: the workflow only runs when the GitHub variable `BACKUPS_ENABLED` is `true` (checklist 7.11). Once on, a missing secret fails the run instead of skipping silently.
+- **The passphrase is the only key.** It lives in the password manager (PRODUCTION folder) and as a GitHub secret. Without it no backup can be opened.
+- **Statutory retention (8 years, CGST Act s.36)** is a business obligation that this pilot setup does **not** guarantee on its own: keep the GSTR-1 exports and PDFs you file, and revisit Object Lock / longer retention when the plan grows (checklist section 10).
 
-These are targets, not guarantees: they depend on the Neon plan (PITR window) and backup schedule chosen on launch day. Confirm or adjust them then, and prove them in the first restore drill.
+### Restore (drill every 3 months, never over production)
+1. Download the newest file: `aws s3 cp --endpoint-url <BACKUP_S3_ENDPOINT> s3://bizfolio-backups/daily/<file>.dump.gpg .`
+2. Decrypt in a terminal: `gpg --pinentry-mode loopback --decrypt --output db.dump <file>.dump.gpg`. It asks for the passphrase (do **not** add `--batch`: batch mode never asks, so decryption would fail).
+3. In the **test** Neon project, create a new branch and an **empty** database in it (e.g. `restore_check`), then restore into that database and stop at the first error: `pg_restore --exit-on-error --no-owner --no-acl --dbname "<restore_check direct URL>" db.dump` (Postgres 17 client). Check the exit status is **0** (`echo $?`). Without `--exit-on-error`, `pg_restore` skips failed objects (for example a missing constraint or guard trigger) and still finishes, so the data checks below could pass on an incomplete copy. If it fails, drop and re-create the empty database and try again; never continue on a partial restore.
+4. Check: invoice counts and numbers, latest invoices, credit notes, payments, `invoice_number_counters`, and that a test login works.
+5. Record the result (date, file, time taken) and delete the branch.
 
-- **RPO (Recovery Point Objective)**: **&le; 5 minutes**. Neon continuous WAL streaming ensures minimal data loss in any catastrophic zone failure.
-- **RTO (Recovery Time Objective)**: **&le; 1 hour**. Neon's copy-on-write branching enables instant database recovery, while Vercel allows immediate failover and re-deployment of application compute.
+For a real incident (both paths: Neon 6-hour restore **and** restore from a dump):
 
+1. **Stop all writes first, whichever path you take**, user and automated alike: **suspend the Render service** (Render → service → Suspend) and **pause both cron-job.org jobs**; do not run the manual cron workflow. Asking users to pause is not enough, because scheduled jobs would keep writing. Note the time. Anything written after the restore point and before this moment exists only in the pre-restore database.
+2. **Keep the pre-restore database** until step 4 is done:
+   - restore from a dump, or a **new branch created from a past time**: the original branch is untouched and is the pre-restore database;
+   - **in-place restore** of the branch (Neon instant restore): Neon keeps the pre-restore state as a separate backup branch; find it in the branch list after restoring ([Neon instant restore](https://neon.com/docs/postgres/backup-restore/branch-restore)).
+3. **Restore** to the chosen point: the Neon 6-hour restore if the problem is that recent, otherwise the latest good dump as above (exit status 0), and check it.
+4. **Reconcile the gap** between the restore point and the moment writes stopped, comparing the restored copy with the pre-restore database:
+   - **New or changed rows** exist only in the pre-restore database: list new sign-ups and account data (`users`, `businesses`, team invitations, subscription requests) as well as invoices, credit notes, payments, customers and products with `created_at` / `updated_at` after the restore point. A new sign-up's login lives in the same database (`neon_auth`), so restore it together with its app rows. **Decide for each one** whether it is a valid change (re-enter it) or part of the damage that caused the incident (leave it out; the restored value is the correct one). **Draft invoices and their line items:** compare them directly between the two databases rather than by timestamp (saving a draft does not always update its `updated_at`). Write the valid ones down here; they are **re-entered through the app after step 5, never with SQL**, so invoice numbering, seller snapshots, checks and the audit log stay correct.
+   - **Deleted rows come back** in the restored copy (a deleted row leaves no timestamp to find). List rows present in the restored copy but missing from the pre-restore database for `businesses`, `users`, `customers`, draft `invoices` and draft `credit_notes`. Also check `audit_log` for `account_closure_requested` (and other deletions) after the restore point. **Review each listed row** with its audit trail: repeat only deletions that were intended (for example a processed account closure or a purged draft), so a closed account cannot be used again. Keep rows that disappeared **because of the incident itself**: restoring them is the point of the recovery. Finalized invoices and credit notes are never deleted (guard triggers), so they need no check.
+5. **Switch** only after step 4, then resume the service (keep the cron-job.org jobs paused until step 6 is done):
+   - Render `DATABASE_URL` → the recovered database's **pooled** URL (the app);
+   - if the recovered database is a **new branch**: Render `NEON_AUTH_BASE_URL` → that branch's **Auth URL** (each Neon branch has its own sign-in service), and add the Render address to that branch's trusted domains. An in-place restore keeps the same Auth URL. Then **check that a sign-in works** before reopening;
+   - GitHub secret `DATABASE_URL_UNPOOLED` → its **direct** URL (otherwise the nightly backup and the migration workflow keep using the old one);
+   - run the backup workflow once by hand and check a new file appears.
+6. **Re-enter the valid changes** from step 4 through the app (pilot: with each shop owner, who holds off other work until it is done), then un-pause the cron-job.org jobs and tell everyone the app is back.
+
+### Recovery targets (pilot, honest)
+- **Data loss (RPO)**: up to **6 hours** back is exact (Neon history); older problems lose up to **about 24 hours** (since the last nightly dump), **if that night's backup actually ran and is not affected**. GitHub can delay or skip a scheduled run, so check the **Nightly database backup** runs in Actions regularly (checklist section 9); a missed night makes the newest good dump older. If the damage is already in the latest dump, restore an earlier good one: the loss then goes back to that dump, which can be several days (up to 7 daily, then weekly copies).
+- **Time to recover (RTO)**: about **1–2 hours** by hand (download, decrypt, restore, check, switch). Prove it in the first restore drill and update this line.

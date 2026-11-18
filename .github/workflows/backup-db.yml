@@ -13,7 +13,7 @@ name: Nightly database backup
 #
 # Restore (drill every 3 months, into a Neon branch of the TEST project, never over production):
 #   aws s3 cp --endpoint-url "$ENDPOINT" s3://bizfolio-backups/daily/<file>.dump.gpg .
-#   gpg --batch --pinentry-mode loopback --decrypt --output db.dump <file>.dump.gpg   # asks for the passphrase
+#   gpg --pinentry-mode loopback --decrypt --output db.dump <file>.dump.gpg   # asks for the passphrase (no --batch)
 #   pg_restore --no-owner --no-acl --dbname "<TEST branch direct URL>" db.dump
 on:
   schedule:
