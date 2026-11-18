@@ -167,10 +167,10 @@ export function storageModule(): {
 }
 
 export function emailModule(): {
-  getResend: () => { emails: { send: () => Promise<{ id: string }> } };
+  getMailer: () => { emails: { send: () => Promise<{ id: string }> } };
 } {
   return {
-    getResend: () => ({
+    getMailer: () => ({
       emails: {
         send: async () => ({ id: 'mock-email-id' }),
       },
@@ -180,12 +180,12 @@ export function emailModule(): {
 
 export function envModule(): {
   getAppEnv: () => { NEXT_PUBLIC_APP_URL: string };
-  getEmailEnv: () => { RESEND_FROM_EMAIL: string };
+  getEmailEnv: () => { EMAIL_FROM: string };
   getAdminEnv: () => { PLATFORM_ADMIN_EMAILS: string[]; PLATFORM_ADMIN_USER_IDS: string[] };
 } {
   return {
     getAppEnv: () => ({ NEXT_PUBLIC_APP_URL: 'https://test.app' }),
-    getEmailEnv: () => ({ RESEND_FROM_EMAIL: 'noreply@test.app' }),
+    getEmailEnv: () => ({ EMAIL_FROM: 'noreply@test.app' }),
     getAdminEnv: () => ({
       PLATFORM_ADMIN_EMAILS: ['admin@test.dev'],
       PLATFORM_ADMIN_USER_IDS: ['a0000000-0000-4000-8000-000000000099'],

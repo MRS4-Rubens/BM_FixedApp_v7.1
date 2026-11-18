@@ -29,8 +29,8 @@ vi.mock('@/lib/actions/_shared/logger', () => ({
 }));
 
 const mockSendEmail = vi.fn();
-vi.mock('@/lib/email/resend', () => ({
-  getResend: () => ({
+vi.mock('@/lib/email/mailer', () => ({
+  getMailer: () => ({
     emails: {
       send: (...args: unknown[]) => mockSendEmail(...args),
     },
@@ -39,7 +39,7 @@ vi.mock('@/lib/email/resend', () => ({
 
 vi.mock('@/lib/env', () => ({
   getEmailEnv: () => ({
-    RESEND_FROM_EMAIL: 'support@billmatrix.in',
+    EMAIL_FROM: 'support@billmatrix.in',
   }),
 }));
 

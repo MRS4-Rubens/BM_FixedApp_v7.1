@@ -38,7 +38,7 @@ const sections = [
     id: 'cookies', title: 'Cookies and analytics',
     body: <>
       <p>Authentication cookies maintain and protect your session. A preference cookie can remember whether the signed-in sidebar is collapsed. Your browser lets you inspect or clear cookies. Blocking required session cookies can prevent sign-in or interrupt account access.</p>
-      <p>The website uses Vercel Analytics for site usage measurement. Hosting and monitoring systems can also process request and device information for security and troubleshooting. These functions are distinct from cookies used to keep a session active.</p>
+      <p>The website does not use an analytics or advertising tracker. Hosting and monitoring systems process request and device information for security and troubleshooting. These functions are distinct from cookies used to keep a session active.</p>
     </>,
   },
   {
@@ -46,10 +46,11 @@ const sections = [
     body: <>
       <p>The development code includes the integrations below. The production provider list and configurations will be verified before launch. Each enabled provider receives information needed for its role.</p>
       <ul>
-        <li><strong>Vercel and Neon.</strong> Website and application hosting, analytics, database and authentication.</li>
+        <li><strong>Render and Neon.</strong> Website and application hosting, database and authentication, including sign-up verification and password e-mails sent by Neon.</li>
         <li><strong>iDrive e2 and CustomJS.</strong> Object storage for documents, logos and payment evidence, and PDF rendering. The information in a finalized document may be sent to the renderer in document form.</li>
-        <li><strong>Resend.</strong> Email delivery for document sharing, payment reminders and operational messages. A requested message can include invoice information or an attached PDF.</li>
+        <li><strong>Brevo.</strong> E-mail delivery of account and operational messages to registered users and to us, such as team invitations, notification summaries, payment-claim alerts and support messages. A support message can include attachments you choose to send.</li>
         <li><strong>Upstash and Sentry.</strong> Rate limiting and error monitoring, respectively. Operational providers receive technical data needed for those functions when enabled.</li>
+        <li><strong>UptimeRobot and cron-job.org.</strong> Availability checks and scheduled-job triggers. They call fixed service addresses and do not receive account or customer data.</li>
       </ul>
       <p>Authorised staff may access information as needed for support, account administration, security or payment verification. We may disclose information where required by valid legal process or applicable law. We do not sell workspace records.</p>
       <p>When you choose to send a document or use WhatsApp, your recipients or the relevant messaging service may receive the information you share. Banks and UPI apps process your external payment under their own terms and privacy notices. Other third-party websites reached through links are governed by their own policies.</p>
@@ -58,7 +59,7 @@ const sections = [
   {
     id: 'locations', title: 'Storage locations and international processing',
     body: <>
-      <p><strong>Production hosting and storage regions</strong> [TO BE CONFIRMED BEFORE PRODUCTION LAUNCH]. Depending on the provider and function, storage, support or processing may occur outside India. Transfers are subject to applicable legal restrictions and safeguards, including rules for sensitive personal data and location requirements for particular records.</p>
+      <p><strong>Production hosting and storage regions.</strong> Application hosting, the database, document storage and rate limiting are planned in Singapore, and error monitoring in the European Union. E-mail delivery, PDF rendering, availability checks and scheduled-job triggers are handled by providers that may process data in other countries. In each case storage, support or processing may occur outside India. Transfers are subject to applicable legal restrictions and safeguards, including rules for sensitive personal data and location requirements for particular records.</p>
     </>,
   },
   {

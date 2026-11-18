@@ -43,7 +43,7 @@ vi.mock('@/lib/actions/_shared/logger', async () => (await import('./helpers/har
 vi.mock('@/lib/storage/idrive', async () => (await import('./helpers/harness')).storageModule());
 // finalizeInvoice schedules archival with next/server after(), which only works inside a real request scope.
 vi.mock('@/lib/storage/schedule-archival', () => ({ scheduleArchival: () => undefined }));
-vi.mock('@/lib/email/resend', async () => (await import('./helpers/harness')).emailModule());
+vi.mock('@/lib/email/mailer', async () => (await import('./helpers/harness')).emailModule());
 vi.mock('@/lib/env', async () => (await import('./helpers/harness')).envModule());
 
 import { finalizeInvoice } from '@/lib/actions/invoices/finalize-invoice';

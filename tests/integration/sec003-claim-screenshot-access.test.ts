@@ -75,8 +75,8 @@ vi.mock('@/lib/storage/idrive', () => ({
   getSignedDownloadUrl: (...args: [string, number?, { forceDownload?: boolean }?]) => state.signerSpy(...args),
 }));
 
-vi.mock('@/lib/email/resend', () => ({
-  getResend: () => ({
+vi.mock('@/lib/email/mailer', () => ({
+  getMailer: () => ({
     emails: {
       send: (payload: { from: string; to: string[]; subject: string; react: { props: Record<string, unknown> } }) => state.sendSpy(payload),
     },
@@ -85,7 +85,7 @@ vi.mock('@/lib/email/resend', () => ({
 
 vi.mock('@/lib/env', () => ({
   getAppEnv: () => ({ NEXT_PUBLIC_APP_URL: 'https://test.app' }),
-  getEmailEnv: () => ({ RESEND_FROM_EMAIL: 'noreply@test.app' }),
+  getEmailEnv: () => ({ EMAIL_FROM: 'noreply@test.app' }),
   getAdminEnv: () => ({
     PLATFORM_ADMIN_EMAILS: [ADMIN_EMAIL],
     PLATFORM_ADMIN_USER_IDS: [ADMIN_USER_ID],

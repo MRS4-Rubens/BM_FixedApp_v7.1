@@ -12,7 +12,7 @@ import { getRequestSession } from '@/lib/auth/request-session';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getResend } from '@/lib/email/resend';
+import { getMailer } from '@/lib/email/mailer';
 import { getEmailEnv } from '@/lib/env';
 import { FeedbackNotificationEmail } from '@/lib/email/templates/feedback-notification-email';
 import { logError } from '@/lib/actions/_shared/logger';
@@ -92,16 +92,16 @@ export const sendFeedbackAction = createAuthenticatedAction(
 
     // 4. Determine sender and recipient addresses
     const recipientEmail = FEEDBACK_RECIPIENT_EMAIL;
-    const fromEmail = getEmailEnv().RESEND_FROM_EMAIL;
+    const fromEmail = getEmailEnv().EMAIL_FROM;
 
     // Format the Reply-To address with the user's name if available
     const replyToAddress = appUser.display_name
       ? `"${appUser.display_name}" <${userEmail}>`
       : userEmail;
 
-    // 5. Send notification email via Resend
+    // 5. Send notification email (Brevo, lib/email/mailer.ts)
     try {
-      const result = await getResend().emails.send({
+      const result = await getMailer().emails.send({
         from: fromEmail,
         to: recipientEmail,
         replyTo: replyToAddress,

@@ -2,7 +2,7 @@ import type * as React from 'react';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { toLoggableError } from '@/lib/actions/_shared/action-error-mapping';
 import { logError } from '@/lib/actions/_shared/logger';
-import { getResend } from '@/lib/email/resend';
+import { getMailer } from '@/lib/email/mailer';
 import { getEmailEnv } from '@/lib/env';
 import { buildListUnsubscribeHeader } from '@/lib/email/send-policy';
 
@@ -20,7 +20,7 @@ export interface SendCustomerEmailParams {
 const EMAIL_SEND_FAILED_MESSAGE = 'We could not send the e-mail. Please try again.';
 
 export async function sendCustomerEmail(params: SendCustomerEmailParams): Promise<void> {
-  const from = getEmailEnv().RESEND_FROM_EMAIL;
+  const from = getEmailEnv().EMAIL_FROM;
   const listUnsubHeaders = buildListUnsubscribeHeader(params.senderContactEmail);
 
   const cleanSenderEmail = params.senderContactEmail?.trim();
@@ -36,7 +36,7 @@ export async function sendCustomerEmail(params: SendCustomerEmailParams): Promis
   let resultError: { message?: string; name?: string } | null = null;
 
   try {
-    const response = await getResend().emails.send(
+    const response = await getMailer().emails.send(
       {
         from,
         to: params.to,
@@ -66,7 +66,7 @@ export async function sendCustomerEmail(params: SendCustomerEmailParams): Promis
   }
 
   if (resultError !== null && resultError !== undefined) {
-    logError('customer-email', new Error(resultError.message ?? 'Resend rejected email dispatch'), {
+    logError('customer-email', new Error(resultError.message ?? 'E-mail provider rejected the dispatch'), {
       kind: params.kind,
       invoiceId: params.invoiceId,
       providerErrorName: resultError.name,

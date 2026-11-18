@@ -67,8 +67,8 @@ vi.mock('@/lib/storage/idrive', () => ({
   },
 }));
 
-vi.mock('@/lib/email/resend', () => ({
-  getResend: () => ({
+vi.mock('@/lib/email/mailer', () => ({
+  getMailer: () => ({
     emails: {
       send: async () => {
         if (state.sendThrows) {
@@ -84,7 +84,7 @@ vi.mock('@/lib/email/resend', () => ({
 vi.mock('@/lib/config/features', () => ({ CUSTOMER_EMAILS_ENABLED: true }));
 
 vi.mock('@/lib/env', () => ({
-  getEmailEnv: () => ({ RESEND_FROM_EMAIL: 'noreply@test.app' }),
+  getEmailEnv: () => ({ EMAIL_FROM: 'noreply@test.app' }),
 }));
 
 vi.mock('@/lib/rate-limit/enforce', () => ({

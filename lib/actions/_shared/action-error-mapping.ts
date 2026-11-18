@@ -46,7 +46,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-/** Normalises third-party failure payloads (e.g. Resend's `{name, message}`) into an Error for logError. */
+/** Normalises third-party failure payloads (e.g. the mailer's `{name, message}`) into an Error for logError. */
 export function toLoggableError(value: unknown): Error {
   if (value instanceof Error) return value;
   if (isRecord(value) && typeof value.message === 'string') {

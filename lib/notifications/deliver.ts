@@ -3,7 +3,7 @@ import * as React from 'react';
 import { inArray, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { businesses, users } from '@/lib/db/schema';
-import { getResend } from '@/lib/email/resend';
+import { getMailer } from '@/lib/email/mailer';
 import { getAppEnv, getEmailEnv } from '@/lib/env';
 import { NotificationEmail, type NotificationEmailItem } from '@/lib/email/templates/notification-email';
 import { logError } from '@/lib/actions/_shared/logger';
@@ -82,9 +82,9 @@ function asClaimedRow(value: unknown): ClaimedRow | null {
 
 const defaultSender: EmailSender = async (email) => {
   try {
-    const result = await getResend().emails.send(
+    const result = await getMailer().emails.send(
       {
-        from: getEmailEnv().RESEND_FROM_EMAIL,
+        from: getEmailEnv().EMAIL_FROM,
         to: [email.to],
         subject: email.subject,
         react: email.react,

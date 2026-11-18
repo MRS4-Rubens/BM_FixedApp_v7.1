@@ -54,14 +54,14 @@ vi.mock('@/lib/rate-limit/upstash', () => ({
   getClientIp: () => '127.0.0.1',
 }));
 vi.mock('@/lib/actions/_shared/logger', () => ({ logError: () => undefined, logWarn: () => undefined }));
-vi.mock('@/lib/email/resend', () => ({
-  getResend: () => {
+vi.mock('@/lib/email/mailer', () => ({
+  getMailer: () => {
     throw new Error('tests inject their own sender');
   },
 }));
 vi.mock('@/lib/env', () => ({
   getAppEnv: () => ({ NEXT_PUBLIC_APP_URL: 'https://test.app' }),
-  getEmailEnv: () => ({ RESEND_FROM_EMAIL: 'noreply@test.app' }),
+  getEmailEnv: () => ({ EMAIL_FROM: 'noreply@test.app' }),
   getAdminEnv: () => ({ PLATFORM_ADMIN_EMAILS: [], PLATFORM_ADMIN_USER_IDS: [] }),
 }));
 

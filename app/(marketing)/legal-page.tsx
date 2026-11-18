@@ -47,7 +47,7 @@ export function LegalPage({ title, intro, related, sections }: {
         <header className="lg:col-start-2">
           <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{title}</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Development draft. Last updated <time dateTime="2026-11-12">12 November 2026</time>.
+            Development draft. Last updated <time dateTime="2026-11-18">18 November 2026</time>.
           </p>
           <p className="mt-2 max-w-prose rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
             Effective date [TO BE CONFIRMED BEFORE PRODUCTION LAUNCH]. This draft is for review before public release.

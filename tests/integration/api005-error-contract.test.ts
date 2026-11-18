@@ -96,8 +96,8 @@ vi.mock('@/lib/email/templates/payment-reminder-email', () => ({
 // LAUNCH-L1: customer e-mails are switched off for the pilot; these tests cover the feature itself, so turn it on.
 vi.mock('@/lib/config/features', () => ({ CUSTOMER_EMAILS_ENABLED: true }));
 
-vi.mock('@/lib/email/resend', () => ({
-  getResend: () => ({
+vi.mock('@/lib/email/mailer', () => ({
+  getMailer: () => ({
     emails: {
       send: async () => state.resendSendResult(),
     },
@@ -106,7 +106,7 @@ vi.mock('@/lib/email/resend', () => ({
 
 vi.mock('@/lib/env', () => ({
   getAppEnv: () => ({ NEXT_PUBLIC_APP_URL: 'https://test.app' }),
-  getEmailEnv: () => ({ RESEND_FROM_EMAIL: 'noreply@test.app' }),
+  getEmailEnv: () => ({ EMAIL_FROM: 'noreply@test.app' }),
   getAdminEnv: () => ({
     PLATFORM_ADMIN_EMAILS: ['admin@test.app'],
     PLATFORM_ADMIN_USER_IDS: ['00000000-0000-0000-0000-000000000099'],

@@ -104,8 +104,8 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 | `IDRIVE_E2_ACCESS_KEY` | Feature: Storage | No | **Yes** (Archival) | S3 access key ID for iDrive e2 bucket authentication. | Fails callers on use. Logged as issue at boot. |
 | `IDRIVE_E2_SECRET_KEY` | Feature: Storage | No | **Yes** (Archival) | S3 secret access key for iDrive e2 bucket authentication. | Fails callers on use. Logged as issue at boot. |
 | `HTML_TO_PDF_API_KEY` | Feature: PDF | No | **Yes** (Archival) | API key for external HTML-to-PDF rendering service. | Fails callers on use. Logged as issue at boot. |
-| `RESEND_API_KEY` | Feature: Email | No | **Yes** (Email) | API key for Resend transactional email service. | Fails callers on use. Logged as issue at boot. |
-| `RESEND_FROM_EMAIL` | Feature: Email | No | **Yes** (Email) | Verified sender address or `Name <email>` for outgoing invoice and closure emails. | Fails callers on use. Must match sender format pattern. |
+| `BREVO_API_KEY` | Feature: Email | No | **Yes** (Email) | API key for the Brevo transactional e-mail API (sent over HTTPS). | Fails callers on use. Logged as issue at boot. |
+| `EMAIL_FROM` | Feature: Email | No | **Yes** (Email) | Sender verified in Brevo, as `email` or `Name <email>` (pilot: your Gmail). | Fails callers on use. Must match sender format pattern. |
 | `UPSTASH_REDIS_REST_URL` | Feature: Rate Limit | No | **Yes** (Rate Limit) | HTTPS REST endpoint for Upstash Redis used in distributed rate limiting. | Fails callers on use; logged at boot. Rate limit enforcement fails closed or open per policy. |
 | `UPSTASH_REDIS_REST_TOKEN` | Feature: Rate Limit | No | **Yes** (Rate Limit) | REST authentication token for Upstash Redis. | Fails callers on use; logged at boot. |
 | `CRON_SECRET` | Core: Cron | No | **Yes** | Bearer secret authorizing the Vercel cron endpoint (`/api/cron/retry-invoice-archival`). | Fails boot (`EnvConfigError`). Must be at least 32 characters long. |
@@ -199,7 +199,7 @@ Production deployment is managed on Vercel with automated CI quality gates on Gi
 - [Monitoring & Alerting](docs/DEPLOYMENT.md#monitoring--alerting-opt-001): `/api/health` uptime polling, request ID correlation, and Sentry production alert rules.
 - [Data Requests & Account Closure](docs/DEPLOYMENT.md#data-requests-export-and-account-closure-opt-002a): DPDP self-serve JSON export, owner verification, account closure workflow, and statutory 8-year record retention under Section 36 of the CGST Act.
 - [Backup & Restore](docs/DEPLOYMENT.md#backup-and-restore-opt-002): Neon Continuous Point-in-Time Recovery (PITR), weekly logical dumps, S3 Object Lock compliance mode, the quarterly restore drill, and the recovery targets to confirm at launch.
-- *Launch-Day Note*: All external SaaS provider accounts (Sentry, Resend, Upstash, iDrive e2, Neon) are provisioned and credential-rotated on launch day.
+- *Launch-Day Note*: All external SaaS provider accounts (Sentry, Brevo, Upstash, iDrive e2, Neon, Render) are provisioned and credential-rotated on launch day.
 
 ## Documentation Map
 
