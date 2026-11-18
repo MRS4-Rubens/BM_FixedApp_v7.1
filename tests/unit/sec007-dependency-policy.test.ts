@@ -65,8 +65,10 @@ describe('SEC-007: Dependency Security Policies', () => {
     expect(validateAllowlist(allowlist)).toBe(true);
 
     expect(allowlist.entries.length).toBeGreaterThanOrEqual(10);
+    // Only owner-approved packages may be allowlisted: the Neon Auth stack (D5) and picomatch (no fix released yet).
+    const approvedPackages = ['better-auth', 'picomatch'];
     for (const entry of allowlist.entries) {
-      expect(entry.package).toBe('better-auth');
+      expect(approvedPackages).toContain(entry.package);
       expect(entry.expires <= '2027-02-28').toBe(true);
     }
   });

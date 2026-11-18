@@ -70,7 +70,13 @@
       "severity": "high",
       "expires": "2027-02-28",
       "reason": "Server-side device login approval UI spoofing vulnerability; Neon hosts the auth server; app only uses client plugins and cookie helpers via @neondatabase/auth 0.4.2-beta (decision D5)."
+    },
+    {
+      "ghsa": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "severity": "high",
+      "expires": "2027-01-31",
+      "reason": "ReDoS via attacker-controlled glob patterns; picomatch@4 is reached only through build/test tooling (vite under vitest, via better-auth deps), never with user input at runtime. No patched release on npm yet (latest 4.0.7, fix is >=4.0.8): add a same-major override and remove this entry when 4.0.8 ships."
     }
   ]
 }
-
