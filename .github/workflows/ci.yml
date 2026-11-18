@@ -32,8 +32,8 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       NEON_AUTH_BASE_URL: https://ci.example.invalid/neondb/auth
       NEON_AUTH_COOKIE_SECRET: ci-placeholder-cookie-secret-at-least-32-characters
-      RESEND_API_KEY: re_ci_placeholder
-      RESEND_FROM_EMAIL: billing@ci.example.invalid
+      BREVO_API_KEY: ci-placeholder-brevo-key
+      EMAIL_FROM: billing@ci.example.invalid
       UPSTASH_REDIS_REST_URL: https://ci.example.invalid
       UPSTASH_REDIS_REST_TOKEN: ci-placeholder-token
       CRON_SECRET: ci-placeholder-cron-secret-at-least-32-characters

@@ -14,7 +14,7 @@ import { PLAN_PRICING } from '@/lib/subscriptions/entitlements';
 import { isPurchasablePlan } from '@/lib/subscriptions/plan-catalog';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
-import { getResend } from '@/lib/email/resend';
+import { getMailer } from '@/lib/email/mailer';
 import { getAdminEnv, getAppEnv, getEmailEnv } from '@/lib/env';
 import { SubscriptionRequestEmail } from '@/lib/email/templates/subscription-request-email';
 import { formatPaiseAsInr } from '@/lib/money';
@@ -204,7 +204,7 @@ export const submitPaymentClaim = createAuthenticatedAction(
       });
     }
 
-    // 6. Send Email notification to Super Admins (via Resend)
+    // 6. Send Email notification to Super Admins (Brevo, lib/email/mailer.ts)
     try {
       const adminEmails = getAdminEnv().PLATFORM_ADMIN_EMAILS;
       if (adminEmails.length > 0) {
@@ -229,8 +229,8 @@ export const submitPaymentClaim = createAuthenticatedAction(
           approveLink,
         });
 
-        await getResend().emails.send({
-          from: getEmailEnv().RESEND_FROM_EMAIL,
+        await getMailer().emails.send({
+          from: getEmailEnv().EMAIL_FROM,
           to: [...adminEmails],
           subject: `🔔 Payment Claim: ${business.legal_name} - ${input.plan_name.toUpperCase()}`,
           react: emailContent,

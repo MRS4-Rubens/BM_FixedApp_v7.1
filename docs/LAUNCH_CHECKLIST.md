@@ -51,7 +51,7 @@
 One launch-prep branch, one review, one PR. Never commit to `main` directly.
 
 - [x] **2.1 Customer e-mails off (keep code):** *(done: PR #68, switch in `lib/config/features.ts`)* one switch; hide the **Email** and **Reminder** buttons in `components/app/invoices/invoice-detail.tsx`; guard `lib/actions/invoices/email-invoice.ts` and `send-payment-reminder.ts` so they refuse while off.
-- [ ] **2.2 Wording:** *(plan + landing done in PR #68; privacy page ships with 2.9)*
+- [x] **2.2 Wording:** *(plan + landing: PR #68; privacy page: L3 PR)*
   - `lib/subscriptions/plan-catalog.ts`: Free + Essentials rows stop promising "E-mail invoices (PDF) and payment reminders"; Free says "Download and print invoice PDFs".
   - `components/landing/features-section.tsx`, `comparison-table.tsx`, `how-it-works.tsx`.
   - Privacy page: Resend → Brevo; add Render, UptimeRobot, cron-job.org; Neon and IDrive now in Singapore; Sentry EU.
@@ -66,7 +66,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [x] **2.6 Bell Option C** *(done: PR #68)* in `components/app/notifications/notification-bell.tsx` (replace `REFRESH_MS = 120_000`).
 - [ ] **2.7 Backup workflow** `.github/workflows/backup-db.yml`: 21:00 UTC (02:30 IST) + manual button; Postgres 17 `pg_dump` → compress → encrypt with `BACKUP_ENCRYPTION_PASSPHRASE` → upload to `bizfolio-backups` → prune to 7 daily + 4 weekly.
 - [ ] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml`: build + `next start` on the runner; Redis + serverless-redis-http service containers; Neon test project; `E2E_VERIFY_MODE=db`; remove the Vercel preview lookup, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; run on every PR + manual button; keep the fork-PR guard; no real CustomJS or Brevo keys.
-- [ ] **2.9 E-mail provider swap:** Resend → **Brevo web API** in `lib/email/resend.ts` / `send-customer-email.ts`; rename env vars (e.g. `BREVO_API_KEY`, `EMAIL_FROM`).
+- [x] **2.9 E-mail provider swap:** *(done: L3 PR; `lib/email/mailer.ts`, Brevo HTTPS API)* Resend → **Brevo web API** in `lib/email/resend.ts` / `send-customer-email.ts`; rename env vars (e.g. `BREVO_API_KEY`, `EMAIL_FROM`).
 - [x] **2.10 Brand clean-up:** *(done: L2 PR; production now refuses to boot without `NEXT_PUBLIC_SUPPORT_EMAIL`)* `lib/config/contact.ts` fallback `support@billmatrix.in`; `.env.example` "Bill Matrix" → Invoice BizFolio, matching section 4 (fake values only).
 - [ ] **2.11 Docs:** `docs/DEPLOYMENT.md`: remove the claims of an 8-year Object Lock, 7-day PITR, RPO ≤ 5 min and a weekly dump; describe the real setup (Render, cron-job.org, UptimeRobot, nightly backup, test/prod switch). Update the `README.md` env table.
 - [ ] **2.12 Tests + gate:** tests for every item; snapshots updated; run `pnpm typecheck && pnpm lint:ratchet && pnpm knip && pnpm test && pnpm build` (+ `pnpm print-css:build` if UI changed). Check line endings (CRLF → LF) before commit.
@@ -187,8 +187,8 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `IDRIVE_E2_BUCKET_NAME` | `bizfolio-test-files` | **`bizfolio-prod-files`** | No |
 | `IDRIVE_E2_ACCESS_KEY` / `IDRIVE_E2_SECRET_KEY` | App key | same (or rotate) | **Yes** |
 | `HTML_TO_PDF_API_KEY` | CustomJS key | same | **Yes** |
-| `BREVO_API_KEY` (name fixed in 2.9) | Brevo key | same | **Yes** |
-| `EMAIL_FROM` (name fixed in 2.9) | `"Invoice BizFolio <yourapp@gmail.com>"` | same | No |
+| `BREVO_API_KEY` | Brevo key | same | **Yes** |
+| `EMAIL_FROM` | `"Invoice BizFolio <yourapp@gmail.com>"` | same | No |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Upstash DB | same (**flushed** at switch) | Token **Yes** |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | DSN | same | No (public by design) |
 | `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (added in 2.4; build time, so redeploy after changing) | `test` | **`production`** | No |

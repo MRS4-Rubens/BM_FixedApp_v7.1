@@ -38,7 +38,7 @@ vi.mock('next/cache', () => ({
 vi.mock('@/lib/rate-limit/upstash', async () => (await import('./helpers/harness')).rateLimitModule());
 vi.mock('@/lib/actions/_shared/logger', async () => (await import('./helpers/harness')).loggerModule());
 vi.mock('@/lib/storage/idrive', async () => (await import('./helpers/harness')).storageModule());
-vi.mock('@/lib/email/resend', async () => (await import('./helpers/harness')).emailModule());
+vi.mock('@/lib/email/mailer', async () => (await import('./helpers/harness')).emailModule());
 vi.mock('@/lib/env', async () => (await import('./helpers/harness')).envModule());
 
 import { processSubscriptionClaim } from '@/lib/actions/subscriptions/process-request';

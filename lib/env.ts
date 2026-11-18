@@ -174,7 +174,7 @@ export type StorageEnv = Readonly<{
   IDRIVE_E2_SECRET_KEY: string;
 }>;
 export type PdfEnv = Readonly<{ HTML_TO_PDF_API_KEY: string }>;
-export type EmailEnv = Readonly<{ RESEND_API_KEY: string; RESEND_FROM_EMAIL: string }>;
+export type EmailEnv = Readonly<{ BREVO_API_KEY: string; EMAIL_FROM: string }>;
 export type RateLimitEnv = Readonly<{
   UPSTASH_REDIS_REST_URL: string;
   UPSTASH_REDIS_REST_TOKEN: string;
@@ -358,8 +358,8 @@ const emailEnv: EnvGroup<EmailEnv> = defineGroup(
   fromSchema(
     'email',
     z.object({
-      RESEND_API_KEY: text(),
-      RESEND_FROM_EMAIL: z
+      BREVO_API_KEY: text(),
+      EMAIL_FROM: z
         .string()
         .trim()
         .refine(
@@ -367,7 +367,7 @@ const emailEnv: EnvGroup<EmailEnv> = defineGroup(
           'must be an e-mail address or "Display Name <email@domain>"',
         ),
     }),
-    (data): EmailEnv => ({ ...data, RESEND_FROM_EMAIL: stripWrappingQuotes(data.RESEND_FROM_EMAIL) }),
+    (data): EmailEnv => ({ ...data, EMAIL_FROM: stripWrappingQuotes(data.EMAIL_FROM) }),
   ),
 );
 

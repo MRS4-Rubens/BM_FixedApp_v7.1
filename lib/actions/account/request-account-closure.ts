@@ -11,7 +11,7 @@ import { writeAudit } from '@/lib/audit/log';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { requestAccountClosureSchema } from '@/lib/validations/account-closure';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
-import { getResend } from '@/lib/email/resend';
+import { getMailer } from '@/lib/email/mailer';
 import { getEmailEnv } from '@/lib/env';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { getRequestSession } from '@/lib/auth/request-session';
@@ -94,13 +94,13 @@ export const requestAccountClosureAction = createAuthenticatedAction(
       });
     });
 
-    // 4. AFTER the commit, send email notification via Resend
+    // 4. AFTER the commit, send email notification (Brevo, lib/email/mailer.ts)
     const requestedAtIst = `${formatIstDate(requestedAtDate)} ${formatIstTime(requestedAtDate)} (IST)`;
     const reqId = currentRequestId() ?? 'N/A';
     const session = await getRequestSession();
     const userEmail = session?.data?.user?.email || 'N/A';
     const recipientEmail = SUPPORT_EMAIL;
-    const fromEmail = getEmailEnv().RESEND_FROM_EMAIL;
+    const fromEmail = getEmailEnv().EMAIL_FROM;
 
     try {
       const emailText = [
@@ -115,8 +115,8 @@ export const requestAccountClosureAction = createAuthenticatedAction(
         `Reason: ${input.reason?.trim() || 'None provided'}`,
       ].join('\n');
 
-      // Resend reports delivery problems in `result.error` instead of throwing (same handling as send-feedback).
-      const result = await getResend().emails.send({
+      // The mailer reports delivery problems in `result.error` instead of throwing (same handling as send-feedback).
+      const result = await getMailer().emails.send({
         from: fromEmail,
         to: recipientEmail,
         subject: `Account closure request — ${business.legal_name} (${business.gstin})`,
