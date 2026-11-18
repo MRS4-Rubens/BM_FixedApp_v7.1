@@ -306,14 +306,18 @@ Follow this checklist when processing an account closure request:
 4. Check: invoice counts and numbers, latest invoices, credit notes, payments, `invoice_number_counters`, and that a test login works.
 5. Record the result (date, file, time taken) and delete the branch.
 
-For a real incident: first try the Neon 6-hour restore; if the problem is older:
-- **Stop new writes first.** Shops must not create invoices on the damaged database while you restore, or those invoices will be missing from the recovered copy. Suspend the Render service (Render → service → Suspend) or tell users to pause, and note the time.
-- Restore the latest good dump as above (exit status 0) and check it.
-- If anything was written after that dump (between the dump time and the moment writes stopped), it is **only on the old branch**. List it (e.g. invoices, credit notes and payments with `created_at` / `updated_at` after the dump time) and re-enter it on the recovered copy before going live. Keep the old branch until this is done.
-- Only then point everything at the recovered database and resume the service:
-- Render `DATABASE_URL` → the recovered branch's **pooled** URL (the app);
-- GitHub secret `DATABASE_URL_UNPOOLED` → the recovered branch's **direct** URL (otherwise the nightly backup and the migration workflow keep using the old branch);
-- then run the backup workflow once by hand and check a new file appears.
+For a real incident (both paths: Neon 6-hour restore **and** restore from a dump):
+
+1. **Stop new writes first, whichever path you take.** Suspend the Render service (Render → service → Suspend) or tell users to pause, and note the time. Anything written after the restore point and before this moment exists only in the pre-restore database.
+2. **Keep the pre-restore database.** For a dump restore it is simply the old branch. For a Neon history restore, Neon keeps the pre-restore state as a backup branch (check the branch list after restoring); do not delete it until step 4 is done.
+3. **Restore** to the chosen point: the Neon 6-hour restore if the problem is that recent, otherwise the latest good dump as above (exit status 0), and check it.
+4. **Reconcile the gap** between the restore point and the moment writes stopped, comparing the restored copy with the pre-restore database:
+   - **New or changed rows** exist only in the pre-restore database: list invoices, credit notes, payments, customers and products with `created_at` / `updated_at` after the restore point and re-enter them.
+   - **Deleted rows come back** in the restored copy (a deleted row leaves no timestamp to find). List rows present in the restored copy but missing from the pre-restore database for `businesses`, `users`, `customers`, draft `invoices` and draft `credit_notes`. Also check `audit_log` for `account_closure_requested` (and other deletions) after the restore point. Delete those rows again before going live, so a closed account cannot be used again. Finalized invoices and credit notes are never deleted (guard triggers), so they need no check.
+5. **Switch** only after step 4, then resume the service:
+   - Render `DATABASE_URL` → the recovered database's **pooled** URL (the app);
+   - GitHub secret `DATABASE_URL_UNPOOLED` → its **direct** URL (otherwise the nightly backup and the migration workflow keep using the old one);
+   - run the backup workflow once by hand and check a new file appears.
 
 ### Recovery targets (pilot, honest)
 - **Data loss (RPO)**: up to **6 hours** back is exact (Neon history); older problems lose up to **about 24 hours** (since the last nightly dump), **if that night's backup actually ran and is not affected**. GitHub can delay or skip a scheduled run, so check the **Nightly database backup** runs in Actions regularly (checklist section 9); a missed night makes the newest good dump older. If the damage is already in the latest dump, restore an earlier good one: the loss then goes back to that dump, which can be several days (up to 7 daily, then weekly copies).
