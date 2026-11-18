@@ -108,6 +108,7 @@ node scripts/ci/audit-gate.mjs --input audit.json --allowlist security/audit-all
 The 10 current allowlisted advisories correspond to `better-auth@1.4.18` server-side vulnerabilities introduced via `@neondatabase/auth@0.4.2-beta`.
 - **Reason**: The Better Auth authentication server is managed and hosted directly by Neon Cloud infrastructure. The Bill Matrix application only imports client-side plugins and cookie parsing utilities (`better-auth/react`, `better-auth/client`, `better-auth/cookies`).
 - **Expiry**: All 10 entries are configured to expire on **`2027-02-28`**.
+- **picomatch (GHSA-fc5q-39xc-vjpf, added 2026-11-18)**: one extra entry, expiring **`2027-01-31`**. picomatch@4 is reached only through build/test tooling (vite under vitest); no patched release exists yet (latest 4.0.7, fix is >=4.0.8). When 4.0.8 ships, add a same-major override (`picomatch@^4: ^4.0.8`) in `pnpm-workspace.yaml` and delete the entry.
 - **Launch Review**: Prior to production launch, security leads and maintainers must re-evaluate the status of `@neondatabase/auth` and confirm whether an official upstream update resolving these advisories can be safely adopted.
 
 To add or renew an entry:
