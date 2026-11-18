@@ -41,7 +41,7 @@ describe('E2E workflow uses the local Redis look-alike', () => {
     expect(wf).toContain('image: redis:7-alpine');
     expect(wf).toContain('image: hiett/serverless-redis-http:0.0.10');
     expect(wf).toContain('UPSTASH_REDIS_REST_URL: http://localhost:8079');
-    expect(wf).toContain('-d \'["PING"]\' http://localhost:8079/');
+    expect(wf).toContain('-H "Content-Type: application/json" -d \'["PING"]\' http://localhost:8079/');
   });
 
   it('no longer needs any real Upstash secret, and does not flush', () => {

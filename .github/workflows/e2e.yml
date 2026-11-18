@@ -153,15 +153,20 @@ jobs:
 
       - name: Check the local Redis look-alike answers
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          reply=""
           for i in $(seq 1 30); do
-            if curl --silent --fail --max-time 3 -H "Authorization: Bearer e2e-local-srh-token" \
-                 -d '["PING"]' http://localhost:8079/ | grep -q PONG; then
-              echo "Redis look-alike is up."; exit 0
+            # Same request shape as @upstash/redis: JSON body with a JSON content type.
+            reply=$(curl --silent --show-error --max-time 3 -H "Authorization: Bearer e2e-local-srh-token" \
+                    -H "Content-Type: application/json" -d '["PING"]' http://localhost:8079/ 2>&1) || true
+            if printf '%s' "$reply" | grep -q PONG; then
+              echo "Redis look-alike is up: $reply"; exit 0
             fi
             sleep 2
           done
-          echo "::error::serverless-redis-http did not answer PING."; exit 1
+          echo "::error::serverless-redis-http did not answer PING. Last reply: ${reply:-<empty>}"
+          docker ps -a || true
+          exit 1
 
       - name: Run staging migrations
         run: pnpm e2e:migrate-staging
