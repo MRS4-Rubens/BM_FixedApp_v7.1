@@ -6,10 +6,10 @@ import { join } from 'node:path';
  * E2E navigation must go through e2e/support/navigation.ts (gotoApp / waitForAppUrl / reloadApp), which waits for the
  * document + Next.js client runtime instead of the browser "load" event (a single slow third-party request stalled
  * "load" for 20–30 s and made local runs flaky). Exempt on purpose: 05-a11y (axe needs fonts/styles fully applied),
- * 06-print-layout (needs the fully rendered page) and 07-mailbox (external verification link, normally skipped).
+ * and 06-print-layout (needs the fully rendered page).
  */
 const ROOT = process.cwd();
-const EXEMPT_SPECS = new Set(['05-a11y.spec.ts', '06-print-layout.spec.ts', '07-mailbox-verification.spec.ts']);
+const EXEMPT_SPECS = new Set(['05-a11y.spec.ts', '06-print-layout.spec.ts']);
 const RAW_NAVIGATION = /\b(?:this\.)?(?:page|authPage)\.(?:goto|waitForURL|reload)\(/;
 
 function filesIn(dir: string): string[] {

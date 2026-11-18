@@ -1,28 +1,24 @@
-name: E2E (Staging Preview)
+name: E2E (runner app)
 
-# Runs the Playwright suite against the Vercel Preview deployment of the pull request's head commit.
-# Preview deployments use the isolated Neon branch `staging-e2e` (database neondb). Setup: docs/e2e-staging-setup.md.
+# LAUNCH-L5 (docs/LAUNCH_CHECKLIST.md 2.8): builds the pull request and runs it with `next start` ON THE RUNNER
+# (http://localhost:3000), then runs the Playwright suite against it. No Vercel preview, no bypass secret, no
+# Mailosaur: e-mail confirmation uses E2E_VERIFY_MODE=db (the test database is marked verified directly).
+#
+# The app and the tests use ONLY test services: the test Neon database + its Neon Auth, and the test Upstash
+# database. CustomJS and Brevo get obviously fake keys, so no real PDF or e-mail is ever sent.
+# Neon Auth allows localhost by default ("Allow Localhost"), so no trusted-domain step is needed on the test
+# project. (Production must have Allow Localhost OFF: checklist section 3.)
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
-    inputs:
-      preview_url:
-        description: 'Vercel Preview URL to test (leave blank to auto-detect for the selected ref)'
-        required: false
-        type: string
 
 permissions:
   contents: read
-  deployments: read
-  statuses: read
-  # Read the Vercel bot's PR comment (preview address) via the issue-comments API.
-  pull-requests: read
-  issues: read
 
 concurrency:
-  # One run at a time: all runs share the single staging database and its trusted-origin list.
+  # One run at a time: all runs share the single test database.
   group: e2e-staging
   cancel-in-progress: false
 
@@ -39,27 +35,26 @@ jobs:
       E2E_CONFIRM_STAGING: ${{ secrets.E2E_CONFIRM_STAGING }}
       E2E_DATABASE_URL: ${{ secrets.E2E_STAGING_DATABASE_URL }}
       E2E_STAGING_DATABASE_URL_UNPOOLED: ${{ secrets.E2E_STAGING_DATABASE_URL_UNPOOLED }}
+      E2E_NEON_AUTH_BASE_URL: ${{ secrets.E2E_NEON_AUTH_BASE_URL }}
       E2E_DB_HOST_ALLOWLIST: ${{ vars.E2E_DB_HOST_ALLOWLIST }}
       E2E_FORBIDDEN_DB_HOSTS: ${{ vars.E2E_FORBIDDEN_DB_HOSTS }}
       E2E_FORBIDDEN_HOSTS: ${{ vars.E2E_FORBIDDEN_HOSTS }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-      E2E_VERCEL_BYPASS_SECRET: ${{ secrets.E2E_VERCEL_BYPASS_SECRET }}
-      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
-      NEON_STAGING_BRANCH_ID: ${{ vars.NEON_STAGING_BRANCH_ID }}
+      E2E_UPSTASH_REST_URL: ${{ secrets.E2E_UPSTASH_REST_URL }}
+      E2E_UPSTASH_REST_TOKEN: ${{ secrets.E2E_UPSTASH_REST_TOKEN }}
     steps:
       - name: Check staging configuration
         id: check
         run: |
           MISSING=""
-          for NAME in E2E_CONFIRM_STAGING E2E_DATABASE_URL E2E_STAGING_DATABASE_URL_UNPOOLED E2E_DB_HOST_ALLOWLIST \
-                      E2E_FORBIDDEN_DB_HOSTS E2E_FORBIDDEN_HOSTS E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD \
-                      E2E_VERCEL_BYPASS_SECRET NEON_API_KEY NEON_PROJECT_ID NEON_STAGING_BRANCH_ID; do
+          for NAME in E2E_CONFIRM_STAGING E2E_DATABASE_URL E2E_STAGING_DATABASE_URL_UNPOOLED E2E_NEON_AUTH_BASE_URL \
+                      E2E_DB_HOST_ALLOWLIST E2E_FORBIDDEN_DB_HOSTS E2E_FORBIDDEN_HOSTS E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD \
+                      E2E_UPSTASH_REST_URL E2E_UPSTASH_REST_TOKEN; do
             if [ -z "${!NAME:-}" ]; then MISSING="$MISSING $NAME"; fi
           done
           if [ -n "$MISSING" ]; then
-            echo "::notice::E2E staging is not configured (missing:$MISSING). Skipping. See docs/e2e-staging-setup.md."
+            echo "::notice::E2E is not configured (missing:$MISSING). Skipping. See docs/LAUNCH_CHECKLIST.md section 4.2."
             echo "configured=false" >> "$GITHUB_OUTPUT"
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
@@ -70,12 +65,14 @@ jobs:
     needs: config
     if: needs.config.outputs.configured == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     env:
       CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      # ---- Test runner (Playwright) ----
       E2E_TARGET: staging
+      E2E_BASE_URL: http://localhost:3000
       E2E_CONFIRM_STAGING: ${{ secrets.E2E_CONFIRM_STAGING }}
-      # The app and the tests share one database: the staging branch (pooled for tests, unpooled for migrations).
       E2E_DATABASE_URL: ${{ secrets.E2E_STAGING_DATABASE_URL }}
       E2E_STAGING_DATABASE_URL: ${{ secrets.E2E_STAGING_DATABASE_URL }}
       E2E_STAGING_DATABASE_URL_UNPOOLED: ${{ secrets.E2E_STAGING_DATABASE_URL_UNPOOLED }}
@@ -85,18 +82,39 @@ jobs:
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
       E2E_EXPECT_VERIFICATION_REQUIRED: ${{ vars.E2E_EXPECT_VERIFICATION_REQUIRED || 'true' }}
-      E2E_VERIFY_MODE: ${{ vars.E2E_VERIFY_MODE || 'direct_db' }}
-      E2E_VERCEL_BYPASS_SECRET: ${{ secrets.E2E_VERCEL_BYPASS_SECRET }}
+      E2E_VERIFY_MODE: db
+      E2E_EXPECT_ARCHIVAL: 'false'
       E2E_UPSTASH_REST_URL: ${{ secrets.E2E_UPSTASH_REST_URL }}
       E2E_UPSTASH_REST_TOKEN: ${{ secrets.E2E_UPSTASH_REST_TOKEN }}
       E2E_UPSTASH_HOST_ALLOWLIST: ${{ vars.E2E_UPSTASH_HOST_ALLOWLIST }}
       E2E_UPSTASH_ALLOW_FLUSH: 'true'
-      MAILOSAUR_API_KEY: ${{ secrets.MAILOSAUR_API_KEY }}
-      MAILOSAUR_SERVER_ID: ${{ secrets.MAILOSAUR_SERVER_ID }}
-      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
-      NEON_STAGING_BRANCH_ID: ${{ vars.NEON_STAGING_BRANCH_ID }}
-      E2E_EXPECT_ARCHIVAL: ${{ vars.E2E_EXPECT_ARCHIVAL || 'false' }}
+      # ---- The app under test (build + `next start` on this runner) ----
+      # SKIP_ENV_VALIDATION: production validation rejects an http://localhost app address, which is exactly what
+      # this runner serves. Allowed here only because RENDER is not set (lib/env.ts never skips on Render).
+      SKIP_ENV_VALIDATION: '1'
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      NEXT_PUBLIC_SUPPORT_EMAIL: support@e2e.example.invalid
+      FEEDBACK_RECIPIENT_EMAIL: feedback@e2e.example.invalid
+      DATABASE_URL: ${{ secrets.E2E_STAGING_DATABASE_URL }}
+      NEON_AUTH_BASE_URL: ${{ secrets.E2E_NEON_AUTH_BASE_URL }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.E2E_UPSTASH_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.E2E_UPSTASH_REST_TOKEN }}
+      PLATFORM_ADMIN_EMAILS: ${{ secrets.E2E_ADMIN_EMAIL }}
+      # Obviously fake: no real PDF, e-mail or file upload can happen from E2E.
+      BREVO_API_KEY: e2e-placeholder-brevo-key
+      EMAIL_FROM: billing@e2e.example.invalid
+      HTML_TO_PDF_API_KEY: e2e-placeholder-key
+      IDRIVE_E2_ENDPOINT: https://s3.e2e.example.invalid
+      IDRIVE_E2_REGION: e2e-region
+      IDRIVE_E2_BUCKET_NAME: e2e-bucket
+      IDRIVE_E2_ACCESS_KEY: e2e-access-key
+      IDRIVE_E2_SECRET_KEY: e2e-secret-key
+      ADMIN_UPI_ID: e2e@upi
+      ADMIN_UPI_NAME: E2E Placeholder
+      ADMIN_BANK_NAME: E2E Placeholder Bank
+      ADMIN_BANK_ACC_NAME: E2E Placeholder
+      ADMIN_BANK_ACC_NO: '000000000000'
+      ADMIN_BANK_IFSC: E2EP0000000
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -115,48 +133,44 @@ jobs:
       - name: Install dependencies (frozen lockfile)
         run: pnpm install --frozen-lockfile
 
-      - name: Resolve target preview URL
-        id: resolve-url
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          # Vercel deploys the PR head commit, not the synthetic merge commit GitHub checks out.
-          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          MANUAL_PREVIEW_URL: ${{ github.event.inputs.preview_url }}
+      - name: Generate per-run secrets
+        # Fresh random values every run: never the production ones, never stored anywhere.
         run: |
-          if [ -n "${MANUAL_PREVIEW_URL:-}" ]; then
-            echo "preview_url=${MANUAL_PREVIEW_URL}" >> "$GITHUB_OUTPUT"
-            echo "Using manual preview URL: ${MANUAL_PREVIEW_URL}"
-          else
-            chmod +x ./scripts/ci/wait-for-preview.sh
-            ./scripts/ci/wait-for-preview.sh
-          fi
+          set -euo pipefail
+          cookie=$(openssl rand -hex 32); cron=$(openssl rand -hex 32)
+          echo "::add-mask::$cookie"; echo "::add-mask::$cron"
+          { echo "NEON_AUTH_COOKIE_SECRET=$cookie"; echo "CRON_SECRET=$cron"; } >> "$GITHUB_ENV"
 
       - name: Run staging migrations
-        env:
-          E2E_BASE_URL: ${{ steps.resolve-url.outputs.preview_url }}
         run: pnpm e2e:migrate-staging
 
-      - name: Trust the preview origin on the staging auth branch
-        id: trust
-        env:
-          PREVIEW_URL: ${{ steps.resolve-url.outputs.preview_url }}
-        run: pnpm exec tsx scripts/ci/neon-auth-trusted-origin.ts add "$PREVIEW_URL"
+      - name: Build the app
+        run: pnpm build
+
+      - name: Start the app (next start) and wait for it
+        run: |
+          set -euo pipefail
+          nohup pnpm start > "$RUNNER_TEMP/app.log" 2>&1 &
+          for i in $(seq 1 60); do
+            if curl --silent --fail --max-time 5 http://localhost:3000/ping > /dev/null; then
+              echo "App is up after ${i}x2 s."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::The app did not answer /ping within 120 s."
+          tail -n 50 "$RUNNER_TEMP/app.log" || true
+          exit 1
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run Playwright E2E suite
-        env:
-          E2E_BASE_URL: ${{ steps.resolve-url.outputs.preview_url }}
         run: pnpm e2e
 
-      - name: Remove the preview origin from the staging auth branch
-        if: always() && steps.trust.outputs.added == 'true'
-        env:
-          PREVIEW_URL: ${{ steps.resolve-url.outputs.preview_url }}
-        run: pnpm exec tsx scripts/ci/neon-auth-trusted-origin.ts remove "$PREVIEW_URL"
+      - name: Show the app log tail on failure
+        if: failure()
+        run: tail -n 80 "$RUNNER_TEMP/app.log" || true
 
       - name: Upload Playwright report
         if: always()
@@ -168,12 +182,10 @@ jobs:
 
       - name: Write job summary
         if: always()
-        env:
-          PREVIEW_URL: ${{ steps.resolve-url.outputs.preview_url }}
         run: |
           {
             echo "## Playwright E2E Test Results"
-            echo "- **Target URL**: \`${PREVIEW_URL}\`"
+            echo "- **Target**: the pull request built and started on the runner (\`http://localhost:3000\`)"
             echo "- **Verification Mode**: \`${E2E_VERIFY_MODE}\`"
             echo "- **Report**: download the \`playwright-report\` artifact for traces and videos."
           } >> "$GITHUB_STEP_SUMMARY"

@@ -795,7 +795,7 @@ Bill Matrix maintains an automated end-to-end regression and compliance suite us
     - **Print & PDF Integrity**: CSS `@media print` layout validation ensuring navigation chrome suppression, A4 container width bounds (≤ 794px), and valid `%PDF-` generation.
   - `mailbox`: Live email verification via Mailosaur sink when live mailbox credentials are provided.
 - **CI/CD Integration**:
-  Automated GitHub Actions workflow (`.github/workflows/e2e.yml`) triggered on pull requests, polling for the Vercel preview deployment (`scripts/ci/wait-for-preview.sh`), executing staging migrations (`pnpm e2e:migrate-staging`), running tests in Chromium, and persisting 7-day trace and report artifacts.
+  Automated GitHub Actions workflow (`.github/workflows/e2e.yml`) triggered on pull requests: executes staging migrations (`pnpm e2e:migrate-staging`), builds the pull request and starts it with `next start` on the runner (`http://localhost:3000`), runs the tests in Chromium, and persisting 7-day trace and report artifacts.
 
 ## Dependency security policy (Step-1)
 

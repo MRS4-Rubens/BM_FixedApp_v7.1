@@ -30,7 +30,6 @@ import {
   generateTestPassword,
   generateUtr,
 } from '@/e2e/support/identity';
-import { extractVerificationUrl } from '@/e2e/support/mail-sink';
 import { subscriptionClaimSchema } from '@/lib/validations/subscription';
 import { validatePasswordPolicy } from '@/lib/auth/password-policy';
 
@@ -298,25 +297,6 @@ describe('e2e support helpers', () => {
       const u2 = generateUtr();
       expect(u1).not.toBe(u2);
       expect(u1).toMatch(/^\d{12}$/);
-    });
-  });
-
-  describe('MailSink link extractor', () => {
-    it('extracts verification links matching allowed hosts', () => {
-      const html = `
-        <div>
-          <p>Please click below to verify your email:</p>
-          <a href="https://ep-staging.neonauth.aws.neon.tech/verify?token=abc123xyz">Verify Email</a>
-          <a href="https://google.com">Unrelated Link</a>
-        </div>
-      `;
-      const url = extractVerificationUrl(html, ['ep-staging.neonauth.aws.neon.tech']);
-      expect(url).toBe('https://ep-staging.neonauth.aws.neon.tech/verify?token=abc123xyz');
-    });
-
-    it('throws when no valid verification URL is present in email', () => {
-      const html = '<p>Welcome to our app! Visit <a href="https://example.com/about">about</a>.</p>';
-      expect(() => extractVerificationUrl(html)).toThrow('No valid verification URL found');
     });
   });
 });
