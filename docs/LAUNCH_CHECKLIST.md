@@ -65,7 +65,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [x] **2.5 Cron routes reply first:** *(done: L2 PR; schedules in `lib/cron/schedules.ts`, workflow `run-cron-now.yml`)* both `app/api/cron/*` routes check the secret, reply **202** immediately, then run the work with `after()`. The archive job stays inside `Sentry.withMonitor`; **remove** `Sentry.withMonitor` from daily-notifications. Delete the crons from `vercel.json`. Add a manual GitHub workflow "Run cron now".
 - [x] **2.6 Bell Option C** *(done: PR #68)* in `components/app/notifications/notification-bell.tsx` (replace `REFRESH_MS = 120_000`).
 - [x] **2.7 Backup workflow** `.github/workflows/backup-db.yml` *(done: L5)*: 21:00 UTC (02:30 IST) + manual button; Postgres 17 `pg_dump` (custom format, compressed; checked to contain `invoices`) → encrypt (gpg AES-256) with `BACKUP_ENCRYPTION_PASSPHRASE` → upload to `bizfolio-backups` under `daily/` (+ `weekly/` on Sundays) → prune to 7 daily + 4 weekly. **Off until the variable `BACKUPS_ENABLED=true`** is set (section 7); once on, a missing secret fails the run. Restore steps are in the workflow header.
-- [x] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml` *(done: L5)*: build + `next start` on the runner (`http://localhost:3000`); Neon test database + its Neon Auth (new secret `E2E_NEON_AUTH_BASE_URL`); `E2E_VERIFY_MODE=db`; removed the Vercel preview lookup, trusted-domain script, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; every PR + manual button; fork-PR guard kept; fake CustomJS/Brevo/IDrive keys. **Changed from the plan:** Redis uses the **test Upstash database** (the existing `E2E_UPSTASH_*` secrets), not a serverless-redis-http container, because the app only accepts an `https://` Redis address. The runner app sets `SKIP_ENV_VALIDATION=1` because production validation rejects `http://localhost` (never possible on Render).
+- [x] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml` *(done: L5)*: build + `next start` on the runner (`http://localhost:3000`); Neon test database + its Neon Auth (new secret `E2E_NEON_AUTH_BASE_URL`); `E2E_VERIFY_MODE=db`; removed the Vercel preview lookup, trusted-domain script, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; every PR + manual button; fork-PR guard kept; fake CustomJS/Brevo/IDrive keys. Redis: a **local look-alike** (Redis + serverless-redis-http service containers, empty every run; `lib/env.ts` accepts `http://localhost` only when validation is skipped, never on Render). First built with the test Upstash database, switched after CodeRabbit flagged that the free plan has one database per account. The runner app sets `SKIP_ENV_VALIDATION=1` because production validation rejects `http://localhost` (never possible on Render).
 - [x] **2.9 E-mail provider swap:** *(done: L3 PR; `lib/email/mailer.ts`, Brevo HTTPS API)* Resend → **Brevo web API** in `lib/email/resend.ts` / `send-customer-email.ts`; rename env vars (e.g. `BREVO_API_KEY`, `EMAIL_FROM`).
 - [x] **2.10 Brand clean-up:** *(done: L2 PR; production now refuses to boot without `NEXT_PUBLIC_SUPPORT_EMAIL`)* `lib/config/contact.ts` fallback `support@billmatrix.in`; `.env.example` "Bill Matrix" → Invoice BizFolio, matching section 4 (fake values only).
 - [x] **2.11 Docs:** *(done: L6)* `docs/DEPLOYMENT.md`: removed the 8-year Object Lock, 7-day PITR, RPO ≤ 5 min and weekly-dump claims; now describes Render, cron-job.org, UptimeRobot (`/ping`, `/health-db`), the nightly encrypted backup + restore drill, honest recovery targets, and the 7 PR checks. `docs/e2e-staging-setup.md` rewritten for the runner-based E2E. `README.md` env table, background jobs and deploy sections updated.
@@ -120,7 +120,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [ ] Save endpoint, region, bucket names and keys (app key: both folders; backup key: PRODUCTION).
 
 ### 3.6 Upstash — one database
-> **Open item (CodeRabbit, PR #73):** E2E needs its **own** Upstash database (`E2E_UPSTASH_*`), but the free plan allows one database per account and this step creates only the production one. Decide before 3.14: a local Upstash look-alike for E2E (small code change, the original decision 18) or a second free Upstash account for testing.
+> **Resolved (2026-11-19):** the CI browser tests use a **local Redis look-alike** (serverless-redis-http on the GitHub runner, empty every run), so this one Upstash database is production's only and no test Upstash database is needed.
 - [ ] Sign up → Create Redis database → name `bizfolio` → region **AWS ap-southeast-1 (Singapore)** → Free.
 - [ ] Copy the **REST URL** and **REST token** (PRODUCTION folder; it is also used during testing and flushed at the switch).
 
@@ -165,8 +165,8 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 
 ### 3.14 GitHub Secrets and Variables
 - [ ] Settings → Secrets and variables → Actions → add everything in section 4.2.
-- [ ] **Replace every old development value.** Until now the E2E secrets (`E2E_STAGING_DATABASE_URL`, `E2E_STAGING_DATABASE_URL_UNPOOLED`, `E2E_NEON_AUTH_BASE_URL`, `E2E_UPSTASH_*`) and the variables `E2E_DB_HOST_ALLOWLIST` / `E2E_UPSTASH_HOST_ALLOWLIST` point at the **old development** accounts. Overwrite all of them with the new **test** values, and set `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` to the new **production** host and address. Then run E2E once (Actions → E2E (runner app) → Run workflow) and check it passes.
-- [ ] Delete the unused secrets/variables: `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_API_KEY`, `MAILOSAUR_SERVER_ID`, `E2E_VERIFY_MODE`.
+- [ ] **Replace every old development value.** Until now the E2E secrets (`E2E_STAGING_DATABASE_URL`, `E2E_STAGING_DATABASE_URL_UNPOOLED`, `E2E_NEON_AUTH_BASE_URL`) and the variable `E2E_DB_HOST_ALLOWLIST` point at the **old development** accounts. Overwrite all of them with the new **test** values, and set `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` to the new **production** host and address. Then run E2E once (Actions → E2E (runner app) → Run workflow) and check it passes.
+- [ ] Delete the unused secrets/variables: `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_API_KEY`, `MAILOSAUR_SERVER_ID`, `E2E_VERIFY_MODE`, `E2E_UPSTASH_REST_URL`, `E2E_UPSTASH_REST_TOKEN`, `E2E_UPSTASH_HOST_ALLOWLIST`.
 - [ ] Variable `E2E_EXPECT_ARCHIVAL=false` (the E2E workflow already forces `E2E_VERIFY_MODE=db`). Leave `BACKUPS_ENABLED` unset until section 7.
 - [ ] `E2E_FORBIDDEN_DB_HOSTS` = the **production** Neon host(s); `E2E_FORBIDDEN_HOSTS` = the production address. These guards stop tests from ever touching production.
 
@@ -211,12 +211,11 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `BACKUP_S3_BUCKET` (optional, default `bizfolio-backups`), `BACKUPS_ENABLED=true` (**only from section 7**) | Variable | — | Backup workflow |
 | `CRON_SECRET` + `CRON_APP_URL` (`https://<name>.onrender.com`) | Secret | **Prod** value after the switch | Manual "Run cron now" workflow (`run-cron-now.yml`) |
 | `E2E_STAGING_DATABASE_URL` (pooled), `E2E_STAGING_DATABASE_URL_UNPOOLED` (direct), `E2E_NEON_AUTH_BASE_URL` | Secret | **Test** Neon project | E2E (app on the runner + tests) |
-| `E2E_UPSTASH_REST_URL` / `E2E_UPSTASH_REST_TOKEN` + variable `E2E_UPSTASH_HOST_ALLOWLIST` | Secret / Variable | **Test** Upstash database | E2E (rate limits; flushed between runs) |
 | `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`, `E2E_CONFIRM_STAGING` | Secret | Test values only | E2E |
 | `E2E_DB_HOST_ALLOWLIST` | Variable | **Test** Neon host | E2E safety guard |
 | `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` | Variable | **Prod** Neon host / prod address | E2E safety guard |
 | `E2E_EXPECT_ARCHIVAL=false` | Variable | — | E2E |
-| ~~`NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_*`~~ | — | **No longer used** (L5): delete them from GitHub after L5 merges | — |
+| ~~`NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_*`, `E2E_UPSTASH_REST_URL`, `E2E_UPSTASH_REST_TOKEN`, `E2E_UPSTASH_HOST_ALLOWLIST`~~ | — | **No longer used** (L5): delete them from GitHub after L5 merges | — |
 | Cookie secret / cron secret for the runner app | — | Generated fresh **every run** by `e2e.yml` (never stored) | E2E app on the runner |
 
 ### 4.3 Elsewhere
