@@ -306,6 +306,7 @@ Do this in one sitting, in order. Each step has a proof check.
 | Weekly | Neon prod CU-hours | On pace for > 80 → Launch plan |
 | Weekly | CustomJS daily usage / failed archives | Often near 20/day → Pro $9 |
 | Weekly | Sentry new issues | Fix |
+| Weekly | GitHub → Actions → **Nightly database backup**: one green run per night | A missed or failed night → run it by hand and find out why |
 | Monthly | Upstash commands, IDrive GB, Brevo daily sends | Near limits → section 1 triggers |
 | Month 1 | Review "Failed to fetch" errors | Filter only harmless ones |
 | Every 3 months | **Restore drill** (latest prod backup → Neon branch of the test project) | Record the result |
