@@ -3,8 +3,8 @@ import { Check, Sparkles } from 'lucide-react'
 const comparisons = [
   { capability: 'GST calculation', billMatrix: 'Automatic GST calculation', manual: 'Set up formulas and check totals' },
   { capability: 'ITR-ready export', billMatrix: 'Download an Excel sales report', manual: 'Compile and format sales data' },
-  { capability: 'Payment reminders', billMatrix: 'Send reminders from invoices', manual: 'Track dues and follow up separately' },
-  { capability: 'Invoice sharing', billMatrix: 'Share by email or WhatsApp', manual: 'Export and attach files manually' },
+  { capability: 'Payment follow-up', billMatrix: 'Overdue invoice alerts in your dashboard', manual: 'Track dues and follow up separately' },
+  { capability: 'Invoice sharing', billMatrix: 'Download the PDF or share on WhatsApp', manual: 'Export and attach files manually' },
   { capability: 'Business insights', billMatrix: 'Sales dashboard and reports', manual: 'Build and maintain summaries' },
 ]
 

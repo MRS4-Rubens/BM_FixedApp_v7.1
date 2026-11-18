@@ -2,15 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Bell, CheckCheck, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NotificationList, NotificationListItem } from '@/lib/notifications/list';
 import { markNotificationsRead } from '@/lib/actions/notifications/mark-notifications-read';
 import { badgeText, relativeTime, safeInternalLink } from './notification-format';
 
-/** Re-check for new items this often while the tab is visible (and whenever the window regains focus). */
-const REFRESH_MS = 120_000;
+/**
+ * Backup re-check while the tab is visible. The bell also refreshes on window focus, on every page change and when
+ * it is opened (LAUNCH-L1 Option C). Kept long on purpose: each check wakes the database, and Neon Free sleeps only
+ * after 5 idle minutes, so a short timer would keep it awake all day on a shop PC.
+ */
+export const REFRESH_MS = 30 * 60_000;
 
 function isNotificationList(value: unknown): value is NotificationList {
   if (typeof value !== 'object' || value === null) return false;
@@ -51,6 +55,8 @@ export function NotificationBell() {
   // Every refresh and every read-change takes a new number. A refresh only applies its result if nothing newer
   // started meanwhile, so a slow refresh can never overwrite a newer "marked as read" on screen.
   const generation = useRef(0);
+  const pathname = usePathname();
+  const lastPathname = useRef(pathname);
 
   const refresh = useCallback(async () => {
     generation.current += 1;
@@ -82,6 +88,15 @@ export function NotificationBell() {
       window.removeEventListener('focus', onFocus);
     };
   }, [refresh]);
+
+  useEffect(() => {
+    // Page change inside the app (the top bar stays mounted): pick up anything new. The first render is covered by
+    // the initial load above.
+    if (lastPathname.current === pathname) return;
+    lastPathname.current = pathname;
+    const onNavigate = setTimeout(() => void refresh(), 0);
+    return () => clearTimeout(onNavigate);
+  }, [pathname, refresh]);
 
   useEffect(() => {
     if (!open) return;

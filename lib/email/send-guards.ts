@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { getRequestSession } from '@/lib/auth/request-session';
+import { CUSTOMER_EMAILS_ENABLED } from '@/lib/config/features';
 import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import type { DbTransaction } from '@/lib/db/client';
@@ -52,6 +53,14 @@ export async function loadSenderBusiness(
 }
 
 export async function assertMayEmailCustomers(business: BusinessSubscriptionSource): Promise<void> {
+  // LAUNCH-L1: customer e-mails are switched off for the pilot; refuse before any other work.
+  if (!CUSTOMER_EMAILS_ENABLED) {
+    throw new ActionError(
+      'E-mailing customers is not available yet. Download the PDF or share it on WhatsApp instead.',
+      { code: 'CUSTOMER_EMAILS_DISABLED' },
+    );
+  }
+
   const ent = getPlanEntitlements(business);
   if (ent.isSuspended) {
     throw new ActionError('Your account has been suspended. Please contact platform support.', {

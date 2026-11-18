@@ -93,6 +93,9 @@ vi.mock('@/lib/email/templates/payment-reminder-email', () => ({
   PaymentReminderEmail: () => null,
 }));
 
+// LAUNCH-L1: customer e-mails are switched off for the pilot; these tests cover the feature itself, so turn it on.
+vi.mock('@/lib/config/features', () => ({ CUSTOMER_EMAILS_ENABLED: true }));
+
 vi.mock('@/lib/email/resend', () => ({
   getResend: () => ({
     emails: {

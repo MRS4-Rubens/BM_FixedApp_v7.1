@@ -37,6 +37,7 @@ import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt
 import { useCanEdit } from '@/components/app/current-user-role'
 import type { InvoiceDisplayPrefs } from '@/lib/db/schema/_display_prefs'
 import { formatIstDate, formatIstDateAsIso } from '@/lib/invoices/ist-date'
+import { CUSTOMER_EMAILS_ENABLED } from '@/lib/config/features'
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
@@ -264,7 +265,9 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
     {
       step: 3,
       name: 'Dispatched',
-      subtext: invoice.emailed_at ? `Sent (${invoice.email_send_count || 1}x)` : 'Pending email',
+      subtext: invoice.emailed_at
+        ? `Sent (${invoice.email_send_count || 1}x)`
+        : CUSTOMER_EMAILS_ENABLED ? 'Pending email' : 'Download to share',
       date: invoice.emailed_at,
       isCompleted: !!invoice.emailed_at,
       isCurrent: !!invoice.emailed_at && invoice.payment_status !== 'paid',
@@ -380,7 +383,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                 </Button>
               )}
 
-              {canEdit && invoice.lifecycle_status === 'finalized' && invoice.archival_status === 'archived' && (
+              {CUSTOMER_EMAILS_ENABLED && canEdit && invoice.lifecycle_status === 'finalized' && invoice.archival_status === 'archived' && (
                 <>
                   <Button 
                     type="button" 
