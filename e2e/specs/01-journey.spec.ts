@@ -53,11 +53,11 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
       if (env.E2E_EXPECT_VERIFICATION_REQUIRED) {
         await authModal.expectVerificationNotice();
 
-        // Assert login fails before verification
+        // Assert login cannot get in before verification: it opens the code screen instead (LAUNCH-L4)
         await authModal.openLogin();
         await authModal.fillLogin(identity.email, identity.password);
         await authModal.submitLogin();
-        await authModal.expectLoginError();
+        await authModal.expectCodeScreen();
 
         // Verify account via DB helper (guarded write)
         if (env.E2E_VERIFY_MODE === 'db') {
