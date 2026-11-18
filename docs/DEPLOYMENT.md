@@ -301,13 +301,16 @@ Follow this checklist when processing an account closure request:
 
 ### Restore (drill every 3 months, never over production)
 1. Download the newest file: `aws s3 cp --endpoint-url <BACKUP_S3_ENDPOINT> s3://bizfolio-backups/daily/<file>.dump.gpg .`
-2. Decrypt: `gpg --batch --pinentry-mode loopback --decrypt --output db.dump <file>.dump.gpg` (asks for the passphrase).
+2. Decrypt in a terminal: `gpg --pinentry-mode loopback --decrypt --output db.dump <file>.dump.gpg`. It asks for the passphrase (do **not** add `--batch`: batch mode never asks, so decryption would fail).
 3. Create an empty branch in the **test** Neon project and restore into it: `pg_restore --no-owner --no-acl --dbname "<test branch direct URL>" db.dump` (Postgres 17 client).
 4. Check: invoice counts and numbers, latest invoices, credit notes, payments, `invoice_number_counters`, and that a test login works.
 5. Record the result (date, file, time taken) and delete the branch.
 
-For a real incident: first try the Neon 6-hour restore; if the problem is older, restore the latest good dump into a new branch, check it as above, and only then point the app at it (Render `DATABASE_URL`).
+For a real incident: first try the Neon 6-hour restore; if the problem is older, restore the latest good dump into a new branch, check it as above, and only then point everything at it:
+- Render `DATABASE_URL` → the recovered branch's **pooled** URL (the app);
+- GitHub secret `DATABASE_URL_UNPOOLED` → the recovered branch's **direct** URL (otherwise the nightly backup and the migration workflow keep using the old branch);
+- then run the backup workflow once by hand and check a new file appears.
 
 ### Recovery targets (pilot, honest)
-- **Data loss (RPO)**: up to **6 hours** back is exact (Neon history); older problems lose up to **about 24 hours** (since the last nightly dump).
+- **Data loss (RPO)**: up to **6 hours** back is exact (Neon history); older problems lose up to **about 24 hours** (since the last nightly dump), **if that dump is not affected**. If the damage is already in the latest dump, restore an earlier good one: the loss then goes back to that dump, which can be several days (up to 7 daily, then weekly copies).
 - **Time to recover (RTO)**: about **1–2 hours** by hand (download, decrypt, restore, check, switch). Prove it in the first restore drill and update this line.

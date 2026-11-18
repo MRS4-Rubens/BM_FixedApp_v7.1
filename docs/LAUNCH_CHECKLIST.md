@@ -120,6 +120,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [ ] Save endpoint, region, bucket names and keys (app key: both folders; backup key: PRODUCTION).
 
 ### 3.6 Upstash — one database
+> **Open item (CodeRabbit, PR #73):** E2E needs its **own** Upstash database (`E2E_UPSTASH_*`), but the free plan allows one database per account and this step creates only the production one. Decide before 3.14: a local Upstash look-alike for E2E (small code change, the original decision 18) or a second free Upstash account for testing.
 - [ ] Sign up → Create Redis database → name `bizfolio` → region **AWS ap-southeast-1 (Singapore)** → Free.
 - [ ] Copy the **REST URL** and **REST token** (PRODUCTION folder; it is also used during testing and flushed at the switch).
 

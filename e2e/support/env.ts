@@ -90,13 +90,12 @@ export function assertSafeTarget(env: E2eEnv): void {
 
   if (env.E2E_UPSTASH_ALLOW_FLUSH && env.E2E_UPSTASH_REST_URL) {
     const upstashHost = extractHostname(env.E2E_UPSTASH_REST_URL, 'E2E_UPSTASH_REST_URL');
-    if (env.E2E_UPSTASH_HOST_ALLOWLIST) {
-      const allowedUpstash = parseCsv(env.E2E_UPSTASH_HOST_ALLOWLIST);
-      if (!allowedUpstash.includes(upstashHost)) {
-        throw new E2eSafetyError(
-          'Refusing to run: Upstash host is not in E2E_UPSTASH_HOST_ALLOWLIST while flush is enabled.',
-        );
-      }
+    // An empty or missing allowlist must never mean "any host" (CodeRabbit, PR #73).
+    const allowedUpstash = parseCsv(env.E2E_UPSTASH_HOST_ALLOWLIST ?? '');
+    if (allowedUpstash.length === 0 || !allowedUpstash.includes(upstashHost)) {
+      throw new E2eSafetyError(
+        'Refusing to run: flush is enabled but the Upstash host is not in a non-empty E2E_UPSTASH_HOST_ALLOWLIST.',
+      );
     }
   }
 }
