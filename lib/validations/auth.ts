@@ -4,7 +4,34 @@ import { PASSWORD_MAX_LENGTH, validatePasswordPolicy } from '@/lib/auth/password
 export interface AuthActionState {
   error?: string;
   notice?: string;
+  /** LAUNCH-L4: set when the account exists but its e-mail must be confirmed with a code before sign-in. */
+  verifyEmail?: string;
+  /** LAUNCH-L4: the e-mail was confirmed but no session was created; the person must sign in. */
+  verified?: boolean;
 }
+
+/** LAUNCH-L4: Neon Auth's verification codes expire after 15 minutes (neon.com/docs/auth/guides/email-verification). */
+export const VERIFICATION_CODE_TTL_MINUTES = 15;
+
+/**
+ * Sign-in with an unconfirmed address ("Verify at Sign-up" on). Neon Auth's API answers `EMAIL_NOT_VERIFIED`; the
+ * @neondatabase/auth server client renames it to `email_not_confirmed` (BETTER_AUTH_ERROR_MAP). Accept both.
+ */
+const EMAIL_NOT_VERIFIED_CODES: ReadonlySet<string> = new Set(['EMAIL_NOT_VERIFIED', 'email_not_confirmed']);
+
+export function isEmailNotVerifiedCode(code: unknown): boolean {
+  return typeof code === 'string' && EMAIL_NOT_VERIFIED_CODES.has(code);
+}
+
+export const verifyCodeFormSchema = z.object({
+  email: z.string().trim().min(1, 'Please sign up again.').max(254, 'Email address is too long.').email('Please sign up again.'),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'Enter the 6-digit code from the e-mail.'),
+});
+
+export const resendCodeFormSchema = verifyCodeFormSchema.pick({ email: true });
 
 export const loginFormSchema = z.object({
   email: z

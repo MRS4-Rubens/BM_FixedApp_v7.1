@@ -22,6 +22,9 @@ export class AuthModal {
   readonly statusNotice: Locator;
   readonly errorBanner: Locator;
 
+  // LAUNCH-L4 code screen
+  readonly verifyCodeInput: Locator;
+
   constructor(page: Page) {
     this.page = page;
     this.modalDialog = page.locator('div[role="dialog"]');
@@ -47,6 +50,7 @@ export class AuthModal {
     // preview message. Only a status region with text is the notice we assert on.
     this.statusNotice = page.locator('div[role="status"]').filter({ hasText: /\S/ });
     this.errorBanner = page.locator('div.text-rose-700');
+    this.verifyCodeInput = page.locator('#verify-code');
   }
 
   async openSignup(): Promise<void> {
@@ -86,13 +90,17 @@ export class AuthModal {
     await this.loginSubmitButton.click();
   }
 
+  /** LAUNCH-L4: after sign-up the modal switches to the 6-digit code screen. */
   async expectVerificationNotice(): Promise<void> {
-    await expect(this.statusNotice).toBeVisible();
-    await expect(this.statusNotice).toContainText('Please check your e-mail to verify');
+    await this.expectCodeScreen();
+    await expect(this.statusNotice).toContainText('We sent a 6-digit code');
   }
 
-  async expectLoginError(): Promise<void> {
-    await expect(this.errorBanner).toBeVisible();
+  /** LAUNCH-L4: the code-entry screen (after sign-up, or a sign-in with an unconfirmed e-mail). */
+  async expectCodeScreen(): Promise<void> {
+    await expect(this.page.getByRole('heading', { name: 'Confirm your e-mail' })).toBeVisible();
+    await expect(this.verifyCodeInput).toBeVisible();
+    await expect(this.loginEmailInput).toHaveCount(0);
   }
 }
 

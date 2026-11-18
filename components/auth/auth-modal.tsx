@@ -17,6 +17,8 @@ import {
 import { useAuthModal } from './auth-modal-context'
 import { loginAction } from '@/app/(auth)/login/actions'
 import { signupAction } from '@/app/(auth)/signup/actions'
+import { VerifyEmailCodeForm } from './verify-email-code-form'
+import type { AuthActionState } from '@/lib/validations/auth'
 import { SUPPORT_EMAIL } from '@/lib/config/contact'
 import { useIsClient } from '@/lib/hooks/use-is-client'
 
@@ -35,6 +37,13 @@ export function AuthenticationModal() {
   const [loginState, loginFormAction, loginPending] = useActionState(loginAction, null)
   // Signup Action State
   const [signupState, signupFormAction, signupPending] = useActionState(signupAction, null)
+  // LAUNCH-L4: replies that asked for a code but whose code screen the person has left (it stays closed for them).
+  const [dismissedVerifyStates, setDismissedVerifyStates] = useState<readonly AuthActionState[]>([])
+  const modeState = mode === 'login' ? loginState : signupState
+  const verifyEmail =
+    modeState?.verifyEmail && !dismissedVerifyStates.includes(modeState) ? modeState.verifyEmail : null
+  const dismissVerifyScreen = () =>
+    setDismissedVerifyStates((list) => [...list, ...[loginState, signupState].filter((state) => state !== null)])
 
   const modalRef = useRef<HTMLDivElement>(null)
   const lastActiveElementRef = useRef<HTMLElement | null>(null)
@@ -92,10 +101,12 @@ export function AuthenticationModal() {
     const firstElement = focusableElements[0]
     const lastElement = focusableElements[focusableElements.length - 1]
 
-    // Set initial focus to email input if exists, else first element
-    const emailInput = modal.querySelector<HTMLInputElement>('input[name="email"]')
-    if (emailInput) {
-      emailInput.focus()
+    // Set initial focus to the code box (LAUNCH-L4), else the email input, else first element
+    const firstInput =
+      modal.querySelector<HTMLInputElement>('input[name="code"]') ??
+      modal.querySelector<HTMLInputElement>('input[name="email"]:not([type="hidden"])')
+    if (firstInput) {
+      firstInput.focus()
     } else {
       firstElement.focus()
     }
@@ -118,11 +129,12 @@ export function AuthenticationModal() {
 
     window.addEventListener('keydown', handleTab)
     return () => window.removeEventListener('keydown', handleTab)
-  }, [isOpen, mode])
+  }, [isOpen, mode, verifyEmail])
 
   // Trigger shake animation when form state error changes
-  const activeError = mode === 'login' ? loginState?.error : signupState?.error
-  const activeNotice = mode === 'signup' ? signupState?.notice : undefined
+  // While the code screen is open it shows its own messages.
+  const activeError = verifyEmail ? undefined : modeState?.error
+  const activeNotice = mode === 'signup' && !verifyEmail ? signupState?.notice : undefined
   useEffect(() => {
     if (activeError) {
       const frame = requestAnimationFrame(() => setShake(true))
@@ -202,12 +214,14 @@ export function AuthenticationModal() {
             id="auth-modal-title"
             className="text-2xl sm:text-3xl font-bold text-zinc-950 tracking-tight"
           >
-            {mode === 'login' ? 'Welcome back!' : 'Create your account'}
+            {verifyEmail ? 'Confirm your e-mail' : mode === 'login' ? 'Welcome back!' : 'Create your account'}
           </h2>
           <p className="mt-1 text-sm sm:text-base text-slate-600">
-            {mode === 'login'
-              ? 'Sign in to your Invoice BizFolio account.'
-              : 'Start your 14-day free trial. No credit card required.'}
+            {verifyEmail
+              ? 'Enter the 6-digit code we e-mailed you.'
+              : mode === 'login'
+                ? 'Sign in to your Invoice BizFolio account.'
+                : 'Start your 14-day free trial. No credit card required.'}
           </p>
         </div>
 
@@ -229,8 +243,22 @@ export function AuthenticationModal() {
           </div>
         )}
 
+        {/* LAUNCH-L4: CODE SCREEN (after sign-up, or sign-in with an unconfirmed e-mail) */}
+        {verifyEmail && (
+          <VerifyEmailCodeForm
+            key={verifyEmail}
+            email={verifyEmail}
+            initialNotice={modeState?.notice}
+            onChangeEmail={dismissVerifyScreen}
+            onGoToSignIn={() => {
+              dismissVerifyScreen()
+              openLogin()
+            }}
+          />
+        )}
+
         {/* LOGIN FORM */}
-        {mode === 'login' && (
+        {mode === 'login' && !verifyEmail && (
           <form className="w-full space-y-2.5" action={loginFormAction}>
             {/* Email Field */}
             <div>
@@ -356,7 +384,7 @@ export function AuthenticationModal() {
         )}
 
         {/* SIGNUP FORM */}
-        {mode === 'signup' && (
+        {mode === 'signup' && !verifyEmail && (
           <form className="w-full space-y-2.5" action={signupFormAction}>
             {/* Row 1: Owner Name */}
             <div>
@@ -564,7 +592,7 @@ export function AuthenticationModal() {
             </p>
           </form>
         )}
-        <SocialSignInPreview key={mode} />
+        {!verifyEmail && <SocialSignInPreview key={mode} />}
       </div>
     </div>,
     document.body
