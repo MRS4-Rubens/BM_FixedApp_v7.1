@@ -46,3 +46,47 @@ describe('rewriteCommand / rewriteBody', () => {
     expect(rewriteBody('/', { not: 'a command' }, map)).toEqual({ not: 'a command' });
   });
 });
+
+describe('E2E auth counter reset talks the body-command format (works on Upstash and the CI look-alike)', () => {
+  it('sends SCAN as a POST body command, then deletes only auth rate-limit keys', async () => {
+    const { resetAuthRateLimits } = await import('@/e2e/support/rate-limits');
+    const calls: Array<{ url: string; body: unknown }> = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+      calls.push({ url: String(url), body });
+      if (Array.isArray(body) && body[0] === 'SCAN') {
+        return new Response(JSON.stringify({ result: ['0', ['@upstash/ratelimit:auth-signup-ip:1.2.3.4', 'other:key']] }));
+      }
+      return new Response(JSON.stringify([{ result: 1 }]));
+    }) as typeof fetch;
+    try {
+      const deleted = await resetAuthRateLimits({
+        E2E_BASE_URL: 'http://localhost:3000',
+        E2E_CONFIRM_STAGING: 'yes-this-is-not-production',
+        E2E_FORBIDDEN_HOSTS: 'prod.example.com',
+        E2E_DATABASE_URL: 'postgresql://u:p@ep-test.neon.tech/neondb',
+        E2E_DB_HOST_ALLOWLIST: 'ep-test.neon.tech',
+        E2E_FORBIDDEN_DB_HOSTS: 'ep-prod.neon.tech',
+        E2E_VERIFY_MODE: 'db',
+        E2E_EXPECT_VERIFICATION_REQUIRED: true,
+        E2E_ADMIN_EMAIL: 'admin@test.example',
+        E2E_ADMIN_PASSWORD: 'Password12345!',
+        E2E_UPSTASH_REST_URL: 'http://localhost:8080',
+        E2E_UPSTASH_REST_TOKEN: 'e2e-local-srh-token',
+        E2E_UPSTASH_HOST_ALLOWLIST: 'localhost',
+        E2E_UPSTASH_ALLOW_FLUSH: true,
+        E2E_UPDATE_A11Y_BASELINE: false,
+        E2E_EXPECT_ARCHIVAL: false,
+      });
+      const scan = calls.find((c) => Array.isArray(c.body) && (c.body as unknown[])[0] === 'SCAN');
+      expect(scan?.url).toBe('http://localhost:8080');
+      expect(scan?.body).toEqual(['SCAN', '0', 'MATCH', '@upstash/ratelimit:auth-signup-ip*', 'COUNT', '100']);
+      const del = calls.find((c) => c.url.endsWith('/pipeline'));
+      expect(del?.body).toEqual([['DEL', '@upstash/ratelimit:auth-signup-ip:1.2.3.4']]);
+      expect(deleted).toBeGreaterThan(0);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});

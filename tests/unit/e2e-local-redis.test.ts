@@ -46,8 +46,10 @@ describe('E2E workflow uses the local Redis look-alike', () => {
     expect(wf).toContain('-H "Content-Type: application/json" -d \'["PING"]\' http://localhost:8080/');
   });
 
-  it('no longer needs any real Upstash secret, and does not flush', () => {
+  it('needs no real Upstash secret; the auth counter reset runs only on the local look-alike', () => {
     expect(wf).not.toContain('secrets.E2E_UPSTASH');
-    expect(wf).toContain("E2E_UPSTASH_ALLOW_FLUSH: 'false'");
+    expect(wf).toContain('E2E_UPSTASH_REST_URL: http://localhost:8080');
+    expect(wf).toContain('E2E_UPSTASH_HOST_ALLOWLIST: localhost');
+    expect(wf).toContain("E2E_UPSTASH_ALLOW_FLUSH: 'true'");
   });
 });

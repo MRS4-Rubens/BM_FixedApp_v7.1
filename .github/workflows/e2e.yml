@@ -96,8 +96,12 @@ jobs:
       E2E_EXPECT_VERIFICATION_REQUIRED: ${{ vars.E2E_EXPECT_VERIFICATION_REQUIRED || 'true' }}
       E2E_VERIFY_MODE: db
       E2E_EXPECT_ARCHIVAL: 'false'
-      # Redis starts empty every run, so the auth rate-limit reset is not needed.
-      E2E_UPSTASH_ALLOW_FLUSH: 'false'
+      # Redis starts empty every run, but one run signs up up to 4 users from this IP (limit 3/hour), so the specs
+      # still reset the auth counters between scenarios, on the local look-alike only (allow-listed host).
+      E2E_UPSTASH_REST_URL: http://localhost:8080
+      E2E_UPSTASH_REST_TOKEN: e2e-local-srh-token
+      E2E_UPSTASH_HOST_ALLOWLIST: localhost
+      E2E_UPSTASH_ALLOW_FLUSH: 'true'
       # ---- The app under test (build + `next start` on this runner) ----
       # SKIP_ENV_VALIDATION: production validation rejects an http://localhost app address, which is exactly what
       # this runner serves. Allowed here only because RENDER is not set (lib/env.ts never skips on Render).
