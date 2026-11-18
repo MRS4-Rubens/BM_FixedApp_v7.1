@@ -25,6 +25,19 @@ reviews:
     - '!e2e/a11y-baseline.json'
     - '!repomix-output*.md'
   path_instructions:
+    - path: '**'
+      instructions: |
+        PROJECT CONTEXT (read first; it decides what is worth a comment):
+        - This is a PILOT for about 3 businesses, run on free tiers at Rs 0/month (Render Free, Neon Free, Upstash
+          Free, IDrive e2, Brevo, CustomJS, cron-job.org, UptimeRobot) until the first paying customer.
+        - The service decisions and launch steps in docs/LAUNCH_CHECKLIST.md are FINAL. Do not suggest paid
+          services, different providers, extra infrastructure, or keeping test data; the upgrade path is in its
+          section 10. Question a decision only for a real bug, security hole or risk of losing data.
+        - Prefer the simplest safe option. Do not comment on enterprise-scale concerns (high availability,
+          multi-region, large-team process) or on rare edge cases of manual, seldom-used runbooks unless data could
+          be lost or leaked.
+        - Worth a comment: anything that would break for a real shop owner, leak data, lose money or records, or
+          weaken an existing safety guard.
     - path: '**/*.{ts,tsx}'
       instructions: |
         Project rules to check (they come from earlier audits; breaking any of them is a real bug):
