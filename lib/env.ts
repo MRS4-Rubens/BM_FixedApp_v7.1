@@ -371,17 +371,30 @@ const emailEnv: EnvGroup<EmailEnv> = defineGroup(
   ),
 );
 
-const rateLimitEnv: EnvGroup<RateLimitEnv> = defineGroup(
-  'rateLimit',
-  fromSchema(
-    'rateLimit',
-    z.object({
-      UPSTASH_REDIS_REST_URL: z.string().trim().refine(isHttpsUrl, 'must be an https:// URL'),
-      UPSTASH_REDIS_REST_TOKEN: text(),
-    }),
-    (data): RateLimitEnv => data,
-  ),
-);
+/**
+ * Plain http:// is accepted ONLY for a loopback Redis REST endpoint (the serverless-redis-http container used by the
+ * CI browser tests) and ONLY when validation is skipped, which never happens on Render or Vercel production.
+ */
+const isLocalHttpUrl = (value: string): boolean => {
+  const url = parseHttpUrl(value);
+  return url !== null && url.protocol === 'http:' && /^(?:localhost|127\.0\.0\.1)$/i.test(url.hostname);
+};
+
+function rateLimitSchema(allowLocalHttp: boolean) {
+  return z.object({
+    UPSTASH_REDIS_REST_URL: z
+      .string()
+      .trim()
+      .refine((value) => isHttpsUrl(value) || (allowLocalHttp && isLocalHttpUrl(value)), 'must be an https:// URL'),
+    UPSTASH_REDIS_REST_TOKEN: text(),
+  });
+}
+
+function parseRateLimitEnv(source: EnvSource): ParseOutcome<RateLimitEnv> {
+  return fromSchema('rateLimit', rateLimitSchema(isEnvValidationSkipped(source)), (data): RateLimitEnv => data)(source);
+}
+
+const rateLimitEnv: EnvGroup<RateLimitEnv> = defineGroup('rateLimit', parseRateLimitEnv);
 
 /* ------------------------------------------------------------------ */
 /* Typed lazy getters (the public API for the rest of the app)          */

@@ -4,8 +4,8 @@ name: E2E (runner app)
 # (http://localhost:3000), then runs the Playwright suite against it. No Vercel preview, no bypass secret, no
 # Mailosaur: e-mail confirmation uses E2E_VERIFY_MODE=db (the test database is marked verified directly).
 #
-# The app and the tests use ONLY test services: the test Neon database + its Neon Auth, and the test Upstash
-# database. CustomJS and Brevo get obviously fake keys, so no real PDF or e-mail is ever sent.
+# The app and the tests use ONLY test services: the test Neon database + its Neon Auth, plus a local Redis look-alike
+# (rate limits). CustomJS and Brevo get obviously fake keys, so no real PDF or e-mail is ever sent.
 # Neon Auth allows localhost by default ("Allow Localhost"), so no trusted-domain step is needed on the test
 # project. (Production must have Allow Localhost OFF: checklist section 3.)
 
@@ -41,16 +41,13 @@ jobs:
       E2E_FORBIDDEN_HOSTS: ${{ vars.E2E_FORBIDDEN_HOSTS }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
-      E2E_UPSTASH_REST_URL: ${{ secrets.E2E_UPSTASH_REST_URL }}
-      E2E_UPSTASH_REST_TOKEN: ${{ secrets.E2E_UPSTASH_REST_TOKEN }}
     steps:
       - name: Check staging configuration
         id: check
         run: |
           MISSING=""
           for NAME in E2E_CONFIRM_STAGING E2E_DATABASE_URL E2E_STAGING_DATABASE_URL_UNPOOLED E2E_NEON_AUTH_BASE_URL \
-                      E2E_DB_HOST_ALLOWLIST E2E_FORBIDDEN_DB_HOSTS E2E_FORBIDDEN_HOSTS E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD \
-                      E2E_UPSTASH_REST_URL E2E_UPSTASH_REST_TOKEN; do
+                      E2E_DB_HOST_ALLOWLIST E2E_FORBIDDEN_DB_HOSTS E2E_FORBIDDEN_HOSTS E2E_ADMIN_EMAIL E2E_ADMIN_PASSWORD; do
             if [ -z "${!NAME:-}" ]; then MISSING="$MISSING $NAME"; fi
           done
           if [ -n "$MISSING" ]; then
@@ -66,6 +63,21 @@ jobs:
     if: needs.config.outputs.configured == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Local Redis + Upstash's REST look-alike (serverless-redis-http), fresh and empty for every run, so test rate-limit
+    # counters never touch a real Upstash database (Upstash terms: one free account per person, used by production).
+    # The app reaches them through scripts/ci/upstash-local-proxy.ts (port 8080), which removes the Upstash-only
+    # `allow-key-locking` script flag that normal Redis rejects.
+    services:
+      redis:
+        image: redis:7-alpine
+      serverless-redis-http:
+        image: hiett/serverless-redis-http:0.0.10
+        ports:
+          - 8079:80
+        env:
+          SRH_MODE: env
+          SRH_TOKEN: e2e-local-srh-token
+          SRH_CONNECTION_STRING: redis://redis:6379
     env:
       CI: 'true'
       NEXT_TELEMETRY_DISABLED: '1'
@@ -84,10 +96,8 @@ jobs:
       E2E_EXPECT_VERIFICATION_REQUIRED: ${{ vars.E2E_EXPECT_VERIFICATION_REQUIRED || 'true' }}
       E2E_VERIFY_MODE: db
       E2E_EXPECT_ARCHIVAL: 'false'
-      E2E_UPSTASH_REST_URL: ${{ secrets.E2E_UPSTASH_REST_URL }}
-      E2E_UPSTASH_REST_TOKEN: ${{ secrets.E2E_UPSTASH_REST_TOKEN }}
-      E2E_UPSTASH_HOST_ALLOWLIST: ${{ vars.E2E_UPSTASH_HOST_ALLOWLIST }}
-      E2E_UPSTASH_ALLOW_FLUSH: 'true'
+      # Redis starts empty every run, so the auth rate-limit reset is not needed.
+      E2E_UPSTASH_ALLOW_FLUSH: 'false'
       # ---- The app under test (build + `next start` on this runner) ----
       # SKIP_ENV_VALIDATION: production validation rejects an http://localhost app address, which is exactly what
       # this runner serves. Allowed here only because RENDER is not set (lib/env.ts never skips on Render).
@@ -97,8 +107,10 @@ jobs:
       FEEDBACK_RECIPIENT_EMAIL: feedback@e2e.example.invalid
       DATABASE_URL: ${{ secrets.E2E_STAGING_DATABASE_URL }}
       NEON_AUTH_BASE_URL: ${{ secrets.E2E_NEON_AUTH_BASE_URL }}
-      UPSTASH_REDIS_REST_URL: ${{ secrets.E2E_UPSTASH_REST_URL }}
-      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.E2E_UPSTASH_REST_TOKEN }}
+      # The local look-alike above. A plain http://localhost address is accepted only because validation is skipped
+      # on this runner (lib/env.ts); it can never be used on Render. The token is a fixed local value, not a secret.
+      UPSTASH_REDIS_REST_URL: http://localhost:8080
+      UPSTASH_REDIS_REST_TOKEN: e2e-local-srh-token
       PLATFORM_ADMIN_EMAILS: ${{ secrets.E2E_ADMIN_EMAIL }}
       # Obviously fake: no real PDF, e-mail or file upload can happen from E2E.
       BREVO_API_KEY: e2e-placeholder-brevo-key
@@ -140,6 +152,28 @@ jobs:
           cookie=$(openssl rand -hex 32); cron=$(openssl rand -hex 32)
           echo "::add-mask::$cookie"; echo "::add-mask::$cron"
           { echo "NEON_AUTH_COOKIE_SECRET=$cookie"; echo "CRON_SECRET=$cron"; } >> "$GITHUB_ENV"
+
+      - name: Start the Upstash flag proxy (CI only)
+        run: |
+          nohup pnpm e2e:redis-proxy > "$RUNNER_TEMP/redis-proxy.log" 2>&1 &
+
+      - name: Check the local Redis look-alike answers (through the proxy)
+        run: |
+          set -uo pipefail
+          reply=""
+          for i in $(seq 1 30); do
+            # Same request shape as @upstash/redis: JSON body with a JSON content type.
+            reply=$(curl --silent --show-error --max-time 3 -H "Authorization: Bearer e2e-local-srh-token" \
+                    -H "Content-Type: application/json" -d '["PING"]' http://localhost:8080/ 2>&1) || true
+            if printf '%s' "$reply" | grep -q PONG; then
+              echo "Redis look-alike is up: $reply"; exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::serverless-redis-http did not answer PING. Last reply: ${reply:-<empty>}"
+          docker ps -a || true
+          cat "$RUNNER_TEMP/redis-proxy.log" || true
+          exit 1
 
       - name: Run staging migrations
         run: pnpm e2e:migrate-staging
