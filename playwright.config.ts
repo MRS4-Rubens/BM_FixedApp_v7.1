@@ -3,7 +3,7 @@ import { e2eExtraHttpHeaders } from './e2e/support/http-headers';
 
 const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
 
-// Skip the Vercel preview toolbar and pass Deployment Protection (see e2e/support/http-headers.ts).
+// Shared extra headers for every browser context (see e2e/support/http-headers.ts).
 const extraHTTPHeaders = e2eExtraHttpHeaders();
 
 const reporters: Array<[string] | [string, Record<string, unknown>]> = [
@@ -67,16 +67,6 @@ export default defineConfig({
       name: 'quality',
       testMatch: ['05-a11y.spec.ts', '06-print-layout.spec.ts'],
       dependencies: ['journey'],
-      retries: process.env.CI ? 1 : 0,
-      use: {
-        ...devices['Desktop Chrome'],
-        viewport: { width: 1440, height: 900 },
-        trace: 'on-first-retry',
-      },
-    },
-    {
-      name: 'mailbox',
-      testMatch: '07-mailbox-verification.spec.ts',
       retries: process.env.CI ? 1 : 0,
       use: {
         ...devices['Desktop Chrome'],

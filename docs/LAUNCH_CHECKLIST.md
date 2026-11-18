@@ -64,8 +64,8 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
   - Sentry ignores errors from `/ping` and `/health-db`. Do **not** filter "Failed to fetch" until the month-1 review.
 - [x] **2.5 Cron routes reply first:** *(done: L2 PR; schedules in `lib/cron/schedules.ts`, workflow `run-cron-now.yml`)* both `app/api/cron/*` routes check the secret, reply **202** immediately, then run the work with `after()`. The archive job stays inside `Sentry.withMonitor`; **remove** `Sentry.withMonitor` from daily-notifications. Delete the crons from `vercel.json`. Add a manual GitHub workflow "Run cron now".
 - [x] **2.6 Bell Option C** *(done: PR #68)* in `components/app/notifications/notification-bell.tsx` (replace `REFRESH_MS = 120_000`).
-- [ ] **2.7 Backup workflow** `.github/workflows/backup-db.yml`: 21:00 UTC (02:30 IST) + manual button; Postgres 17 `pg_dump` → compress → encrypt with `BACKUP_ENCRYPTION_PASSPHRASE` → upload to `bizfolio-backups` → prune to 7 daily + 4 weekly.
-- [ ] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml`: build + `next start` on the runner; Redis + serverless-redis-http service containers; Neon test project; `E2E_VERIFY_MODE=db`; remove the Vercel preview lookup, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; run on every PR + manual button; keep the fork-PR guard; no real CustomJS or Brevo keys.
+- [x] **2.7 Backup workflow** `.github/workflows/backup-db.yml` *(done: L5)*: 21:00 UTC (02:30 IST) + manual button; Postgres 17 `pg_dump` (custom format, compressed; checked to contain `invoices`) → encrypt (gpg AES-256) with `BACKUP_ENCRYPTION_PASSPHRASE` → upload to `bizfolio-backups` under `daily/` (+ `weekly/` on Sundays) → prune to 7 daily + 4 weekly. **Off until the variable `BACKUPS_ENABLED=true`** is set (section 7); once on, a missing secret fails the run. Restore steps are in the workflow header.
+- [x] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml` *(done: L5)*: build + `next start` on the runner (`http://localhost:3000`); Neon test database + its Neon Auth (new secret `E2E_NEON_AUTH_BASE_URL`); `E2E_VERIFY_MODE=db`; removed the Vercel preview lookup, trusted-domain script, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; every PR + manual button; fork-PR guard kept; fake CustomJS/Brevo/IDrive keys. **Changed from the plan:** Redis uses the **test Upstash database** (the existing `E2E_UPSTASH_*` secrets), not a serverless-redis-http container, because the app only accepts an `https://` Redis address. The runner app sets `SKIP_ENV_VALIDATION=1` because production validation rejects `http://localhost` (never possible on Render).
 - [x] **2.9 E-mail provider swap:** *(done: L3 PR; `lib/email/mailer.ts`, Brevo HTTPS API)* Resend → **Brevo web API** in `lib/email/resend.ts` / `send-customer-email.ts`; rename env vars (e.g. `BREVO_API_KEY`, `EMAIL_FROM`).
 - [x] **2.10 Brand clean-up:** *(done: L2 PR; production now refuses to boot without `NEXT_PUBLIC_SUPPORT_EMAIL`)* `lib/config/contact.ts` fallback `support@billmatrix.in`; `.env.example` "Bill Matrix" → Invoice BizFolio, matching section 4 (fake values only).
 - [ ] **2.11 Docs:** `docs/DEPLOYMENT.md`: remove the claims of an 8-year Object Lock, 7-day PITR, RPO ≤ 5 min and a weekly dump; describe the real setup (Render, cron-job.org, UptimeRobot, nightly backup, test/prod switch). Update the `README.md` env table.
@@ -98,14 +98,14 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [ ] Neon Console → New project → name `bizfolio-prod` → region **AWS Asia Pacific (Singapore) `aws-ap-southeast-1`** → Postgres **17**. (The region can't be changed later.)
 - [ ] Compute settings → autoscaling **min 0.25 CU / max 0.25 CU**.
 - [ ] Enable **Neon Auth** for the project.
-- [ ] Auth settings → Sign-up with Email **ON** → **Verify at Sign-up ON** → method **Verification code** (not link) → email provider **Shared** → application name **Invoice BizFolio**.
+- [ ] Auth settings → Sign-up with Email **ON** → **Verify at Sign-up ON** → method **Verification code** (not link) → email provider **Shared** → application name **Invoice BizFolio**. *(Set on dev 2026-11-19 and live-tested in L4. Never switch it off to make testing easier; live sign-up tests need a throwaway inbox.)*
+- [ ] Settings → Better Auth → **Allow Localhost OFF** (production only: stops sign-in requests from `localhost`).
 - [ ] Note which **database** holds the `neon_auth` schema (usually the default `neondb`). **The app's tables go into that same database**, so one backup contains users too.
 - [ ] Copy into the password manager (PRODUCTION): pooled connection string → `DATABASE_URL`; direct (unpooled) string → `DATABASE_URL_UNPOOLED`; Auth URL → `NEON_AUTH_BASE_URL`.
 
 **Test project**
-- [ ] New project `bizfolio-test` → same region, Postgres 17, compute 0.25/0.25, Neon Auth ON with the **same code-verification settings**, app name "Invoice BizFolio (TEST)".
+- [ ] New project `bizfolio-test` → same region, Postgres 17, compute 0.25/0.25, Neon Auth ON with the **same code-verification settings**, app name "Invoice BizFolio (TEST)". Keep **Allow Localhost ON** here (the CI browser tests sign in from `http://localhost:3000`).
 - [ ] Copy into the password manager (TEST): pooled URL, direct URL, Auth URL, project ID.
-- [ ] Account settings → API keys → create `NEON_API_KEY` for CI (TEST folder).
 
 **Set up both databases** (from your PC, in the project folder)
 - [ ] Test: `DATABASE_URL_UNPOOLED=<test direct URL>` → run `pnpm db:migrate` then `pnpm db:seed`.
@@ -148,7 +148,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [ ] Deploy → note the address → set `NEXT_PUBLIC_APP_URL` to it → redeploy.
 
 ### 3.11 Neon Auth trusted domains
-- [ ] Test project: add `https://<name>.onrender.com` and `http://localhost:3000` (for CI; verify that localhost is accepted).
+- [ ] Test project: add `https://<name>.onrender.com`. `localhost` needs no entry while Allow Localhost is ON (Neon docs: localhost ports are pre-approved).
 - [ ] Production project: add `https://<name>.onrender.com`.
 
 ### 3.12 cron-job.org — create, then PAUSE
@@ -164,7 +164,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 
 ### 3.14 GitHub Secrets and Variables
 - [ ] Settings → Secrets and variables → Actions → add everything in section 4.2.
-- [ ] Variable `E2E_EXPECT_ARCHIVAL=false`, `E2E_VERIFY_MODE=db`.
+- [ ] Variable `E2E_EXPECT_ARCHIVAL=false` (the E2E workflow already forces `E2E_VERIFY_MODE=db`). Leave `BACKUPS_ENABLED` unset until section 7.
 - [ ] `E2E_FORBIDDEN_DB_HOSTS` = the **production** Neon host(s); `E2E_FORBIDDEN_HOSTS` = the production address. These guards stop tests from ever touching production.
 
 ---
@@ -203,15 +203,18 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | Name | Type | Points to | Used by |
 |---|---|---|---|
 | `DATABASE_URL_UNPOOLED` | Secret | **Prod** direct URL | Production migration workflow + backup workflow |
-| `BACKUP_ENCRYPTION_PASSPHRASE` | Secret | — (also in password manager; without it backups can't be opened) | Backup workflow |
-| IDrive backup key + endpoint + `bizfolio-backups` (names fixed in 2.7) | Secret | Backups bucket | Backup workflow |
+| `BACKUP_ENCRYPTION_PASSPHRASE` | Secret | — (≥ 32 characters; also in password manager: without it backups can't be opened) | Backup workflow |
+| `BACKUP_S3_ENDPOINT` (`https://…idrivee2.com`), `BACKUP_S3_REGION`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | Secret | Backups bucket key | Backup workflow |
+| `BACKUP_S3_BUCKET` (optional, default `bizfolio-backups`), `BACKUPS_ENABLED=true` (**only from section 7**) | Variable | — | Backup workflow |
 | `CRON_SECRET` + `CRON_APP_URL` (`https://<name>.onrender.com`) | Secret | **Prod** value after the switch | Manual "Run cron now" workflow (`run-cron-now.yml`) |
-| `NEON_API_KEY`, `NEON_PROJECT_ID`, test DB URLs (pooled + direct) | Secret / Variable | **Test** project | E2E |
+| `E2E_STAGING_DATABASE_URL` (pooled), `E2E_STAGING_DATABASE_URL_UNPOOLED` (direct), `E2E_NEON_AUTH_BASE_URL` | Secret | **Test** Neon project | E2E (app on the runner + tests) |
+| `E2E_UPSTASH_REST_URL` / `E2E_UPSTASH_REST_TOKEN` + variable `E2E_UPSTASH_HOST_ALLOWLIST` | Secret / Variable | **Test** Upstash database | E2E (rate limits; flushed between runs) |
 | `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`, `E2E_CONFIRM_STAGING` | Secret | Test values only | E2E |
 | `E2E_DB_HOST_ALLOWLIST` | Variable | **Test** Neon host | E2E safety guard |
 | `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` | Variable | **Prod** Neon host / prod address | E2E safety guard |
-| `E2E_EXPECT_ARCHIVAL=false`, `E2E_VERIFY_MODE=db` | Variable | — | E2E |
-| Test `NEON_AUTH_COOKIE_SECRET`, test `CRON_SECRET` | Secret | — (**different from prod**) | E2E app on the runner |
+| `E2E_EXPECT_ARCHIVAL=false` | Variable | — | E2E |
+| ~~`NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_*`~~ | — | **No longer used** (L5): delete them from GitHub after L5 merges | — |
+| Cookie secret / cron secret for the runner app | — | Generated fresh **every run** by `e2e.yml` (never stored) | E2E app on the runner |
 
 ### 4.3 Elsewhere
 - **cron-job.org:** `Authorization: Bearer <CRON_SECRET>` on both jobs (test value first, prod value at the switch).
@@ -247,7 +250,7 @@ Render is on "During testing" values. Finalizing invoices and recording payments
 - [ ] **Bell:** updates on page change, focus and click
 - [ ] **Crons:** "Run now" each job in cron-job.org → reply 202 + work done (Sentry check-in for the archive job)
 - [ ] **Uptime:** both monitors green; a test alert reaches your Gmail
-- [ ] **Backup:** run the backup workflow manually **against the test database** (temporarily point its secret at test) → encrypted file appears → **restore it into a Neon branch of the test project** and check invoices, numbers and logins → then set `DATABASE_URL_UNPOOLED` back to **prod** and delete the test backup files from `bizfolio-backups`
+- [ ] **Backup:** set variable `BACKUPS_ENABLED=true`, temporarily point `DATABASE_URL_UNPOOLED` at the **test** direct URL, and run the backup workflow manually (Actions → Nightly database backup → Run workflow) → encrypted file appears → **restore it into a Neon branch of the test project** and check invoices, numbers and logins → then set `DATABASE_URL_UNPOOLED` back to **prod** and delete `BACKUPS_ENABLED` again until 7.11 and delete the test backup files from `bizfolio-backups`
 - [ ] **Sentry:** a test error arrives with environment `test`
 - [ ] **robots.txt** says disallow all (expected on Render)
 - [ ] **CI:** open a small PR → CI checks + browser tests pass on GitHub
@@ -268,7 +271,7 @@ Do this in one sitting, in order. Each step has a proof check.
 - [ ] **7.8** Smoke test **without finalizing anything**: log in, open dashboard, customers, settings; upload your logo/signature if wanted. Your first real invoice will get number 1.
 - [ ] **7.9** cron-job.org: update both headers to the **production** `CRON_SECRET` → **resume** both jobs. Proof: next run succeeds (or "Run now" → 202).
 - [ ] **7.10** GitHub: update the `CRON_SECRET` and `CRON_APP_URL` secrets for the manual cron workflow; confirm `DATABASE_URL_UNPOOLED` = **prod**.
-- [ ] **7.11** First nightly backup runs after the switch. Proof: `bizfolio-backups` contains **only** post-switch files.
+- [ ] **7.11** Set GitHub variable **`BACKUPS_ENABLED=true`** (with `DATABASE_URL_UNPOOLED` = prod). First nightly backup runs after the switch. Proof: `bizfolio-backups` contains **only** post-switch files.
 - [ ] **7.12** Sentry: resolve/delete test issues. Proof: no open issues tagged `test`.
 - [ ] **7.13** Invite the 2 shops; tell them to check spam for the first e-mail, mark **"Not spam"** and add the sender to contacts.
 
@@ -285,6 +288,7 @@ Do this in one sitting, in order. Each step has a proof check.
 | Sentry test issues | Resolved/deleted in 7.12 | No open `test` issues |
 | GitHub test reports | Auto-delete after **7 days** (`retention-days: 7` in `e2e.yml`) | Nothing to do |
 | Local temp files: `coverage/`, `playwright-report/`, `test-results/`, `repomix-output-P2.md`, `tsconfig.tsbuildinfo`, `.env*.local` | Ignored by git (checked 2026-11-18), never reach GitHub; delete locally whenever you like | `git status` clean |
+| **Dev test accounts** (Neon `bm_dev`: `l4-code-check-1119@example.com`, `tilak.verma@inboxorigin.com`, `l4-unverified-probe-1119@example.com`, plus any made later) | Delete **all at once at the end of the code batch** (before section 3), click-by-click, after confirming the list | Neon Auth → Users shows none of them |
 | **Stays on purpose:** Neon test project, `bizfolio-test-files` | Used by CI browser tests and restore drills | — |
 | **Stays on purpose:** `tests/`, `e2e/`, `docs/reports/` | Protect future changes / fix history; never shipped to users | — |
 

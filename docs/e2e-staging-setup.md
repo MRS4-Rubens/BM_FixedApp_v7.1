@@ -1,5 +1,10 @@
 # E2E Staging Setup (TEST-003)
 
+> **Out of date since LAUNCH-L5 (2026-11-19).** E2E no longer uses Vercel previews: `.github/workflows/e2e.yml`
+> builds the pull request and runs `next start` on the GitHub runner (`http://localhost:3000`) against the test
+> Neon database. No trusted-domain script, Vercel bypass secret or Mailosaur. The current secrets list is in
+> `docs/LAUNCH_CHECKLIST.md` section 4.2. This page is rewritten in the docs step (checklist 2.11).
+
 The Playwright suite (`e2e/`) runs in GitHub Actions (`.github/workflows/e2e.yml`) against the **Vercel Preview
 deployment of each pull request's head commit**. Preview deployments talk to an isolated Neon branch, so tests
 never touch development or production data.

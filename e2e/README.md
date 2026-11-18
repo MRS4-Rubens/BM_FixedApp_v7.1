@@ -11,7 +11,7 @@ The E2E suite verifies:
 - **Mobile Smoke** (`04-mobile-smoke.spec.ts`): Viewport verification (375x667) ensuring zero horizontal scroll overflow (`scrollWidth <= clientWidth + 1`), visible primary actions, and clean console logs.
 - **Accessibility Ratchet** (`05-a11y.spec.ts`): WCAG 2.1 AA audits across 11 key views using `@axe-core/playwright`. Ratchet prevents new violations while tracking improvements.
 - **Print Layout & PDF** (`06-print-layout.spec.ts`): Media print emulation verifying navigation chrome hiding, A4 width boundaries (≤ 794px), and valid `%PDF-` generation.
-- **Real Mailbox Verification** (`07-mailbox-verification.spec.ts`): Live email delivery and link confirmation using Mailosaur when configured.
+- **Where it runs (LAUNCH-L5):** in CI the pull request is built and started on the runner (`next start`, `http://localhost:3000`) against the test database; e-mail confirmation is done by marking the test address verified in the database (`E2E_VERIFY_MODE=db`). Workflow: `.github/workflows/e2e.yml`.
 
 ## Safety Model
 
@@ -45,8 +45,7 @@ e2e/
 │   ├── 03-not-found-and-boundaries.spec.ts
 │   ├── 04-mobile-smoke.spec.ts
 │   ├── 05-a11y.spec.ts
-│   ├── 06-print-layout.spec.ts
-│   └── 07-mailbox-verification.spec.ts
+│   └── 06-print-layout.spec.ts …   (plus 08-team … 12-professional-checkout)
 ├── support/                 # Pure helper modules with unit test coverage
 │   ├── a11y-baseline.ts     # Baseline comparison and ratchet enforcement
 │   ├── db.ts                # Isolated staging database client
@@ -54,7 +53,6 @@ e2e/
 │   ├── financial-year.ts    # Indian Financial Year (Apr 1 - Mar 31) date math
 │   ├── gstin.ts             # GSTIN format generation and checksum algorithm
 │   ├── identity.ts          # Test data generators (run ID, UTR, passwords)
-│   ├── mail-sink.ts         # Mailosaur and direct DB verification adapters
 │   ├── money.ts             # Integer-paise independent GST calculation oracle
 │   ├── rate-limits.ts       # Upstash Redis test key cleaner
 │   └── xlsx.ts              # Multi-sheet Excel workbook parser

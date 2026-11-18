@@ -20,8 +20,8 @@ export default async function globalSetup(): Promise<void> {
     fs.mkdirSync(authDir, { recursive: true });
   }
 
-  // Same headers as playwright.config.ts: skip the Vercel preview toolbar, bypass Deployment Protection.
-  const extraHTTPHeaders = e2eExtraHttpHeaders(env.E2E_VERCEL_BYPASS_SECRET);
+  // Same headers as playwright.config.ts.
+  const extraHTTPHeaders = e2eExtraHttpHeaders();
 
   // 3. Ensure persistent admin account
   const browser = await chromium.launch({ headless: true });

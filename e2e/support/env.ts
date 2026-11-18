@@ -21,23 +21,19 @@ export const e2eEnvSchema = z.object({
   E2E_DATABASE_URL: z.string().min(1, 'E2E_DATABASE_URL must not be empty'),
   E2E_DB_HOST_ALLOWLIST: z.string().min(1, 'E2E_DB_HOST_ALLOWLIST must not be empty'),
   E2E_FORBIDDEN_DB_HOSTS: z.string().min(1, 'E2E_FORBIDDEN_DB_HOSTS must not be empty'),
-  // 'direct_db' is accepted as an alias of 'db' (the name used in the workflow and setup docs).
+  // 'direct_db' is accepted as an alias of 'db'. LAUNCH-L5: the Mailosaur 'mailbox' mode was removed (sign-up now
+  // confirms with a 6-digit code, and E2E marks the test address verified in the test database).
   E2E_VERIFY_MODE: z
-    .enum(['db', 'mailbox', 'direct_db'])
+    .enum(['db', 'direct_db'])
     .default('db')
-    .transform((mode): 'db' | 'mailbox' => (mode === 'direct_db' ? 'db' : mode)),
+    .transform((): 'db' => 'db'),
   E2E_EXPECT_VERIFICATION_REQUIRED: booleanFromString.default(true),
   E2E_ADMIN_EMAIL: z.string().email('E2E_ADMIN_EMAIL must be a valid email'),
   E2E_ADMIN_PASSWORD: z.string().min(8, 'E2E_ADMIN_PASSWORD must be at least 8 characters'),
-  E2E_VERCEL_BYPASS_SECRET: z.string().optional(),
   E2E_UPSTASH_REST_URL: z.string().optional(),
   E2E_UPSTASH_REST_TOKEN: z.string().optional(),
   E2E_UPSTASH_ALLOW_FLUSH: booleanFromString.default(false),
   E2E_UPSTASH_HOST_ALLOWLIST: z.string().optional(),
-  E2E_MAILOSAUR_API_KEY: z.string().optional(),
-  MAILOSAUR_API_KEY: z.string().optional(),
-  E2E_MAILOSAUR_SERVER_ID: z.string().optional(),
-  MAILOSAUR_SERVER_ID: z.string().optional(),
   E2E_UPDATE_A11Y_BASELINE: booleanFromString.default(false),
   E2E_EXPECT_ARCHIVAL: booleanFromString.default(false),
   E2E_STAGING_DATABASE_URL_UNPOOLED: z.string().optional(),
