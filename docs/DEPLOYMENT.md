@@ -308,15 +308,15 @@ Follow this checklist when processing an account closure request:
 
 For a real incident (both paths: Neon 6-hour restore **and** restore from a dump):
 
-1. **Stop new writes first, whichever path you take.** Suspend the Render service (Render → service → Suspend) or tell users to pause, and note the time. Anything written after the restore point and before this moment exists only in the pre-restore database.
+1. **Stop all writes first, whichever path you take**, user and automated alike: **suspend the Render service** (Render → service → Suspend) and **pause both cron-job.org jobs**; do not run the manual cron workflow. Asking users to pause is not enough, because scheduled jobs would keep writing. Note the time. Anything written after the restore point and before this moment exists only in the pre-restore database.
 2. **Keep the pre-restore database** until step 4 is done:
    - restore from a dump, or a **new branch created from a past time**: the original branch is untouched and is the pre-restore database;
    - **in-place restore** of the branch (Neon instant restore): Neon keeps the pre-restore state as a separate backup branch; find it in the branch list after restoring ([Neon instant restore](https://neon.com/docs/postgres/backup-restore/branch-restore)).
 3. **Restore** to the chosen point: the Neon 6-hour restore if the problem is that recent, otherwise the latest good dump as above (exit status 0), and check it.
 4. **Reconcile the gap** between the restore point and the moment writes stopped, comparing the restored copy with the pre-restore database:
-   - **New or changed rows** exist only in the pre-restore database: list invoices, credit notes, payments, customers and products with `created_at` / `updated_at` after the restore point and re-enter them.
+   - **New or changed rows** exist only in the pre-restore database: list invoices, credit notes, payments, customers and products with `created_at` / `updated_at` after the restore point. **Decide for each one** whether it is a valid change (re-enter it) or part of the damage that caused the incident (leave it out; the restored value is the correct one).
    - **Deleted rows come back** in the restored copy (a deleted row leaves no timestamp to find). List rows present in the restored copy but missing from the pre-restore database for `businesses`, `users`, `customers`, draft `invoices` and draft `credit_notes`. Also check `audit_log` for `account_closure_requested` (and other deletions) after the restore point. **Review each listed row** with its audit trail: repeat only deletions that were intended (for example a processed account closure or a purged draft), so a closed account cannot be used again. Keep rows that disappeared **because of the incident itself**: restoring them is the point of the recovery. Finalized invoices and credit notes are never deleted (guard triggers), so they need no check.
-5. **Switch** only after step 4, then resume the service:
+5. **Switch** only after step 4, then resume the service and un-pause the cron-job.org jobs:
    - Render `DATABASE_URL` → the recovered database's **pooled** URL (the app);
    - GitHub secret `DATABASE_URL_UNPOOLED` → its **direct** URL (otherwise the nightly backup and the migration workflow keep using the old one);
    - run the backup workflow once by hand and check a new file appears.
