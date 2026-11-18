@@ -68,6 +68,14 @@ describe('LAUNCH-L5 E2E workflow runs the app on the runner', () => {
     expect(wf).toContain('IDRIVE_E2_ENDPOINT: https://s3.e2e.example.invalid');
   });
 
+  it('uses fake payee details that pass the fail-closed payee rules, so checkout shows the QR', async () => {
+    const { UPI_ID_PATTERN, IFSC_PATTERN, ACCOUNT_NUMBER_PATTERN } = await import('@/lib/config/payee');
+    const value = (name: string) => new RegExp(`${name}: '?([^'\n]+)'?`).exec(wf)?.[1]?.trim() ?? '';
+    expect(UPI_ID_PATTERN.test(value('ADMIN_UPI_ID'))).toBe(true);
+    expect(IFSC_PATTERN.test(value('ADMIN_BANK_IFSC'))).toBe(true);
+    expect(ACCOUNT_NUMBER_PATTERN.test(value('ADMIN_BANK_ACC_NO'))).toBe(true);
+  });
+
   it('generates fresh cookie and cron secrets every run (masked, never stored)', () => {
     expect(wf).toContain('openssl rand -hex 32');
     expect(wf).toContain('::add-mask::$cookie');

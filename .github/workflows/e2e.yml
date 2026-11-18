@@ -114,7 +114,7 @@ jobs:
       ADMIN_BANK_NAME: E2E Placeholder Bank
       ADMIN_BANK_ACC_NAME: E2E Placeholder
       ADMIN_BANK_ACC_NO: '000000000000'
-      ADMIN_BANK_IFSC: E2EP0000000
+      ADMIN_BANK_IFSC: TEST0E2E001
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
