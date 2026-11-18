@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit review settings for Invoice BizFolio (GST invoicing for Indian small businesses).
+# Reference: https://docs.coderabbit.ai/reference/configuration
+language: en-US
+tone_instructions: "Plain English, short sentences. Say what breaks for a real shop owner and how to fix it. No praise, no filler."
+
+reviews:
+  # Balanced: real problems and clear improvements, without nitpicks on style the linters already enforce.
+  profile: chill
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  sequence_diagrams: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches: ['^main$']
+  # Generated files, lockfiles and archived reports: nothing useful to review.
+  path_filters:
+    - '!pnpm-lock.yaml'
+    - '!lib/pdf/print-stylesheet.generated.ts'
+    - '!drizzle/meta/**'
+    - '!docs/reports/**'
+    - '!e2e/a11y-baseline.json'
+    - '!repomix-output*.md'
+  path_instructions:
+    - path: '**'
+      instructions: |
+        PROJECT CONTEXT (read first; it decides what is worth a comment):
+        - This is a PILOT for about 3 businesses, run on free tiers at Rs 0/month (Render Free, Neon Free, Upstash
+          Free, IDrive e2, Brevo, CustomJS, cron-job.org, UptimeRobot) until the first paying customer.
+        - The service decisions and launch steps in docs/LAUNCH_CHECKLIST.md are FINAL. Do not suggest paid
+          services, different providers, extra infrastructure, or keeping test data; the upgrade path is in its
+          section 10. Question a decision only for a real bug, security hole or risk of losing data.
+        - Prefer the simplest safe option. Do not comment on enterprise-scale concerns (high availability,
+          multi-region, large-team process) or on rare edge cases of manual, seldom-used runbooks unless data could
+          be lost or leaked.
+        - Worth a comment: anything that would break for a real shop owner, leak data, lose money or records, or
+          weaken an existing safety guard.
+    - path: '**/*.{ts,tsx}'
+      instructions: |
+        Project rules to check (they come from earlier audits; breaking any of them is a real bug):
+        - Money is ALWAYS integer paise (lib/money.ts). Flag floats, rupee decimals stored in the database, or
+          float multiplication for money.
+        - Tenant isolation: never load a customer, product, invoice or credit note by id alone. Queries must also
+          filter by business_id (lib/actions/_shared/ownership.ts); joins of customers/products must match
+          business_id. "Not yours" and "does not exist" must return the same NOT_FOUND.
+        - Finalized invoices and credit notes are immutable (database guard triggers). Flag code that tries to
+          change or delete them, or that updates line items after finalizing.
+        - Never log or return secrets, tokens, passwords, full e-mails, GSTIN or bank details; use the shared logger
+          (lib/actions/_shared/logger) and the Sentry scrubber, not console.*.
+        - Environment variables are read through lib/env.ts only (never process.env directly in app code).
+        - Customer e-mails are switched off for the pilot (lib/config/features.ts); do not suggest re-enabling them.
+    - path: 'app/(auth)/**'
+      instructions: |
+        Authentication code. Check rate limits stay in place (lib/auth/auth-rate-limit.ts), error messages never
+        reveal whether an e-mail has an account, and sign-up confirmation stays code-only (6-digit code, no links).
+    - path: 'drizzle/**/*.sql'
+      instructions: |
+        Migrations already applied must never be edited. New migrations must be safe on a live database and keep
+        the guard triggers (bm_guard_*), CHECK constraints and composite business_id foreign keys intact.
+    - path: '.github/workflows/**'
+      instructions: |
+        The repository is PUBLIC. Check: no pull_request_target trigger, least-privilege permissions, actions pinned
+        to a commit SHA, secrets never echoed, forks never get secrets, E2E only ever touches the TEST database,
+        and the backup workflow only uploads the encrypted file.
+    - path: 'tests/**'
+      instructions: |
+        Tests guard earlier fixes. Flag tests that were weakened (assertions removed or loosened) without a reason
+        in the PR, and mocks that hide the behaviour the test claims to check.
+  tools:
+    gitleaks:
+      enabled: true
+    actionlint:
+      enabled: true
+    shellcheck:
+      enabled: true
+    markdownlint:
+      enabled: false
+
+chat:
+  auto_reply: true
