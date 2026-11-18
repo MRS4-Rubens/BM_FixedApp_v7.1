@@ -106,7 +106,7 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 | `HTML_TO_PDF_API_KEY` | Feature: PDF | No | **Yes** (Archival) | API key for external HTML-to-PDF rendering service. | Fails callers on use. Logged as issue at boot. |
 | `BREVO_API_KEY` | Feature: Email | No | **Yes** (Email) | API key for the Brevo transactional e-mail API (sent over HTTPS). | Fails callers on use. Logged as issue at boot. |
 | `EMAIL_FROM` | Feature: Email | No | **Yes** (Email) | Sender verified in Brevo, as `email` or `Name <email>` (pilot: your Gmail). | Fails callers on use. Must match sender format pattern. |
-| `UPSTASH_REDIS_REST_URL` | Feature: Rate Limit | No | **Yes** (Rate Limit) | HTTPS REST endpoint for Upstash Redis used in distributed rate limiting. Plain `http://localhost` (the CI Redis look-alike) is accepted only when `SKIP_ENV_VALIDATION` applies, never on Render. | Fails callers on use; logged at boot. Rate limit enforcement fails closed or open per policy. |
+| `UPSTASH_REDIS_REST_URL` | Feature: Rate Limit | No | **Yes** (Rate Limit) | HTTPS REST endpoint for Upstash Redis used in distributed rate limiting. | Fails callers on use; logged at boot. Rate limit enforcement fails closed or open per policy. |
 | `UPSTASH_REDIS_REST_TOKEN` | Feature: Rate Limit | No | **Yes** (Rate Limit) | REST authentication token for Upstash Redis. | Fails callers on use; logged at boot. |
 | `CRON_SECRET` | Core: Cron | No | **Yes** | Bearer secret authorizing the cron endpoints (`/api/cron/retry-invoice-archival`, `/api/cron/daily-notifications`), sent by cron-job.org. | Fails boot (`EnvConfigError`). Must be at least 32 characters long. |
 | `PLATFORM_ADMIN_USER_IDS` | Core: Admin | No | **Yes** (or emails) | Comma-separated list of platform administrator user IDs (preferred). | Fails boot if both admin IDs and admin emails are unset. |
@@ -136,7 +136,7 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 | `E2E_EXPECT_VERIFICATION_REQUIRED` | Tests: E2E | No | No | Flag indicating whether email verification is enforced on signup (`true`/`false`). | Defaults to `true`. |
 | `E2E_ADMIN_EMAIL` | Tests: E2E | No | No | Email address of the dedicated platform admin account used in E2E tests (must also be in the preview's `PLATFORM_ADMIN_EMAILS`). | Required: the suite refuses to start. |
 | `E2E_ADMIN_PASSWORD` | Tests: E2E | No | No | Password of the E2E platform admin account (8+ characters). | Required: the suite refuses to start. |
-| `E2E_UPSTASH_REST_URL` | Tests: E2E | No | No | Optional, local runs only: Upstash endpoint whose auth rate-limit keys are cleared before a run. CI uses a fresh local Redis and does not flush. | Rate limit cleanup skipped if absent. |
+| `E2E_UPSTASH_REST_URL` | Tests: E2E | No | No | Staging Upstash Redis endpoint for clearing rate limits before test runs. | Rate limit cleanup skipped if absent. |
 | `E2E_UPSTASH_REST_TOKEN` | Tests: E2E | No | No | Staging Upstash Redis authentication token. | Rate limit cleanup skipped if absent. |
 | `E2E_UPSTASH_ALLOW_FLUSH` | Tests: E2E | No | No | Permission flag allowing flush of test rate-limit keys on staging Redis. | Defaults to `false`. |
 | `E2E_UPSTASH_HOST_ALLOWLIST` | Tests: E2E | No | No | Hostname allowlist for staging Redis instances permitted to be flushed. | Flush aborted if host not allowlisted. |

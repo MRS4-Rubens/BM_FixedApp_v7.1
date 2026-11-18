@@ -89,3 +89,14 @@ describe('LAUNCH-L5 E2E workflow runs the app on the runner', () => {
     expect(wf).not.toContain('pull_request_target');
   });
 });
+
+describe('E2E rate limits use a real (test) Upstash database', () => {
+  const wf = read('.github/workflows/e2e.yml');
+
+  it('points the runner app at the test Upstash secrets and keeps the flush allow-list', () => {
+    expect(wf).toContain('UPSTASH_REDIS_REST_URL: ${{ secrets.E2E_UPSTASH_REST_URL }}');
+    expect(wf).toContain('E2E_UPSTASH_HOST_ALLOWLIST: ${{ vars.E2E_UPSTASH_HOST_ALLOWLIST }}');
+    // A local Redis look-alike cannot run the Upstash-only `allow-key-locking` rate-limit scripts (PR #76).
+    expect(wf).not.toContain('serverless-redis-http');
+  });
+});
