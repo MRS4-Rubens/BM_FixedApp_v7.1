@@ -24,7 +24,7 @@ const steps = [
   },
   {
     title: 'Track payments',
-    description: 'Record payments, check outstanding balances, and send reminders.',
+    description: 'Record payments, check outstanding balances, and get overdue alerts.',
     accent: 'from-indigo-600 to-violet-600 ring-indigo-200',
     pulse: 'motion-safe:animate-[pulseRingIndigo_2s_ease-out_2]',
   },

@@ -34,8 +34,8 @@ const features = [
   },
   {
     icon: MessageCircle,
-    title: 'Invoice sharing & reminders',
-    description: 'Email invoice PDFs, share invoices over WhatsApp, and send payment reminders.',
+    title: 'Invoice sharing & alerts',
+    description: 'Download invoice PDFs, share invoices over WhatsApp, and get alerts for overdue payments.',
     accent: 'from-sky-600 to-blue-800',
     wide: true,
   },

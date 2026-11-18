@@ -80,6 +80,9 @@ vi.mock('@/lib/email/resend', () => ({
   }),
 }));
 
+// LAUNCH-L1: customer e-mails are switched off for the pilot; these tests cover the feature itself, so turn it on.
+vi.mock('@/lib/config/features', () => ({ CUSTOMER_EMAILS_ENABLED: true }));
+
 vi.mock('@/lib/env', () => ({
   getEmailEnv: () => ({ RESEND_FROM_EMAIL: 'noreply@test.app' }),
 }));
