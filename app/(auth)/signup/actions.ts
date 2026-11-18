@@ -10,6 +10,7 @@ import {
   extractAuthErrorMessage,
   readFormString,
   signupFormSchema,
+  VERIFICATION_CODE_TTL_MINUTES,
   type AuthActionState,
 } from '@/lib/validations/auth';
 import { logError } from '@/lib/actions/_shared/logger';
@@ -82,8 +83,12 @@ export async function signupAction(
   }
 
   // 5. Complete signup: notice if verification required, else redirect to dashboard
+  // LAUNCH-L4: Neon Auth has already e-mailed a 6-digit code; the modal now shows the code-entry screen.
   if (requiresVerification) {
-    return { notice: 'Account created. Please check your e-mail to verify your address, then log in.' };
+    return {
+      verifyEmail: parsed.data.email,
+      notice: `Account created. We sent a 6-digit code to ${parsed.data.email}. It expires in ${VERIFICATION_CODE_TTL_MINUTES} minutes.`,
+    };
   }
 
   // Feature A: someone who started from a team invite link goes back to that invite instead of the dashboard.

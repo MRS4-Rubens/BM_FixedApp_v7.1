@@ -7,6 +7,7 @@ import { ensureAppUser } from '@/lib/auth/ensure-app-user';
 import { enforceLoginRateLimit, rateLimitUserMessage } from '@/lib/auth/auth-rate-limit';
 import { getClientIp } from '@/lib/rate-limit/upstash';
 import {
+  EMAIL_NOT_VERIFIED_CODE,
   extractAuthErrorMessage,
   loginFormSchema,
   readFormString,
@@ -45,6 +46,13 @@ export async function loginAction(
 
     const apiError = signInResponse?.error;
     if (apiError) {
+      // LAUNCH-L4: the password was right but the e-mail is unconfirmed; show the code screen instead of a dead end.
+      if (apiError.code === EMAIL_NOT_VERIFIED_CODE) {
+        return {
+          verifyEmail: parsed.data.email,
+          notice: `Please confirm your e-mail first. Enter the 6-digit code we sent to ${parsed.data.email}, or tap "Resend code".`,
+        };
+      }
       return { error: apiError.message || 'Invalid credentials' };
     }
 
