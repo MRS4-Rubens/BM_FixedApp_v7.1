@@ -1,5 +1,5 @@
 import { getContactEnv, getEmailEnv } from '@/lib/env';
-import { DEV_SUPPORT_EMAIL, SUPPORT_EMAIL } from '@/lib/config/contact';
+import { DEV_SUPPORT_EMAIL } from '@/lib/config/contact';
 
 /**
  * Who each app e-mail is "from" and where replies go (launch 3.8 follow-up).
@@ -26,7 +26,8 @@ export function appSender(kind: SenderKind): string {
 
 /** Reply-to for e-mails sent to users (invites, notifications): the public support address, when one is configured. */
 export function supportReplyTo(): string | undefined {
-  return SUPPORT_EMAIL !== DEV_SUPPORT_EMAIL ? SUPPORT_EMAIL : undefined;
+  const support = getContactEnv().NEXT_PUBLIC_SUPPORT_EMAIL ?? DEV_SUPPORT_EMAIL;
+  return support !== DEV_SUPPORT_EMAIL ? support : undefined;
 }
 
 /** Inbox for payment-claim notices: BILLING_EMAIL when set (validated in lib/env.ts), otherwise null (use the admins). */

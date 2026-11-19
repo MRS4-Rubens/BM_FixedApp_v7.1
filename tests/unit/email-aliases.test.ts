@@ -4,20 +4,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({ emailFrom: 'Invoice BizFolio <yourapp@gmail.com>', billing: undefined as string | undefined, support: 'support@example.invalid' }));
 
-// Control the support address here (CI and local runs set NEXT_PUBLIC_SUPPORT_EMAIL differently).
-vi.mock('@/lib/config/contact', () => ({
-  DEV_SUPPORT_EMAIL: 'support@example.invalid',
-  get SUPPORT_EMAIL() {
-    return state.support;
-  },
-}));
+// The support address comes from getContactEnv (mocked below), so CI's placeholder env cannot leak in.
 
 vi.mock('@/lib/env', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/env')>();
   return {
     ...actual,
     getEmailEnv: () => ({ BREVO_API_KEY: 'k', EMAIL_FROM: state.emailFrom }),
-    getContactEnv: () => (state.billing ? { BILLING_EMAIL: state.billing } : {}),
+    getContactEnv: () => ({
+      ...(state.billing ? { BILLING_EMAIL: state.billing } : {}),
+      ...(state.support ? { NEXT_PUBLIC_SUPPORT_EMAIL: state.support } : {}),
+    }),
   };
 });
 
@@ -51,7 +48,9 @@ describe('billingInbox', () => {
 });
 
 describe('supportReplyTo', () => {
-  it('is undefined while only the development placeholder is configured (mailer then replies to the sender)', () => {
+  it('is undefined when no support address or only the development placeholder is configured', () => {
+    state.support = '';
+    expect(supportReplyTo()).toBeUndefined();
     state.support = 'support@example.invalid';
     expect(supportReplyTo()).toBeUndefined();
   });
