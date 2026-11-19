@@ -27,7 +27,7 @@
 | 4 | Auth e-mails | **Neon's built-in sender** (`auth@mail.myneon.app`) | Rate-limited (number not published) | Domain bought → switch Neon Auth to Brevo SMTP |
 | 5 | App e-mails | **Brevo Free, web API** (not SMTP: Render Free blocks e-mail ports 25/465/587), sender = your Gmail. **Only to business users and you.** Customer e-mails (invoice + reminder) **turned off, code kept** | 300 e-mails/day (unverified on Brevo's own page) | Domain bought, or near 300/day |
 | 6 | Invoice sharing | **WhatsApp stays paid** (Essentials Pro). Free plan = download/print PDF only | — | — |
-| 7 | PDF generation | **Cloudflare Browser Rendering (Workers Free)**, production token only (switched from CustomJS in L7: unreliable account, watermark, 20/day) | 10 browser-minutes/day, REST **1 request / 10 s** (app queues 10.5 s apart), no watermark, no card. Measured ~0.4 s per invoice locally (font embedded, no network) | Daily time near 10 min or 429s piling up → **Workers Paid $5/month** |
+| 7 | PDF generation | **Cloudflare Browser Rendering (Workers Free)**, production token only (switched from CustomJS in L7: unreliable account, watermark, 20/day) | 10 browser-minutes/day, REST **1 request / 10 s** (app queues 10.5 s apart), no watermark, no card. Measured ~0.4 s per invoice locally and ~0.6 s of browser time per PDF on the live Cloudflare account (font embedded, no network) | Daily time near 10 min or 429s piling up → **Workers Paid $5/month** |
 | 8 | File storage | **IDrive e2 Free**, Singapore, private buckets `bizfolio-prod-files`, `bizfolio-test-files`, `bizfolio-backups`; **no Object Lock** for the pilot | 10 GB total; downloads ≤ 3× stored (free-plan permanence unverified) | Near 8 GB or free plan ends → paid ($6/TB) or move to Backblaze B2 (settings only) |
 | 9 | Backups | Neon 6 h history **+ nightly encrypted `pg_dump`** of production via GitHub Actions to `bizfolio-backups`, keep 7 daily + 4 weekly, restore drill every 3 months | Neon 5 GB transfer/month | Database > ~150 MB → weekly dumps, or Neon paid for longer history |
 | 10 | Rate limiting | **Upstash Redis Free**, Singapore, **one account, one database** for production (flushed at the switch). CI uses a local look-alike, never Upstash. No code change | 500K commands/month; **one free account per person** and one free database (Upstash terms) | Over ~400K/month → add card (PAYG $0.20 per 100K) |
@@ -75,6 +75,8 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 
 ## 3. Create accounts — test and production together
 
+> **Status (2026-11-20): section 3 is done.** The notes below record what was actually set up where it differs from the original plan.
+
 > **Before you start:** open the password manager. Every key, URL and password goes in **the moment it is created**, in two folders: **"BizFolio — TEST"** and **"BizFolio — PRODUCTION"**.
 > Generate random secrets with `openssl rand -hex 32` (Git Bash / terminal). **Never reuse a test value in production.**
 
@@ -115,9 +117,9 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 ### 3.5 IDrive e2 — three buckets
 - [ ] Sign up (free 10 GB) → region **Singapore (ap-southeast-1)**.
 - [ ] Create private buckets (public access OFF, **Object Lock OFF**): `bizfolio-prod-files`, `bizfolio-test-files`, `bizfolio-backups`.
-- [ ] Access keys → create **app key** (prod + test file buckets) and **backup key** (`bizfolio-backups` only, if per-bucket keys are supported — unverified; otherwise one key, stored as secret).
-- [ ] Note the exact S3 endpoint host for Singapore (expected `s3.ap-southeast-1.idrivee2.com`; confirm in the dashboard).
-- [ ] Save endpoint, region, bucket names and keys (app key: both folders; backup key: PRODUCTION).
+- [ ] Access keys → per-bucket keys **are** supported, so create **three** keys: **prod app key** (`bizfolio-prod-files` only), **test app key** (`bizfolio-test-files` only), **backup key** (`bizfolio-backups` only).
+- [ ] Note the S3 endpoint from the dashboard (Enabled regions). *Actual: `https://s3.ap-southeast-2.idrivee2.com`, region code `ap-southeast-2`.*
+- [ ] Save endpoint, region, bucket names and keys (test app key: TEST folder; prod app key + backup key: PRODUCTION).
 
 ### 3.6 Upstash — one account, one database
 > **Upstash terms:** one free account per person and one free database. So: no second (alias) account for tests, and
@@ -150,10 +152,10 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [ ] Alerts → e-mail for new issues in environment `production` (the archive cron monitor appears by itself on the first check-in).
 
 ### 3.10 Render — one web service (starts on TEST values)
-- [ ] Sign up with GitHub → Hobby workspace.
+- [ ] Sign up with your business **Gmail** (not GitHub) → Hobby workspace → then connect GitHub only to pick the repo.
 - [ ] New → Web Service → connect the repo → **choose the final service name now** (the address `https://<name>.onrender.com` comes from it and stays after the switch).
 - [ ] Region **Singapore**, instance **Free**, branch `main`.
-- [ ] Build command `pnpm install && pnpm build`; start command `pnpm start`; Node 24 (from `engines` / `.nvmrc`).
+- [ ] Build command `pnpm install && pnpm build`; start command `node_modules/.bin/next start` (runs Next directly, without an extra pnpm process, to save memory on the 512 MB instance); Node 24 (from `engines` / `.nvmrc`).
 - [ ] Health check path `/ping`.
 - [ ] Environment → add the **"During testing"** values from section 4.1. **Never set `SKIP_ENV_VALIDATION`.**
 - [ ] Deploy → note the address → set `NEXT_PUBLIC_APP_URL` to it → redeploy.
@@ -170,14 +172,17 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 
 ### 3.13 UptimeRobot
 - [ ] Sign up → New monitor HTTP(s) `https://<name>.onrender.com/ping`, interval **5 min**.
-- [ ] New monitor `https://<name>.onrender.com/health-db`, interval **6 hours**.
+- [ ] New monitor `https://<name>.onrender.com/health-db`, interval **6 hours** (offered on the free plan).
+- [ ] Delete the monitor UptimeRobot creates by itself at sign-up for the home page: it repeats `/ping` and renders the full page every 5 minutes.
+- [ ] UptimeRobot terms: commercial use allowed, **one account per person**.
 - [ ] Alert contact = your Gmail; alert after **2** failed checks.
 
 ### 3.14 GitHub Secrets and Variables
 - [ ] Settings → Secrets and variables → Actions → add everything in section 4.2.
 - [ ] **Replace every old development value.** Until now the E2E secrets (`E2E_STAGING_DATABASE_URL`, `E2E_STAGING_DATABASE_URL_UNPOOLED`, `E2E_NEON_AUTH_BASE_URL`) and the variable `E2E_DB_HOST_ALLOWLIST` point at the **old development** accounts. Overwrite all of them with the new **test** values, and set `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` to the new **production** host and address. Then run E2E once (Actions → E2E (runner app) → Run workflow) and check it passes.
 - [ ] Delete the unused secrets/variables: `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_API_KEY`, `MAILOSAUR_SERVER_ID`, `E2E_VERIFY_MODE`, `E2E_UPSTASH_REST_URL`, `E2E_UPSTASH_REST_TOKEN`, `E2E_UPSTASH_HOST_ALLOWLIST`.
-- [ ] Variable `E2E_EXPECT_ARCHIVAL=false` (the E2E workflow already forces `E2E_VERIFY_MODE=db`). Leave `BACKUPS_ENABLED` unset until section 7.
+- [ ] `E2E_ADMIN_EMAIL` = a fake address such as `e2e-admin@example.test` (never receives mail; global setup creates the account on the first run) and a new random `E2E_ADMIN_PASSWORD` (TEST folder). Leave `BACKUPS_ENABLED`, `CRON_SECRET` and `CRON_APP_URL` unset until section 7 (7.10, 7.11). Add the production `DATABASE_URL_UNPOOLED` and the `BACKUP_*` secrets now; nothing uses them before section 7.
+- [ ] Proof: the manual E2E run passes. *(2026-11-20: 24 passed on the new test project.)*
 - [ ] `E2E_FORBIDDEN_DB_HOSTS` = the **production** Neon host(s); `E2E_FORBIDDEN_HOSTS` = the production address. These guards stop tests from ever touching production.
 
 ---
@@ -196,9 +201,9 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `PLATFORM_ADMIN_USER_IDS` | Your user ID in the test project | **Your new user ID in prod** | No |
 | `PLATFORM_ADMIN_EMAILS` | Optional fallback | same | No |
 | `IDRIVE_E2_ENDPOINT` | Singapore endpoint | same | No |
-| `IDRIVE_E2_REGION` | `ap-southeast-1` | same | No |
+| `IDRIVE_E2_REGION` | `ap-southeast-2` | same | No |
 | `IDRIVE_E2_BUCKET_NAME` | `bizfolio-test-files` | **`bizfolio-prod-files`** | No |
-| `IDRIVE_E2_ACCESS_KEY` / `IDRIVE_E2_SECRET_KEY` | App key | same (or rotate) | **Yes** |
+| `IDRIVE_E2_ACCESS_KEY` / `IDRIVE_E2_SECRET_KEY` | **Test** app key | **Prod** app key (each key opens only its own bucket) | **Yes** |
 | `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` | Cloudflare (Browser Rendering token) | same | Token **Yes** |
 | `BREVO_API_KEY` | Brevo key | same | **Yes** |
 | `EMAIL_FROM` | `"Invoice BizFolio <yourapp@gmail.com>"` | same | No |
@@ -226,7 +231,6 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`, `E2E_CONFIRM_STAGING` | Secret | Test values only | E2E |
 | `E2E_DB_HOST_ALLOWLIST` | Variable | **Test** Neon host | E2E safety guard |
 | `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` | Variable | **Prod** Neon host / prod address | E2E safety guard |
-| `E2E_EXPECT_ARCHIVAL=false` | Variable | — | E2E |
 | ~~`NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_*`, `E2E_UPSTASH_REST_URL`, `E2E_UPSTASH_REST_TOKEN`, `E2E_UPSTASH_HOST_ALLOWLIST`~~ | — | **No longer used** (L5): delete them from GitHub after L5 merges | — |
 | Cookie secret / cron secret for the runner app | — | Generated fresh **every run** by `e2e.yml` (never stored) | E2E app on the runner |
 
@@ -277,7 +281,7 @@ Do this in one sitting, in order. Each step has a proof check.
 
 - [ ] **7.1** cron-job.org: confirm both jobs are **paused**.
 - [ ] **7.2** Generate new production `NEON_AUTH_COOKIE_SECRET` and `CRON_SECRET` (`openssl rand -hex 32`) → save in PRODUCTION folder.
-- [ ] **7.3** Render → Environment → change to the **"After switch"** column (section 4.1): `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `CRON_SECRET`, `IDRIVE_E2_BUCKET_NAME`, `NEXT_PUBLIC_SENTRY_ENVIRONMENT=production`. Remove the test `PLATFORM_ADMIN_USER_IDS` for now.
+- [ ] **7.3** Render → Environment → change to the **"After switch"** column (section 4.1): `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `CRON_SECRET`, `IDRIVE_E2_BUCKET_NAME`, `IDRIVE_E2_ACCESS_KEY` / `IDRIVE_E2_SECRET_KEY` (**prod** app key: the test key cannot open the prod bucket), `NEXT_PUBLIC_SENTRY_ENVIRONMENT=production`, `PLATFORM_ADMIN_EMAILS` = your real business Gmail (removes the throwaway test admin). Remove the test `PLATFORM_ADMIN_USER_IDS` for now.
 - [ ] **7.4** Upstash → database → **Flush** (clears test rate-limit counters). Proof: key count **0**.
 - [ ] **7.5** Proof before redeploy — production database: **0** businesses, users, invoices, payments, audit_log rows. Production bucket `bizfolio-prod-files`: **empty**.
 - [ ] **7.6** Render → **Manual deploy** (redeploy with new values). Proof: `/ping` OK and `/health-db` OK.
@@ -287,7 +291,8 @@ Do this in one sitting, in order. Each step has a proof check.
 - [ ] **7.10** GitHub: update the `CRON_SECRET` and `CRON_APP_URL` secrets for the manual cron workflow; confirm `DATABASE_URL_UNPOOLED` = **prod**.
 - [ ] **7.11** Set GitHub variable **`BACKUPS_ENABLED=true`** (with `DATABASE_URL_UNPOOLED` = prod). First nightly backup runs after the switch. Proof: `bizfolio-backups` contains **only** post-switch files.
 - [ ] **7.12** Sentry: resolve/delete test issues. Proof: no open issues tagged `test`.
-- [ ] **7.13** Invite the 2 shops; tell them to check spam for the first e-mail, mark **"Not spam"** and add the sender to contacts.
+- [ ] **7.13** Local development: remove the Upstash values from your PC's `.env.local` (they are production now) and use the local Redis look-alike from `docs/e2e-staging-setup.md` section 4 instead.
+- [ ] **7.14** Invite the 2 shops; tell them to check spam for the first e-mail, mark **"Not spam"** and add the sender to contacts.
 
 ---
 

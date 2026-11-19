@@ -42,7 +42,7 @@ Repository → Settings → Secrets and variables → Actions. Use **test** valu
 | `E2E_STAGING_DATABASE_URL` | Test database, pooled URL (also used as `E2E_DATABASE_URL` and the app's `DATABASE_URL`) |
 | `E2E_STAGING_DATABASE_URL_UNPOOLED` | Test database, direct URL (migrations) |
 | `E2E_NEON_AUTH_BASE_URL` | The test database's Neon Auth URL (`https://…neonauth…/neondb/auth`) |
-| `E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD` | E2E platform admin; created by global setup on the first run |
+| `E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD` | E2E platform admin (a fake address such as `e2e-admin@example.test`); created by global setup on the first run |
 
 | Variables | |
 |---|---|
@@ -50,14 +50,12 @@ Repository → Settings → Secrets and variables → Actions. Use **test** valu
 | `E2E_FORBIDDEN_DB_HOSTS` | **Production** database hostname(s): the suite refuses to run against them |
 | `E2E_FORBIDDEN_HOSTS` | **Production** app host(s), e.g. `<name>.onrender.com` |
 | `E2E_EXPECT_VERIFICATION_REQUIRED` (optional) | `true` (default) |
-| `E2E_EXPECT_ARCHIVAL` | `false` (PDFs are fake in E2E) |
 
 **No longer used** (remove them from GitHub): `NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`,
 `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_API_KEY`, `MAILOSAUR_SERVER_ID`, `E2E_VERIFY_MODE` (the workflow forces `db`), `E2E_UPSTASH_REST_URL`, `E2E_UPSTASH_REST_TOKEN`, `E2E_UPSTASH_HOST_ALLOWLIST` (local Redis since PR #76).
 
-**Launch note:** before launch these secrets point at the old development Neon setup (its `staging-e2e` branch). At
-checklist step 3.14 replace all of them with the new **test** project's values, and set the forbidden hosts to the
-new **production** ones.
+**Launch note:** done at checklist step 3.14 (2026-11-20): all values point at the new **test** project, the forbidden
+hosts are the new **production** ones, and the manual run passed (24 tests).
 
 ---
 
