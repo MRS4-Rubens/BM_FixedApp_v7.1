@@ -25,6 +25,9 @@ const state = vi.hoisted(() => {
     sendSpy: vi.fn<(payload: { from: string; to: string[]; subject: string; react: { props: Record<string, unknown> } }) => Promise<{ id: string }>>().mockResolvedValue({ id: 'mock-email-id' }),
     signerSpy: vi.fn<(key: string, exp?: number, opts?: { forceDownload?: boolean }) => Promise<string>>().mockResolvedValue('https://mock-storage.test/signed-download'),
     logErrorSpy: vi.fn<(scope: string, err: unknown, meta?: Record<string, unknown>) => void>(),
+    // Launch 3.8 follow-up: billing inbox + admin list are switchable per test.
+    billingEmail: undefined as string | undefined,
+    adminEmails: null as string[] | null,
   };
 });
 
@@ -86,8 +89,10 @@ vi.mock('@/lib/email/mailer', () => ({
 vi.mock('@/lib/env', () => ({
   getAppEnv: () => ({ NEXT_PUBLIC_APP_URL: 'https://test.app' }),
   getEmailEnv: () => ({ EMAIL_FROM: 'noreply@test.app' }),
+  // BILLING_EMAIL unset by default: payment-claim notices go to the platform admins.
+  getContactEnv: () => (state.billingEmail ? { BILLING_EMAIL: state.billingEmail } : {}),
   getAdminEnv: () => ({
-    PLATFORM_ADMIN_EMAILS: [ADMIN_EMAIL],
+    PLATFORM_ADMIN_EMAILS: state.adminEmails ?? [ADMIN_EMAIL],
     PLATFORM_ADMIN_USER_IDS: [ADMIN_USER_ID],
   }),
 }));
@@ -371,6 +376,34 @@ describe('SEC-003: Claim screenshot access integration tests (PGlite)', () => {
       expect(emailProps.hasScreenshot).toBe(true);
       expect(emailProps.screenshotUrl).toBeUndefined();
       expect(emailProps).not.toHaveProperty('screenshotUrl');
+    }
+    // Default routing: the admins, from the billing sender name.
+    expect(emailPayload?.to).toEqual([ADMIN_EMAIL]);
+    expect(emailPayload?.from).toBe('Invoice BizFolio Billing <noreply@test.app>');
+  });
+
+  it('7. with BILLING_EMAIL set and NO admin e-mails, the payment-claim notice still goes to the billing inbox', async () => {
+    state.userId = testUserId;
+    state.businessId = testBusinessId;
+    state.role = 'owner';
+    state.sessionUser = { id: testUserId, email: 'tenantA@test.dev', emailVerified: true };
+    state.billingEmail = 'yourapp+billing@gmail.com';
+    state.adminEmails = [];
+    state.sendSpy.mockClear();
+    try {
+      await pg.query(`DELETE FROM subscription_requests WHERE business_id = $1 AND status = 'pending';`, [testBusinessId]);
+      const claimRes = await submitPaymentClaim({
+        plan_name: 'essentials',
+        billing_cycle: 'monthly',
+        payment_method: 'upi_qr',
+        payment_reference: 'UTR-BILLING-ONLY-01',
+      });
+      expect(claimRes.success).toBe(true);
+      expect(state.sendSpy).toHaveBeenCalledTimes(1);
+      expect(state.sendSpy.mock.calls[0]?.[0].to).toEqual(['yourapp+billing@gmail.com']);
+    } finally {
+      state.billingEmail = undefined;
+      state.adminEmails = null;
     }
   });
 });

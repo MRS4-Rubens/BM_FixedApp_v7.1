@@ -93,8 +93,9 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 | Variable Name | Group | Public? | Required in Prod? | Purpose | Missing / Failure Behavior |
 |---|---|---|---|---|---|
 | `NEXT_PUBLIC_APP_URL` | Core: App | Yes | **Yes** | Fully qualified canonical origin of the application (e.g. `https://<name>.onrender.com`). | Fails boot / build (`EnvConfigError`). Non-prod falls back to `http://localhost:3000`; Vercel preview falls back to `https://$VERCEL_URL`. |
-| `NEXT_PUBLIC_SUPPORT_EMAIL` | Core: Contact | Yes | No | Customer-facing support email address rendered in navigation, footer, and help text. | Falls back to `support@billmatrix.in` (`lib/config/contact.ts`). |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | Core: Contact | Yes | No | Customer-facing support email address rendered in navigation, footer, and help text. | Required in production (the server refuses to start without it). Outside production falls back to the placeholder `support@example.invalid` (`lib/config/contact.ts`). |
 | `FEEDBACK_RECIPIENT_EMAIL` | Core: Contact | No | No | Internal recipient address for user feedback submissions. | Falls back to `NEXT_PUBLIC_SUPPORT_EMAIL` (`lib/config/contact.ts`). |
+| `BILLING_EMAIL` | Core: Contact | No | No | Inbox for payment-claim notices (e.g. a Gmail `+billing` alias, so they arrive labelled). Sent as "Invoice BizFolio Billing". | Unset: notices go to `PLATFORM_ADMIN_EMAILS`. Must be one valid address. |
 | `DATABASE_URL` | Core: Database | No | **Yes** | Neon pooled PostgreSQL connection string used for all application queries. | Fails boot (`EnvConfigError`). Must be valid `postgres://` or `postgresql://`. |
 | `DATABASE_URL_UNPOOLED` | Ops: Database | No | **Yes (Migrations)** | Direct compute Neon PostgreSQL connection string (unpooled) for schema migrations. | Migration scripts (`drizzle.config.ts`, CI workflow) fail if unset. |
 | `NEON_AUTH_BASE_URL` | Core: Auth | No | **Yes** | Base URL of the Neon Auth service for session authentication. | Fails boot (`EnvConfigError`). Must be a valid `https://` URL. |

@@ -15,7 +15,8 @@ import { isPurchasablePlan } from '@/lib/subscriptions/plan-catalog';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
 import { getMailer } from '@/lib/email/mailer';
-import { getAdminEnv, getAppEnv, getEmailEnv } from '@/lib/env';
+import { getAdminEnv, getAppEnv } from '@/lib/env';
+import { appSender, billingInbox } from '@/lib/email/addresses';
 import { SubscriptionRequestEmail } from '@/lib/email/templates/subscription-request-email';
 import { formatPaiseAsInr } from '@/lib/money';
 import { getRequestSession } from '@/lib/auth/request-session';
@@ -204,10 +205,12 @@ export const submitPaymentClaim = createAuthenticatedAction(
       });
     }
 
-    // 6. Send Email notification to Super Admins (Brevo, lib/email/mailer.ts)
+    // 6. Notify billing (BILLING_EMAIL, e.g. a +billing alias) or, if unset, the Super Admins (Brevo, lib/email/mailer.ts)
     try {
       const adminEmails = getAdminEnv().PLATFORM_ADMIN_EMAILS;
-      if (adminEmails.length > 0) {
+      const billingTo = billingInbox();
+      const recipients = billingTo ? [billingTo] : [...adminEmails];
+      if (recipients.length > 0) {
         const session = await getRequestSession();
         const ownerEmail = session?.data?.user?.email || 'No email';
         const amountFormatted = formatPaiseAsInr(authoritativeAmountPaise);
@@ -230,8 +233,8 @@ export const submitPaymentClaim = createAuthenticatedAction(
         });
 
         await getMailer().emails.send({
-          from: getEmailEnv().EMAIL_FROM,
-          to: [...adminEmails],
+          from: appSender('billing'),
+          to: recipients,
           subject: `🔔 Payment Claim: ${business.legal_name} - ${input.plan_name.toUpperCase()}`,
           react: emailContent,
         });

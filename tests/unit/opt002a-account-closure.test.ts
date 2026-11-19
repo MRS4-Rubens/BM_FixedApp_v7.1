@@ -233,7 +233,7 @@ describe('OPT-002a: requestAccountClosureAction Unit Tests', () => {
     // Verify Resend email dispatch
     expect(mockSendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
-        from: 'support@billmatrix.in',
+        from: 'Invoice BizFolio <support@billmatrix.in>',
         to: 'support@billmatrix.in',
         subject: 'Account closure request — Acme Enterprises Pvt Ltd (29ABCDE1234F1Z5)',
         text: expect.stringContaining('Business ID: biz_closure_001'),

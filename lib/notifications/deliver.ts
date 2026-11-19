@@ -4,7 +4,8 @@ import { inArray, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
 import { businesses, users } from '@/lib/db/schema';
 import { getMailer } from '@/lib/email/mailer';
-import { getAppEnv, getEmailEnv } from '@/lib/env';
+import { getAppEnv } from '@/lib/env';
+import { appSender, supportReplyTo } from '@/lib/email/addresses';
 import { NotificationEmail, type NotificationEmailItem } from '@/lib/email/templates/notification-email';
 import { logError } from '@/lib/actions/_shared/logger';
 import { toLoggableError } from '@/lib/actions/_shared/action-error-mapping';
@@ -84,8 +85,9 @@ const defaultSender: EmailSender = async (email) => {
   try {
     const result = await getMailer().emails.send(
       {
-        from: getEmailEnv().EMAIL_FROM,
+        from: appSender('alerts'),
         to: [email.to],
+        replyTo: supportReplyTo(),
         subject: email.subject,
         react: email.react,
       },

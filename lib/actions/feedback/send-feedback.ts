@@ -1,6 +1,7 @@
 'use server';
 
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
+import { appSender } from '@/lib/email/addresses';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import {
@@ -13,7 +14,6 @@ import { db } from '@/lib/db/client';
 import { businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getMailer } from '@/lib/email/mailer';
-import { getEmailEnv } from '@/lib/env';
 import { FeedbackNotificationEmail } from '@/lib/email/templates/feedback-notification-email';
 import { logError } from '@/lib/actions/_shared/logger';
 import { FEEDBACK_RECIPIENT_EMAIL } from '@/lib/config/contact';
@@ -92,7 +92,7 @@ export const sendFeedbackAction = createAuthenticatedAction(
 
     // 4. Determine sender and recipient addresses
     const recipientEmail = FEEDBACK_RECIPIENT_EMAIL;
-    const fromEmail = getEmailEnv().EMAIL_FROM;
+    const fromEmail = appSender('general');
 
     // Format the Reply-To address with the user's name if available
     const replyToAddress = appUser.display_name
