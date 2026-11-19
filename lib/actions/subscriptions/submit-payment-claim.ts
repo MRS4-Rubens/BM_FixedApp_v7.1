@@ -15,7 +15,8 @@ import { isPurchasablePlan } from '@/lib/subscriptions/plan-catalog';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { uploadFileToStorage, deleteFileFromStorage } from '@/lib/storage/idrive';
 import { getMailer } from '@/lib/email/mailer';
-import { getAdminEnv, getAppEnv, getEmailEnv } from '@/lib/env';
+import { getAdminEnv, getAppEnv } from '@/lib/env';
+import { appSender, billingInbox } from '@/lib/email/addresses';
 import { SubscriptionRequestEmail } from '@/lib/email/templates/subscription-request-email';
 import { formatPaiseAsInr } from '@/lib/money';
 import { getRequestSession } from '@/lib/auth/request-session';
@@ -229,9 +230,11 @@ export const submitPaymentClaim = createAuthenticatedAction(
           approveLink,
         });
 
+        // Launch 3.8 follow-up: a dedicated billing inbox (Gmail +billing alias) when configured, else the admins.
+        const billingTo = billingInbox();
         await getMailer().emails.send({
-          from: getEmailEnv().EMAIL_FROM,
-          to: [...adminEmails],
+          from: appSender('billing'),
+          to: billingTo ? [billingTo] : [...adminEmails],
           subject: `🔔 Payment Claim: ${business.legal_name} - ${input.plan_name.toUpperCase()}`,
           react: emailContent,
         });

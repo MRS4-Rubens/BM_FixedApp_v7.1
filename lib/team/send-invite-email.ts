@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { getMailer } from '@/lib/email/mailer';
-import { getAppEnv, getEmailEnv } from '@/lib/env';
+import { getAppEnv } from '@/lib/env';
+import { appSender, supportReplyTo } from '@/lib/email/addresses';
 import { TeamInviteEmail } from '@/lib/email/templates/team-invite-email';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { logError } from '@/lib/actions/_shared/logger';
@@ -27,8 +28,9 @@ export async function sendTeamInviteEmail(input: {
 }): Promise<boolean> {
   try {
     const result = await getMailer().emails.send({
-      from: getEmailEnv().EMAIL_FROM,
+      from: appSender('general'),
       to: [input.to],
+      replyTo: supportReplyTo(),
       subject: `${input.inviterName} invited you to join ${input.businessName} on Invoice BizFolio`,
       react: React.createElement(TeamInviteEmail, {
         businessName: input.businessName,

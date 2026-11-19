@@ -86,6 +86,8 @@ vi.mock('@/lib/email/mailer', () => ({
 vi.mock('@/lib/env', () => ({
   getAppEnv: () => ({ NEXT_PUBLIC_APP_URL: 'https://test.app' }),
   getEmailEnv: () => ({ EMAIL_FROM: 'noreply@test.app' }),
+  // No BILLING_EMAIL: payment-claim notices still go to the platform admins.
+  getContactEnv: () => ({}),
   getAdminEnv: () => ({
     PLATFORM_ADMIN_EMAILS: [ADMIN_EMAIL],
     PLATFORM_ADMIN_USER_IDS: [ADMIN_USER_ID],

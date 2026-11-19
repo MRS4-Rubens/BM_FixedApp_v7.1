@@ -1,6 +1,7 @@
 'use server';
 
 import { eq, and, gte, desc } from 'drizzle-orm';
+import { appSender } from '@/lib/email/addresses';
 import { OWNER_ONLY } from '@/lib/auth/rbac';
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { ActionError } from '@/lib/actions/_shared/errors';
@@ -12,7 +13,6 @@ import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { requestAccountClosureSchema } from '@/lib/validations/account-closure';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { getMailer } from '@/lib/email/mailer';
-import { getEmailEnv } from '@/lib/env';
 import { SUPPORT_EMAIL } from '@/lib/config/contact';
 import { getRequestSession } from '@/lib/auth/request-session';
 import { formatIstDate, formatIstTime } from '@/lib/invoices/ist-date';
@@ -100,7 +100,7 @@ export const requestAccountClosureAction = createAuthenticatedAction(
     const session = await getRequestSession();
     const userEmail = session?.data?.user?.email || 'N/A';
     const recipientEmail = SUPPORT_EMAIL;
-    const fromEmail = getEmailEnv().EMAIL_FROM;
+    const fromEmail = appSender('general');
 
     try {
       const emailText = [

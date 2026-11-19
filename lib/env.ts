@@ -296,12 +296,14 @@ export const adminEnv: EnvGroup<AdminEnv> = defineGroup('admin', parseAdminEnv);
  * LAUNCH-L2: the support / feedback inbox is shown on legal pages, checkout and settings. In production it must be
  * set explicitly (no silent placeholder); outside production the placeholder in lib/config/contact.ts is used.
  */
-export type ContactEnv = Readonly<{ NEXT_PUBLIC_SUPPORT_EMAIL?: string; FEEDBACK_RECIPIENT_EMAIL?: string }>;
+export type ContactEnv = Readonly<{ NEXT_PUBLIC_SUPPORT_EMAIL?: string; FEEDBACK_RECIPIENT_EMAIL?: string; BILLING_EMAIL?: string }>;
 
 function parseContactEnv(source: EnvSource): ParseOutcome<ContactEnv> {
   const strict = source.NODE_ENV === 'production' && !isEnvValidationSkipped(source);
   const support = source.NEXT_PUBLIC_SUPPORT_EMAIL?.trim() ?? '';
   const feedback = source.FEEDBACK_RECIPIENT_EMAIL?.trim() ?? '';
+  // Optional inbox for payment-claim notices (e.g. a Gmail +billing alias); unset = the platform admins.
+  const billing = source.BILLING_EMAIL?.trim() ?? '';
   const issues: EnvIssue[] = [];
   if (support === '') {
     if (strict) issues.push({ group: 'contact', name: 'NEXT_PUBLIC_SUPPORT_EMAIL', message: 'is required in production' });
@@ -311,12 +313,16 @@ function parseContactEnv(source: EnvSource): ParseOutcome<ContactEnv> {
   if (feedback !== '' && !EMAIL_PATTERN.test(feedback)) {
     issues.push({ group: 'contact', name: 'FEEDBACK_RECIPIENT_EMAIL', message: 'must be a single e-mail address' });
   }
+  if (billing !== '' && !EMAIL_PATTERN.test(billing)) {
+    issues.push({ group: 'contact', name: 'BILLING_EMAIL', message: 'must be a single e-mail address' });
+  }
   if (issues.length > 0) return { ok: false, issues };
   return {
     ok: true,
     value: {
       ...(support !== '' ? { NEXT_PUBLIC_SUPPORT_EMAIL: support } : {}),
       ...(feedback !== '' ? { FEEDBACK_RECIPIENT_EMAIL: feedback } : {}),
+      ...(billing !== '' ? { BILLING_EMAIL: billing } : {}),
     },
   };
 }
@@ -413,6 +419,7 @@ export function getDatabaseEnv(): DatabaseEnv { return databaseEnv.get(); }
 export function getAuthEnv(): AuthEnv { return authEnv.get(); }
 export function getCronEnv(): CronEnv { return cronEnv.get(); }
 export function getAdminEnv(): AdminEnv { return adminEnv.get(); }
+export function getContactEnv(): ContactEnv { return contactEnv.get(); }
 export function getStorageEnv(): StorageEnv { return storageEnv.get(); }
 export function getPdfEnv(): PdfEnv { return pdfEnv.get(); }
 export function getEmailEnv(): EmailEnv { return emailEnv.get(); }

@@ -206,7 +206,9 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | DSN | same | No (public by design) |
 | `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (added in 2.4; build time, so redeploy after changing) | `test` | **`production`** | No |
 | `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | Build upload | same | Token **Yes** |
-| `NEXT_PUBLIC_SUPPORT_EMAIL` / `FEEDBACK_RECIPIENT_EMAIL` | Your Gmail (**required**: the server won't start without the first one) | same | No |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | `invoicebizfolio26+support@gmail.com` (**required**: the server won't start without it). Shown on the site; also the **reply-to** of invites and notifications, so replies land in the Support label | same | No |
+| `FEEDBACK_RECIPIENT_EMAIL` | leave unset (= support address) or `…+support@gmail.com` | same | No |
+| `BILLING_EMAIL` | `invoicebizfolio26+billing@gmail.com`: payment-claim notices, sent as "Invoice BizFolio Billing" (unset = the admins) | same | No |
 | `ADMIN_UPI_ID` / `ADMIN_UPI_NAME` | Your real UPI (to test the QR) | same (**shown to customers**) | No |
 | `ADMIN_BANK_NAME` / `ADMIN_BANK_ACC_NAME` / `ADMIN_BANK_ACC_NO` / `ADMIN_BANK_IFSC` | Your bank details | same (**shown to customers**, double-check) | No |
 | ~~`SKIP_ENV_VALIDATION`~~ | **never** | **never** | — |
