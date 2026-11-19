@@ -64,7 +64,7 @@ describe('LAUNCH-L5 E2E workflow runs the app on the runner', () => {
   it('confirms e-mail via the test database and uses only fake PDF / e-mail / storage keys', () => {
     expect(wf).toContain('E2E_VERIFY_MODE: db');
     expect(wf).toContain('BREVO_API_KEY: e2e-placeholder-brevo-key');
-    expect(wf).toContain('HTML_TO_PDF_API_KEY: e2e-placeholder-key');
+    expect(wf).toContain('CLOUDFLARE_ACCOUNT_ID: e2e-placeholder-not-a-real-account');
     expect(wf).toContain('IDRIVE_E2_ENDPOINT: https://s3.e2e.example.invalid');
   });
 

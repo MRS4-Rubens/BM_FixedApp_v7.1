@@ -47,7 +47,7 @@ const sections = [
       <p>The development code includes the integrations below. The production provider list and configurations will be verified before launch. Each enabled provider receives information needed for its role.</p>
       <ul>
         <li><strong>Render and Neon.</strong> Website and application hosting, database and authentication, including sign-up verification and password e-mails sent by Neon.</li>
-        <li><strong>iDrive e2 and CustomJS.</strong> Object storage for documents, logos and payment evidence, and PDF rendering. The information in a finalized document may be sent to the renderer in document form.</li>
+        <li><strong>iDrive e2 and Cloudflare.</strong> Object storage for documents, logos and payment evidence (iDrive e2), and PDF rendering (Cloudflare Browser Rendering). The information in a finalized document may be sent to the renderer in document form.</li>
         <li><strong>Brevo.</strong> E-mail delivery of account and operational messages to registered users and to us, such as team invitations, notification summaries, payment-claim alerts and support messages. A support message can include attachments you choose to send.</li>
         <li><strong>Upstash and Sentry.</strong> Rate limiting and error monitoring, respectively. Operational providers receive technical data needed for those functions when enabled.</li>
         <li><strong>UptimeRobot and cron-job.org.</strong> Availability checks and scheduled-job triggers. They call fixed service addresses and do not receive account or customer data.</li>
