@@ -173,7 +173,7 @@ export type StorageEnv = Readonly<{
   IDRIVE_E2_ACCESS_KEY: string;
   IDRIVE_E2_SECRET_KEY: string;
 }>;
-export type PdfEnv = Readonly<{ HTML_TO_PDF_API_KEY: string }>;
+export type PdfEnv = Readonly<{ CLOUDFLARE_ACCOUNT_ID: string; CLOUDFLARE_API_TOKEN: string }>;
 export type EmailEnv = Readonly<{ BREVO_API_KEY: string; EMAIL_FROM: string }>;
 export type RateLimitEnv = Readonly<{
   UPSTASH_REDIS_REST_URL: string;
@@ -350,7 +350,15 @@ const storageEnv: EnvGroup<StorageEnv> = defineGroup(
 
 const pdfEnv: EnvGroup<PdfEnv> = defineGroup(
   'pdf',
-  fromSchema('pdf', z.object({ HTML_TO_PDF_API_KEY: text() }), (data): PdfEnv => data),
+  fromSchema(
+    'pdf',
+    z.object({
+      // Cloudflare Browser Rendering (LAUNCH-L7). Account IDs are 32 hex characters.
+      CLOUDFLARE_ACCOUNT_ID: z.string().trim().regex(/^[0-9a-f]{32}$/i, 'must be the 32-character Cloudflare account ID'),
+      CLOUDFLARE_API_TOKEN: text(),
+    }),
+    (data): PdfEnv => data,
+  ),
 );
 
 const emailEnv: EnvGroup<EmailEnv> = defineGroup(

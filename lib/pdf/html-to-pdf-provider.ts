@@ -2,10 +2,21 @@ import { Buffer } from 'node:buffer';
 import { getPdfEnv } from '@/lib/env';
 import { scrubString } from '@/lib/observability/sentry-redaction';
 
+/**
+ * HTML → PDF through Cloudflare Browser Rendering ("Browser Run") REST API (switched from CustomJS, LAUNCH-L7).
+ * Same headless Chrome engine as before; the archival HTML is self-contained (inlined CSS, embedded fonts/logo).
+ *
+ * Free plan (Workers Free): 10 browser-minutes per day and **1 REST request every 10 seconds**. Requests are therefore
+ * queued one at a time in this process and spaced CLOUDFLARE_MIN_INTERVAL_MS apart, and a 429 is retried once after
+ * the server's Retry-After. Anything still failing surfaces as PdfRenderError, and the archival sweep retries later
+ * (up to ARCHIVAL_MAX_ATTEMPTS).
+ */
 const PDF_RENDER_TIMEOUT_MS = 25_000;
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
 const MAX_HTML_BYTES = 8 * 1024 * 1024;
 const MAX_ERROR_TEXT_CHARS = 200;
+export const CLOUDFLARE_MIN_INTERVAL_MS = 10_500;
+const MAX_RETRY_AFTER_MS = 30_000;
 
 export type PdfRenderFailureKind = 'timeout' | 'network' | 'http' | 'invalid_response' | 'invalid_input';
 
@@ -27,6 +38,35 @@ function isAbortLike(error: unknown): boolean {
 export interface RenderOptions {
   readonly timeoutMs?: number;
   readonly fetchImpl?: typeof fetch;
+  /** Test seam for the pacing / Retry-After waits. */
+  readonly sleep?: (ms: number) => Promise<void>;
+  /** Test seam: skip the process-wide queue (each test gets fresh pacing). */
+  readonly unpaced?: boolean;
+}
+
+const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// One request at a time, spaced apart (free-plan REST limit). Module state = one queue per server process.
+let queueTail: Promise<unknown> = Promise.resolve();
+let lastRequestAt = 0;
+
+function paced<T>(task: () => Promise<T>, sleep: (ms: number) => Promise<void>): Promise<T> {
+  const run = async () => {
+    const wait = lastRequestAt + CLOUDFLARE_MIN_INTERVAL_MS - Date.now();
+    if (wait > 0) await sleep(wait);
+    lastRequestAt = Date.now();
+    return task();
+  };
+  const result = queueTail.then(run, run);
+  queueTail = result.catch(() => undefined);
+  return result;
+}
+
+function retryAfterMs(response: Response): number {
+  const raw = response.headers?.get?.('retry-after');
+  const seconds = raw ? Number(raw) : NaN;
+  const ms = Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : CLOUDFLARE_MIN_INTERVAL_MS;
+  return Math.min(ms, MAX_RETRY_AFTER_MS);
 }
 
 export async function renderHtmlToPdfBuffer(html: string, options: RenderOptions = {}): Promise<Buffer> {
@@ -35,31 +75,48 @@ export async function renderHtmlToPdfBuffer(html: string, options: RenderOptions
     throw new PdfRenderError('invalid_input', `Archival HTML is too large (${htmlBytes} bytes).`);
   }
 
-  const { HTML_TO_PDF_API_KEY } = getPdfEnv(); // EnvConfigError propagates (callers refund the attempt)
+  const { CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN } = getPdfEnv(); // EnvConfigError propagates (callers refund the attempt)
   const doFetch = options.fetchImpl ?? fetch;
-  let bytes: Buffer;
-  try {
-    const response = await doFetch('https://e.customjs.io/html2pdf', {
+  const sleep = options.sleep ?? defaultSleep;
+  const url = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(CLOUDFLARE_ACCOUNT_ID)}/browser-run/pdf`;
+  const body = JSON.stringify({
+    html,
+    // The page's own CSS sets `@page { size: A4; margin: 0 }`; A4 is also the explicit fallback.
+    pdfOptions: { format: 'a4', printBackground: true, preferCSSPageSize: true },
+    gotoOptions: { waitUntil: 'load' },
+  });
+
+  const attempt = async (): Promise<Response> =>
+    doFetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/pdf',
-        'x-api-key': HTML_TO_PDF_API_KEY,
+        Authorization: `Bearer ${CLOUDFLARE_API_TOKEN}`,
       },
-      body: JSON.stringify({
-        input: {
-          html,
-          config: { pdfWidthMm: 210, pdfHeightMm: 297 },
-        },
-      }),
+      body,
       signal: AbortSignal.timeout(options.timeoutMs ?? PDF_RENDER_TIMEOUT_MS),
     });
+
+  const run = async (): Promise<Buffer> => {
+    let response = await attempt();
+    if (response.status === 429) {
+      await sleep(retryAfterMs(response));
+      lastRequestAt = Date.now();
+      response = await attempt();
+    }
     if (!response.ok) {
-      const rawText = (await response.text()).replace(/[\u0000-\u001f]+/g, ' ');
+      // Never echo the token, even if the provider were to include request details.
+      const rawText = (await response.text()).split(CLOUDFLARE_API_TOKEN).join('[redacted]').replace(/[\u0000-\u001f]+/g, ' ');
       const text = scrubString(rawText).slice(0, MAX_ERROR_TEXT_CHARS);
       throw new PdfRenderError('http', `PDF rendering failed (${response.status}): ${text}`, response.status);
     }
-    bytes = Buffer.from(await response.arrayBuffer()); // body read is covered by the same timeout signal
+    return Buffer.from(await response.arrayBuffer()); // body read is covered by the same timeout signal
+  };
+
+  let bytes: Buffer;
+  try {
+    bytes = options.unpaced ? await run() : await paced(run, sleep);
   } catch (error: unknown) {
     if (error instanceof PdfRenderError) throw error;
     if (isAbortLike(error)) throw new PdfRenderError('timeout', 'PDF rendering timed out.');

@@ -51,3 +51,39 @@ describe('archival-html document builder', () => {
   });
 });
 
+
+describe('LAUNCH-L7 embedded PDF font', () => {
+  it('embeds all four TeX Gyre Schola faces (unmodified files) as Century Schoolbook, plus a ₹ fallback', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { createHash } = await import('node:crypto');
+    const { getPdfFontFaceCss } = await import('@/lib/pdf/pdf-fonts');
+    const css = getPdfFontFaceCss();
+    expect(css.match(/font-family: 'Century Schoolbook'; src: url\(data:font\/otf;base64,/g)).toHaveLength(4);
+    expect(css).toContain('font-weight: 700; font-style: italic;');
+    expect(css).toContain('unicode-range: U+20B9;');
+    const doc = buildArchivalHtmlDocument({ title: 'T', bodyHtml: '<p>x</p>' });
+    expect(doc).toContain("font-family: 'Century Schoolbook'; src: url(data:font/otf;base64,");
+    // The embedded bytes are the original CTAN files (licence: unmodified), checked against the README checksums.
+    const readme = readFileSync('assets/fonts/tex-gyre-schola/README-TEX-GYRE-SCHOLA.txt', 'utf8');
+    for (const name of ['regular', 'bold', 'italic', 'bolditalic']) {
+      const file = readFileSync(`assets/fonts/tex-gyre-schola/texgyreschola-${name}.otf`);
+      expect(file.subarray(0, 4).toString('latin1')).toBe('OTTO');
+      expect(readme).toContain(createHash('sha256').update(file).digest('hex'));
+    }
+  });
+
+  it('the templates ask for Century Schoolbook FIRST, so the embedded face is the one used', async () => {
+    const { readFileSync } = await import('node:fs');
+    for (const n of [1, 2, 3, 4]) {
+      expect(readFileSync(`components/app/invoices/templates/template-${n}.tsx`, 'utf8')).toContain("font-family: 'Century Schoolbook', ");
+    }
+  });
+
+  it('drops the Google Fonts import from the PDF page only (no network wait), keeping everything else', () => {
+    const body = `<style>@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400&display=swap'); .x{color:red}</style><p>Hi</p>`;
+    const doc = buildArchivalHtmlDocument({ title: 'T', bodyHtml: body });
+    expect(doc).not.toContain('fonts.googleapis.com');
+    expect(doc).toContain('.x{color:red}');
+    expect(doc).toContain('<p>Hi</p>');
+  });
+});

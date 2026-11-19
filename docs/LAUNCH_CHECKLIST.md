@@ -27,7 +27,7 @@
 | 4 | Auth e-mails | **Neon's built-in sender** (`auth@mail.myneon.app`) | Rate-limited (number not published) | Domain bought → switch Neon Auth to Brevo SMTP |
 | 5 | App e-mails | **Brevo Free, web API** (not SMTP: Render Free blocks e-mail ports 25/465/587), sender = your Gmail. **Only to business users and you.** Customer e-mails (invoice + reminder) **turned off, code kept** | 300 e-mails/day (unverified on Brevo's own page) | Domain bought, or near 300/day |
 | 6 | Invoice sharing | **WhatsApp stays paid** (Essentials Pro). Free plan = download/print PDF only | — | — |
-| 7 | PDF generation | **CustomJS Free**, production key only | 20 PDFs/day, 600/month, **watermark** | ~15+ PDFs/day or watermark not OK → **Pro $9/month** (100/day, no watermark) |
+| 7 | PDF generation | **Cloudflare Browser Rendering (Workers Free)**, production token only (switched from CustomJS in L7: unreliable account, watermark, 20/day) | 10 browser-minutes/day, REST **1 request / 10 s** (app queues 10.5 s apart), no watermark, no card. Measured ~0.4 s per invoice locally (font embedded, no network) | Daily time near 10 min or 429s piling up → **Workers Paid $5/month** |
 | 8 | File storage | **IDrive e2 Free**, Singapore, private buckets `bizfolio-prod-files`, `bizfolio-test-files`, `bizfolio-backups`; **no Object Lock** for the pilot | 10 GB total; downloads ≤ 3× stored (free-plan permanence unverified) | Near 8 GB or free plan ends → paid ($6/TB) or move to Backblaze B2 (settings only) |
 | 9 | Backups | Neon 6 h history **+ nightly encrypted `pg_dump`** of production via GitHub Actions to `bizfolio-backups`, keep 7 daily + 4 weekly, restore drill every 3 months | Neon 5 GB transfer/month | Database > ~150 MB → weekly dumps, or Neon paid for longer history |
 | 10 | Rate limiting | **Upstash Redis Free**, Singapore, **one account, one database** for production (flushed at the switch). CI uses a local look-alike, never Upstash. No code change | 500K commands/month; **one free account per person** and one free database (Upstash terms) | Over ~400K/month → add card (PAYG $0.20 per 100K) |
@@ -65,7 +65,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [x] **2.5 Cron routes reply first:** *(done: L2 PR; schedules in `lib/cron/schedules.ts`, workflow `run-cron-now.yml`)* both `app/api/cron/*` routes check the secret, reply **202** immediately, then run the work with `after()`. The archive job stays inside `Sentry.withMonitor`; **remove** `Sentry.withMonitor` from daily-notifications. Delete the crons from `vercel.json`. Add a manual GitHub workflow "Run cron now".
 - [x] **2.6 Bell Option C** *(done: PR #68)* in `components/app/notifications/notification-bell.tsx` (replace `REFRESH_MS = 120_000`).
 - [x] **2.7 Backup workflow** `.github/workflows/backup-db.yml` *(done: L5)*: 21:00 UTC (02:30 IST) + manual button; Postgres 17 `pg_dump` (custom format, compressed; checked to contain `invoices`) → encrypt (gpg AES-256) with `BACKUP_ENCRYPTION_PASSPHRASE` → upload to `bizfolio-backups` under `daily/` (+ `weekly/` on Sundays) → prune to 7 daily + 4 weekly. **Off until the variable `BACKUPS_ENABLED=true`** is set (section 7); once on, a missing secret fails the run. Restore steps are in the workflow header.
-- [x] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml` *(done: L5)*: build + `next start` on the runner (`http://localhost:3000`); Neon test database + its Neon Auth (new secret `E2E_NEON_AUTH_BASE_URL`); `E2E_VERIFY_MODE=db`; removed the Vercel preview lookup, trusted-domain script, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; every PR + manual button; fork-PR guard kept; fake CustomJS/Brevo/IDrive keys. Redis: **local Redis + serverless-redis-http** service containers (empty every run) behind `scripts/ci/upstash-local-proxy.ts`, which removes the Upstash-only `allow-key-locking` script flag (PR #76). `lib/env.ts` accepts its `http://localhost` address only when validation is skipped, never on Render. The runner app sets `SKIP_ENV_VALIDATION=1` because production validation rejects `http://localhost` (never possible on Render).
+- [x] **2.8 E2E workflow rewrite** `.github/workflows/e2e.yml` *(done: L5)*: build + `next start` on the runner (`http://localhost:3000`); Neon test database + its Neon Auth (new secret `E2E_NEON_AUTH_BASE_URL`); `E2E_VERIFY_MODE=db`; removed the Vercel preview lookup, trusted-domain script, `E2E_VERCEL_BYPASS_SECRET` and Mailosaur; every PR + manual button; fork-PR guard kept; fake Cloudflare/Brevo/IDrive keys. Redis: **local Redis + serverless-redis-http** service containers (empty every run) behind `scripts/ci/upstash-local-proxy.ts`, which removes the Upstash-only `allow-key-locking` script flag (PR #76). `lib/env.ts` accepts its `http://localhost` address only when validation is skipped, never on Render. The runner app sets `SKIP_ENV_VALIDATION=1` because production validation rejects `http://localhost` (never possible on Render).
 - [x] **2.9 E-mail provider swap:** *(done: L3 PR; `lib/email/mailer.ts`, Brevo HTTPS API)* Resend → **Brevo web API** in `lib/email/resend.ts` / `send-customer-email.ts`; rename env vars (e.g. `BREVO_API_KEY`, `EMAIL_FROM`).
 - [x] **2.10 Brand clean-up:** *(done: L2 PR; production now refuses to boot without `NEXT_PUBLIC_SUPPORT_EMAIL`)* `lib/config/contact.ts` fallback `support@billmatrix.in`; `.env.example` "Bill Matrix" → Invoice BizFolio, matching section 4 (fake values only).
 - [x] **2.11 Docs:** *(done: L6)* `docs/DEPLOYMENT.md`: removed the 8-year Object Lock, 7-day PITR, RPO ≤ 5 min and weekly-dump claims; now describes Render, cron-job.org, UptimeRobot (`/ping`, `/health-db`), the nightly encrypted backup + restore drill, honest recovery targets, and the 7 PR checks. `docs/e2e-staging-setup.md` rewritten for the runner-based E2E. `README.md` env table, background jobs and deploy sections updated.
@@ -131,9 +131,12 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [ ] Sign up (your Gmail) → Create Redis database → name `bizfolio` → region **AWS ap-southeast-1 (Singapore)** → Free.
 - [ ] Copy the **REST URL** and **REST token** (PRODUCTION folder; it is also used during testing and flushed at the switch).
 
-### 3.7 CustomJS
-- [ ] Sign up (free) → copy the API key → PRODUCTION folder as `HTML_TO_PDF_API_KEY`.
-- [ ] Never put this key in GitHub test secrets. During go-live tests on Render it is used (about 5–10 PDFs; the daily 20 resets).
+### 3.7 Cloudflare — PDF rendering (Browser Rendering)
+- [ ] Sign up (business Gmail) at dash.cloudflare.com — Free plan, **no card** (stop if one is asked for).
+- [ ] Copy the **Account ID** (32 characters; dashboard → account home / Workers & Pages overview) → PRODUCTION folder as `CLOUDFLARE_ACCOUNT_ID`.
+- [ ] My Profile → API Tokens → **Create Token** → **Create Custom Token** → name `bizfolio-pdf` → Permissions: **Account → Browser Rendering (Browser Run) → Edit** only → Account resources: this account only → no IP filter, no expiry → Create → copy once → PRODUCTION folder as `CLOUDFLARE_API_TOKEN`.
+- [ ] Never put the token in GitHub test secrets (CI uses fake values). During go-live tests on Render it is used for a few PDFs; check the render time in section 6.
+- [ ] After launch: delete the old development CustomJS account (section 8).
 
 ### 3.8 Brevo
 - [ ] Sign up (free) → Settings → Senders → add sender **your Gmail** (name "Invoice BizFolio") → verify via the e-mail Brevo sends.
@@ -196,7 +199,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `IDRIVE_E2_REGION` | `ap-southeast-1` | same | No |
 | `IDRIVE_E2_BUCKET_NAME` | `bizfolio-test-files` | **`bizfolio-prod-files`** | No |
 | `IDRIVE_E2_ACCESS_KEY` / `IDRIVE_E2_SECRET_KEY` | App key | same (or rotate) | **Yes** |
-| `HTML_TO_PDF_API_KEY` | CustomJS key | same | **Yes** |
+| `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` | Cloudflare (Browser Rendering token) | same | Token **Yes** |
 | `BREVO_API_KEY` | Brevo key | same | **Yes** |
 | `EMAIL_FROM` | `"Invoice BizFolio <yourapp@gmail.com>"` | same | No |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Upstash DB | same (**flushed** at switch) | Token **Yes** |
@@ -298,7 +301,7 @@ Do this in one sitting, in order. Each step has a proof check.
 | GitHub test reports | Auto-delete after **7 days** (`retention-days: 7` in `e2e.yml`) | Nothing to do |
 | Local temp files: `coverage/`, `playwright-report/`, `test-results/`, `repomix-output-P2.md`, `tsconfig.tsbuildinfo`, `.env*.local` | Ignored by git (checked 2026-11-18), never reach GitHub; delete locally whenever you like | `git status` clean |
 | **Dev test accounts** (Neon `bm_dev`: `l4-code-check-1119@example.com`, `tilak.verma@inboxorigin.com`, `l4-unverified-probe-1119@example.com`, plus any made later) | Delete **all at once at the end of the code batch** (before section 3), click-by-click, after confirming the list | Neon Auth → Users shows none of them |
-| **Old development accounts** (old Neon account with `bm_dev` + `staging-e2e`, the Vercel project, old Upstash / IDrive / Resend / Mailosaur accounts) | Delete **after** the switch is proven (section 7 done, E2E green on the new test project) and after copying anything you still need | The old Neon and Vercel dashboards no longer list the projects |
+| **Old development accounts** (old Neon account with `bm_dev` + `staging-e2e`, the Vercel project, old Upstash / IDrive / Resend / Mailosaur accounts, old CustomJS account) | Delete **after** the switch is proven (section 7 done, E2E green on the new test project) and after copying anything you still need | The old Neon and Vercel dashboards no longer list the projects |
 | **Stays on purpose:** Neon test project, `bizfolio-test-files` | Used by CI browser tests and restore drills | — |
 | **Stays on purpose:** `tests/`, `e2e/`, `docs/reports/` | Protect future changes / fix history; never shipped to users | — |
 
@@ -310,7 +313,7 @@ Do this in one sitting, in order. Each step has a proof check.
 |---|---|---|
 | Weekly | Render bandwidth | Near 4 GB → investigate bots / plan Starter + domain + Cloudflare |
 | Weekly | Neon prod CU-hours | On pace for > 80 → Launch plan |
-| Weekly | CustomJS daily usage / failed archives | Often near 20/day → Pro $9 |
+| Weekly | Cloudflare → Workers & Pages → Browser Rendering usage (minutes/day) + failed/429 archives in Sentry | Often near 10 min/day → Workers Paid $5 |
 | Weekly | Sentry new issues | Fix |
 | Weekly | GitHub → Actions → **Nightly database backup**: one green run per night | A missed or failed night → run it by hand and find out why |
 | Monthly | Upstash commands, IDrive GB, Brevo daily sends | Near limits → section 1 triggers |
@@ -325,7 +328,7 @@ Do this in one sitting, in order. Each step has a proof check.
 ## 10. When the first shop pays (upgrade path, in order)
 
 1. **Render Starter** ($7/month): speed, no sleep; keep UptimeRobot as monitoring.
-2. **CustomJS Pro** ($9/month): no watermark, 100/day.
+2. **Cloudflare Workers Paid** ($5/month) if PDF rendering time nears the free 10 minutes/day.
 3. **Buy a domain** → Cloudflare DNS → Render custom domain → Brevo domain authentication (SPF/DKIM/DMARC) → Neon Auth custom SMTP via Brevo → Cloudflare Email Routing for `support@` → update `NEXT_PUBLIC_APP_URL`, Neon trusted domains, cron-job.org + UptimeRobot URLs, robots/indexing.
 4. Optionally **turn customer e-mails back on** (the switch from 2.1).
 5. Later: a separate **Object Lock archive bucket** for invoice PDFs; a monthly PDF copy to Backblaze B2.
@@ -340,7 +343,7 @@ Assumptions per active business: ~5 invoices/day, app open during shop hours, ~2
 |---|---|---|---|
 | Render | $0 (Free) | $7 Starter + ~$4–8 bandwidth over 5 GB | Larger instance(s) **(price unverified)** + ~$45–90 bandwidth (reduce with Cloudflare cache + domain) |
 | Neon | $0 | ~$10–25 (Launch, pay per use) | ~$45–80 + storage |
-| CustomJS | $0 (watermark) | **$29 Ultra** (500/day, tight) | **$99 Mega** (5,000/day, tight) |
+| Cloudflare (PDF) | $0 | $0–5 (Workers Paid if > 10 min/day) | ~$5 + browser hours **(estimate)** |
 | IDrive e2 | $0 | $0 → cents after 10 GB | ~$1–2 |
 | Upstash | $0 | ~$0–1 | ~$9 |
 | Brevo | $0 | $0 (≈200/day) once a domain is bought | Paid plan for ~60K e-mails/month **(price unverified)** |
@@ -370,7 +373,7 @@ Render: [free](https://render.com/docs/free), [pricing](https://render.com/prici
 Vercel: [terms](https://vercel.com/legal/terms.md), [Hobby](https://vercel.com/docs/plans/hobby) ·
 Neon: [plans](https://neon.com/docs/introduction/plans), [pricing](https://neon.com/pricing), [regions](https://neon.com/docs/introduction/regions), [email verification](https://neon.com/docs/auth/guides/email-verification), [production checklist](https://neon.com/docs/auth/production-checklist) ·
 IDrive: [pricing](https://www.idrive.com/s3-storage-e2/pricing), [locations](https://www.idrive.com/s3-storage-e2/locations) ·
-CustomJS: [pricing](https://www.customjs.space/pricing) ·
+Cloudflare: [Browser Rendering limits](https://developers.cloudflare.com/browser-rendering/limits/), [PDF endpoint](https://developers.cloudflare.com/browser-rendering/rest-api/pdf-endpoint/), [supported fonts](https://developers.cloudflare.com/browser-run/reference/supported-fonts/) ·
 Brevo: [sender requirements](https://help.brevo.com/hc/en-us/articles/14925263522578) ·
 Google: [sender guidelines](https://support.google.com/a/answer/81126) ·
 Upstash: [pricing](https://upstash.com/docs/redis/overall/pricing), [regions](https://upstash.com/docs/common/concepts/global-replication) ·

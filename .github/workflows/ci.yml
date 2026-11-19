@@ -37,7 +37,8 @@ jobs:
       UPSTASH_REDIS_REST_URL: https://ci.example.invalid
       UPSTASH_REDIS_REST_TOKEN: ci-placeholder-token
       CRON_SECRET: ci-placeholder-cron-secret-at-least-32-characters
-      HTML_TO_PDF_API_KEY: ci-placeholder-key
+      CLOUDFLARE_ACCOUNT_ID: ci-placeholder-not-a-real-account
+      CLOUDFLARE_API_TOKEN: ci-placeholder-token
       PLATFORM_ADMIN_EMAILS: admin@ci.example.invalid
       IDRIVE_E2_ENDPOINT: https://s3.ci.example.invalid
       IDRIVE_E2_REGION: ci-region
