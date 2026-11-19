@@ -114,31 +114,39 @@ describe('renderHtmlToPdfBuffer (Cloudflare Browser Rendering)', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
-  it('queues requests one at a time, at least 10.5 s apart (free plan: 1 request / 10 s)', async () => {
-    const waits: number[] = [];
-    let active = 0;
-    let maxActive = 0;
-    const fetchImpl: typeof fetch = vi.fn().mockImplementation(async () => {
-      active += 1;
-      maxActive = Math.max(maxActive, active);
-      await Promise.resolve();
-      active -= 1;
-      return pdfResponse();
-    });
-    const sleep = async (ms: number) => {
-      waits.push(ms);
-    };
-    await Promise.all([
-      renderHtmlToPdfBuffer('<a>1</a>', { fetchImpl, sleep }),
-      renderHtmlToPdfBuffer('<a>2</a>', { fetchImpl, sleep }),
-      renderHtmlToPdfBuffer('<a>3</a>', { fetchImpl, sleep }),
-    ]);
-    expect(maxActive).toBe(1);
-    expect(fetchImpl).toHaveBeenCalledTimes(3);
-    // The 2nd and 3rd requests each waited (almost) the full interval after the previous one (the 1st may also wait
-    // if an earlier request used the slot).
-    expect(waits.length).toBeGreaterThanOrEqual(2);
-    expect(waits.every((ms) => ms > CLOUDFLARE_MIN_INTERVAL_MS - 1000 && ms <= CLOUDFLARE_MIN_INTERVAL_MS)).toBe(true);
+  it('queues requests one at a time, and each request STARTS at least 10.5 s after the previous one', async () => {
+    // Fake clock (Date + setTimeout): the real pacing sleep is used, so the test fails if the wait were skipped.
+    vi.useFakeTimers();
+    try {
+      const starts: number[] = [];
+      let active = 0;
+      let maxActive = 0;
+      const fetchImpl: typeof fetch = vi.fn().mockImplementation(async () => {
+        starts.push(Date.now());
+        active += 1;
+        maxActive = Math.max(maxActive, active);
+        await Promise.resolve();
+        active -= 1;
+        return pdfResponse();
+      });
+      const all = Promise.all([
+        renderHtmlToPdfBuffer('<a>1</a>', { fetchImpl }),
+        renderHtmlToPdfBuffer('<a>2</a>', { fetchImpl }),
+        renderHtmlToPdfBuffer('<a>3</a>', { fetchImpl }),
+      ]);
+      // Just before one interval has passed, at most one request may have started.
+      await vi.advanceTimersByTimeAsync(CLOUDFLARE_MIN_INTERVAL_MS - 1);
+      expect(starts.length).toBeLessThanOrEqual(1);
+      await vi.advanceTimersByTimeAsync(3 * CLOUDFLARE_MIN_INTERVAL_MS);
+      await all;
+      expect(maxActive).toBe(1);
+      expect(starts).toHaveLength(3);
+      for (let k = 1; k < starts.length; k += 1) {
+        expect(starts[k]! - starts[k - 1]!).toBeGreaterThanOrEqual(CLOUDFLARE_MIN_INTERVAL_MS);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('throws invalid_response when body is not a valid PDF (%PDF- header missing)', async () => {
