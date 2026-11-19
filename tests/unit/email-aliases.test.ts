@@ -2,7 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Launch 3.8 follow-up: per-kind sender names and Gmail plus-alias routing (one verified Brevo sender).
 
-const state = vi.hoisted(() => ({ emailFrom: 'Invoice BizFolio <yourapp@gmail.com>', billing: undefined as string | undefined }));
+const state = vi.hoisted(() => ({ emailFrom: 'Invoice BizFolio <yourapp@gmail.com>', billing: undefined as string | undefined, support: 'support@example.invalid' }));
+
+// Control the support address here (CI and local runs set NEXT_PUBLIC_SUPPORT_EMAIL differently).
+vi.mock('@/lib/config/contact', () => ({
+  DEV_SUPPORT_EMAIL: 'support@example.invalid',
+  get SUPPORT_EMAIL() {
+    return state.support;
+  },
+}));
 
 vi.mock('@/lib/env', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/env')>();
@@ -44,8 +52,13 @@ describe('billingInbox', () => {
 
 describe('supportReplyTo', () => {
   it('is undefined while only the development placeholder is configured (mailer then replies to the sender)', () => {
-    // The test environment has no NEXT_PUBLIC_SUPPORT_EMAIL, so SUPPORT_EMAIL is the dev placeholder.
+    state.support = 'support@example.invalid';
     expect(supportReplyTo()).toBeUndefined();
+  });
+
+  it('is the configured support address (e.g. a +support alias) once one is set', () => {
+    state.support = 'yourapp+support@gmail.com';
+    expect(supportReplyTo()).toBe('yourapp+support@gmail.com');
   });
 });
 
