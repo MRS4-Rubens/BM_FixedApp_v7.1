@@ -106,10 +106,11 @@ async function buildBody(message: MailMessage): Promise<BuildOutcome> {
     ...(textContent !== undefined ? { textContent } : {}),
   };
 
-  if (message.replyTo) {
-    const replyTo = parseAddress(message.replyTo);
-    if (replyTo) body.replyTo = replyTo;
-  }
+  // Brevo shows its own address (…@….brevosend.com) as the sender for a Gmail sender, so without a reply-to a
+  // recipient's "Reply" would go to Brevo. Default the reply-to to the real sender address; a message may still set
+  // its own (e.g. feedback replies go to the user who wrote it).
+  const replyTo = (message.replyTo ? parseAddress(message.replyTo) : null) ?? { email: sender.email, ...(sender.name ? { name: sender.name } : {}) };
+  body.replyTo = replyTo;
 
   const customHeaders = Object.fromEntries(
     Object.entries(message.headers ?? {}).filter(([name]) => /^x-/i.test(name)),
