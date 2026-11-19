@@ -100,6 +100,18 @@ describe('createBrevoMailer', () => {
     expect((await createBrevoMailer('k', timeout).emails.send({ from: 'a@b.co', to: 'c@d.co', subject: 'S', text: 'T' })).error?.name).toBe('timeout');
   });
 
+  it('defaults reply-to to the real sender, so Reply never goes to the brevosend.com address (launch 3.8)', async () => {
+    const fetchMock = okFetch();
+    await createBrevoMailer('k', fetchMock).emails.send({ from: 'Invoice BizFolio <yourapp@gmail.com>', to: 'c@d.co', subject: 'S', text: 'T' });
+    expect(sentBody(fetchMock).replyTo).toEqual({ email: 'yourapp@gmail.com', name: 'Invoice BizFolio' });
+  });
+
+  it('keeps an explicit reply-to (feedback replies go to the user who wrote it)', async () => {
+    const fetchMock = okFetch();
+    await createBrevoMailer('k', fetchMock).emails.send({ from: 'Invoice BizFolio <yourapp@gmail.com>', to: 'c@d.co', subject: 'S', text: 'T', replyTo: 'asha@shop.in' });
+    expect(sentBody(fetchMock).replyTo).toEqual({ email: 'asha@shop.in' });
+  });
+
   it('refuses a bad sender or recipient without calling Brevo', async () => {
     const fetchMock = okFetch();
     const mailer = createBrevoMailer('k', fetchMock);
