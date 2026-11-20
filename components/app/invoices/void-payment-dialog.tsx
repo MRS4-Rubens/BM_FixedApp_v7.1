@@ -103,7 +103,7 @@ export function VoidPaymentDialog({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <Dialog.Popup className="relative w-full max-w-lg bg-card border border-border shadow-2xl rounded-2xl p-4 sm:p-5 text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto">
+          <Dialog.Popup data-viewport-dialog className="relative w-full max-w-lg bg-card border border-border shadow-2xl rounded-2xl p-4 sm:p-5 text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto">
             {/* Close Button */}
             <Dialog.Close
               render={
@@ -237,7 +237,7 @@ export function VoidPaymentDialog({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border mt-3">
+              <div data-modal-footer className="flex items-center justify-end gap-2.5 pt-2 border-t border-border mt-3">
                 <Button
                   type="button"
                   variant="outline"

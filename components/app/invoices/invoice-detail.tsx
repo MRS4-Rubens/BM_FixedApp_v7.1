@@ -470,7 +470,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
         {/* Main Dashboard Layout: Flexible Invoice Paper + Proportional Responsive Sidebar */}
         <div id="inv-bg" className="flex flex-col lg:flex-row items-start gap-4">
           {/* Left Side: Invoice Paper Preview Sheet */}
-          <div className="flex-1 min-w-0 w-full overflow-x-auto pb-2 flex justify-center">
+          <div className="flex-1 min-w-0 w-full overflow-x-auto pb-2">
             <div 
               id="inv-paper" 
               className="w-full mx-auto rounded-xl bg-white shadow-sm border border-border overflow-hidden transition-all" 

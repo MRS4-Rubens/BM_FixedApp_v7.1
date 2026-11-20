@@ -6,6 +6,19 @@ import type { InvoiceDraftInput } from '@/lib/validations/invoice';
 import { searchProductOptions } from '@/lib/actions/products/search-product-options';
 import type { ProductOption } from '@/lib/pickers/types';
 
+/** Suggestion box position: under the input, kept inside the screen (8px margin) and flipped above the input when
+ * there is no room below (e.g. phone keyboard open). On wide screens this equals the input's own position. */
+const SUGGESTION_BOX_HEIGHT = 200;
+function suggestionRect(el: HTMLInputElement) {
+  const rect = el.getBoundingClientRect();
+  const width = Math.min(rect.width, window.innerWidth - 16);
+  const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+  const bottom = window.visualViewport?.height ?? window.innerHeight;
+  const flip = rect.bottom + SUGGESTION_BOX_HEIGHT > bottom && rect.top >= SUGGESTION_BOX_HEIGHT;
+  const top = flip ? rect.top - SUGGESTION_BOX_HEIGHT : rect.bottom;
+  return { top: top + window.scrollY, left: left + window.scrollX, width, height: rect.height };
+}
+
 export function useProductSuggestions({
   setValue,
   lineItems,
@@ -49,13 +62,7 @@ export function useProductSuggestions({
   const updateInputRect = (el: HTMLInputElement | null) => {
     if (el) {
       setActiveInputRef(el);
-      const rect = el.getBoundingClientRect();
-      setActiveInputRect({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        height: rect.height,
-      });
+      setActiveInputRect(suggestionRect(el));
     } else {
       setActiveInputRef(null);
       setActiveInputRect(null);
@@ -67,12 +74,12 @@ export function useProductSuggestions({
 
     const handleUpdate = () => {
       const rect = activeInputRef.getBoundingClientRect();
-      setActiveInputRect({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        height: rect.height,
-      });
+      // The input scrolled out of view: close instead of leaving a floating box behind.
+      if (rect.right <= 0 || rect.left >= window.innerWidth || rect.bottom <= 0 || rect.top >= window.innerHeight) {
+        setIsProdSuggestionsOpen(false);
+        return;
+      }
+      setActiveInputRect(suggestionRect(activeInputRef));
     };
 
     window.addEventListener('scroll', handleUpdate, true);

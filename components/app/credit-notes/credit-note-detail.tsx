@@ -371,7 +371,7 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
       {/* Main Dashboard Layout: Left Paper Sheet + Right 360px Sidebar */}
       <div id="cn-bg" className="flex flex-col lg:flex-row items-start gap-4">
         {/* Left Side: Credit Note Paper Preview Sheet (Flush Left, Max 860px on Screen) */}
-        <div className="flex-1 min-w-0 w-full overflow-x-auto pb-2 flex justify-center">
+        <div className="flex-1 min-w-0 w-full overflow-x-auto pb-2">
           <div 
             id="cn-paper" 
             className="w-full mx-auto rounded-xl bg-white shadow-sm border border-border overflow-hidden transition-all print:border-none print:shadow-none print:m-0 print:p-0 print:max-w-none print:w-full relative" 

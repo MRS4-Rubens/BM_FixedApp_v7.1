@@ -66,7 +66,7 @@ export function RejectClaimDialog({
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200" />
           <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <Dialog.Popup className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
+            <Dialog.Popup data-viewport-dialog className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
               <Dialog.Title
                 render={
                   <h3 className="text-lg font-bold text-foreground font-heading border-b border-border/40 pb-3 flex items-center gap-2">
@@ -135,7 +135,7 @@ export function RejectClaimDialog({
                 </p>
               )}
 
-              <div className="mt-5 flex justify-end gap-2.5">
+              <div data-modal-footer className="mt-5 flex justify-end gap-2.5">
                 <Button
                   variant="ghost"
                   disabled={isPending}

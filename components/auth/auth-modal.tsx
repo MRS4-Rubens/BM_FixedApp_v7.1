@@ -181,7 +181,7 @@ export function AuthenticationModal() {
           maxWidth: mode === 'login' ? '460px' : '520px',
           scrollbarWidth: 'none',
         }}
-        className={`relative w-full mx-auto bg-[#fffefc] border border-stone-200 shadow-2xl rounded-2xl p-4 sm:p-5 flex flex-col items-center max-h-[92dvh] overflow-y-auto ${
+        data-viewport-dialog className={`relative w-full mx-auto bg-[#fffefc] border border-stone-200 shadow-2xl rounded-2xl p-4 sm:p-5 flex flex-col items-center max-h-[92dvh] overflow-y-auto ${
           shake ? 'animate-shake' : ''
         }`}
       >
