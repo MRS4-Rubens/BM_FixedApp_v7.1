@@ -30,6 +30,16 @@ import { canEditBusinessData } from '@/lib/auth/rbac'
 import { DashboardChart } from '@/components/app/dashboard-chart-lazy'
 import { cn } from '@/lib/utils'
 
+/** Label for the recent-invoices status badge (same mapping on the phone cards and the desktop table). */
+function recentStatusLabel(status: string) {
+  return status === 'draft' ? 'Draft'
+    : status === 'sent' ? 'Sent'
+    : status === 'paid' ? 'Paid'
+    : status === 'refund_due' ? 'Refund Due'
+    : status === 'partially_paid' ? 'Partial'
+    : 'Overdue'
+}
+
 export const metadata: Metadata = { title: 'Dashboard' }
 
 export default async function DashboardPage() {
@@ -95,12 +105,12 @@ export default async function DashboardPage() {
   return (
     <div className="w-full space-y-4.5">
       {/* Dynamic welcome header with quick action panel */}
-      <div className="mb-3.5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mb-3.5 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <h1 className="text-3xl font-extrabold text-foreground font-heading tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground font-heading tracking-tight text-balance">
             {greeting}, {userName} 👋
           </h1>
-          <p className="mt-0.5 text-base text-muted-foreground font-medium">
+          <p className="mt-0.5 text-sm sm:text-base text-muted-foreground font-medium">
             Here&apos;s what&apos;s happening with your business today.
           </p>
         </div>
@@ -111,20 +121,20 @@ export default async function DashboardPage() {
             <input
               type="text"
               name="search"
-              placeholder="Search invoices by number or customer…"
+              placeholder="Search invoice no. or customer…"
               className="h-8.5 w-64 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] pl-8.5 pr-3 text-xs text-[#0F172A] placeholder:text-[#94A3B8] transition-all focus:w-72 focus:border-[#4F46E5] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/10"
             />
           </form>
 
           {canEdit && (
-            <div className="flex gap-2">
-              <Link href="/customers/new" className="shrink-0">
-                <Button variant="outline" className="h-8.5 px-3 rounded-lg font-bold text-sm cursor-pointer transition-transform hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
+              <Link href="/customers/new" className="min-w-0 sm:shrink-0">
+                <Button variant="outline" className="w-full sm:w-auto h-9.5 sm:h-8.5 px-3 rounded-lg font-bold text-sm cursor-pointer transition-transform hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0">
                   <Plus className="size-3.5 shrink-0" strokeWidth={2} /> <span className="whitespace-nowrap">Add Customer</span>
                 </Button>
               </Link>
-              <Link href="/invoices/new" className="shrink-0">
-                <Button className="h-8.5 px-3 rounded-lg font-bold text-sm bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-md hover:shadow-lg cursor-pointer transition-all hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0">
+              <Link href="/invoices/new" className="min-w-0 sm:shrink-0">
+                <Button className="w-full sm:w-auto h-9.5 sm:h-8.5 px-3 rounded-lg font-bold text-sm bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-md hover:shadow-lg cursor-pointer transition-all hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0">
                   <Plus className="size-3.5 shrink-0" strokeWidth={2} /> <span className="whitespace-nowrap">New Invoice</span>
                 </Button>
               </Link>
@@ -134,7 +144,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Row 1 — Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5">
         <StatCard
           label="Yearly Revenue"
           value={formatPaiseAsInr(stats.revenueThisFyPaise)}
@@ -180,9 +190,9 @@ export default async function DashboardPage() {
       </div>
 
       {/* Row 2 — Interactive Charts & GST breakdown */}
-      <div className="mt-2.5 grid gap-3 lg:grid-cols-3">
+      <div className="mt-2.5 grid gap-3 xl:grid-cols-3">
         {/* Left Side Chart wrapper component */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-2">
           <DashboardChart
             initialSalesData={salesData}
             fySalesData={fySalesData}
@@ -236,9 +246,9 @@ export default async function DashboardPage() {
       </div>
 
       {/* Row 3 — Recent Invoices List & Quick Actions grid */}
-      <div className="mt-2.5 grid gap-3 lg:grid-cols-3">
+      <div className="mt-2.5 grid gap-3 xl:grid-cols-3">
         {/* Recent Invoices Panel */}
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:col-span-2 flex flex-col justify-between">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm xl:col-span-2 flex flex-col justify-between">
           <div className="flex items-center justify-between border-b border-border/40 px-4 py-2.5">
             <div>
               <h3 className="text-base font-bold text-foreground font-heading tracking-tight">
@@ -255,12 +265,32 @@ export default async function DashboardPage() {
             </Link>
           </div>
 
-          <div className="overflow-x-auto flex-1">
+          <div className="flex-1">
             {recentInvoices.length === 0 ? (
               <div className="px-4 py-6 text-center text-sm text-muted-foreground font-medium">
                 No invoices found.
               </div>
             ) : (
+              <>
+              {/* Phones: one card per invoice, the same facts as the table row. */}
+              <ul className="divide-y divide-border/40 md:hidden">
+                {recentInvoices.map((inv) => (
+                  <li key={inv.id}>
+                    <Link href={`/invoices/${inv.id}`} className="flex items-start justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/20 active:bg-muted/30">
+                      <div className="min-w-0">
+                        <p className="font-mono text-sm font-bold text-indigo-600">{inv.invoice_number}</p>
+                        <p className="mt-0.5 text-sm font-medium text-foreground [overflow-wrap:anywhere]">{inv.customer_name}</p>
+                        <p className="mt-0.5 text-xs font-medium text-muted-foreground">{inv.invoice_date}</p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <span className="text-[15px] font-bold text-foreground tabular-nums">{formatPaiseAsInr(inv.grand_total_paise)}</span>
+                        <InvoiceStatusBadge status={recentStatusLabel(inv.status)} />
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-left text-sm border-collapse">
                 <thead>
                   <tr className="border-b border-border/40 bg-muted/20">
@@ -297,18 +327,14 @@ export default async function DashboardPage() {
                         {formatPaiseAsInr(inv.grand_total_paise)}
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
-                        <InvoiceStatusBadge status={
-                          inv.status === 'draft' ? 'Draft' :
-                            inv.status === 'sent' ? 'Sent' :
-                              inv.status === 'paid' ? 'Paid' :
-                                inv.status === 'refund_due' ? 'Refund Due' :
-                                  inv.status === 'partially_paid' ? 'Partial' : 'Overdue'
-                        } />
+                        <InvoiceStatusBadge status={recentStatusLabel(inv.status)} />
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              </div>
+              </>
             )}
           </div>
         </div>
