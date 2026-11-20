@@ -34,10 +34,11 @@ export function useUserDirectory(users: UserItem[]) {
   };
 
   const filteredUsers = useMemo(() => {
+    const query = userSearch.trim().toLowerCase();
     return users.filter((u) => {
       const matchSearch =
-        (u.displayName && u.displayName.toLowerCase().includes(userSearch.toLowerCase())) ||
-        (u.businessName && u.businessName.toLowerCase().includes(userSearch.toLowerCase()));
+        query === '' ||
+        [u.displayName, u.email, u.businessName].some((value) => value?.toLowerCase().includes(query));
       const matchRole = effectiveRoleFilter === 'all' ? true : u.role === effectiveRoleFilter;
       return matchSearch && matchRole;
     });

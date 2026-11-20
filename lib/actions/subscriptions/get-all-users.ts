@@ -14,6 +14,7 @@ export const getAllUsers = createAuthenticatedAction(
       .select({
         id: users.id,
         displayName: users.display_name,
+        email: users.email,
         role: users.role,
         createdAt: users.created_at,
         businessId: users.business_id,

@@ -9,6 +9,7 @@ import { formatIstDate } from '@/lib/invoices/ist-date';
 import { removeTeamMember } from '@/lib/actions/team/remove-team-member';
 import { changeTeamMemberRole } from '@/lib/actions/team/change-team-member-role';
 import { roleLabel } from '@/components/app/current-user-role';
+import { cn } from '@/lib/utils';
 import type { TeamMember } from './types';
 
 export interface MembersListProps {
@@ -16,6 +17,7 @@ export interface MembersListProps {
   canInviteAccountant?: boolean;
   onMemberRemoved: () => void;
   onRoleChanged?: () => void;
+  embedded?: boolean;
 }
 
 export function MembersList({
@@ -23,6 +25,7 @@ export function MembersList({
   canInviteAccountant = false,
   onMemberRemoved,
   onRoleChanged,
+  embedded = false,
 }: MembersListProps) {
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [pendingRoleChange, setPendingRoleChange] = useState<{
@@ -88,8 +91,8 @@ export function MembersList({
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-3">
-      <div className="flex items-center justify-between">
+    <div className={cn('relative min-w-0 space-y-3', !embedded && 'rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs')}>
+      <div className={embedded ? 'sr-only' : 'flex items-center justify-between'}>
         <div className="flex items-center gap-2">
           <UserCheck className="size-4 text-primary shrink-0" />
           <h3 className="text-sm font-bold text-foreground">Team Members ({members.length})</h3>
@@ -201,19 +204,19 @@ export function MembersList({
           return (
             <div key={member.id} className="rounded-lg border border-border p-3 space-y-2 bg-muted/20">
               <div className="flex items-start justify-between gap-2">
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-foreground">{displayName}</span>
+                    <span className="min-w-0 text-xs font-bold text-foreground [overflow-wrap:anywhere]">{displayName}</span>
                     {member.isYou && (
                       <span className="rounded bg-primary/10 px-1 py-0.5 text-[9px] font-bold text-primary">
                         You
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] font-mono text-muted-foreground mt-0.5">{member.email || '—'}</p>
+                  <p className="text-[11px] font-mono text-muted-foreground mt-0.5 [overflow-wrap:anywhere]">{member.email || '—'}</p>
                 </div>
 
-                <div className="flex flex-col items-end gap-1.5">
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
                   {renderRoleBadge(member.role)}
                   {canManage && (
                     <select

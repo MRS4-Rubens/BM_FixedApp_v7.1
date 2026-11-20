@@ -380,7 +380,7 @@ describe('DEBT-003B Markup Characterization Snapshot', () => {
       businessId: 'biz-9',
       businessName: 'Iota Digital Ventures',
     },
-  ];
+  ].map((user, index) => ({ ...user, email: index === 2 ? null : `${user.id}@example.com` }));
 
   const statsFixture = {
     totalBusinesses: 9,

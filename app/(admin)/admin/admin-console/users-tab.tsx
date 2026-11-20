@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, ChevronLeft, ChevronRight, Edit3 } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Edit3, Check, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { getVisiblePageNumbers, ROWS_PER_PAGE } from './pagination';
@@ -16,6 +16,8 @@ interface UsersTabProps {
   effectiveRoleFilter: UserRoleFilter;
   totalUserPages: number;
   safeUserPage: number;
+  copiedKey: string | null;
+  onCopy: (text: string, key: string) => void;
   onChangeUserSearch: (value: string) => void;
   onChangeUserRoleFilter: (role: UserRoleFilter) => void;
   onSetUserPage: (page: number | ((p: number) => number)) => void;
@@ -31,6 +33,8 @@ export function UsersTab({
   effectiveRoleFilter,
   totalUserPages,
   safeUserPage,
+  copiedKey,
+  onCopy,
   onChangeUserSearch,
   onChangeUserRoleFilter,
   onSetUserPage,
@@ -54,14 +58,14 @@ export function UsersTab({
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search users by name or business affiliation..."
+            placeholder="Search users by name, email, or business affiliation..."
             value={userSearch}
             onChange={(e) => onChangeUserSearch(e.target.value)}
             className="h-9.5 w-full rounded-lg border border-border bg-background pl-9.5 pr-8 text-sm font-medium outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
           />
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto py-0.5">
           {roleFilterOptions.map((r) => (
             <button
               key={r}
@@ -82,14 +86,14 @@ export function UsersTab({
 
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
+          <table className="w-full table-auto text-left text-sm border-collapse [&_th]:align-middle [&_td]:align-middle">
             <thead>
               <tr className="border-b border-border bg-muted/40 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                <th className="px-4 py-3">User Profile</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Business Affiliation</th>
-                <th className="px-4 py-3">Member Since</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th scope="col" className="w-full min-w-[24rem] px-4 py-3 whitespace-nowrap">User Profile</th>
+                <th scope="col" className="w-px px-4 py-3 text-center whitespace-nowrap">Role</th>
+                <th scope="col" className="min-w-[16rem] px-4 py-3 whitespace-nowrap">Business Affiliation</th>
+                <th scope="col" className="w-px px-4 py-3 text-center whitespace-nowrap">Member Since</th>
+                <th scope="col" className="w-px px-4 py-3 text-center whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40 font-medium">
@@ -101,6 +105,7 @@ export function UsersTab({
                 </tr>
               ) : (
                 paginatedUsers.map((u) => {
+                  const email = u.email?.trim() || null;
                   const initials = (u.displayName || 'User')
                     .split(' ')
                     .map((p) => p[0])
@@ -111,17 +116,38 @@ export function UsersTab({
                   return (
                     <tr key={u.id} className="hover:bg-muted/15 transition-colors">
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex min-w-[22rem] items-center gap-2.5">
                           <div className="flex size-7.5 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-bold text-white shrink-0">
                             {initials}
                           </div>
-                          <span className="font-bold text-foreground text-sm">
-                            {u.displayName || 'No Name Set'}
-                          </span>
+                          <div className="min-w-0 flex-1">
+                            <span className="block font-bold text-foreground text-sm [overflow-wrap:anywhere]">
+                              {u.displayName || 'No Name Set'}
+                            </span>
+                            <div className="mt-0.5 flex items-start gap-1.5 text-xs font-medium text-muted-foreground">
+                              <span className="shrink-0 whitespace-nowrap">Email ID:</span>
+                              <span className="min-w-0 [overflow-wrap:anywhere]">{email ?? 'Not available'}</span>
+                              {email && (
+                                <button
+                                  type="button"
+                                  onClick={() => onCopy(email, `email-${u.id}`)}
+                                  className="shrink-0 hover:text-indigo-600 transition cursor-pointer"
+                                  aria-label="Copy email address"
+                                  title="Copy email address"
+                                >
+                                  {copiedKey === `email-${u.id}` ? (
+                                    <Check className="size-3.5 text-emerald-700" />
+                                  ) : (
+                                    <Copy className="size-3.5" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </td>
 
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
                         <span
                           className={cn(
                             'rounded px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider border',
@@ -136,17 +162,17 @@ export function UsersTab({
 
                       <td className="px-4 py-3">
                         {u.businessName ? (
-                          <span className="font-semibold text-foreground text-sm">{u.businessName}</span>
+                          <span className="block max-w-[28rem] font-semibold text-foreground text-sm [overflow-wrap:anywhere]">{u.businessName}</span>
                         ) : (
                           <span className="text-xs text-muted-foreground italic">Unassigned</span>
                         )}
                       </td>
 
-                      <td className="px-4 py-3 text-xs text-muted-foreground font-semibold">
+                      <td className="px-4 py-3 text-center whitespace-nowrap tabular-nums text-xs text-muted-foreground font-semibold">
                         {formatIstDate(u.createdAt)}
                       </td>
 
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
                         {u.businessId ? (
                           <button
                             type="button"
@@ -156,7 +182,7 @@ export function UsersTab({
                             className="inline-flex items-center gap-1 rounded-md border border-indigo-300 bg-background hover:bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400 transition cursor-pointer"
                             title="Correct GSTIN / State for affiliated business"
                           >
-                            <Edit3 className="size-3.5" />
+                            <Edit3 className="size-3.5 shrink-0" />
                             <span>Correct GSTIN / State</span>
                           </button>
                         ) : (

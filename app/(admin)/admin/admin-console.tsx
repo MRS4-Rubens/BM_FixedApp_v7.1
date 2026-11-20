@@ -160,6 +160,8 @@ export function AdminConsole({
           effectiveRoleFilter={userDir.effectiveRoleFilter}
           totalUserPages={userDir.totalUserPages}
           safeUserPage={userDir.safeUserPage}
+          copiedKey={copiedKey}
+          onCopy={handleCopy}
           onChangeUserSearch={userDir.changeUserSearch}
           onChangeUserRoleFilter={userDir.changeUserRoleFilter}
           onSetUserPage={userDir.setUserPage}

@@ -10,7 +10,7 @@ import {
 
 export function SkeletonGallery(): JSX.Element {
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-8">
       <div className="border-b pb-4">
         <h2 className="text-xl font-bold text-foreground">Skeleton Component Gallery</h2>
         <p className="text-sm text-muted-foreground">

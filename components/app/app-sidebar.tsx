@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { useTabletPortrait } from './app-sidebar/use-tablet-portrait'
 import { DesktopSidebar } from './app-sidebar/desktop-sidebar'
 import { MobileDrawer } from './app-sidebar/mobile-drawer'
+import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock'
 
 export function AppSidebar({
   user,
@@ -33,6 +34,7 @@ export function AppSidebar({
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mobileUserMenuOpen, setMobileUserMenuOpen] = useState(false)
+  usePageScrollLock(mobileOpen)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const mobileUserMenuRef = useRef<HTMLDivElement>(null)
 
@@ -58,6 +60,16 @@ export function AppSidebar({
     return () => {
       window.removeEventListener('bm:toggle-mobile-nav', handleToggleMobileNav)
     }
+  }, [])
+
+  // A drawer hidden by the desktop breakpoint must not retain its background scroll lock.
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 768px)')
+    const closeMobileDrawer = () => {
+      if (desktop.matches) setMobileOpen(false)
+    }
+    desktop.addEventListener('change', closeMobileDrawer)
+    return () => desktop.removeEventListener('change', closeMobileDrawer)
   }, [])
 
   useEffect(() => {

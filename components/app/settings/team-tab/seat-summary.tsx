@@ -9,9 +9,10 @@ export interface SeatSummaryProps {
   seats: TeamSeats;
   onSwitchTab?: (tab: string) => void;
   className?: string;
+  embedded?: boolean;
 }
 
-export function SeatSummary({ seats, onSwitchTab, className }: SeatSummaryProps) {
+export function SeatSummary({ seats, onSwitchTab, className, embedded = false }: SeatSummaryProps) {
   const isUnlimited = seats.limit === null;
   const userText = isUnlimited
     ? `${seats.used} users · Unlimited`
@@ -21,24 +22,22 @@ export function SeatSummary({ seats, onSwitchTab, className }: SeatSummaryProps)
     ? 0
     : Math.min(100, Math.round((seats.used / (seats.limit || 1)) * 100));
 
-  const planHint = isUnlimited
-    ? 'Unlimited team members on your plan'
-    : `${seats.members} active member${seats.members === 1 ? '' : 's'} · ${seats.openInvites} open invite${seats.openInvites === 1 ? '' : 's'}`;
+  const planHint = `${seats.members} active member${seats.members === 1 ? '' : 's'} · ${seats.openInvites} open invite${seats.openInvites === 1 ? '' : 's'}`;
 
   return (
-    <div className={cn('rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4', className)}>
+    <div className={cn(embedded ? 'space-y-3' : 'rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4', className)}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
             <Users className="size-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-foreground">Team Seats</h3>
+            <h3 className="text-sm font-bold text-foreground">{embedded ? 'Team Members' : 'Team Seats'}</h3>
             <p className="text-xs text-muted-foreground">{planHint}</p>
           </div>
         </div>
 
-        <div className="text-right">
+        <div className="text-left sm:text-right">
           <span className="text-sm font-extrabold text-foreground">{userText}</span>
         </div>
       </div>
@@ -47,7 +46,8 @@ export function SeatSummary({ seats, onSwitchTab, className }: SeatSummaryProps)
         <div
           role="progressbar"
           aria-label="Team seat usage"
-          aria-valuenow={seats.used}
+          aria-valuenow={Math.min(seats.used, seats.limit ?? seats.used)}
+          aria-valuetext={`${seats.used} of ${seats.limit} seats used`}
           aria-valuemin={0}
           aria-valuemax={seats.limit ?? undefined}
           className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
@@ -61,6 +61,10 @@ export function SeatSummary({ seats, onSwitchTab, className }: SeatSummaryProps)
           />
         </div>
       )}
+
+      <p className="text-[11px] text-muted-foreground">
+        {isUnlimited ? 'Unlimited team members on your plan. ' : ''}Open invitations reserve seats.
+      </p>
 
       {seats.overLimit && (
         <div

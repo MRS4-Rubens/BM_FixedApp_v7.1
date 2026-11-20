@@ -38,6 +38,7 @@ import { InviteForm } from '@/components/app/settings/team-tab/invite-form';
 import { InviteLinkPanel } from '@/components/app/settings/team-tab/invite-link-panel';
 import { MembersList } from '@/components/app/settings/team-tab/members-list';
 import { PendingInvites } from '@/components/app/settings/team-tab/pending-invites';
+import { TeamTab } from '@/components/app/settings/team-tab/team-tab';
 import type {
   TeamSeats,
   TeamMember,
@@ -46,6 +47,22 @@ import type {
 } from '@/components/app/settings/team-tab/types';
 
 describe('Team Tab Components (A2-TEAM-UI)', () => {
+  it('presents capacity and members in one overview before inviting, with role before email', () => {
+    const html = renderToStaticMarkup(React.createElement(TeamTab, {
+      initialData: {
+        members: [{ id: 'owner', name: 'Owner', email: 'owner@example.test', role: 'owner', isYou: true, createdAt: '2026-11-01' }],
+        invites: [],
+        seats: { used: 2, members: 1, openInvites: 1, limit: 3, overLimit: false },
+        canInvite: true, cannotInviteReason: null, cannotInviteCode: null, canInviteAccountant: false,
+      },
+    }));
+    expect(html.match(/aria-label="Team overview"/g)).toHaveLength(1);
+    expect(html).toContain('2 of 3 users');
+    expect(html).toContain('Open invitations reserve seats.');
+    expect(html.indexOf('owner@example.test')).toBeLessThan(html.indexOf('Invite a Team Member'));
+    expect(html.indexOf('name="invite-role"')).toBeLessThan(html.indexOf('type="email"'));
+    expect(html).not.toContain('>Team Seats</h3>');
+  });
   describe('SeatSummary', () => {
     it('renders "2 of 3 users" when limit is 3 and used is 2', () => {
       const seats: TeamSeats = {
