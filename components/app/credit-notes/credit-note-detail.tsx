@@ -375,7 +375,8 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
       <div id="cn-bg" className="flex flex-col xl:flex-row items-start gap-4">
         {/* Left Side: Credit Note Paper Preview Sheet (Flush Left, Max 860px on Screen) */}
         {/* Narrow screens: the paper is shrunk to the box width (whole page visible); real size when it fits. */}
-        <div ref={paperBoxRef} className="flex-1 min-w-0 w-full overflow-x-auto pb-2">
+        {/* Focusable so keyboard users can scroll the paper when it is wider than its box (WCAG scrollable-region-focusable). */}
+        <div ref={paperBoxRef} tabIndex={0} role="region" aria-label="Credit note preview" className="flex-1 min-w-0 w-full overflow-x-auto pb-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
           <div 
             id="cn-paper" 
             className={`w-full mx-auto rounded-xl bg-white shadow-sm border border-border overflow-hidden transition-all print:border-none print:shadow-none print:m-0 print:p-0 print:max-w-none print:w-full relative min-w-[790px] print:min-w-0 ${PAPER_FIT_CLASS}`}

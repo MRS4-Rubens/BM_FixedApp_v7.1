@@ -475,7 +475,8 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
         <div id="inv-bg" className="flex flex-col xl:flex-row items-start gap-4">
           {/* Left Side: Invoice Paper Preview Sheet */}
           {/* Narrow screens: the paper is shrunk to the box width (whole page visible); real size when it fits. */}
-          <div ref={paperBoxRef} className="flex-1 min-w-0 w-full overflow-x-auto pb-2">
+          {/* Focusable so keyboard users can scroll the paper when it is wider than its box (WCAG scrollable-region-focusable). */}
+          <div ref={paperBoxRef} tabIndex={0} role="region" aria-label="Invoice preview" className="flex-1 min-w-0 w-full overflow-x-auto pb-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <div 
               id="inv-paper" 
               className={`w-full mx-auto rounded-xl bg-white shadow-sm border border-border overflow-hidden transition-all ${PAPER_FIT_CLASS}`}
