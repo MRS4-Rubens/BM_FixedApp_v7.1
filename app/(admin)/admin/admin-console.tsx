@@ -44,7 +44,7 @@ export function AdminConsole({
   const [identityBusiness, setIdentityBusiness] = useState<BusinessItem | null>(null);
   const isMounted = useIsClient();
 
-  const { copiedKey, handleCopy } = useCopyFeedback();
+  const { copiedKey, failedKey, handleCopy } = useCopyFeedback();
   const bizDir = useBusinessDirectory(businesses);
   const userDir = useUserDirectory(users);
   const claims = useClaimActions();
@@ -99,6 +99,12 @@ export function AdminConsole({
       />
 
       {claimActionErrorBanner(claims.claimActionError)}
+
+      {failedKey && (
+        <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-semibold text-destructive">
+          Couldn&apos;t copy: your browser blocked the clipboard. Select the text and copy it by hand.
+        </p>
+      )}
 
       {/* 4. TAB CONTENT */}
 
