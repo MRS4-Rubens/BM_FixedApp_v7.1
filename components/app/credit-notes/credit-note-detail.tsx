@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { PAPER_FIT_CLASS, useFitPaper } from '@/components/app/invoices/use-fit-paper';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
@@ -56,6 +57,8 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
   const isOwner = useIsOwner();
   const canEdit = useCanEdit();
   const [printSize, setPrintSize] = useState<'A4' | 'A5'>('A4');
+  // Same on-screen width as the invoice print view for A4 and A5 (~788px).
+  const { boxRef: paperBoxRef, paperStyle } = useFitPaper(790);
   const [isPending, startTransition] = useTransition();
   const [isDownloading, setIsDownloading] = useState(false);
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
@@ -155,7 +158,7 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
     <div className="space-y-4">
       {/* Top Header Actions Block (Hidden during print) */}
       <div className="space-y-4 print:hidden">
-        <div id="cn-controls" className="flex flex-col gap-4 md:flex-row md:items-center justify-between pb-3 border-b border-border">
+        <div id="cn-controls" className="flex flex-col gap-4 xl:flex-row xl:items-center justify-between pb-3 border-b border-border">
           {/* Left: Back Arrow + Title + Metadata */}
           <div className="flex items-center gap-3">
             <Link 
@@ -369,13 +372,15 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
       </div>
 
       {/* Main Dashboard Layout: Left Paper Sheet + Right 360px Sidebar */}
-      <div id="cn-bg" className="flex flex-col lg:flex-row items-start gap-4">
+      <div id="cn-bg" className="flex flex-col xl:flex-row items-start gap-4">
         {/* Left Side: Credit Note Paper Preview Sheet (Flush Left, Max 860px on Screen) */}
-        <div className="flex-1 min-w-0 w-full overflow-x-auto pb-2">
+        {/* Narrow screens: the paper is shrunk to the box width (whole page visible); real size when it fits. */}
+        <div ref={paperBoxRef} className="flex-1 min-w-0 w-full overflow-x-auto pb-2">
           <div 
             id="cn-paper" 
-            className="w-full mx-auto rounded-xl bg-white shadow-sm border border-border overflow-hidden transition-all print:border-none print:shadow-none print:m-0 print:p-0 print:max-w-none print:w-full relative" 
+            className={`w-full mx-auto rounded-xl bg-white shadow-sm border border-border overflow-hidden transition-all print:border-none print:shadow-none print:m-0 print:p-0 print:max-w-none print:w-full relative min-w-[790px] print:min-w-0 ${PAPER_FIT_CLASS}`}
             style={{ 
+              ...paperStyle,
               maxWidth: '860px', 
               fontFamily: 'inherit' 
             }}
@@ -392,7 +397,7 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
         </div>
 
         {/* Right Side: High-Density Sidebar */}
-        <div id="cn-sidebar" className="w-full lg:w-[370px] xl:w-[390px] 2xl:w-[410px] shrink-0 space-y-2 print:hidden transition-all duration-200">
+        <div id="cn-sidebar" className="w-full xl:w-[390px] 2xl:w-[410px] shrink-0 space-y-2 print:hidden transition-all duration-200">
           
           {/* CARD 1: Original Invoice Reference */}
           <div className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm space-y-2">

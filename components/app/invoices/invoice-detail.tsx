@@ -18,6 +18,7 @@ import {
   RotateCcw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PAPER_FIT_CLASS, useFitPaper } from '@/components/app/invoices/use-fit-paper'
 import { Tooltip } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useState, useTransition, useEffect } from 'react'
@@ -116,6 +117,8 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
     }
     return 'A5'
   })
+  // The on-screen print view is ~788px wide for both A4 and A5, so narrow screens fit 790px (A5 at 700px was clipped).
+  const { boxRef: paperBoxRef, paperStyle } = useFitPaper(790)
   const [isDownloading, setIsDownloading] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -295,7 +298,8 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
     <div className="space-y-4">
       <div className="space-y-4 print:hidden">
         {/* Top Header Actions Block */}
-        <div id="inv-controls" className="flex flex-col gap-3 md:flex-row md:items-center justify-between pb-3 border-b border-border">
+        {/* Title and action buttons side by side only from 1280px; below that the buttons get their own row. */}
+        <div id="inv-controls" className="flex flex-col gap-3 xl:flex-row xl:items-center justify-between pb-3 border-b border-border">
           <div className="flex items-center gap-3">
             <Link 
               href="/invoices" 
@@ -349,7 +353,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
             </div>
           </div>
 
-          <div className="flex flex-col sm:items-end gap-2 shrink-0 w-full sm:w-auto">
+          <div className="flex flex-col xl:items-end gap-2 xl:shrink-0 w-full xl:w-auto">
             {actionMessage && (
               <span className={cn('text-xs font-bold', actionMessage.type === 'error' ? 'text-destructive' : 'text-emerald-700 dark:text-emerald-400')}>
                 {actionMessage.text}
@@ -468,15 +472,18 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
         </div>
 
         {/* Main Dashboard Layout: Flexible Invoice Paper + Proportional Responsive Sidebar */}
-        <div id="inv-bg" className="flex flex-col lg:flex-row items-start gap-4">
+        <div id="inv-bg" className="flex flex-col xl:flex-row items-start gap-4">
           {/* Left Side: Invoice Paper Preview Sheet */}
-          <div className="flex-1 min-w-0 w-full overflow-x-auto pb-2">
+          {/* Narrow screens: the paper is shrunk to the box width (whole page visible); real size when it fits. */}
+          <div ref={paperBoxRef} className="flex-1 min-w-0 w-full overflow-x-auto pb-2">
             <div 
               id="inv-paper" 
-              className="w-full mx-auto rounded-xl bg-white shadow-sm border border-border overflow-hidden transition-all" 
+              className={`w-full mx-auto rounded-xl bg-white shadow-sm border border-border overflow-hidden transition-all ${PAPER_FIT_CLASS}`}
               style={{ 
+                ...paperStyle,
                 maxWidth: '860px', 
-                minWidth: printSize === 'A5' ? '700px' : '790px',
+                // The print view is ~788px wide for A4 and A5; a narrower A5 paper clipped its right columns.
+                minWidth: '790px',
                 fontFamily: 'inherit' 
               }}
             >
@@ -490,7 +497,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
           </div>
 
           {/* Right Side: Proportional Responsive Sidebar Hub */}
-          <div id="inv-sidebar" className="w-full lg:w-[370px] xl:w-[390px] 2xl:w-[410px] shrink-0 space-y-2 print:hidden transition-all duration-200">
+          <div id="inv-sidebar" className="w-full xl:w-[390px] 2xl:w-[410px] shrink-0 space-y-2 print:hidden transition-all duration-200">
             
             {/* COMBINED CARD 1: Lifecycle Pipeline & Financial Settlement Hub */}
             <div className="rounded-xl border border-border bg-card px-3 py-2 shadow-sm">
