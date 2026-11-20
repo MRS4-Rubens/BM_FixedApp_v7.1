@@ -445,7 +445,7 @@ export function ProfileSpotlightTour({
     return (
       <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
         <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-0 h-full w-full" />
-        <div className="relative z-10 w-full max-w-lg rounded-2xl border border-emerald-200/80 bg-white p-7 sm:p-8 text-center shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+        <div data-viewport-dialog className="relative z-10 w-full max-w-lg rounded-2xl border border-emerald-200/80 bg-white p-7 sm:p-8 text-center shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
           
           <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-full bg-emerald-100 border-2 border-emerald-300 text-emerald-800 shadow-sm">
@@ -509,7 +509,7 @@ export function ProfileSpotlightTour({
   if (stepIndex === 0) {
     return (
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/75 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-        <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white px-4.5 pt-4.5 pb-4 sm:px-5.5 sm:pt-5 sm:pb-4.5 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+        <div data-viewport-dialog className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white px-4.5 pt-4.5 pb-4 sm:px-5.5 sm:pt-5 sm:pb-4.5 shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
           
           <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-emerald-800">

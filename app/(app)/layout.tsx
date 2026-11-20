@@ -76,7 +76,9 @@ export default async function AppLayout({
         </div>
         <main data-app-scroll-region className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain touch-momentum px-3 pt-4 sm:pt-2.5 sm:px-6 lg:pt-3 lg:px-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:pb-[max(2rem,env(safe-area-inset-bottom))] print:overflow-visible print:p-0">
           <CurrentUserRoleProvider role={user && isAppRole(user.role) ? user.role : 'owner'}>
+            <div data-desktop-canvas>
             {children}
+            </div>
           </CurrentUserRoleProvider>
         </main>
       </div>

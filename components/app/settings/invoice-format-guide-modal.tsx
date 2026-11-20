@@ -143,7 +143,7 @@ export function InvoiceFormatGuideModal({
       aria-labelledby="invoice-format-guide-title"
     >
       <div
-        ref={modalRef}
+        data-viewport-dialog data-contained-dialog ref={modalRef}
         className="relative flex flex-col w-full max-w-[850px] max-h-[90vh] bg-card border border-border shadow-2xl rounded-2xl overflow-hidden text-foreground"
       >
         {/* Sticky Header: Compact & balanced */}
@@ -178,7 +178,7 @@ export function InvoiceFormatGuideModal({
         </div>
 
         {/* Scrollable Content Body: Consistent spacing */}
-        <div className="flex-1 overflow-y-auto px-4 pt-2.5 pb-3.5 space-y-2.5">
+        <div className="min-h-0 min-w-0 flex-1 overflow-auto px-4 pt-2.5 pb-3.5 space-y-2.5">
           {/* SECTION 1: Statutory Indian GST Mandates (Rule 46(b)) */}
           <div className="rounded-xl border border-blue-200/80 bg-blue-50/60 p-2.5 space-y-1">
             <div className="flex items-center gap-2 text-blue-950 font-bold text-xs">

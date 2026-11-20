@@ -48,7 +48,9 @@ export default async function AdminLayout({
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden print:overflow-visible">
         <AppTopbar />
         <main data-app-scroll-region className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain p-4 md:p-6 lg:p-8 bg-muted/20 print:overflow-visible print:p-0">
-          <div className="max-w-7xl mx-auto">{children}</div>
+          <div data-desktop-canvas data-admin-canvas>
+            <div className="max-w-7xl mx-auto">{children}</div>
+          </div>
         </main>
       </div>
     </div>

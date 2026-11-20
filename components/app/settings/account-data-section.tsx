@@ -131,7 +131,7 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <Dialog.Popup className="relative w-full max-w-lg bg-card border border-border shadow-2xl rounded-2xl p-5 text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto">
+          <Dialog.Popup data-viewport-dialog data-form-dialog-frame className="relative w-full max-w-lg bg-card border border-border shadow-2xl rounded-2xl p-5 text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto">
             <Dialog.Close
               render={
                 <button
@@ -178,7 +178,9 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
               </div>
             )}
 
-            <form onSubmit={handleClosureSubmit} className="space-y-4">
+            <form data-complex-dialog-form onSubmit={handleClosureSubmit} className="space-y-4">
+<div data-dialog-body><div data-desktop-canvas data-modal-canvas style={{ minWidth: '472px' }}>
+
               <div>
                 <label
                   htmlFor="closure-confirm-gstin"
@@ -219,7 +221,9 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
+              
+</div></div>
+<div data-modal-footer className="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
                 <Button
                   type="button"
                   variant="outline"

@@ -6,6 +6,16 @@ import type { InvoiceDraftInput } from '@/lib/validations/invoice';
 import { searchProductOptions } from '@/lib/actions/products/search-product-options';
 import type { ProductOption } from '@/lib/pickers/types';
 
+function suggestionRect(el: HTMLInputElement) {
+  const rect = el.getBoundingClientRect();
+  const narrow = window.innerWidth < 1280;
+  const width = narrow ? Math.min(rect.width, window.innerWidth - 16) : rect.width;
+  const left = narrow ? Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) : rect.left;
+  const bottom = window.visualViewport?.height ?? window.innerHeight;
+  const top = narrow && rect.bottom + 200 > bottom && rect.top >= 200 ? rect.top - 200 : rect.bottom;
+  return { top: top + window.scrollY, left: left + window.scrollX, width, height: rect.height };
+}
+
 export function useProductSuggestions({
   setValue,
   lineItems,
@@ -49,13 +59,7 @@ export function useProductSuggestions({
   const updateInputRect = (el: HTMLInputElement | null) => {
     if (el) {
       setActiveInputRef(el);
-      const rect = el.getBoundingClientRect();
-      setActiveInputRect({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        height: rect.height,
-      });
+      setActiveInputRect(suggestionRect(el));
     } else {
       setActiveInputRef(null);
       setActiveInputRect(null);
@@ -67,12 +71,11 @@ export function useProductSuggestions({
 
     const handleUpdate = () => {
       const rect = activeInputRef.getBoundingClientRect();
-      setActiveInputRect({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-        height: rect.height,
-      });
+      if (window.innerWidth < 1280 && (rect.right <= 0 || rect.left >= window.innerWidth || rect.bottom <= 0 || rect.top >= window.innerHeight)) {
+        setIsProdSuggestionsOpen(false);
+        return;
+      }
+      setActiveInputRect(suggestionRect(activeInputRef));
     };
 
     window.addEventListener('scroll', handleUpdate, true);

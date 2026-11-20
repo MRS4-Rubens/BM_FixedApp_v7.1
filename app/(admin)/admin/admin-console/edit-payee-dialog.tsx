@@ -84,7 +84,7 @@ export function EditPayeeDialog({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <Dialog.Popup className="w-full max-w-xl rounded-xl border border-border bg-card p-5 shadow-xl relative animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto">
+          <Dialog.Popup data-viewport-dialog className="w-full max-w-xl rounded-xl border border-border bg-card p-5 shadow-xl relative animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto">
             <Dialog.Close
               render={
                 <button

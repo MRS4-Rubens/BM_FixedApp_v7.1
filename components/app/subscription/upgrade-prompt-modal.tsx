@@ -51,7 +51,7 @@ export function UpgradePromptModal({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-          <Dialog.Popup className="relative w-full max-w-lg sm:max-w-[480px] rounded-2xl border border-indigo-100 bg-white shadow-2xl overflow-hidden max-h-[92dvh] overflow-y-auto animate-in zoom-in-95 duration-200">
+          <Dialog.Popup data-viewport-dialog className="relative w-full max-w-lg sm:max-w-[480px] rounded-2xl border border-indigo-100 bg-white shadow-2xl overflow-hidden max-h-[92dvh] overflow-y-auto animate-in zoom-in-95 duration-200">
             {/* Top Gradient Banner */}
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-4 sm:px-5 sm:py-4.5 text-white">
               <div className="absolute -top-12 -right-12 size-36 rounded-full bg-white/10 blur-xl pointer-events-none" />

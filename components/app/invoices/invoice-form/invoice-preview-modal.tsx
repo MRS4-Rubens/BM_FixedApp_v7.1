@@ -1,6 +1,7 @@
 'use client';
 
 import { createPortal } from 'react-dom';
+import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock';
 import { Eye, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InvoicePrintView, type InvoicePrintViewProps } from '../invoice-print-view';
@@ -46,6 +47,7 @@ export function InvoicePreviewModal({
   setShowTemplateUpgradeModal: (v: boolean) => void;
   setValue: UseFormSetValue<InvoiceDraftInput>;
 }) {
+  usePageScrollLock(isPreviewOpen);
   const templateWidth = 780 + (displayPrefs.showHsn ? 70 : 0) + (displayPrefs.discEnabled ? 70 : 0);
   const previewMaxWidth = `${templateWidth}px`;
   const modalMaxWidth = `${templateWidth + 80}px`;
@@ -55,11 +57,11 @@ export function InvoicePreviewModal({
       {mounted && isPreviewOpen && createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none animate-fadeIn print:hidden">
           <div
-            className="bg-background rounded-xl border border-border shadow-2xl w-full h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            data-invoice-preview-frame className="bg-background rounded-xl border border-border shadow-2xl w-full h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
             style={{ maxWidth: modalMaxWidth }}
           >
             {/* Modal Header */}
-            <div className="px-4 sm:px-6 py-2.5 border-b border-border flex flex-row items-center justify-between gap-4 bg-muted/20 overflow-x-auto shrink-0">
+            <div className="px-4 sm:px-6 py-2.5 border-b border-border flex flex-row items-center justify-between gap-4 bg-muted/20 overflow-x-auto shrink-0 max-xl:pr-14">
               {/* Left Side: Title */}
               <div className="flex items-center gap-2 shrink-0">
                 <Eye className="size-5 text-primary" />
@@ -147,7 +149,7 @@ export function InvoicePreviewModal({
                     type="button"
                     aria-label="Close dialog"
                     onClick={() => setIsPreviewOpen(false)}
-                    className="rounded-lg p-1.5 text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all border border-red-500/25 shadow-[0_0_8px_rgba(239,68,68,0.12)] hover:border-red-500/45 cursor-pointer"
+                    className="max-xl:fixed max-xl:right-7 max-xl:top-7 max-xl:z-10 max-xl:bg-card rounded-lg p-1.5 text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all border border-red-500/25 shadow-[0_0_8px_rgba(239,68,68,0.12)] hover:border-red-500/45 cursor-pointer"
                   >
                     <span className="sr-only">Close</span>
                     <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -159,11 +161,13 @@ export function InvoicePreviewModal({
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 bg-zinc-100 dark:bg-zinc-900/60 flex justify-center select-text">
+            <div className="min-h-0 min-w-0 flex-1 overflow-auto p-6 bg-zinc-100 dark:bg-zinc-900/60 select-text">
               <div
                 className="w-full bg-white shadow-md border border-border transition-all print:p-0 print:border-none print:shadow-none print:rounded-none"
                 style={{
                   maxWidth: previewMaxWidth,
+                  minWidth: previewMaxWidth,
+                  marginInline: 'auto',
                   fontFamily: 'inherit'
                 }}
               >

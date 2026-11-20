@@ -103,7 +103,7 @@ export function VoidPaymentDialog({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <Dialog.Popup className="relative w-full max-w-lg bg-card border border-border shadow-2xl rounded-2xl p-4 sm:p-5 text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto">
+          <Dialog.Popup data-viewport-dialog data-form-dialog-frame className="relative w-full max-w-lg bg-card border border-border shadow-2xl rounded-2xl p-4 sm:p-5 text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto">
             {/* Close Button */}
             <Dialog.Close
               render={
@@ -197,7 +197,9 @@ export function VoidPaymentDialog({
             )}
 
             {/* Void Reason & Notes Form */}
-            <form onSubmit={handleSubmit} className="space-y-2.5">
+            <form data-complex-dialog-form onSubmit={handleSubmit} className="space-y-2.5">
+<div data-dialog-body><div data-desktop-canvas data-modal-canvas style={{ minWidth: '472px' }}>
+
               <div>
                 <label htmlFor="void-payment-reason" className="block text-xs font-bold text-foreground mb-1">
                   Reason for Voiding <span className="text-destructive">*</span>
@@ -237,7 +239,9 @@ export function VoidPaymentDialog({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border mt-3">
+              
+</div></div>
+<div data-modal-footer className="flex items-center justify-end gap-2.5 pt-2 border-t border-border mt-3">
                 <Button
                   type="button"
                   variant="outline"

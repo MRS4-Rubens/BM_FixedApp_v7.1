@@ -87,7 +87,7 @@ export function BusinessIdentityDialog({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <Dialog.Popup className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-5 shadow-xl relative animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto text-slate-900">
+          <Dialog.Popup data-viewport-dialog data-form-dialog-frame className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-5 shadow-xl relative animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto text-slate-900">
             <Dialog.Close
               render={
                 <button
@@ -117,7 +117,9 @@ export function BusinessIdentityDialog({
               }
             />
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form data-complex-dialog-form onSubmit={handleSubmit} className="space-y-4">
+<div data-dialog-body><div data-desktop-canvas data-modal-canvas style={{ minWidth: '472px' }}>
+
               {formError && (
                 <div
                   role="alert"
@@ -214,7 +216,9 @@ export function BusinessIdentityDialog({
                 ) : null}
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+              
+</div></div>
+<div data-modal-footer className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => onOpenChange(false)}

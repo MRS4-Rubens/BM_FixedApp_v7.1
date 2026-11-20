@@ -1,5 +1,8 @@
 'use client';
 
+import { createPortal } from 'react-dom';
+import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock';
+import { useIsClient } from '@/lib/hooks/use-is-client';
 import { X, CheckCircle2, Clock, AlertCircle, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatIstDate } from '@/lib/invoices/ist-date';
@@ -17,21 +20,23 @@ export function ReceiptModal({
   businessLegalName,
   onClose,
 }: ReceiptModalProps) {
-  if (!selectedReceipt) return null;
+  const mounted = useIsClient();
+  usePageScrollLock(Boolean(selectedReceipt));
+  if (!selectedReceipt || !mounted) return null;
 
   const handlePrintReceipt = () => {
     window.print();
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs print:p-0 print:bg-white">
-      <div className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl print:border-none print:shadow-none print:p-0">
+      <div data-viewport-dialog className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl print:border-none print:shadow-none print:p-0">
         {/* Close Button (Hidden in Print) */}
         <button
           type="button"
           onClick={onClose}
           className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer print:hidden"
-          title="Close"
+          title="Close" aria-label="Close receipt"
         >
           <X className="size-5" />
         </button>
@@ -132,6 +137,6 @@ export function ReceiptModal({
         </div>
       </div>
     </div>
-  );
+  , document.body);
 }
 
