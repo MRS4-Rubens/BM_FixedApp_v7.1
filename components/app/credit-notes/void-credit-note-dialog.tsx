@@ -89,7 +89,7 @@ export function VoidCreditNoteDialog({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <Dialog.Popup data-viewport-dialog data-contained-dialog className="w-full max-w-lg bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[min(92vh,100dvh_-_24px)] animate-in zoom-in-95 duration-150">
+          <Dialog.Popup data-viewport-dialog data-contained-dialog className="w-full max-w-lg bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[min(92vh,100dvh_-_24px_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px))] animate-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-2 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">

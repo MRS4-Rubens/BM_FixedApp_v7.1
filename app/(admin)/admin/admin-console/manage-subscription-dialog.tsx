@@ -79,7 +79,7 @@ export function ManageSubscriptionDialog({
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200" />
           <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            <Dialog.Popup data-viewport-dialog className="w-full max-w-2xl rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 max-h-[min(92vh,100dvh_-_24px)] overflow-y-auto">
+            <Dialog.Popup data-viewport-dialog className="w-full max-w-2xl rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 max-h-[min(92vh,100dvh_-_24px_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px))] overflow-y-auto">
               <Dialog.Close
                 render={
                   <button
