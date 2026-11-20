@@ -70,44 +70,6 @@ export function InviteForm({
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-3">
-        <div>
-          <label htmlFor={`${id}-email`} className="block text-xs font-semibold text-foreground mb-1.5">
-            E-mail address
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative flex-1">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <input
-                id={`${id}-email`}
-                type="email"
-                autoComplete="off"
-                disabled={!canInvite || isPending}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="colleague@yourbusiness.com"
-                className="w-full h-9 rounded-lg border border-border bg-background pl-9 pr-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={!canInvite || isPending}
-              className="h-9 font-bold text-xs sm:text-sm gap-1.5 shrink-0"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="size-3.5 animate-spin" />
-                  <span>Sending…</span>
-                </>
-              ) : (
-                <>
-                  <UserPlus className="size-3.5" />
-                  <span>Send invite</span>
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-
         <fieldset className="space-y-1.5 pt-1">
           <legend className="block text-xs font-semibold text-foreground mb-1.5">
             Role
@@ -187,6 +149,44 @@ export function InviteForm({
             </label>
           </div>
         </fieldset>
+
+        <div>
+          <label htmlFor={`${id}-email`} className="block text-xs font-semibold text-foreground mb-1.5">
+            E-mail address
+          </label>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+              <input
+                id={`${id}-email`}
+                type="email"
+                autoComplete="off"
+                disabled={!canInvite || isPending}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="colleague@yourbusiness.com"
+                className="w-full h-9 rounded-lg border border-border bg-background pl-9 pr-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={!canInvite || isPending}
+              className="h-9 font-bold text-xs sm:text-sm gap-1.5 shrink-0"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" />
+                  <span>Sending…</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="size-3.5" />
+                  <span>Send invite</span>
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
 
         {error && (
           <div role="alert" className="flex items-center gap-1.5 text-xs font-semibold text-destructive mt-1">

@@ -60,6 +60,7 @@ export interface BusinessItem {
 export interface UserItem {
   id: string;
   displayName: string | null;
+  email: string | null;
   role: string;
   createdAt: string;
   businessId: string | null;

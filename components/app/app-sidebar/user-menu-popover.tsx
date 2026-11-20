@@ -34,7 +34,7 @@ export function UserMenuPopover({
   return (
     <div
       className={cn(
-        'relative border-t border-border/40 transition-all duration-300 z-20',
+        'relative min-h-16 shrink-0 border-t border-border/40 transition-all duration-300 z-20',
         isCollapsed ? 'p-1.5' : 'px-3 py-2',
       )}
       ref={userMenuRef}

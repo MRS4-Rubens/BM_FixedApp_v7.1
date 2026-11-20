@@ -133,8 +133,19 @@ export function TeamTab({
         </p>
       </div>
 
-      {/* 1. Seat Summary Card */}
-      <SeatSummary seats={data.seats} onSwitchTab={onSwitchTab} />
+      {/* One card owns both capacity and the member list. */}
+      <section aria-label="Team overview" className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
+        <SeatSummary seats={data.seats} onSwitchTab={onSwitchTab} embedded />
+        <div className="min-w-0 border-t border-border/60 pt-1">
+          <MembersList
+            members={data.members}
+            canInviteAccountant={data.canInviteAccountant}
+            onMemberRemoved={handleMutationSuccess}
+            onRoleChanged={handleMutationSuccess}
+            embedded
+          />
+        </div>
+      </section>
 
       {/* 2. Invite Form */}
       <InviteForm
@@ -155,14 +166,6 @@ export function TeamTab({
           onDone={() => setActiveInviteResult(null)}
         />
       )}
-
-      {/* 4. Members List */}
-      <MembersList
-        members={data.members}
-        canInviteAccountant={data.canInviteAccountant}
-        onMemberRemoved={handleMutationSuccess}
-        onRoleChanged={handleMutationSuccess}
-      />
 
       {/* 5. Pending Invites */}
       <PendingInvites

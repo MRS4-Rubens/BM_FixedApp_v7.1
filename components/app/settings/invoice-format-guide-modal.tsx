@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
+import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock';
 import {
   Sparkles,
   X,
@@ -97,14 +98,7 @@ export function InvoiceFormatGuideModal({
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  // Lock body scroll when modal is active
-  useEffect(() => {
-    if (!isOpen) return;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+  usePageScrollLock(isOpen);
 
   // Handle ESC key to close
   useEffect(() => {

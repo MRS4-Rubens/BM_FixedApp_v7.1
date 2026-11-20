@@ -74,7 +74,7 @@ export function MobileDrawer({
         </div>
 
         {/* Mobile Navigation List */}
-        <nav className="flex-1 overflow-y-auto px-3 pb-3 space-y-0.5 relative z-10">
+        <nav className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 pb-3 space-y-0.5 relative z-10">
           <div className="flex items-center gap-2 px-1 pt-3 pb-1">
             <span className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-muted-foreground select-none">
               Menu

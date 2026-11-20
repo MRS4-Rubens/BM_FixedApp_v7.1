@@ -88,7 +88,7 @@ export function NotificationsTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="@container/notifications space-y-6">
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <Bell className="size-5 text-foreground shrink-0" aria-hidden="true" />
@@ -106,7 +106,7 @@ export function NotificationsTab() {
           </div>
           <div className="min-w-0">
             <h3 className="text-sm font-bold text-foreground">E-mail notifications</h3>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
               {settings.email ? `Sent to ${settings.email}` : 'Your account has no e-mail address, so nothing can be e-mailed.'}
             </p>
           </div>
@@ -142,42 +142,51 @@ export function NotificationsTab() {
 
         <fieldset className="space-y-2" disabled={saving}>
           <legend className="text-sm font-bold text-foreground">Routine updates</legend>
-          {(
-            [
-              { value: 'daily', label: 'One summary e-mail every morning (around 9 AM)' },
-              { value: 'off', label: 'No summary e-mail (urgent ones still come straight away)' },
-            ] as const
-          ).map((option) => (
-            <label key={option.value} className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer">
-              <input
-                type="radio"
-                name="digest"
-                value={option.value}
-                checked={prefs.digest === option.value}
-                onChange={() => {
-                  setMessage(null);
-                  setPrefs({ ...prefs, digest: option.value });
-                }}
-                className="size-4 accent-indigo-600"
-              />
-              {option.label}
-            </label>
-          ))}
+          <div className="grid grid-cols-1 gap-2.5 @min-[30rem]/notifications:grid-cols-2">
+            {(
+              [
+                { value: 'daily', title: 'Daily summary', label: 'One summary e-mail every morning (around 9 AM)' },
+                { value: 'off', title: 'No routine summary', label: 'No summary e-mail (urgent ones still come straight away)' },
+              ] as const
+            ).map((option) => (
+              <label key={option.value} className={cn(
+                'flex min-w-0 items-start gap-3 rounded-lg border px-3 py-3 text-sm text-foreground transition-colors cursor-pointer hover:bg-accent/40 focus-within:ring-2 focus-within:ring-ring/40',
+                prefs.digest === option.value ? 'border-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/5' : 'border-border',
+                saving && 'cursor-wait opacity-60',
+              )}>
+                <input
+                  type="radio"
+                  name="digest"
+                  value={option.value}
+                  checked={prefs.digest === option.value}
+                  onChange={() => {
+                    setMessage(null);
+                    setPrefs({ ...prefs, digest: option.value });
+                  }}
+                  className="mt-0.5 size-4 shrink-0 accent-indigo-600"
+                />
+                <span className="min-w-0 [overflow-wrap:anywhere]">
+                  <span className="block text-sm font-bold">{option.title}</span>
+                  <span className="block text-xs text-muted-foreground">{option.label}</span>
+                </span>
+              </label>
+            ))}
+          </div>
           <p className="text-[11px] text-muted-foreground">
             Urgent means: your payment was approved or rejected, or your trial or plan ends tomorrow.
           </p>
         </fieldset>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" onClick={() => void save()} disabled={saving || !dirty} className="h-9 px-4 font-bold">
-            {saving && <Loader2 className="mr-1.5 size-4 animate-spin" />}
-            Save e-mail choices
-          </Button>
+        <div className="flex flex-wrap items-center justify-end gap-3">
           {message && (
-            <p role={message.ok ? 'status' : 'alert'} className={cn('text-xs font-semibold', message.ok ? 'text-emerald-700' : 'text-destructive')}>
+            <p role={message.ok ? 'status' : 'alert'} className={cn('min-w-0 flex-1 basis-full text-xs font-semibold sm:basis-0', message.ok ? 'text-emerald-700' : 'text-destructive')}>
               {message.text}
             </p>
           )}
+          <Button type="button" onClick={() => void save()} disabled={saving || !dirty} className="ml-auto h-9 px-4 font-bold">
+            {saving && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+            Save e-mail choices
+          </Button>
         </div>
       </section>
 

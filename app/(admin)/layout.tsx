@@ -40,14 +40,14 @@ export default async function AdminLayout({
     : undefined;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background print:overflow-visible print:h-auto">
+    <div className="flex h-screen supports-[height:100dvh]:h-[100dvh] min-h-0 overflow-hidden bg-background print:overflow-visible print:h-auto">
       <div className="print:hidden">
         {/* Pass down the user profile with the Platform Admin role override */}
         <AppSidebar user={userProp} collapsedPreference={collapsedPreference} isAdminUser={true} />
       </div>
-      <div className="flex flex-1 flex-col overflow-hidden print:overflow-visible">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden print:overflow-visible">
         <AppTopbar />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-muted/20">
+        <main data-app-scroll-region className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain p-4 md:p-6 lg:p-8 bg-muted/20 print:overflow-visible print:p-0">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
       </div>

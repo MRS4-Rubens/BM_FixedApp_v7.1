@@ -109,42 +109,42 @@ export function BusinessesTab({
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
+          <table className="w-full table-auto text-left text-sm border-collapse [&_th]:align-middle [&_td]:align-middle">
             <thead>
               <tr className="border-b border-border bg-muted/40 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                <th className="px-4 py-3">
+                <th scope="col" className="w-full min-w-[22rem] px-4 py-3 whitespace-nowrap">
                   <button
                     type="button"
                     onClick={() => onToggleBizSort('name')}
                     className="flex items-center gap-1 hover:text-foreground cursor-pointer"
                   >
                     Business & GSTIN
-                    <ArrowUpDown className="size-3.5" />
+                    <ArrowUpDown className="size-3.5 shrink-0" />
                   </button>
                 </th>
-                <th className="px-4 py-3">Plan & Status</th>
-                <th className="px-4 py-3">
+                <th scope="col" className="w-px px-4 py-3 text-center whitespace-nowrap">Plan & Status</th>
+                <th scope="col" className="w-px px-4 py-3 text-center whitespace-nowrap">
                   <button
                     type="button"
                     onClick={() => onToggleBizSort('expiry')}
-                    className="flex items-center gap-1 hover:text-foreground cursor-pointer"
+                    className="flex w-full items-center justify-center gap-1 hover:text-foreground cursor-pointer"
                   >
                     Expires At
-                    <ArrowUpDown className="size-3.5" />
+                    <ArrowUpDown className="size-3.5 shrink-0" />
                   </button>
                 </th>
-                <th className="px-4 py-3">
+                <th scope="col" className="w-px px-4 py-3 text-center whitespace-nowrap">
                   <button
                     type="button"
                     onClick={() => onToggleBizSort('invoices')}
-                    className="flex items-center gap-1 hover:text-foreground cursor-pointer"
+                    className="flex w-full items-center justify-center gap-1 hover:text-foreground cursor-pointer"
                   >
                     Invoices
-                    <ArrowUpDown className="size-3.5" />
+                    <ArrowUpDown className="size-3.5 shrink-0" />
                   </button>
                 </th>
-                <th className="px-4 py-3">Staff</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th scope="col" className="w-px px-4 py-3 text-center whitespace-nowrap">Staff</th>
+                <th scope="col" className="w-px px-4 py-3 text-center whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40 font-medium">
@@ -164,14 +164,15 @@ export function BusinessesTab({
                   return (
                     <tr key={biz.id} className="hover:bg-muted/15 transition-colors">
                       <td className="px-4 py-3">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-foreground text-sm">{biz.legalName}</span>
-                          <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground font-mono font-medium">
-                            <span>{biz.gstin}</span>
+                        <div className="flex min-w-[20rem] flex-col">
+                          <span className="font-bold text-foreground text-sm [overflow-wrap:anywhere]">{biz.legalName}</span>
+                          <div className="flex items-center gap-1.5 mt-0.5 whitespace-nowrap text-xs text-muted-foreground font-medium">
+                            <span>GSTIN No.:</span>
+                            <span className="font-mono">{biz.gstin}</span>
                             <button
                               type="button"
                               onClick={() => onCopy(biz.gstin, `gstin-${biz.id}`)}
-                              className="hover:text-indigo-600 transition cursor-pointer"
+                              className="shrink-0 hover:text-indigo-600 transition cursor-pointer"
                               title="Copy GSTIN"
                             >
                               {copiedKey === `gstin-${biz.id}` ? (
@@ -184,8 +185,8 @@ export function BusinessesTab({
                         </div>
                       </td>
 
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col items-start gap-1">
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
+                        <div className="flex flex-col items-center gap-1">
                           <span className="font-bold text-foreground capitalize text-xs">
                             {biz.subscriptionPlan}
                           </span>
@@ -212,7 +213,7 @@ export function BusinessesTab({
                         </div>
                       </td>
 
-                      <td className="px-4 py-3 text-xs font-semibold">
+                      <td className="px-4 py-3 text-center whitespace-nowrap text-xs font-semibold">
                         {biz.subscriptionEndsAt ? (
                           <span>{formatIstDate(biz.subscriptionEndsAt)}</span>
                         ) : (
@@ -220,15 +221,15 @@ export function BusinessesTab({
                         )}
                       </td>
 
-                      <td className="px-4 py-3 font-mono font-bold text-foreground text-sm">
-                        {biz.invoiceCount}
+                      <td className="px-4 py-3 text-center whitespace-nowrap font-mono tabular-nums font-bold text-foreground text-sm">
+                        <span className="inline-block min-w-[10ch]">{biz.invoiceCount}</span>
                       </td>
 
-                      <td className="px-4 py-3 font-semibold text-foreground text-sm">
-                        {biz.userCount}
+                      <td className="px-4 py-3 text-center whitespace-nowrap tabular-nums font-semibold text-foreground text-sm">
+                        <span className="inline-block min-w-[3ch]">{biz.userCount}</span>
                       </td>
 
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-center whitespace-nowrap">
                         <Button
                           size="sm"
                           variant="outline"

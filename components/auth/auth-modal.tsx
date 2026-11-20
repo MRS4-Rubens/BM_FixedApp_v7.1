@@ -1,5 +1,7 @@
 'use client'
 
+import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock'
+
 import { useState, useEffect, useRef, useActionState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
@@ -59,20 +61,7 @@ export function AuthenticationModal() {
     }
   }, [isOpen])
 
-  // Prevent background scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      document.documentElement.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-      document.documentElement.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-      document.documentElement.style.overflow = ''
-    }
-  }, [isOpen])
+  usePageScrollLock(isOpen)
 
   // ESC key to close modal
   useEffect(() => {

@@ -63,13 +63,13 @@ export function GstFrequencyCard({ frequency, registrationType, canEdit, onSaved
           Choose how you file to start getting reminders 3 days before each due date.
         </p>
       )}
-      <fieldset disabled={!canEdit || saving} className="space-y-2">
+      <fieldset disabled={!canEdit || saving} className="relative grid grid-cols-1 gap-2.5 @min-[42rem]/notifications:grid-cols-3">
         <legend className="sr-only">GST filing frequency</legend>
         {OPTIONS.map((option) => (
           <label
             key={option.value}
             className={cn(
-              'flex items-start gap-3 rounded-lg border px-3 py-2.5 transition-colors',
+              'flex min-w-0 items-start gap-3 rounded-lg border px-3 py-3 transition-colors focus-within:ring-2 focus-within:ring-ring/40',
               canEdit ? 'cursor-pointer hover:bg-accent/40' : 'cursor-default',
               choice === option.value ? 'border-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/5' : 'border-border',
             )}
@@ -80,37 +80,37 @@ export function GstFrequencyCard({ frequency, registrationType, canEdit, onSaved
               value={option.value}
               checked={choice === option.value}
               onChange={() => setChoice(option.value)}
-              className="mt-0.5 size-4 accent-indigo-600"
+              className="mt-0.5 size-4 shrink-0 accent-indigo-600"
             />
-            <span>
+            <span className="min-w-0 [overflow-wrap:anywhere]">
               <span className="block text-sm font-bold text-foreground">{option.label}</span>
               <span className="block text-xs text-muted-foreground">{option.hint}</span>
             </span>
           </label>
         ))}
       </fieldset>
-      {canEdit && (
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            onClick={() => void save()}
-            disabled={saving || choice === null || choice === frequency}
-            className="h-9 px-4 font-bold"
-          >
-            {saving && <Loader2 className="mr-1.5 size-4 animate-spin" />}
-            Save filing frequency
-          </Button>
-          {message && (
-            <p role={message.ok ? 'status' : 'alert'} className={cn('text-xs font-semibold', message.ok ? 'text-emerald-700' : 'text-destructive')}>
-              {message.text}
-            </p>
-          )}
-        </div>
-      )}
       <p className="text-[11px] text-muted-foreground">
         Reminders use the normal due dates. If the government extends a date in a particular month, the reminder
         still shows the normal date.
       </p>
+      {canEdit && (
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          {message && (
+            <p role={message.ok ? 'status' : 'alert'} className={cn('min-w-0 flex-1 basis-full text-xs font-semibold sm:basis-0', message.ok ? 'text-emerald-700' : 'text-destructive')}>
+              {message.text}
+            </p>
+          )}
+          <Button
+            type="button"
+            onClick={() => void save()}
+            disabled={saving || choice === null || choice === frequency}
+            className="ml-auto h-9 px-4 font-bold"
+          >
+            {saving && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+            Save filing frequency
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

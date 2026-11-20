@@ -70,7 +70,7 @@ export default async function AdminPage() {
   }
 
   return (
-    <div className="w-full pb-12">
+    <div className="w-full">
       <AdminConsole
         stats={stats}
         pendingRequests={pendingRequests}
