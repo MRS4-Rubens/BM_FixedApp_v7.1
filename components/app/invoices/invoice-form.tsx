@@ -33,6 +33,7 @@ import { LineItemsTable } from './invoice-form/line-items-table';
 import { InternalNotesCard } from './invoice-form/internal-notes-card';
 import { GstBreakdownCard } from './invoice-form/gst-breakdown-card';
 import { TotalsSummaryCard } from './invoice-form/totals-summary-card';
+import { INVOICE_SUMMARY_ID, MobileTotalBar } from './invoice-form/mobile-total-bar';
 import { InvoicePreviewModal } from './invoice-form/invoice-preview-modal-lazy';
 import { FinalizeDialogs } from './invoice-form/finalize-dialogs';
 
@@ -338,6 +339,7 @@ export function InvoiceForm({
                 taxResult={taxResult}
                 taxLabel={taxLabel}
               />
+              <div id={INVOICE_SUMMARY_ID} className="scroll-mt-4">
               <TotalsSummaryCard
                 supplyType={supplyType}
                 totalTaxable={totalTaxable}
@@ -351,7 +353,9 @@ export function InvoiceForm({
                 onFinalizeClick={onFinalizeClick}
                 taxLabel={taxLabel}
               />
+              </div>
             </div>
+            <MobileTotalBar grandTotal={grandTotal} />
           </form>
         </div>
 

@@ -96,8 +96,14 @@ export function LineItemsTable({
         </div>
         <p className="text-xs text-muted-foreground">GST is calculated automatically in the estimate below</p>
       </div>
+      {/* Below 1024px: app/mobile-forms.css lays each row out as a card (same inputs, same logic). */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table
+          data-line-items
+          data-show-hsn={displayPrefs.showHsn ? '' : undefined}
+          data-show-disc={displayPrefs.discEnabled ? '' : undefined}
+          className="w-full text-sm"
+        >
           <thead>
             <tr className="border-b border-border bg-muted/10">
               <th className="pl-1 pr-0 py-1.5" style={colStyles.drag} aria-label="Reorder"></th>

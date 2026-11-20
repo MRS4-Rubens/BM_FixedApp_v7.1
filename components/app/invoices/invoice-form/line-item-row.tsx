@@ -166,7 +166,7 @@ export function LineItemRow({
     >
       {/* Grip handle: the ONE reorder control. Mouse/finger drag it, or focus it (Tab) and press ↑ ↓ Home End.
           A div with role="button" (not <button>) because Firefox won't start a native drag from a <button>. */}
-      <td className="pl-1 pr-0 py-1.5 align-middle" style={colStyles.drag}>
+      <td data-cell="drag" className="pl-1 pr-0 py-1.5 align-middle" style={colStyles.drag}>
         <div
           id={lineReorderHandleId(idx)}
           role="button"
@@ -203,12 +203,12 @@ export function LineItemRow({
       </td>
 
       {/* S.No */}
-      <td className="pl-3 pr-2 py-1.5 text-xs font-mono text-muted-foreground text-left" style={colStyles.sNo}>
+      <td data-cell="sno" data-label="Item" className="pl-3 pr-2 py-1.5 text-xs font-mono text-muted-foreground text-left" style={colStyles.sNo}>
         {String(idx + 1).padStart(3, '0')}
       </td>
 
       {/* Description with autocomplete */}
-      <td className="px-2 py-1.5 relative" style={colStyles.description}>
+      <td data-cell="desc" data-label="Description" className="px-2 py-1.5 relative" style={colStyles.description}>
         <input
           type="text"
           placeholder="Description"
@@ -265,7 +265,7 @@ export function LineItemRow({
 
       {/* HSN/SAC */}
       {displayPrefs.showHsn && (
-        <td className="px-2 py-1.5" style={colStyles.hsn}>
+        <td data-cell="hsn" data-label="HSN/SAC" className="px-2 py-1.5" style={colStyles.hsn}>
           <input
             type="text"
             placeholder="HSN"
@@ -278,7 +278,7 @@ export function LineItemRow({
       )}
 
       {/* Qty */}
-      <td className="px-2 py-1.5" style={colStyles.qty}>
+      <td data-cell="qty" data-label="Qty" className="px-2 py-1.5" style={colStyles.qty}>
         <input
           type="number"
           min={qtyGuards.min}
@@ -295,7 +295,7 @@ export function LineItemRow({
       </td>
 
       {/* UQC */}
-      <td className="px-2 py-1.5" style={colStyles.uqc}>
+      <td data-cell="uqc" data-label="Unit" className="px-2 py-1.5" style={colStyles.uqc}>
         <div className="relative" style={colStyles.uqc}>
           <select
             aria-label={`Unit, line ${idx + 1}`}
@@ -314,7 +314,7 @@ export function LineItemRow({
       </td>
 
       {/* Rate */}
-      <td className="px-2 py-1.5" style={colStyles.rate}>
+      <td data-cell="rate" data-label={gstRateTypeVal === 'inclusive' ? 'Rate (GST incl)' : 'Rate (GST excl)'} className="px-2 py-1.5" style={colStyles.rate}>
         <input
           type="number"
           min="0"
@@ -328,7 +328,7 @@ export function LineItemRow({
 
       {/* Disc */}
       {displayPrefs.discEnabled && (
-        <td className="px-2 py-1.5" style={colStyles.disc}>
+        <td data-cell="disc" data-label="Disc %" className="px-2 py-1.5" style={colStyles.disc}>
           <input
             type="number"
             min="0"
@@ -343,7 +343,7 @@ export function LineItemRow({
       )}
 
       {/* GST Rate */}
-      <td className="px-2 py-1.5" style={colStyles.gst}>
+      <td data-cell="gst" data-label="GST" className="px-2 py-1.5" style={colStyles.gst}>
         <div className="relative" style={colStyles.gst}>
           <select
             aria-label={`Tax rate, line ${idx + 1}`}
@@ -364,7 +364,7 @@ export function LineItemRow({
       </td>
 
       {/* NET Amount */}
-      <td className="px-2 py-1.5" style={colStyles.netAmt}>
+      <td data-cell="net" data-label="Net amount" className="px-2 py-1.5" style={colStyles.netAmt}>
         <input
           type="number"
           min="0"
@@ -379,7 +379,7 @@ export function LineItemRow({
       </td>
 
       {/* Action */}
-      <td className="px-2 py-1.5 text-center" style={colStyles.action}>
+      <td data-cell="action" className="px-2 py-1.5 text-center" style={colStyles.action}>
         {fieldsLength > 1 && (
           <button
             type="button"

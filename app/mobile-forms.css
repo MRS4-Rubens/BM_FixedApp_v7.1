@@ -1,0 +1,118 @@
+/*
+ * Phone layout for the invoice line items (mobile plan step 3).
+ *
+ * Below 1024px (phones and portrait tablets, i.e. touch screens) each <tr> of the line-items table ([data-line-items]) becomes a card on a 6-column grid. The cells,
+ * inputs, form binding, product suggestions and reordering are exactly the same as on desktop; only the layout
+ * changes. Every input keeps its own aria-label, so hiding the column headers loses no information.
+ *   row 1: grip | "Item 001"              | delete
+ *   row 2: description (full width)
+ *   row 3: HSN | Qty | Unit         (Qty | Unit when HSN is off)
+ *   row 4: Rate | Disc %            (when discount is on)
+ *   row 5: GST | Net amount         (Rate | GST | Net amount when discount is off)
+ * The table cells carry inline widths for the desktop columns, hence the !important overrides below.
+ */
+@layer components {
+  @media (width < 64rem) {
+    [data-line-items],
+    [data-line-items] tbody {
+      display: block;
+    }
+
+    [data-line-items] thead {
+      display: none;
+    }
+
+    [data-line-items] tbody > tr {
+      display: grid !important;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      column-gap: 8px;
+      row-gap: 8px;
+      margin-bottom: 10px;
+      padding: 6px 10px 12px;
+      border: 1px solid var(--border) !important;
+      border-radius: 12px;
+      background: var(--card);
+    }
+
+    [data-line-items] tbody > tr > td {
+      display: block;
+      width: auto !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+      text-align: left !important;
+    }
+
+    [data-line-items] td input,
+    [data-line-items] td select,
+    [data-line-items] td > div {
+      width: 100% !important;
+      min-width: 0 !important;
+    }
+
+    [data-line-items] td[data-label]::before {
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted-foreground);
+    }
+
+    /* Row 1: grip, "Item 001", delete. */
+    [data-line-items] td[data-cell='drag'] {
+      grid-column: span 1;
+      align-self: center;
+    }
+    [data-line-items] td[data-cell='sno'] {
+      grid-column: span 4;
+      align-self: center;
+      font-weight: 700;
+    }
+    [data-line-items] td[data-cell='sno']::before {
+      display: inline;
+      margin: 0 6px 0 0;
+    }
+    [data-line-items] td[data-cell='action'] {
+      grid-column: 6;
+      grid-row: 1;
+      justify-self: end;
+      align-self: center;
+    }
+    [data-line-items] td[data-cell='action'] > *,
+    [data-line-items] td[data-cell='drag'] > * {
+      width: auto !important;
+    }
+
+    [data-line-items] td[data-cell='desc'] {
+      grid-column: 1 / -1;
+    }
+
+    [data-line-items] td[data-cell='hsn'],
+    [data-line-items] td[data-cell='qty'],
+    [data-line-items] td[data-cell='uqc'] {
+      grid-column: span 2;
+    }
+    [data-line-items]:not([data-show-hsn]) td[data-cell='qty'],
+    [data-line-items]:not([data-show-hsn]) td[data-cell='uqc'] {
+      grid-column: span 3;
+    }
+
+    [data-line-items] td[data-cell='rate'],
+    [data-line-items] td[data-cell='disc'],
+    [data-line-items] td[data-cell='gst'],
+    [data-line-items] td[data-cell='net'] {
+      grid-column: span 3;
+    }
+    [data-line-items]:not([data-show-disc]) td[data-cell='rate'],
+    [data-line-items]:not([data-show-disc]) td[data-cell='gst'],
+    [data-line-items]:not([data-show-disc]) td[data-cell='net'] {
+      grid-column: span 2;
+    }
+
+    [data-line-items] td[data-cell='net'] input {
+      font-weight: 700;
+    }
+  }
+}
