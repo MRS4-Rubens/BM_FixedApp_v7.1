@@ -6,22 +6,42 @@ import type { InvoiceDraftInput } from '@/lib/validations/invoice';
 import { searchProductOptions } from '@/lib/actions/products/search-product-options';
 import type { ProductOption } from '@/lib/pickers/types';
 
-/** Suggestion box position: under the input, kept inside the screen (8px margin) and flipped above the input when
- * there is no room below (e.g. phone keyboard open). On wide screens this equals the input's own position. */
-const SUGGESTION_BOX_HEIGHT = 200;
-function suggestionRect(el: HTMLInputElement) {
-  const rect = el.getBoundingClientRect();
-  // The visible area: the visual viewport (shrinks and shifts when the phone keyboard or pinch-zoom is active).
+/** The visible area: the visual viewport (shrinks and shifts when the phone keyboard or pinch-zoom is active),
+ * falling back to the window. */
+function visibleBounds() {
   const vv = window.visualViewport;
-  const viewLeft = vv?.offsetLeft ?? 0;
-  const viewTop = vv?.offsetTop ?? 0;
-  const viewWidth = vv?.width ?? window.innerWidth;
-  const viewBottom = viewTop + (vv?.height ?? window.innerHeight);
-  const width = Math.min(rect.width, viewWidth - 16);
-  const left = Math.max(viewLeft + 8, Math.min(rect.left, viewLeft + viewWidth - width - 8));
-  const flip = rect.bottom + SUGGESTION_BOX_HEIGHT > viewBottom && rect.top - viewTop >= SUGGESTION_BOX_HEIGHT;
-  const top = flip ? rect.top - SUGGESTION_BOX_HEIGHT : rect.bottom;
-  return { top: top + window.scrollY, left: left + window.scrollX, width, height: rect.height };
+  const left = vv?.offsetLeft ?? 0;
+  const top = vv?.offsetTop ?? 0;
+  return { left, top, right: left + (vv?.width ?? window.innerWidth), bottom: top + (vv?.height ?? window.innerHeight) };
+}
+
+/** Suggestion box geometry. The list (max 192px tall, drawn 4px below `top`) goes under the input, kept inside the
+ * visible area with an 8px margin; it moves above the input when there is clearly more room there (e.g. phone keyboard
+ * open), and `maxHeight` shrinks it to the room available on the chosen side. On a roomy desktop screen this is the
+ * input's own position and the list's normal height. */
+const LIST_MAX_HEIGHT = 192;
+const LIST_MIN_HEIGHT = 64;
+const GAP = 4;
+const EDGE = 8;
+export interface SuggestionRect {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  maxHeight: number;
+}
+function suggestionRect(el: HTMLInputElement): SuggestionRect {
+  const rect = el.getBoundingClientRect();
+  const view = visibleBounds();
+  const width = Math.min(rect.width, view.right - view.left - EDGE * 2);
+  const left = Math.max(view.left + EDGE, Math.min(rect.left, view.right - width - EDGE));
+  const below = view.bottom - rect.bottom - GAP - EDGE;
+  const above = rect.top - view.top - GAP - EDGE;
+  const flip = below < LIST_MAX_HEIGHT && above > below;
+  const maxHeight = Math.max(LIST_MIN_HEIGHT, Math.min(LIST_MAX_HEIGHT, flip ? above : below));
+  // The consumer draws the list at top + GAP, so above the input the list ends GAP px above it.
+  const top = flip ? rect.top - maxHeight - GAP * 2 : rect.bottom;
+  return { top: top + window.scrollY, left: left + window.scrollX, width, height: rect.height, maxHeight };
 }
 
 export function useProductSuggestions({
@@ -34,12 +54,7 @@ export function useProductSuggestions({
 }) {
   const [suggestIdx, setSuggestIdx] = useState<number | null>(null);
   const [isProdSuggestionsOpen, setIsProdSuggestionsOpen] = useState(false);
-  const [activeInputRect, setActiveInputRect] = useState<{
-    top: number;
-    left: number;
-    width: number;
-    height: number;
-  } | null>(null);
+  const [activeInputRect, setActiveInputRect] = useState<SuggestionRect | null>(null);
   const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | null>(null);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
   const productReqIdRef = useRef(0);
@@ -79,8 +94,9 @@ export function useProductSuggestions({
 
     const handleUpdate = () => {
       const rect = activeInputRef.getBoundingClientRect();
-      // The input scrolled out of view: close instead of leaving a floating box behind.
-      if (rect.right <= 0 || rect.left >= window.innerWidth || rect.bottom <= 0 || rect.top >= window.innerHeight) {
+      const view = visibleBounds();
+      // The input left the visible area: close instead of leaving a floating box behind.
+      if (rect.right <= view.left || rect.left >= view.right || rect.bottom <= view.top || rect.top >= view.bottom) {
         setIsProdSuggestionsOpen(false);
         return;
       }

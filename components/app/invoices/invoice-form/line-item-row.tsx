@@ -77,7 +77,7 @@ export function LineItemRow({
   suggestIdx: number | null;
   isProdSuggestionsOpen: boolean;
   setIsProdSuggestionsOpen: (open: boolean) => void;
-  activeInputRect: { top: number; left: number; width: number; height: number } | null;
+  activeInputRect: { top: number; left: number; width: number; height: number; maxHeight?: number } | null;
   updateInputRect: (el: HTMLInputElement | null) => void;
   productOptions: ProductOption[];
   handleSelectProduct: (idx: number, prod: ProductOption) => void;
@@ -237,6 +237,7 @@ export function LineItemRow({
                 top: activeInputRect.top + 4,
                 left: activeInputRect.left,
                 width: activeInputRect.width,
+                maxHeight: activeInputRect.maxHeight,
                 zIndex: 9999,
               }}
               className="max-h-48 overflow-y-auto rounded-lg border border-border bg-popover py-1.5 shadow-lg animate-fadeIn text-popover-foreground"

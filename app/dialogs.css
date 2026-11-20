@@ -29,6 +29,13 @@
   }
 
   @media print {
+    /* usePageScrollLock sets inline overflow:hidden while a dialog is open; printing must not be clipped by it. */
+    html,
+    body,
+    [data-app-scroll-region] {
+      overflow: visible !important;
+    }
+
     [data-viewport-dialog] {
       max-width: none;
       max-height: none;
