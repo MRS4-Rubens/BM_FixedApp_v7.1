@@ -69,7 +69,7 @@ export function LineItemsTable({
   suggestIdx: number | null;
   isProdSuggestionsOpen: boolean;
   setIsProdSuggestionsOpen: (open: boolean) => void;
-  activeInputRect: { top: number; left: number; width: number; height: number } | null;
+  activeInputRect: { top: number; left: number; width: number; height: number; maxHeight?: number } | null;
   updateInputRect: (el: HTMLInputElement | null) => void;
   productOptions: ProductOption[];
   handleSelectProduct: (idx: number, prod: ProductOption) => void;

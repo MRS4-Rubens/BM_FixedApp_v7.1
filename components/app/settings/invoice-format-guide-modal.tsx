@@ -143,8 +143,8 @@ export function InvoiceFormatGuideModal({
       aria-labelledby="invoice-format-guide-title"
     >
       <div
-        ref={modalRef}
-        className="relative flex flex-col w-full max-w-[850px] max-h-[90vh] bg-card border border-border shadow-2xl rounded-2xl overflow-hidden text-foreground"
+        data-viewport-dialog data-contained-dialog ref={modalRef}
+        className="relative flex flex-col w-full max-w-[850px] max-h-[min(90vh,100dvh_-_24px_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px))] bg-card border border-border shadow-2xl rounded-2xl overflow-hidden text-foreground"
       >
         {/* Sticky Header: Compact & balanced */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-border/80 bg-muted/40 shrink-0">
@@ -178,7 +178,7 @@ export function InvoiceFormatGuideModal({
         </div>
 
         {/* Scrollable Content Body: Consistent spacing */}
-        <div className="flex-1 overflow-y-auto px-4 pt-2.5 pb-3.5 space-y-2.5">
+        <div className="min-h-0 min-w-0 flex-1 overflow-auto px-4 pt-2.5 pb-3.5 space-y-2.5">
           {/* SECTION 1: Statutory Indian GST Mandates (Rule 46(b)) */}
           <div className="rounded-xl border border-blue-200/80 bg-blue-50/60 p-2.5 space-y-1">
             <div className="flex items-center gap-2 text-blue-950 font-bold text-xs">
@@ -387,7 +387,7 @@ export function InvoiceFormatGuideModal({
               <span className="text-[10px] text-muted-foreground font-medium">Click &quot;Use This Format&quot; to apply instantly</span>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-card overflow-hidden shadow-2xs divide-y divide-border/60">
+            <div className="rounded-xl border border-slate-200 bg-card overflow-x-auto overflow-y-hidden shadow-2xs divide-y divide-border/60">
               {PRESETS.map((preset) => {
                 const effectiveFormat = !canCustomize && preset.id === 'standard-b2b'
                   ? 'BMA/{FY}/{SEQ:4}'

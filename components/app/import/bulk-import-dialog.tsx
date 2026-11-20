@@ -86,7 +86,7 @@ export function BulkImportDialog({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <Dialog.Popup
+          <Dialog.Popup data-viewport-dialog data-contained-dialog
             aria-labelledby="bulk-import-dialog-title"
             className="relative w-full max-w-4xl bg-card border border-border shadow-2xl rounded-2xl p-5 sm:p-6 text-foreground overflow-hidden max-h-[92dvh] flex flex-col my-auto animate-in zoom-in-95 duration-150"
           >

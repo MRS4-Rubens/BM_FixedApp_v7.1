@@ -1,0 +1,48 @@
+/*
+ * Dialogs that always fit the screen (mobile plan step 0, from Task 6).
+ * Every dialog marked data-viewport-dialog stays inside the visible screen, including the phone's notch and home bar,
+ * and scrolls inside itself. Its action row (data-modal-footer) stays visible at the bottom while the content scrolls.
+ * The rules apply at every width; on a large screen they change nothing because the dialogs already fit.
+ */
+/* In the components layer, so a dialog's own Tailwind classes (max-w-lg, max-h-[92vh], overflow-hidden) still win;
+ * these rules only fill in what a dialog does not set itself. */
+@layer components {
+  [data-viewport-dialog] {
+    box-sizing: border-box;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Dialogs with their own inner scrolling body (data-contained-dialog) keep it; the rest scroll as a whole. */
+  [data-viewport-dialog]:not([data-contained-dialog]) {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  [data-viewport-dialog] [data-modal-footer] {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: var(--modal-footer-bg, var(--card)); /* white-only dialogs set --modal-footer-bg */
+    flex-wrap: wrap;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  }
+
+  @media print {
+    /* usePageScrollLock sets inline overflow:hidden while a dialog is open; printing must not be clipped by it. */
+    html,
+    body,
+    [data-app-scroll-region] {
+      overflow: visible !important;
+    }
+
+    [data-viewport-dialog] {
+      max-width: none;
+      max-height: none;
+      overflow: visible;
+    }
+    [data-viewport-dialog] [data-modal-footer] {
+      position: static;
+    }
+  }
+}

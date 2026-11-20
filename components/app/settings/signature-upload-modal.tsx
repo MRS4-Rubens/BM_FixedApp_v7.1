@@ -165,7 +165,7 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-[70] bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
-          <Dialog.Popup className="relative w-[calc(100vw-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-4 sm:p-5 shadow-xl flex flex-col justify-between">
+          <Dialog.Popup data-viewport-dialog className="[--modal-footer-bg:#fff] relative w-[calc(100vw-2rem)] max-w-3xl max-h-[min(90vh,100dvh_-_24px_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px))] overflow-y-auto rounded-xl bg-white p-4 sm:p-5 shadow-xl flex flex-col justify-between">
             <Dialog.Close
               render={
                 <button
@@ -369,7 +369,7 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
             </div>
 
             {/* Modal Footer Controls */}
-            <div className="flex items-center justify-between gap-3 pt-3.5 mt-3.5 border-t border-slate-200">
+            <div data-modal-footer className="flex items-center justify-between gap-3 pt-3.5 mt-3.5 border-t border-slate-200">
               {phase === 'ready' ? (
                 <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={handleChooseAnother} className="cursor-pointer">
                   Choose another

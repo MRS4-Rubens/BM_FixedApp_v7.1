@@ -52,7 +52,7 @@ export function ConfirmDialog({
       <AlertDialog.Portal>
         <AlertDialog.Backdrop className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <AlertDialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <AlertDialog.Popup
+          <AlertDialog.Popup data-viewport-dialog
             initialFocus={tone === 'destructive' ? cancelRef : confirmRef}
             className="relative w-full max-w-md bg-card border border-border shadow-2xl rounded-2xl p-5 text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto animate-in zoom-in-95 duration-150"
           >
@@ -62,7 +62,7 @@ export function ConfirmDialog({
             <AlertDialog.Description render={<div className="mt-2 text-sm text-muted-foreground leading-relaxed" />}>
               {description}
             </AlertDialog.Description>
-            <div className="mt-6 flex items-center justify-end gap-2.5">
+            <div data-modal-footer className="mt-6 flex items-center justify-end gap-2.5">
               <Button
                 ref={cancelRef}
                 type="button"

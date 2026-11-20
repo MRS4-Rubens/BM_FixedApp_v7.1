@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Lora, Geist_Mono } from 'next/font/google'
 import './globals.css'
+import './dialogs.css'
 import { SentryInit } from '@/components/sentry-init'
 import { BRAND_DESCRIPTION, BRAND_NAME, BRAND_THEME_COLOR, BRAND_TITLE } from '@/lib/config/brand'
 import { siteOrigin, isIndexableDeployment } from '@/lib/seo/routes'
