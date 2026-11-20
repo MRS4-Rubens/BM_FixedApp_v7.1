@@ -60,9 +60,10 @@ export function MobileTabBar({ canCreate }: { canCreate: boolean }) {
   return (
     <nav
       aria-label="Main"
-      className="relative z-30 shrink-0 border-t border-border/70 bg-card/95 backdrop-blur-md shadow-[0_-6px_16px_-10px_rgba(79,70,229,0.18)] md:hidden print:hidden"
+      className="relative z-30 shrink-0 border-t border-border/70 bg-card/95 pb-[env(safe-area-inset-bottom,0px)] backdrop-blur-md shadow-[0_-6px_16px_-10px_rgba(79,70,229,0.18)] md:hidden print:hidden"
     >
-      <div className="mx-auto flex h-14 max-w-md items-stretch gap-1 px-2 pb-[env(safe-area-inset-bottom,0px)]">
+      {/* Fixed 56px row; the safe-area inset (home bar) is padding on the nav around it, so controls keep full height. */}
+      <div className="mx-auto flex h-14 max-w-md items-stretch gap-1 px-2">
         <TabLink href={home.href} label={home.label} icon={home.icon} active={active === home.tab} />
         <TabLink href={invoices.href} label={invoices.label} icon={invoices.icon} active={active === invoices.tab} />
 
