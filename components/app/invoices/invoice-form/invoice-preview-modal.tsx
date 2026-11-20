@@ -61,7 +61,9 @@ export function InvoicePreviewModal({
             style={{ maxWidth: modalMaxWidth }}
           >
             {/* Modal Header */}
-            <div className="px-4 sm:px-6 py-2.5 border-b border-border flex flex-row items-center justify-between gap-4 bg-muted/20 overflow-x-auto shrink-0">
+            <div className="px-4 sm:px-6 py-2.5 border-b border-border flex flex-row items-center gap-3 bg-muted/20 shrink-0">
+              {/* Only the title and controls scroll sideways on a narrow screen; Close always stays in view. */}
+              <div className="flex min-w-0 flex-1 flex-row items-center justify-between gap-4 overflow-x-auto">
               {/* Left Side: Title */}
               <div className="flex items-center gap-2 shrink-0">
                 <Eye className="size-5 text-primary" />
@@ -106,14 +108,14 @@ export function InvoicePreviewModal({
                       </button>
                     ))}
                   </div>
-                  <button
+              <button
                     type="button"
                     onClick={() => window.print()}
                     className="flex size-8 items-center justify-center rounded-md border border-primary/25 bg-background text-muted-foreground hover:text-foreground transition-all hover:bg-accent shadow-[0_0_8px_rgba(59,130,246,0.06)] cursor-pointer"
                     title="Print Invoice (System Dialog)"
-                  >
+              >
                     <Printer className="size-[18px]" />
-                  </button>
+              </button>
                 </div>
 
                 {/* Group containing checkbox and close button with exact 7px gap */}
@@ -144,20 +146,21 @@ export function InvoicePreviewModal({
                     </span>
                   </label>
 
-                  {/* Close Button */}
-                  <button
-                    type="button"
-                    aria-label="Close dialog"
-                    onClick={() => setIsPreviewOpen(false)}
-                    className="sticky right-0 z-10 bg-card rounded-lg p-1.5 text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all border border-red-500/25 shadow-[0_0_8px_rgba(239,68,68,0.12)] hover:border-red-500/45 cursor-pointer"
-                  >
-                    <span className="sr-only">Close</span>
-                    <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
                 </div>
               </div>
+              </div>
+              {/* Close Button (outside the scrolling area) */}
+              <button
+                type="button"
+                aria-label="Close dialog"
+                onClick={() => setIsPreviewOpen(false)}
+                className="shrink-0 rounded-lg p-1.5 text-red-500 hover:text-red-600 hover:bg-red-500/10 transition-all border border-red-500/25 shadow-[0_0_8px_rgba(239,68,68,0.12)] hover:border-red-500/45 cursor-pointer"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="size-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
 
             {/* Modal Body */}

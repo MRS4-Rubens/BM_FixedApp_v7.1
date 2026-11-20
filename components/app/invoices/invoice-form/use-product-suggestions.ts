@@ -11,10 +11,15 @@ import type { ProductOption } from '@/lib/pickers/types';
 const SUGGESTION_BOX_HEIGHT = 200;
 function suggestionRect(el: HTMLInputElement) {
   const rect = el.getBoundingClientRect();
-  const width = Math.min(rect.width, window.innerWidth - 16);
-  const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
-  const bottom = window.visualViewport?.height ?? window.innerHeight;
-  const flip = rect.bottom + SUGGESTION_BOX_HEIGHT > bottom && rect.top >= SUGGESTION_BOX_HEIGHT;
+  // The visible area: the visual viewport (shrinks and shifts when the phone keyboard or pinch-zoom is active).
+  const vv = window.visualViewport;
+  const viewLeft = vv?.offsetLeft ?? 0;
+  const viewTop = vv?.offsetTop ?? 0;
+  const viewWidth = vv?.width ?? window.innerWidth;
+  const viewBottom = viewTop + (vv?.height ?? window.innerHeight);
+  const width = Math.min(rect.width, viewWidth - 16);
+  const left = Math.max(viewLeft + 8, Math.min(rect.left, viewLeft + viewWidth - width - 8));
+  const flip = rect.bottom + SUGGESTION_BOX_HEIGHT > viewBottom && rect.top - viewTop >= SUGGESTION_BOX_HEIGHT;
   const top = flip ? rect.top - SUGGESTION_BOX_HEIGHT : rect.bottom;
   return { top: top + window.scrollY, left: left + window.scrollX, width, height: rect.height };
 }
@@ -84,10 +89,15 @@ export function useProductSuggestions({
 
     window.addEventListener('scroll', handleUpdate, true);
     window.addEventListener('resize', handleUpdate);
+    // Opening the phone keyboard resizes only the visual viewport (no window resize event).
+    window.visualViewport?.addEventListener('resize', handleUpdate);
+    window.visualViewport?.addEventListener('scroll', handleUpdate);
 
     return () => {
       window.removeEventListener('scroll', handleUpdate, true);
       window.removeEventListener('resize', handleUpdate);
+      window.visualViewport?.removeEventListener('resize', handleUpdate);
+      window.visualViewport?.removeEventListener('scroll', handleUpdate);
     };
   }, [activeInputRef]);
 
