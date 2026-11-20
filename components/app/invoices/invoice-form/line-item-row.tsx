@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { SUGGESTION_LIST_MIN_HEIGHT } from './use-product-suggestions';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { ChevronDown, GripVertical, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -229,7 +230,7 @@ export function LineItemRow({
             }, 200);
           }}
         />
-        {mounted && isProdSuggestionsOpen && suggestIdx === idx && rowDescVal.trim().length > 0 && productOptions.length > 0 && activeInputRect && (
+        {mounted && isProdSuggestionsOpen && suggestIdx === idx && rowDescVal.trim().length > 0 && productOptions.length > 0 && activeInputRect && (activeInputRect.maxHeight ?? SUGGESTION_LIST_MIN_HEIGHT) >= SUGGESTION_LIST_MIN_HEIGHT && (
           createPortal(
             <div
               style={{

@@ -17,10 +17,12 @@ function visibleBounds() {
 
 /** Suggestion box geometry. The list (max 192px tall, drawn 4px below `top`) goes under the input, kept inside the
  * visible area with an 8px margin; it moves above the input when there is clearly more room there (e.g. phone keyboard
- * open), and `maxHeight` shrinks it to the room available on the chosen side. On a roomy desktop screen this is the
+ * open), and `maxHeight` shrinks it to the room available on the chosen side (the consumer hides it below
+ * SUGGESTION_LIST_MIN_HEIGHT). On a roomy desktop screen this is the
  * input's own position and the list's normal height. */
 const LIST_MAX_HEIGHT = 192;
-const LIST_MIN_HEIGHT = 64;
+/** Below this the list cannot show one full option, so it is not drawn at all (e.g. tiny space beside the keyboard). */
+export const SUGGESTION_LIST_MIN_HEIGHT = 40;
 const GAP = 4;
 const EDGE = 8;
 export interface SuggestionRect {
@@ -38,7 +40,8 @@ function suggestionRect(el: HTMLInputElement): SuggestionRect {
   const below = view.bottom - rect.bottom - GAP - EDGE;
   const above = rect.top - view.top - GAP - EDGE;
   const flip = below < LIST_MAX_HEIGHT && above > below;
-  const maxHeight = Math.max(LIST_MIN_HEIGHT, Math.min(LIST_MAX_HEIGHT, flip ? above : below));
+  // Never taller than the room available, so the list cannot slide behind the keyboard or off screen.
+  const maxHeight = Math.max(0, Math.min(LIST_MAX_HEIGHT, flip ? above : below));
   // The consumer draws the list at top + GAP, so above the input the list ends GAP px above it.
   const top = flip ? rect.top - maxHeight - GAP * 2 : rect.bottom;
   return { top: top + window.scrollY, left: left + window.scrollX, width, height: rect.height, maxHeight };
