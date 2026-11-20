@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { AppSidebar } from '@/components/app/app-sidebar'
+import { MobileTabBar } from '@/components/app/mobile-tab-bar'
 import { AppTopbar } from '@/components/app/app-topbar'
 import { getCurrentAppUser } from '@/lib/auth/session'
 import { isPlatformAdmin } from '@/lib/auth/admin'
 import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { buildLogoUrl } from '@/lib/storage/logo-url'
-import { isAppRole } from '@/lib/auth/rbac'
+import { canEditBusinessData, isAppRole } from '@/lib/auth/rbac'
 import { CurrentUserRoleProvider } from '@/components/app/current-user-role'
 
 export const metadata: Metadata = {
@@ -74,11 +75,13 @@ export default async function AppLayout({
         <div className="relative z-40 shrink-0 print:hidden">
           <AppTopbar notificationsEnabled={Boolean(user?.business_id)} />
         </div>
-        <main data-app-scroll-region className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain touch-momentum px-3 pt-4 sm:pt-2.5 sm:px-6 lg:pt-3 lg:px-8 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:pb-[max(2rem,env(safe-area-inset-bottom))] print:overflow-visible print:p-0">
+        <main data-app-scroll-region className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain touch-momentum px-3 pt-4 sm:pt-2.5 sm:px-6 lg:pt-3 lg:px-8 pb-6 md:pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:pb-[max(2rem,env(safe-area-inset-bottom))] print:overflow-visible print:p-0">
           <CurrentUserRoleProvider role={user && isAppRole(user.role) ? user.role : 'owner'}>
             {children}
           </CurrentUserRoleProvider>
         </main>
+        {/* Phones: bottom tab bar under the scrolling page (it carries the safe-area inset itself). */}
+        <MobileTabBar canCreate={Boolean(user?.business_id && isAppRole(user.role) && canEditBusinessData(user.role))} />
       </div>
     </div>
   )

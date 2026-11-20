@@ -40,17 +40,17 @@ export function StatCard({
   const styles = variantStyles[variant]
 
   return (
-    <div className="card-hover relative overflow-hidden rounded-xl border border-border bg-card px-3.5 py-2.5 shadow-sm">
+    <div className="card-hover relative min-w-0 overflow-hidden rounded-xl border border-border bg-card px-3 py-2.5 sm:px-3.5 shadow-sm">
       {/* Dynamic top gradient bar */}
       <div className={cn('absolute top-0 left-0 right-0 h-[3px]', styles.topBar)} />
 
-      <div className="flex items-start justify-between">
-        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+      <div className="flex items-start justify-between gap-2">
+        <span className="min-w-0 text-[10px] leading-snug sm:text-xs font-bold text-muted-foreground uppercase tracking-wide sm:tracking-wider">
           {label}
         </span>
         <div
           className={cn(
-            'flex size-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 hover:scale-110 hover:rotate-6',
+            'flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 hover:scale-110 hover:rotate-6',
             styles.iconBg,
           )}
         >
@@ -58,15 +58,16 @@ export function StatCard({
         </div>
       </div>
 
-      <p className="mt-1 text-3xl font-extrabold tracking-tight text-foreground font-heading whitespace-nowrap truncate">
+      {/* Phones: smaller and allowed to wrap (an amount is never cut off); wider screens: one line as before. */}
+      <p className="mt-1 text-xl min-[400px]:text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-heading tabular-nums [overflow-wrap:anywhere] sm:whitespace-nowrap sm:truncate">
         {value}
       </p>
 
-      <div className="mt-1 flex items-center gap-2">
+      <div className="mt-1 flex flex-wrap items-center gap-2">
         {subtextBadge ? (
           subtextBadge
         ) : subtext ? (
-          <span className="text-sm font-medium text-muted-foreground">{subtext}</span>
+          <span className="text-xs sm:text-sm font-medium text-muted-foreground">{subtext}</span>
         ) : null}
       </div>
     </div>
