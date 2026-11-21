@@ -86,13 +86,13 @@ export function CustomersClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         {/* Left Side: Heading & Justified Tagline */}
         <div className="flex flex-col gap-1 shrink-0">
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground font-heading uppercase">
             CUSTOMERS
           </h1>
-          <p className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px] sm:text-justify sm:[text-align-last:justify]">
+          <p className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px]" style={{ textAlign: 'justify', textAlignLast: 'justify' }}>
             Effortlessly Track, Organize, Maintain, and <br />
             Manage Your Complete Customer Directory
           </p>
@@ -100,7 +100,7 @@ export function CustomersClient({
 
         {/* Right Side: Filter and Action Bar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between bg-card p-3 rounded-xl border border-border/70 shadow-[0_1px_3px_rgba(99,102,241,0.03),0_8px_16px_-8px_rgba(99,102,241,0.08)] flex-1 lg:max-w-4xl w-full">
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm w-full xl:max-w-xs focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all shadow-sm">
+          <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:max-w-xs focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all shadow-sm">
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <input
               type="text"
@@ -156,7 +156,7 @@ export function CustomersClient({
       <div className={cn("transition-opacity duration-150", isPending && "opacity-60 pointer-events-none")}>
         {/* Customer cards */}
         {customers.length > 0 ? (
-          <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {customers.map((c) => {
               const state = INDIAN_GST_STATES.find((s) => s.code === c.state_code);
               const stateDisplay = state ? `${state.name} (${c.state_code})` : c.state_code;
@@ -172,7 +172,7 @@ export function CustomersClient({
               return (
                 <div
                   key={c.id}
-                  className={`group relative min-w-0 rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs hover:shadow-md hover:border-indigo-500/30 transition-all duration-200 flex flex-col justify-between ${
+                  className={`group relative rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs hover:shadow-md hover:border-indigo-500/30 transition-all duration-200 flex flex-col justify-between ${
                     !c.is_active ? 'opacity-60 bg-muted/20' : ''
                   }`}
                 >
@@ -186,12 +186,12 @@ export function CustomersClient({
                         {canEdit ? (
                           <Link
                             href={`/customers/${c.id}/edit`}
-                            className="font-bold text-base sm:text-lg text-foreground group-hover:text-indigo-600 transition-colors block leading-snug max-xl:line-clamp-2 max-xl:[overflow-wrap:anywhere] xl:truncate"
+                            className="font-bold text-base sm:text-lg text-foreground group-hover:text-indigo-600 transition-colors truncate block leading-snug"
                           >
                             {c.name}
                           </Link>
                         ) : (
-                          <span className="font-bold text-base sm:text-lg text-foreground block leading-snug max-xl:line-clamp-2 max-xl:[overflow-wrap:anywhere] xl:truncate">
+                          <span className="font-bold text-base sm:text-lg text-foreground truncate block leading-snug">
                             {c.name}
                           </span>
                         )}

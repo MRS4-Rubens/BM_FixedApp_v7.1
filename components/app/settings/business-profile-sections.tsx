@@ -46,7 +46,7 @@ export function AddressSection({
 }: AddressSectionProps) {
   return (
     <div className={sectionClass}>
-      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50 mb-3">
+      <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
         <div className="flex items-center gap-2">
           <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-amber-800 text-[11px] font-black text-white shadow-xs">
             2
@@ -54,7 +54,7 @@ export function AddressSection({
           <MapPin className="size-4 text-amber-800 shrink-0" />
           <h3 className="text-base font-bold text-slate-900 font-heading tracking-wide uppercase">Registered Address</h3>
         </div>
-        <span className="pl-[54px] sm:pl-0 text-xs font-medium text-muted-foreground">Principal place of business</span>
+        <span className="text-xs font-medium text-muted-foreground">Principal place of business</span>
       </div>
 
       <div className="space-y-3">
@@ -167,7 +167,7 @@ export function BankDetailsSection({
 }: BankDetailsSectionProps) {
   return (
     <div className={sectionClass}>
-      <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50 mb-3">
+      <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
         <div className="flex items-center gap-2">
           <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-rose-900 text-[11px] font-black text-white shadow-xs">
             3
@@ -175,7 +175,7 @@ export function BankDetailsSection({
           <Landmark className="size-4 text-rose-900 shrink-0" />
           <h3 className="text-base font-bold text-slate-900 font-heading tracking-wide uppercase">Bank Details</h3>
         </div>
-        <span className="pl-[54px] sm:pl-0 text-xs font-medium text-muted-foreground">For receiving invoice payments</span>
+        <span className="text-xs font-medium text-muted-foreground">For receiving invoice payments</span>
       </div>
 
       <div className="space-y-3">

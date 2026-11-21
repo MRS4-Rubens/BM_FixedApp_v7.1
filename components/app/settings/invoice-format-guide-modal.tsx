@@ -144,7 +144,7 @@ export function InvoiceFormatGuideModal({
     >
       <div
         data-viewport-dialog data-contained-dialog ref={modalRef}
-        className="relative flex flex-col w-full max-w-[850px] max-h-[min(90vh,100dvh_-_24px_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px))] bg-card border border-border shadow-2xl rounded-2xl overflow-hidden text-foreground"
+        className="relative flex flex-col w-full max-w-[850px] max-h-[90vh] bg-card border border-border shadow-2xl rounded-2xl overflow-hidden text-foreground"
       >
         {/* Sticky Header: Compact & balanced */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-border/80 bg-muted/40 shrink-0">
@@ -387,7 +387,7 @@ export function InvoiceFormatGuideModal({
               <span className="text-[10px] text-muted-foreground font-medium">Click &quot;Use This Format&quot; to apply instantly</span>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-card overflow-x-auto overflow-y-hidden shadow-2xs divide-y divide-border/60">
+            <div className="rounded-xl border border-slate-200 bg-card overflow-x-auto shadow-2xs divide-y divide-border/60">
               {PRESETS.map((preset) => {
                 const effectiveFormat = !canCustomize && preset.id === 'standard-b2b'
                   ? 'BMA/{FY}/{SEQ:4}'

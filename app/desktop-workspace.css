@@ -1,0 +1,56 @@
+/* Authenticated canvases only. Header, navigation, public pages and portals stay viewport-sized. */
+[data-dialog-body], [data-modal-canvas] { display: contents; }
+@media screen and (width < 80rem) {
+  [data-app-scroll-region] { overflow: auto; padding: 0; }
+  [data-desktop-canvas] {
+    box-sizing: border-box;
+    min-width: 1280px;
+    min-height: 100%;
+    padding: 12px 32px max(32px, env(safe-area-inset-bottom));
+  }
+  [data-admin-canvas] { padding-top: 32px; }
+  [data-viewport-dialog] {
+    box-sizing: border-box;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-width: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+  [data-viewport-dialog] button[aria-label^="Close"] {
+    position: sticky;
+    top: 0;
+    float: right;
+    z-index: 10;
+    background: var(--card);
+  }
+  [data-modal-footer] {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    background: var(--card);
+    flex-wrap: wrap;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  [data-invoice-preview-frame] {
+    max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    position: relative;
+  }
+  [data-subscription-frame] { display: flex; flex-direction: column; overflow: hidden; }
+  [data-form-dialog-frame] { display: flex; flex-direction: column; overflow: hidden; }
+  [data-complex-dialog-form] { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  [data-complex-dialog-form] > [data-modal-footer] { flex: none; }
+  [data-contained-dialog] { overflow: hidden; }
+  [data-dialog-body] { display: block; min-height: 0; min-width: 0; flex: 1; overflow: auto; overscroll-behavior: contain; }
+  [data-modal-canvas] { display: block; min-width: 632px; min-height: 0; padding: 0; }
+  [data-dialog-actions] { flex: none; padding-top: 12px; display: flex; flex-wrap: wrap; justify-content: flex-end; border-top: 1px solid var(--border); }
+}
+/* Very short screens (e.g. a phone held sideways): the fixed header/notice/error blocks of a form dialog can squeeze its
+   form to zero height. Let the whole popup scroll instead; the action bar is sticky, so it stays reachable. */
+@media screen and (width < 80rem) and (height < 35rem) {
+  [data-form-dialog-frame] { overflow: auto; }
+  [data-complex-dialog-form], [data-complex-dialog-form] [data-dialog-body] { min-height: auto; overflow: visible; }
+}
+@media print {
+  [data-desktop-canvas] { min-width: 0; min-height: 0; padding: 0; }
+}

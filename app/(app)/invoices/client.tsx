@@ -199,8 +199,7 @@ export function InvoicesClient({
 
   return (
     <div className="space-y-4">
-      {/* Heading beside the filters only from 1280px; below that they stack so the filters get the full width. */}
-      <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-3 sm:gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 sm:gap-4">
         {/* Left Side: Heading & Justified Tagline */}
         <div className="flex flex-col gap-0.5 sm:gap-1 shrink-0">
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground font-heading uppercase">
@@ -212,8 +211,8 @@ export function InvoicesClient({
         </div>
 
         {/* Right Side: Filter and Action Bar */}
-        <div className="flex flex-col lg:flex-row lg:items-center gap-2.5 sm:gap-3 bg-card p-2.5 sm:p-3 rounded-xl border border-border/70 shadow-xs flex-1 xl:max-w-4xl w-full">
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm w-full lg:max-w-xs focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 bg-card p-2.5 sm:p-3 rounded-xl border border-border/70 shadow-xs flex-1 lg:max-w-4xl w-full">
+          <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:max-w-xs focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all shadow-sm">
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <input
               type="text"
@@ -224,15 +223,14 @@ export function InvoicesClient({
             />
           </div>
 
-          {/* Phones: two rows (status + month + year, then Apply + Clear) instead of four. */}
-          <div className="grid grid-cols-4 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
             {activeTab === 'invoices' && (
-              <div className="relative col-span-2">
+              <div className="relative">
                 <select
                   aria-label="Filter by invoice status"
                   value={currentParams.status}
                   onChange={(e) => handleStatusChange(e.target.value as InvoiceListStatus)}
-                  className="w-full appearance-none rounded-lg border border-border bg-background pl-2.5 pr-7 sm:pl-3 sm:pr-8 h-9 text-[13px] sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer min-w-0 sm:min-w-[110px] shadow-sm font-semibold hover:bg-accent/40 transition-colors"
+                  className="w-full appearance-none rounded-lg border border-border bg-background pl-3 pr-8 h-9 text-[13px] sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer min-w-[110px] shadow-sm font-semibold hover:bg-accent/40 transition-colors"
                 >
                   <option value="all">All Statuses</option>
                   <option value="paid">Paid</option>
@@ -241,48 +239,48 @@ export function InvoicesClient({
                   <option value="overdue">Overdue</option>
                   <option value="draft">Draft</option>
                 </select>
-                <ChevronDown className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
               </div>
             )}
 
-            <div className={cn('relative', activeTab === 'invoices' ? 'col-span-1' : 'col-span-2')}>
+            <div className="relative">
               <select
                 aria-label="Filter by month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="w-full appearance-none rounded-lg border border-border bg-background pl-2.5 pr-7 sm:pl-3 sm:pr-8 h-9 text-[13px] sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer min-w-0 sm:min-w-[96px] shadow-sm font-semibold hover:bg-accent/40 transition-colors"
+                className="w-full appearance-none rounded-lg border border-border bg-background pl-3 pr-8 h-9 text-[13px] sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer min-w-[96px] shadow-sm font-semibold hover:bg-accent/40 transition-colors"
               >
                 {MONTHS.map((m, i) => (
                   <option key={m} value={i}>{m}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
             </div>
 
-            <div className={cn('relative', activeTab === 'invoices' ? 'col-span-1' : 'col-span-2')}>
+            <div className="relative">
               <select
                 aria-label="Filter by year"
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="w-full appearance-none rounded-lg border border-border bg-background pl-2.5 pr-7 sm:pl-3 sm:pr-8 h-9 text-[13px] sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer min-w-0 sm:min-w-[86px] shadow-sm font-semibold hover:bg-accent/40 transition-colors"
+                className="w-full appearance-none rounded-lg border border-border bg-background pl-3 pr-8 h-9 text-[13px] sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer min-w-[86px] shadow-sm font-semibold hover:bg-accent/40 transition-colors"
               >
                 {YEARS.map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
-              <ChevronDown className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none size-4 text-muted-foreground" />
             </div>
 
             <Button
               onClick={handleApply}
-              className="col-span-2 w-full sm:w-auto h-9 px-4 text-[13px] sm:text-sm font-bold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer"
+              className="w-full sm:w-auto h-9 px-4 text-[13px] sm:text-sm font-bold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer"
             >
               Apply
             </Button>
             <Button
               variant="outline"
               onClick={handleClear}
-              className="col-span-2 w-full sm:w-auto h-9 px-4 text-[13px] sm:text-sm font-semibold shadow-sm hover:bg-accent cursor-pointer"
+              className="w-full sm:w-auto h-9 px-4 text-[13px] sm:text-sm font-semibold shadow-sm hover:bg-accent cursor-pointer"
             >
               Clear
             </Button>
@@ -368,14 +366,13 @@ export function InvoicesClient({
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border bg-muted/20">
-                          <th className="max-xl:sticky max-xl:left-0 max-xl:z-[1] max-xl:bg-card px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Invoice #</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Date</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Customer</th>
-                          {/* Supply type is on the invoice itself; the column shows only from 1280px so the table fits at 768-1279px. */}
-                          <th className="hidden xl:table-cell px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Supply Type</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Grand Total</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Status</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">Actions</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Invoice #</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Date</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Customer</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Supply Type</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Grand Total</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Status</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -383,7 +380,7 @@ export function InvoicesClient({
                           const isIntra = inv.place_of_supply_state_code === businessStateCode;
                           return (
                             <tr key={inv.id} className="border-b border-border last:border-0 transition-colors hover:bg-muted/10">
-                              <td className="max-xl:sticky max-xl:left-0 max-xl:z-[1] max-xl:bg-card px-2 xl:px-3.5 py-[3px]">
+                              <td className="px-3.5 py-[3px]">
                                 <div className="relative -left-[3px]">
                                   {inv.lifecycle_status === 'draft' ? (
                                     <span className="inline-flex items-center rounded bg-muted/60 px-2 py-0.5 font-mono text-[13px] font-bold text-muted-foreground border border-border/50 uppercase tracking-wide">
@@ -391,17 +388,17 @@ export function InvoicesClient({
                                     </span>
                                   ) : (
                                     <Link href={`/invoices/${inv.id}`}>
-                                      <span className="inline-flex items-center whitespace-nowrap rounded-md bg-indigo-100/70 px-2 py-[1px] font-mono text-[15px] font-bold tracking-wide text-indigo-700 ring-1 ring-indigo-200 transition-all duration-200 hover:bg-indigo-200/70">
+                                      <span className="inline-flex items-center rounded-md bg-indigo-100/70 px-2 py-[1px] font-mono text-[15px] font-bold tracking-wide text-indigo-700 ring-1 ring-indigo-200 transition-all duration-200 hover:bg-indigo-200/70">
                                         {inv.invoice_number}
                                       </span>
                                     </Link>
                                   )}
                                 </div>
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1 text-[13px] text-muted-foreground whitespace-nowrap font-medium">
+                              <td className="px-3.5 py-1 text-[13px] text-muted-foreground whitespace-nowrap font-medium">
                                 {formatDate(inv.invoice_date)}
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1">
+                              <td className="px-3.5 py-1">
                                 <div className="flex items-center gap-2">
                                   <div
                                     className={cn(
@@ -411,12 +408,12 @@ export function InvoicesClient({
                                   >
                                     {getInitials(inv.customer_name)}
                                   </div>
-                                  <span className="text-[13px] font-semibold text-foreground truncate max-w-[150px] xl:max-w-[170px]">
+                                  <span className="text-[13px] font-semibold text-foreground truncate max-w-[170px]">
                                     {inv.customer_name}
                                   </span>
                                 </div>
                               </td>
-                              <td className="hidden xl:table-cell px-2 xl:px-3.5 py-1">
+                              <td className="px-3.5 py-1">
                                 <span
                                   className={cn(
                                     'inline-flex items-center rounded px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider border shadow-2xs leading-tight',
@@ -428,10 +425,10 @@ export function InvoicesClient({
                                   {isIntra ? 'Intra-State' : 'Inter-State'}
                                 </span>
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1 text-right font-mono text-[13px] sm:text-[14px] font-bold text-foreground">
+                              <td className="px-3.5 py-1 text-right font-mono text-[13px] sm:text-[14px] font-bold text-foreground">
                                 {formatINR(inv.grand_total_paise)}
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1">
+                              <td className="px-3.5 py-1">
                                 {(() => {
                                   const displayStatus = getDisplayInvoiceStatus(inv);
                                   const { label, colorClass } = getDisplayStatusLabel(displayStatus);
@@ -442,7 +439,7 @@ export function InvoicesClient({
                                   );
                                 })()}
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1">
+                              <td className="px-3.5 py-1">
                                 <div className="flex items-center justify-center gap-1">
                                   {inv.lifecycle_status === 'draft' ? (
                                     canEdit ? (
@@ -668,14 +665,14 @@ export function InvoicesClient({
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border bg-muted/20">
-                          <th className="max-xl:sticky max-xl:left-0 max-xl:z-[1] max-xl:bg-card px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Credit Note #</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Date</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Original Invoice</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Customer</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Reason</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Credit Amount</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Status</th>
-                          <th className="px-2 xl:px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">Actions</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Credit Note #</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Date</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Original Invoice</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Customer</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Reason</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-right">Credit Amount</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-left">Status</th>
+                          <th className="px-3.5 py-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider text-center">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -684,10 +681,10 @@ export function InvoicesClient({
                           const isVoided = note.status === 'voided';
                           return (
                             <tr key={note.id} className={cn("border-b border-border last:border-0 transition-colors", isVoided ? "bg-muted/30 opacity-75 hover:opacity-90" : "hover:bg-muted/10")}>
-                              <td className="max-xl:sticky max-xl:left-0 max-xl:z-[1] max-xl:bg-card px-2 xl:px-3.5 py-[3px]">
+                              <td className="px-3.5 py-[3px]">
                                 <Link href={`/credit-notes/${note.id}`}>
                                   <span className={cn(
-                                    "inline-flex items-center whitespace-nowrap rounded-md px-2 py-[1px] font-mono text-[14px] font-bold tracking-wide transition-all duration-200",
+                                    "inline-flex items-center rounded-md px-2 py-[1px] font-mono text-[14px] font-bold tracking-wide transition-all duration-200",
                                     isVoided
                                       ? "bg-slate-100 text-slate-500 line-through ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800"
                                       : "bg-red-100/70 text-red-700 ring-1 ring-red-200 hover:bg-red-200/70"
@@ -696,21 +693,21 @@ export function InvoicesClient({
                                   </span>
                                 </Link>
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1 text-[13px] text-muted-foreground whitespace-nowrap font-medium">
+                              <td className="px-3.5 py-1 text-[13px] text-muted-foreground whitespace-nowrap font-medium">
                                 {formatDate(note.issue_date || note.created_at)}
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1">
-                                <Link href={`/invoices/${note.original_invoice_id}`} className="whitespace-nowrap font-mono text-[13px] font-bold text-primary hover:underline">
+                              <td className="px-3.5 py-1">
+                                <Link href={`/invoices/${note.original_invoice_id}`} className="font-mono text-[13px] font-bold text-primary hover:underline">
                                   {note.original_invoice_number}
                                 </Link>
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1">
-                                <span className="text-[13px] font-semibold text-foreground truncate max-w-[150px] xl:max-w-[170px] block">
+                              <td className="px-3.5 py-1">
+                                <span className="text-[13px] font-semibold text-foreground truncate max-w-[170px] block">
                                   {note.billing_name_snapshot || 'Cash Customer'}
                                 </span>
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1 text-[13px] text-muted-foreground">
-                                <span className="whitespace-nowrap">{note.reason}</span>
+                              <td className="px-3.5 py-1 text-[13px] text-muted-foreground">
+                                {note.reason}
                                 {isVoided && note.void_reason && (
                                   <span className="text-rose-600 dark:text-rose-400 font-semibold block text-[11px]">
                                     Voided ({note.void_reason})
@@ -718,12 +715,12 @@ export function InvoicesClient({
                                 )}
                               </td>
                               <td className={cn(
-                                "px-2 xl:px-3.5 py-1 text-right font-mono text-[13px] sm:text-[14px] font-bold whitespace-nowrap",
+                                "px-3.5 py-1 text-right font-mono text-[13px] sm:text-[14px] font-bold",
                                 isVoided ? "line-through text-muted-foreground" : "text-red-700 dark:text-red-400"
                               )}>
                                 -{formatINR(note.grand_total_paise)}
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1">
+                              <td className="px-3.5 py-1">
                                 <span className={cn(
                                   "inline-flex items-center rounded px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider shadow-2xs border leading-tight",
                                   isVoided
@@ -735,7 +732,7 @@ export function InvoicesClient({
                                   {isVoided ? 'VOIDED' : (isFinalized ? 'Finalized' : 'Draft')}
                                 </span>
                               </td>
-                              <td className="px-2 xl:px-3.5 py-1">
+                              <td className="px-3.5 py-1">
                                 <div className="flex items-center justify-center gap-1">
                                   <Link
                                     href={`/credit-notes/${note.id}`}

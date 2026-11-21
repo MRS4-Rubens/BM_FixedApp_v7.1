@@ -6,45 +6,15 @@ import type { InvoiceDraftInput } from '@/lib/validations/invoice';
 import { searchProductOptions } from '@/lib/actions/products/search-product-options';
 import type { ProductOption } from '@/lib/pickers/types';
 
-/** The visible area: the visual viewport (shrinks and shifts when the phone keyboard or pinch-zoom is active),
- * falling back to the window. */
-function visibleBounds() {
-  const vv = window.visualViewport;
-  const left = vv?.offsetLeft ?? 0;
-  const top = vv?.offsetTop ?? 0;
-  return { left, top, right: left + (vv?.width ?? window.innerWidth), bottom: top + (vv?.height ?? window.innerHeight) };
-}
-
-/** Suggestion box geometry. The list (max 192px tall, drawn 4px below `top`) goes under the input, kept inside the
- * visible area with an 8px margin; it moves above the input when there is clearly more room there (e.g. phone keyboard
- * open), and `maxHeight` shrinks it to the room available on the chosen side (the consumer hides it below
- * SUGGESTION_LIST_MIN_HEIGHT). On a roomy desktop screen this is the
- * input's own position and the list's normal height. */
-const LIST_MAX_HEIGHT = 192;
-/** Below this the list cannot show one full option, so it is not drawn at all (e.g. tiny space beside the keyboard). */
-export const SUGGESTION_LIST_MIN_HEIGHT = 40;
-const GAP = 4;
-const EDGE = 8;
-export interface SuggestionRect {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-  maxHeight: number;
-}
-function suggestionRect(el: HTMLInputElement): SuggestionRect {
+function suggestionRect(el: HTMLInputElement) {
   const rect = el.getBoundingClientRect();
-  const view = visibleBounds();
-  const width = Math.min(rect.width, view.right - view.left - EDGE * 2);
-  const left = Math.max(view.left + EDGE, Math.min(rect.left, view.right - width - EDGE));
-  const below = view.bottom - rect.bottom - GAP - EDGE;
-  const above = rect.top - view.top - GAP - EDGE;
-  const flip = below < LIST_MAX_HEIGHT && above > below;
-  // Never taller than the room available, so the list cannot slide behind the keyboard or off screen.
-  const maxHeight = Math.max(0, Math.min(LIST_MAX_HEIGHT, flip ? above : below));
-  // The consumer draws the list at top + GAP, so above the input the list ends GAP px above it.
-  const top = flip ? rect.top - maxHeight - GAP * 2 : rect.bottom;
-  return { top: top + window.scrollY, left: left + window.scrollX, width, height: rect.height, maxHeight };
+  const narrow = window.innerWidth < 1280;
+  const width = narrow ? Math.min(rect.width, window.innerWidth - 16) : rect.width;
+  const left = narrow ? Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) : rect.left;
+  const bottom = window.visualViewport?.height ?? window.innerHeight;
+  // Open above the input when the ~200px list would run past the bottom of the screen (any width).
+  const top = rect.bottom + 200 > bottom && rect.top >= 200 ? rect.top - 200 : rect.bottom;
+  return { top: top + window.scrollY, left: left + window.scrollX, width, height: rect.height };
 }
 
 export function useProductSuggestions({
@@ -57,7 +27,12 @@ export function useProductSuggestions({
 }) {
   const [suggestIdx, setSuggestIdx] = useState<number | null>(null);
   const [isProdSuggestionsOpen, setIsProdSuggestionsOpen] = useState(false);
-  const [activeInputRect, setActiveInputRect] = useState<SuggestionRect | null>(null);
+  const [activeInputRect, setActiveInputRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const [activeInputRef, setActiveInputRef] = useState<HTMLInputElement | null>(null);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
   const productReqIdRef = useRef(0);
@@ -97,9 +72,7 @@ export function useProductSuggestions({
 
     const handleUpdate = () => {
       const rect = activeInputRef.getBoundingClientRect();
-      const view = visibleBounds();
-      // The input left the visible area: close instead of leaving a floating box behind.
-      if (rect.right <= view.left || rect.left >= view.right || rect.bottom <= view.top || rect.top >= view.bottom) {
+      if (window.innerWidth < 1280 && (rect.right <= 0 || rect.left >= window.innerWidth || rect.bottom <= 0 || rect.top >= window.innerHeight)) {
         setIsProdSuggestionsOpen(false);
         return;
       }
@@ -108,7 +81,7 @@ export function useProductSuggestions({
 
     window.addEventListener('scroll', handleUpdate, true);
     window.addEventListener('resize', handleUpdate);
-    // Opening the phone keyboard resizes only the visual viewport (no window resize event).
+    // Phones: the on-screen keyboard often changes only the visual viewport, which fires neither event above.
     window.visualViewport?.addEventListener('resize', handleUpdate);
     window.visualViewport?.addEventListener('scroll', handleUpdate);
 

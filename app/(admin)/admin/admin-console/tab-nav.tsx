@@ -35,8 +35,7 @@ export function TabNav({
 
   return (
     <div className="flex items-center justify-between border-b border-border/60 pb-px">
-      {/* One line per tab; on narrow screens the row swipes sideways (no scrollbar track). */}
-      <div className="flex min-w-0 gap-2 overflow-x-auto py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex gap-2 overflow-x-auto py-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -44,17 +43,16 @@ export function TabNav({
           return (
             <button
               key={tab.id}
-              type="button"
-              aria-pressed={isActive}
               onClick={() => onSelectTab(tab.id)}
+              aria-pressed={isActive}
               className={cn(
-                'group flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 sm:px-3.5 py-2 text-[13px] sm:text-sm font-bold transition-all cursor-pointer select-none outline-none',
+                'group flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-bold transition-all cursor-pointer select-none outline-none',
                 isActive
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
               )}
             >
-              <Icon className={cn('size-4 shrink-0 transition-colors', isActive ? 'text-white' : 'text-muted-foreground group-hover:text-foreground')} />
+              <Icon className={cn('size-4 transition-colors', isActive ? 'text-white' : 'text-muted-foreground group-hover:text-foreground')} />
               <span>{tab.label}</span>
               {tab.badge !== undefined && (
                 <span
