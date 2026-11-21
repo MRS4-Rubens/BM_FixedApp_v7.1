@@ -5,7 +5,7 @@ name: E2E (runner app)
 # Mailosaur: e-mail confirmation uses E2E_VERIFY_MODE=db (the test database is marked verified directly).
 #
 # The app and the tests use ONLY test services: the test Neon database + its Neon Auth, plus a local Redis look-alike
-# (rate limits). CustomJS and Brevo get obviously fake keys, so no real PDF or e-mail is ever sent.
+# (rate limits). Cloudflare (PDF) and Brevo get obviously fake keys, so no real PDF or e-mail is ever sent.
 # Neon Auth allows localhost by default ("Allow Localhost"), so no trusted-domain step is needed on the test
 # project. (Production must have Allow Localhost OFF: checklist section 3.)
 
@@ -51,8 +51,11 @@ jobs:
             if [ -z "${!NAME:-}" ]; then MISSING="$MISSING $NAME"; fi
           done
           if [ -n "$MISSING" ]; then
-            echo "::notice::E2E is not configured (missing:$MISSING). Skipping. See docs/LAUNCH_CHECKLIST.md section 4.2."
+            # CI-01: fail loudly. This job only runs for same-repo PRs and manual runs (forks never get here), where
+            # the secrets must exist. A skipped "Playwright E2E Suite" would count as passed for a required check.
+            echo "::error::E2E is not configured (missing:$MISSING). See docs/LAUNCH_CHECKLIST.md section 4.2."
             echo "configured=false" >> "$GITHUB_OUTPUT"
+            exit 1
           else
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi

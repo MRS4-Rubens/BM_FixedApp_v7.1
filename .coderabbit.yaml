@@ -29,7 +29,8 @@ reviews:
       instructions: |
         PROJECT CONTEXT (read first; it decides what is worth a comment):
         - This is a PILOT for about 3 businesses, run on free tiers at Rs 0/month (Render Free, Neon Free, Upstash
-          Free, IDrive e2, Brevo, CustomJS, cron-job.org, UptimeRobot) until the first paying customer.
+          Free, IDrive e2, Brevo, Cloudflare Browser Rendering for PDFs (free: 1 request / 10 s, 10 browser-minutes
+          a day), cron-job.org, UptimeRobot) until the first paying customer.
         - The service decisions and launch steps in docs/LAUNCH_CHECKLIST.md are FINAL. Do not suggest paid
           services, different providers, extra infrastructure, or keeping test data; the upgrade path is in its
           section 10. Question a decision only for a real bug, security hole or risk of losing data.
