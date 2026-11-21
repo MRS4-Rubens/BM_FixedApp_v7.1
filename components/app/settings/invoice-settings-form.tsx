@@ -281,7 +281,7 @@ export function InvoiceSettingsForm({
         <fieldset disabled={!isOwner} className="space-y-4 border-0 p-0 m-0">
         {/* -- SECTION 1: Invoice & Credit Note Numbering (Dark Navy / Blue - blue-900) -- */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50 mb-3">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-900 text-[11px] font-black text-white shadow-xs">
                 1
@@ -291,7 +291,7 @@ export function InvoiceSettingsForm({
                 Invoice &amp; Credit Note Numbering
               </h3>
             </div>
-            <span className="text-xs font-medium text-muted-foreground">GST Rule 46(b) compliant sequence</span>
+            <span className="pl-[54px] sm:pl-0 text-xs font-medium text-muted-foreground">GST Rule 46(b) compliant sequence</span>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -465,7 +465,7 @@ export function InvoiceSettingsForm({
 
         {/* -- SECTION 2: Template & Calculation Preferences (Teal - teal-900) -- */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50 mb-3">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-teal-900 text-[11px] font-black text-white shadow-xs">
                 2
@@ -475,7 +475,7 @@ export function InvoiceSettingsForm({
                 Template &amp; Calculation Preferences
               </h3>
             </div>
-            <span className="text-xs font-medium text-muted-foreground">Print layout &amp; tax computation</span>
+            <span className="pl-[54px] sm:pl-0 text-xs font-medium text-muted-foreground">Print layout &amp; tax computation</span>
           </div>
 
           {/* Row 1: Side-by-Side Dropdowns for Template & Default GST Slab */}
@@ -598,7 +598,7 @@ export function InvoiceSettingsForm({
 
         {/* -- SECTION 3: Line Item Columns (Dark Green - emerald-800) -- */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50 mb-3">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-[11px] font-black text-white shadow-xs">
                 3
@@ -608,7 +608,7 @@ export function InvoiceSettingsForm({
                 Line Item Columns
               </h3>
             </div>
-            <span className="text-xs font-medium text-muted-foreground">Invoice creation table fields</span>
+            <span className="pl-[54px] sm:pl-0 text-xs font-medium text-muted-foreground">Invoice creation table fields</span>
           </div>
           <p className="mb-3 text-sm text-muted-foreground">
             Configure which input columns appear in the line items table when composing a new invoice.
@@ -671,7 +671,7 @@ export function InvoiceSettingsForm({
 
         {/* -- SECTION 4: Print & PDF Options (Dark Amber - amber-800) -- */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50 mb-3">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-800 text-[11px] font-black text-white shadow-xs">
                 4
@@ -681,7 +681,7 @@ export function InvoiceSettingsForm({
                 Print &amp; PDF Options
               </h3>
             </div>
-            <span className="text-xs font-medium text-muted-foreground">Document layout &amp; table padding</span>
+            <span className="pl-[54px] sm:pl-0 text-xs font-medium text-muted-foreground">Document layout &amp; table padding</span>
           </div>
           <p className="mb-3 text-sm text-muted-foreground">
             Control visual elements rendered on printed physical bills or exported PDF invoices.
@@ -781,7 +781,7 @@ export function InvoiceSettingsForm({
 
         {/* -- SECTION 5: Default Terms & Conditions (Maroon - rose-900) -- */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50 mb-3">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-rose-900 text-[11px] font-black text-white shadow-xs">
                 5
@@ -791,7 +791,7 @@ export function InvoiceSettingsForm({
                 Default Terms &amp; Conditions
               </h3>
             </div>
-            <span className="text-xs font-medium text-muted-foreground">Pre-filled statutory policies</span>
+            <span className="pl-[54px] sm:pl-0 text-xs font-medium text-muted-foreground">Pre-filled statutory policies</span>
           </div>
 
           <label className={labelClass} htmlFor="invoice_terms">
