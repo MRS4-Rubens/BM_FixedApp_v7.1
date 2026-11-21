@@ -23,6 +23,7 @@ import { VerifyEmailCodeForm } from './verify-email-code-form'
 import type { AuthActionState } from '@/lib/validations/auth'
 import { SUPPORT_EMAIL } from '@/lib/config/contact'
 import { useIsClient } from '@/lib/hooks/use-is-client'
+import { TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements'
 
 const socialButtonClass = 'flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-stone-200 bg-white px-1 py-1.5 text-xs font-medium whitespace-nowrap text-slate-700 transition-colors hover:border-indigo-200 hover:bg-indigo-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 min-[400px]:flex-row min-[400px]:gap-1.5 sm:text-sm'
 
@@ -210,7 +211,7 @@ export function AuthenticationModal() {
               ? 'Enter the 6-digit code we e-mailed you.'
               : mode === 'login'
                 ? 'Sign in to your Invoice BizFolio account.'
-                : 'Start your 14-day free trial. No credit card required.'}
+                : `Start your ${TRIAL_DURATION_DAYS}-day free trial. No credit card required.`}
           </p>
         </div>
 

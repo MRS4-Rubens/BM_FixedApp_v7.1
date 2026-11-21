@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { AlertTriangle, ArrowLeft, CheckCircle2, Clock, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatIstDate } from '@/lib/invoices/ist-date';
+import { TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements';
 
 export function StatusNotices({
   isActive,
@@ -75,7 +76,7 @@ export function StatusNotices({
           <Clock className="size-5 shrink-0 text-amber-500" />
           <div>
             <b className="text-sm font-bold block">
-              Free Trial Active ({daysRemaining ?? 14} Days Left)
+              Free Trial Active ({daysRemaining ?? TRIAL_DURATION_DAYS} Days Left)
             </b>
             <span className="text-xs mt-0.5 block text-amber-700">
               Upgrade to Essentials now to lock in continuous access and avoid feature interruption.

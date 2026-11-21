@@ -20,16 +20,16 @@ export interface PlanPricing {
 export const PLAN_PRICING: Record<'essentials' | 'professional', PlanPricing> = {
   essentials: {
     monthlyPaise: 39900,  // ₹399 / month
-    yearlyPaise: 349900,  // ₹3,499 / year (~₹291/month, Save 27%)
+    yearlyPaise: 399900,  // ₹3,999 / year (~₹333/month, Save 16%)
   },
   professional: {
     monthlyPaise: 59900,  // ₹599 / month
-    yearlyPaise: 499900,  // ₹4,999 / year (~₹416/month, Save 30%)
+    yearlyPaise: 599900,  // ₹5,999 / year (~₹499/month, Save 17%)
   },
 };
 
 /** Length of the free trial a new business gets at signup (lib/business/save-profile-tx.ts re-exports it). */
-export const TRIAL_DURATION_DAYS = 14;
+export const TRIAL_DURATION_DAYS = 7;
 
 export const FREE_TIER_LIMITS = {
   invoiceMonthlyLimit: 30, // Max 30 invoices per calendar month

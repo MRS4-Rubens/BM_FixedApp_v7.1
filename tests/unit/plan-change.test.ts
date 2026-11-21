@@ -49,10 +49,10 @@ describe('Feature G: computePlanPurchase (approved decisions 2-4)', () => {
     expect(result.endsAt.getTime()).toBeLessThan(addBillingCycleUtc(daysFromNow(300), 'monthly').getTime());
   });
 
-  it('upgrade on a yearly purchase uses the yearly prices (3,499 -> 4,999)', () => {
+  it('upgrade on a yearly purchase uses the yearly prices (3,999 -> 5,999)', () => {
     const result = computePlanPurchase(active('essentials', daysFromNow(100)), 'professional', 'yearly', NOW);
-    expect(result.creditedMs).toBe(Math.floor((100 * DAY * 349_900) / 499_900));
-    expect(result.creditedDays).toBe(69); // 69.99 days
+    expect(result.creditedMs).toBe(Math.floor((100 * DAY * 399_900) / 599_900));
+    expect(result.creditedDays).toBe(66); // 66.66 days
   });
 
   it('downgrade: unused Professional time becomes MORE Essentials time, never less value', () => {
@@ -68,7 +68,7 @@ describe('Feature G: computePlanPurchase (approved decisions 2-4)', () => {
         for (const cycle of ['monthly', 'yearly'] as const) {
           const result = computePlanPurchase(active(from, new Date(NOW.getTime() + unusedDays * DAY)), to, cycle, NOW);
           const priceOf = (plan: string) =>
-            plan === 'essentials' ? (cycle === 'yearly' ? 349_900 : 39_900) : cycle === 'yearly' ? 499_900 : 59_900;
+            plan === 'essentials' ? (cycle === 'yearly' ? 399_900 : 39_900) : cycle === 'yearly' ? 599_900 : 59_900;
           const before = BigInt(result.unusedMs) * BigInt(priceOf(from));
           const after = BigInt(result.creditedMs) * BigInt(priceOf(to));
           expect(after <= before).toBe(true);
@@ -82,6 +82,6 @@ describe('Feature G: computePlanPurchase (approved decisions 2-4)', () => {
     const result = computePlanPurchase(active('essentials', daysFromNow(3650).toISOString()), 'professional', 'yearly', NOW);
     expect(result.kind).toBe('upgrade');
     expect(Number.isSafeInteger(result.creditedMs)).toBe(true);
-    expect(result.creditedMs).toBe(Number((BigInt(3650 * DAY) * 349_900n) / 499_900n));
+    expect(result.creditedMs).toBe(Number((BigInt(3650 * DAY) * 399_900n) / 599_900n));
   });
 });

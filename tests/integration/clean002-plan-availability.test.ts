@@ -167,7 +167,7 @@ describe('CLEAN-002: Plan Availability & Payment Claim Guard', () => {
       .from(schema.subscriptionRequests);
     expect(row?.plan_name).toBe('professional');
     expect(row?.billing_cycle).toBe('yearly');
-    expect(row?.amount_paise).toBe(499900);
+    expect(row?.amount_paise).toBe(599900);
     expect(row?.status).toBe('pending');
   });
 

@@ -386,21 +386,21 @@ describe('Entitlements & Subscription Engine (TEST-001)', () => {
     it('validates pricing constants, yearly savings discounts, and positive integers', () => {
       // Essentials
       expect(PLAN_PRICING.essentials.monthlyPaise).toBe(39_900);
-      expect(PLAN_PRICING.essentials.yearlyPaise).toBe(349_900);
+      expect(PLAN_PRICING.essentials.yearlyPaise).toBe(399_900);
       expect(PLAN_PRICING.essentials.yearlyPaise).toBeLessThan(12 * PLAN_PRICING.essentials.monthlyPaise);
       const essSavings = Math.round(
         (1 - PLAN_PRICING.essentials.yearlyPaise / (12 * PLAN_PRICING.essentials.monthlyPaise)) * 100
       );
-      expect(essSavings).toBe(27);
+      expect(essSavings).toBe(16);
 
       // Professional
       expect(PLAN_PRICING.professional.monthlyPaise).toBe(59_900);
-      expect(PLAN_PRICING.professional.yearlyPaise).toBe(499_900);
+      expect(PLAN_PRICING.professional.yearlyPaise).toBe(599_900);
       expect(PLAN_PRICING.professional.yearlyPaise).toBeLessThan(12 * PLAN_PRICING.professional.monthlyPaise);
       const proSavings = Math.round(
         (1 - PLAN_PRICING.professional.yearlyPaise / (12 * PLAN_PRICING.professional.monthlyPaise)) * 100
       );
-      expect(proSavings).toBe(30);
+      expect(proSavings).toBe(17);
     });
   });
 });
