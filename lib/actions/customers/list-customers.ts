@@ -28,7 +28,9 @@ const listCustomersSchema = z
     message: 'Cannot provide both after and before cursors',
   });
 
-export type CustomerRow = typeof customers.$inferSelect;
+type CustomerTableRow = typeof customers.$inferSelect;
+/** B4: only the fields the customers list shows (plus the paging key), not whole rows. */
+export type CustomerRow = Pick<CustomerTableRow, 'id' | 'business_id' | 'name' | 'gstin' | 'state_code' | 'phone' | 'is_active'>;
 
 export const listCustomers = createAuthenticatedAction(
   listCustomersSchema,
@@ -89,7 +91,15 @@ export const listCustomers = createAuthenticatedAction(
 
     const [rows, countResult] = await Promise.all([
       db
-        .select()
+        .select({
+          id: customers.id,
+          business_id: customers.business_id,
+          name: customers.name,
+          gstin: customers.gstin,
+          state_code: customers.state_code,
+          phone: customers.phone,
+          is_active: customers.is_active,
+        })
         .from(customers)
         .where(and(...queryConditions))
         .orderBy(...orderBy)

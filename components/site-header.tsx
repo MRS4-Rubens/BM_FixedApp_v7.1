@@ -101,7 +101,7 @@ export function SiteHeader({ scrolled }: SiteHeaderProps) {
           aria-label="Toggle navigation menu"
           aria-expanded={mobileMenuOpen}
         >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {mobileMenuOpen ? <X className="w-6 h-6 text-red-500 dark:text-red-400" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 

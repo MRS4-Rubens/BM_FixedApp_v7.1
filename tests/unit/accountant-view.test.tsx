@@ -79,43 +79,22 @@ const mockCustomer: CustomerRow = {
   business_id: 'b0000000-0000-0000-0000-000000000001',
   name: 'Beta Industries',
   gstin: '29ABCDE1234F1Z5',
-  email: 'buyer@beta.test',
   phone: '9988776655',
-  address_line1: '123 MG Road',
-  address_line2: null,
-  city: 'Bengaluru',
   state_code: '29',
-  pincode: '560001',
   is_active: true,
-  created_at: new Date('2026-01-01'),
-  updated_at: new Date('2026-01-01'),
 };
 
 const mockProductItem: ProductListItem = {
   product: {
     id: 'p0000000-0000-0000-0000-000000000001',
-    business_id: 'b0000000-0000-0000-0000-000000000001',
     name: 'Industrial Widget',
-    description: null,
     hsn_sac_code: '84713010',
     unit_of_measurement: 'PCS',
     default_sale_price_paise: 25000,
-    default_tax_rate_id: 't0000000-0000-0000-0000-000000000001',
     stock_quantity: 100,
     is_active: true,
-    created_at: new Date('2026-01-01'),
-    updated_at: new Date('2026-01-01'),
   },
-  taxRate: {
-    id: 't0000000-0000-0000-0000-000000000001',
-    label: '18%',
-    rate_percentage: '18.00',
-    is_active: true,
-    effective_from: '2024-01-01',
-    effective_to: null,
-    created_at: new Date('2024-01-01'),
-    updated_at: new Date('2024-01-01'),
-  },
+  taxRate: { label: '18%' },
 };
 
 const mockInvoiceItem: InvoiceListItem = {

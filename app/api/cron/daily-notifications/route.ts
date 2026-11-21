@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyCronRequest } from '@/lib/cron/verify-cron-request';
 import { runCronInBackground } from '@/lib/cron/run-in-background';
 import { runDailyNotifications } from '@/lib/notifications/daily';
+import { touchRedisKeepalive } from '@/lib/cron/redis-keepalive';
 import { runWithRequestId, requestIdFromHeaders } from '@/lib/observability/request-context';
 
 // Feature C: the once-a-day notifications job (09:00 IST), triggered by cron-job.org (lib/cron/schedules.ts).
@@ -15,7 +16,11 @@ function handleCron(request: NextRequest, requestId: string): NextResponse {
   const denied = verifyCronRequest(request, 'notifications-cron');
   if (denied) return denied;
 
-  return runCronInBackground('notifications-cron', requestId, () => runDailyNotifications());
+  return runCronInBackground('notifications-cron', requestId, async () => {
+    // B6: one tiny Redis write a day so Upstash never sees a week without requests (never throws).
+    await touchRedisKeepalive();
+    return runDailyNotifications();
+  });
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse> {

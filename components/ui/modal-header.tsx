@@ -96,7 +96,7 @@ export function ModalHeader({
       onClick={mode === 'plain' ? onClose : undefined}
       className={closeCls}
     >
-      <X className="size-4" />
+      <X className="size-4 text-red-500 dark:text-red-400" />
     </button>
   );
 

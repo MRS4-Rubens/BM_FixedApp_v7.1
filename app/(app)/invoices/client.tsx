@@ -293,7 +293,7 @@ export function InvoicesClient({
           <AlertCircle className="size-5 shrink-0 mt-0.5" />
           <div className="flex-1">{listError}</div>
           <button type="button" onClick={() => setListError(null)} aria-label="Dismiss message" className="text-destructive/70 hover:text-destructive cursor-pointer">
-            <X className="size-4" />
+            <X className="size-4 text-red-500 dark:text-red-400" />
           </button>
         </div>
       )}

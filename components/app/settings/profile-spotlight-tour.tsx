@@ -732,7 +732,7 @@ export function ProfileSpotlightTour({
             className="text-slate-400 hover:text-slate-700 transition-colors p-1 -mr-1 rounded cursor-pointer"
             title="Close Tour"
           >
-            <X className="size-4" />
+            <X className="size-4 text-red-500 dark:text-red-400" />
           </button>
         </div>
 

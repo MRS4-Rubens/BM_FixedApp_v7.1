@@ -14,6 +14,7 @@ import { Check, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { PayeeNotConfiguredNotice } from './payee-not-configured-notice';
+import { ServerHealthCard } from './server-health-card';
 import { buildRevenueChartData } from './chart-data';
 import type { AdminStats, UpiConfig } from './types';
 
@@ -50,6 +51,7 @@ export function OverviewTab({
 
   return (
     <div className="space-y-4">
+      <ServerHealthCard />
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Left: Revenue Trend Chart (8 cols) */}
         <div className="lg:col-span-8 rounded-xl border border-border bg-card p-5 shadow-xs flex flex-col justify-between">

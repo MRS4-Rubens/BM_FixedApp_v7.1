@@ -171,7 +171,13 @@ export function LineItemsTable({
       </div>
       <button
         type="button"
-        onClick={() => append({ product_id: '', description: '', hsn_sac_code: '', quantity: 1, unit_of_measurement: 'NOS', unit_price: 0, discount: 0, tax_rate_id: '' })}
+        onClick={() =>
+          // Focus the new row's Description (QTY is registered first, so the default focus would land there).
+          append(
+            { product_id: '', description: '', hsn_sac_code: '', quantity: 1, unit_of_measurement: 'NOS', unit_price: 0, discount: 0, tax_rate_id: '' },
+            { focusName: `line_items.${fields.length}.description` },
+          )
+        }
         className="mt-2.5 flex items-center gap-1.5 text-sm font-bold text-primary transition-all hover:text-primary/80 hover:translate-x-0.5 whitespace-nowrap cursor-pointer"
       >
         <Plus className="size-4" /> Add Item Row

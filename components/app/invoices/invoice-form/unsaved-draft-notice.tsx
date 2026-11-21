@@ -40,7 +40,7 @@ export function UnsavedDraftNotice({
         aria-label="Hide this message"
         className="shrink-0 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
       >
-        <X className="size-4" />
+        <X className="size-4 text-red-500 dark:text-red-400" />
       </button>
     </div>
   );

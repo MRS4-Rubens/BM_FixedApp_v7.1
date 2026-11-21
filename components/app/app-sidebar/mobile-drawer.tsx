@@ -67,7 +67,7 @@ export function MobileDrawer({
             className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors cursor-pointer"
             aria-label="Close navigation menu"
           >
-            <X className="size-4" />
+            <X className="size-4 text-red-500 dark:text-red-400" />
           </button>
         </div>
 

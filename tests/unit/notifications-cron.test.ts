@@ -5,6 +5,7 @@ import { CRON_JOBS } from '@/lib/cron/schedules';
 
 // LAUNCH-L2: `after()` is captured so each test can await the background job.
 const { afterTasks } = vi.hoisted(() => ({ afterTasks: [] as Promise<unknown>[] }));
+vi.mock('@/lib/cron/redis-keepalive', () => ({ touchRedisKeepalive: vi.fn().mockResolvedValue(true) }));
 vi.mock('next/server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/server')>()),
   after: (task: () => Promise<unknown>) => {
