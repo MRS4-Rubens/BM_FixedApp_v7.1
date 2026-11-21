@@ -1,6 +1,8 @@
 'use client';
 
+import { useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useModalFocus } from '@/lib/hooks/use-modal-focus';
 import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock';
 import { useIsClient } from '@/lib/hooks/use-is-client';
 import { AlertCircle, CheckCircle2, Clock, Printer, ReceiptText } from 'lucide-react';
@@ -23,6 +25,8 @@ export function ReceiptModal({
 }: ReceiptModalProps) {
   const mounted = useIsClient();
   usePageScrollLock(Boolean(selectedReceipt));
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, Boolean(selectedReceipt) && mounted, onClose);
   if (!selectedReceipt || !mounted) return null;
 
   const handlePrintReceipt = () => {
@@ -31,7 +35,7 @@ export function ReceiptModal({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs print:p-0 print:bg-white">
-      <div data-viewport-dialog role="dialog" aria-modal="true" aria-labelledby="receipt-modal-title" className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl max-h-[92dvh] overflow-y-auto print:max-h-none print:overflow-visible print:border-none print:shadow-none print:p-0">
+      <div ref={dialogRef} data-viewport-dialog role="dialog" aria-modal="true" aria-labelledby="receipt-modal-title" className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl max-h-[92dvh] overflow-y-auto print:max-h-none print:overflow-visible print:border-none print:shadow-none print:p-0">
         <ModalHeader
           mode="plain"
           titleId="receipt-modal-title"

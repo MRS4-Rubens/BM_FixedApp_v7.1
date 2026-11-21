@@ -74,6 +74,7 @@ export function RejectClaimDialog({
                 title="Reject Payment Claim"
                 description={`Claim from ${rejectingClaim.businessName}`}
                 closeLabel="Close reject claim"
+                closeDisabled={isPending}
                 className="-mx-6 -mt-6 -top-6"
               />
               <p className="text-sm text-muted-foreground mt-3 leading-relaxed">

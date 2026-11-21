@@ -21,7 +21,11 @@ export function UnsavedDraftNotice({
       <History className="size-4 shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
       <p className="flex-1 font-medium text-foreground">
         Restored your unsaved invoice from {formatIstTime(new Date(restoredAt))}.
-        <span className="text-muted-foreground"> It stays on this device until you save it.</span>
+        <span className="text-muted-foreground">
+          {' '}
+          Kept only in this browser for 30 minutes after your last change, and removed when you sign out. Save it as a
+          draft to keep it.
+        </span>
       </p>
       <button
         type="button"

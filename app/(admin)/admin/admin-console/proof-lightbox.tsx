@@ -44,7 +44,7 @@ export function ProofLightbox({
                       href={proofViewer.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hidden sm:inline-flex rounded-md border border-border bg-card px-2.5 py-1 text-sm font-bold text-muted-foreground hover:text-indigo-600 hover:bg-muted transition"
+                      className="inline-flex shrink-0 whitespace-nowrap rounded-md border border-border bg-card px-2.5 py-1 text-sm font-bold text-muted-foreground hover:text-indigo-600 hover:bg-muted transition"
                     >
                       Open Original ↗
                     </a>

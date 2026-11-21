@@ -93,8 +93,9 @@ export function AppSidebar({
 
   async function handleSignOut() {
     const { authClient } = await import('@/lib/auth/client')
-    clearAllUnsavedInvoiceDrafts()
-    await authClient.signOut()
+    const result = await authClient.signOut()
+    // Forget unsaved invoice copies only once the session is really gone (a failed sign-out keeps them).
+    if (!result?.error) clearAllUnsavedInvoiceDrafts()
     router.push('/login')
     router.refresh()
   }

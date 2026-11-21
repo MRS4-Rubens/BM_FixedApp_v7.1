@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useModalFocus } from '@/lib/hooks/use-modal-focus';
 import { createPortal } from 'react-dom';
 import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock';
 import { Sparkles, Check, Copy, Hash, ArrowRight, ShieldCheck, Calendar, Layers, HelpCircle, Lock } from 'lucide-react';
@@ -88,6 +89,8 @@ export function InvoiceFormatGuideModal({
   const modalRef = useRef<HTMLDivElement>(null);
 
   usePageScrollLock(isOpen);
+  // Focus into the guide, Tab kept inside, focus back to the trigger on close (Escape is handled below).
+  useModalFocus(modalRef, isOpen && isMounted);
 
   // Handle ESC key to close
   useEffect(() => {

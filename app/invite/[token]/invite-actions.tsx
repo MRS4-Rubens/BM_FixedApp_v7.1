@@ -54,8 +54,8 @@ export function SwitchAccountButton({ continueHref }: { continueHref: string }) 
   const handleSwitch = () => {
     startTransition(async () => {
       const { authClient } = await import('@/lib/auth/client');
-      clearAllUnsavedInvoiceDrafts();
-      await authClient.signOut();
+      const result = await authClient.signOut();
+      if (!result?.error) clearAllUnsavedInvoiceDrafts();
       router.push(continueHref);
       router.refresh();
     });

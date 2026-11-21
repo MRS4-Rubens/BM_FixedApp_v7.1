@@ -1,7 +1,9 @@
 'use client';
 
+import { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock';
+import { useModalFocus } from '@/lib/hooks/use-modal-focus';
 import { Eye, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InvoicePrintView, type InvoicePrintViewProps } from '../invoice-print-view';
@@ -49,6 +51,9 @@ export function InvoicePreviewModal({
   setValue: UseFormSetValue<InvoiceDraftInput>;
 }) {
   usePageScrollLock(isPreviewOpen);
+  const frameRef = useRef<HTMLDivElement>(null);
+  // Focus moves into the preview and Tab stays inside it (no Escape: the template picker uses Escape itself).
+  useModalFocus(frameRef, mounted && isPreviewOpen);
   const templateWidth = 780 + (displayPrefs.showHsn ? 70 : 0) + (displayPrefs.discEnabled ? 70 : 0);
   const previewMaxWidth = `${templateWidth}px`;
   const modalMaxWidth = `${templateWidth + 80}px`;
@@ -58,7 +63,7 @@ export function InvoicePreviewModal({
       {mounted && isPreviewOpen && createPortal(
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none animate-fadeIn print:hidden">
           <div
-            data-invoice-preview-frame role="dialog" aria-modal="true" aria-labelledby="invoice-preview-title" className="bg-background rounded-xl border border-border shadow-2xl w-full h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            ref={frameRef} data-invoice-preview-frame role="dialog" aria-modal="true" aria-labelledby="invoice-preview-title" className="bg-background rounded-xl border border-border shadow-2xl w-full h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
             style={{ maxWidth: modalMaxWidth }}
           >
             <ModalHeader
