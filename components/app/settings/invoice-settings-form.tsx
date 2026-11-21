@@ -7,6 +7,7 @@ import { invoiceSettingsSchema, InvoiceSettingsInput } from '@/lib/validations/i
 import { saveInvoiceSettings } from '@/lib/actions/invoices/save-invoice-settings';
 import type { businesses } from '@/lib/db/schema';
 import { validateInvoiceNumberFormat, resolveInvoiceNumber, getResetGranularity } from '@/lib/invoices/number-format';
+import { CREDIT_NOTE_NUMBER_MAX_LENGTH, formatCreditNoteNumber } from '@/lib/invoices/credit-note-prefix';
 import { cn } from '@/lib/utils';
 import {
   Check,
@@ -175,6 +176,10 @@ export function InvoiceSettingsForm({
 
   const watchedGstRateType = useWatch({ control, name: 'default_gst_rate_type' }) || 'exclusive';
   const watchedTemplate = useWatch({ control, name: 'default_invoice_template' }) || 'template_1';
+
+  // MONEY-04: live preview of the first credit-note number this FY (same function as finalize).
+  const watchedCreditNotePrefix = useWatch({ control, name: 'credit_note_number_prefix' }) || '';
+  const creditNotePreview = formatCreditNoteNumber(watchedCreditNotePrefix, currentFyLabel, 1);
 
   // Real-time GST Rule 46(b) live preview
   const watchedFormat = useWatch({ control, name: 'invoice_number_format' });
@@ -411,7 +416,7 @@ export function InvoiceSettingsForm({
                 <p className={errorClass}>{errors.credit_note_number_prefix.message}</p>
               )}
               <p className="mt-1 text-xs text-slate-500">
-                Example: <span className="font-mono font-bold text-slate-800">CN</span> generates notes like CN/26-27/001
+                Your first credit note this year: <span className="font-mono font-bold text-slate-800">{creditNotePreview}</span>{' '}<span className={cn(creditNotePreview.length > CREDIT_NOTE_NUMBER_MAX_LENGTH && 'font-bold text-destructive')}>({creditNotePreview.length} of {CREDIT_NOTE_NUMBER_MAX_LENGTH} characters)</span>
               </p>
             </div>
 

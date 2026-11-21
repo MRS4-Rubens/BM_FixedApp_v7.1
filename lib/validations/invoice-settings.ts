@@ -2,6 +2,11 @@ import { z } from 'zod';
 import { validateInvoiceNumberFormat } from '@/lib/invoices/number-format';
 import { INVOICE_TEMPLATE_IDS } from '@/lib/invoices/template-ids';
 import { invoiceDisplayPrefsSchema } from '@/lib/invoices/display-prefs';
+import {
+  CREDIT_NOTE_PREFIX_LENGTH_MESSAGE,
+  CREDIT_NOTE_PREFIX_MAX_LENGTH,
+  CREDIT_NOTE_PREFIX_PATTERN,
+} from '@/lib/invoices/credit-note-prefix';
 
 export const invoiceSettingsSchema = z.object({
   invoice_number_format: z
@@ -20,8 +25,8 @@ export const invoiceSettingsSchema = z.object({
   credit_note_number_prefix: z
     .string()
     .min(1, 'Credit note prefix is required')
-    .max(10, 'Prefix must be 10 characters or fewer')
-    .regex(/^[A-Za-z0-9/-]+$/, 'Only letters, numbers, / and - are allowed'),
+    .max(CREDIT_NOTE_PREFIX_MAX_LENGTH, CREDIT_NOTE_PREFIX_LENGTH_MESSAGE)
+    .regex(CREDIT_NOTE_PREFIX_PATTERN, 'Only letters, numbers, / and - are allowed'),
   payment_due_days: z.coerce.number().int().min(0, 'Must be 0 or greater').max(365, 'Must be 365 or fewer'),
   default_invoice_template: z.enum(INVOICE_TEMPLATE_IDS),
   default_gst_rate_type: z.enum(['inclusive', 'exclusive']),
