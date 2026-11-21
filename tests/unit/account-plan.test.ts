@@ -41,8 +41,11 @@ describe('describeAccountPlan (sidebar account pill + menu)', () => {
     expect(d.upgrade.kind).toBe('muted');
   });
 
-  it('staff and accountants cannot buy: the upgrade link becomes "ask your owner"', () => {
+  it('staff and accountants cannot buy: their pill shows their role and the upgrade link becomes "ask your owner"', () => {
     for (const role of ['staff', 'accountant']) {
+      expect(describeAccountPlan(sub('trial', 'trial'), role).pill).toEqual({ kind: 'role' });
+      expect(describeAccountPlan(sub('essentials', 'active'), role).pill).toEqual({ kind: 'role' });
+      expect(describeAccountPlan(sub('trial', 'trial'), role).statusTag).toBe('Trial');
       expect(describeAccountPlan(sub('trial', 'trial'), role).upgrade).toEqual({ kind: 'ask-owner' });
       expect(describeAccountPlan(sub('essentials', 'active'), role).upgrade).toEqual({ kind: 'ask-owner' });
       expect(describeAccountPlan(sub('professional', 'active'), role).upgrade.kind).toBe('muted');

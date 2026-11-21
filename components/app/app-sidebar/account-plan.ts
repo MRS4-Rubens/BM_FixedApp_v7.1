@@ -35,9 +35,12 @@ const UPGRADE_LABEL = 'Upgrade to Pro'
 export function describeAccountPlan(subscription: SidebarSubscription | null | undefined, role: string | undefined): AccountPlanDisplay {
   if (!subscription) return { statusTag: null, pill: { kind: 'role' }, upgrade: { kind: 'hidden' } }
 
-  const isOwner = role === undefined || role === 'owner'
+  // Same rule as roleLabel(): only staff and accountants are not owners.
+  const isOwner = role !== 'staff' && role !== 'accountant'
   const ownerOr = (action: UpgradeAction): UpgradeAction =>
     action.kind === 'link' && !isOwner ? { kind: 'ask-owner' } : action
+  // Staff and accountants cannot buy, so their pill keeps saying who they are ("Team member").
+  const pillFor = (ownerPill: AccountPlanDisplay['pill']): AccountPlanDisplay['pill'] => (isOwner ? ownerPill : { kind: 'role' })
 
   if (subscription.status === 'suspended') {
     return {
@@ -50,7 +53,7 @@ export function describeAccountPlan(subscription: SidebarSubscription | null | u
   if (subscription.status === 'active' && subscription.plan === 'professional') {
     return {
       statusTag: null,
-      pill: { kind: 'plan', label: 'Professional' },
+      pill: pillFor({ kind: 'plan', label: 'Professional' }),
       upgrade: { kind: 'muted', label: UPGRADE_LABEL, reason: 'You are already on the top plan' },
     }
   }
@@ -58,11 +61,11 @@ export function describeAccountPlan(subscription: SidebarSubscription | null | u
   if (subscription.status === 'active' && subscription.plan === 'essentials') {
     return {
       statusTag: null,
-      pill: { kind: 'plan', label: 'Essentials Pro' },
+      pill: pillFor({ kind: 'plan', label: 'Essentials Pro' }),
       upgrade: ownerOr({ kind: 'link', href: '/checkout?plan=professional', label: 'Upgrade to Professional' }),
     }
   }
 
   const statusTag = subscription.status === 'trial' ? 'Trial' : subscription.status === 'expired' ? 'Expired' : null
-  return { statusTag, pill: { kind: 'upgrade' }, upgrade: ownerOr({ kind: 'link', href: '/checkout', label: UPGRADE_LABEL }) }
+  return { statusTag, pill: pillFor({ kind: 'upgrade' }), upgrade: ownerOr({ kind: 'link', href: '/checkout', label: UPGRADE_LABEL }) }
 }
