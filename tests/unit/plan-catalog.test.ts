@@ -18,9 +18,9 @@ describe('Plan Catalog (CLEAN-002)', () => {
     expect(essMonthly.note).toBe('Billed monthly');
 
     const essYearly = formatPlanPrice('essentials', 'yearly');
-    expect(essYearly.headline).toBe('₹291');
-    expect(essYearly.perMonthPaise).toBe(29158); // Math.floor(349900 / 12)
-    expect(essYearly.note).toBe('Billed yearly (₹3,499/yr — save 27%)');
+    expect(essYearly.headline).toBe('₹333');
+    expect(essYearly.perMonthPaise).toBe(33325); // Math.floor(399900 / 12)
+    expect(essYearly.note).toBe('Billed yearly (₹3,999/yr — save 16%)');
 
     // Professional
     const proMonthly = formatPlanPrice('professional', 'monthly');
@@ -29,9 +29,9 @@ describe('Plan Catalog (CLEAN-002)', () => {
     expect(proMonthly.note).toBe('Billed monthly');
 
     const proYearly = formatPlanPrice('professional', 'yearly');
-    expect(proYearly.headline).toBe('₹416');
-    expect(proYearly.perMonthPaise).toBe(41658); // Math.floor(499900 / 12)
-    expect(proYearly.note).toBe('Billed yearly (₹4,999/yr — save 30%)');
+    expect(proYearly.headline).toBe('₹499');
+    expect(proYearly.perMonthPaise).toBe(49991); // Math.floor(599900 / 12)
+    expect(proYearly.note).toBe('Billed yearly (₹5,999/yr — save 17%)');
   });
 
   it('PURCHASABLE_PLAN_IDS equals ["essentials", "professional"]', () => {
@@ -108,13 +108,13 @@ describe('Plan Catalog (CLEAN-002)', () => {
 describe('CLEAN-002 reviewer: one source for prices', () => {
   it('formatPlanPrice exposes the yearly total and saving for both cycles', async () => {
     const { formatPlanPrice: f, formatPlanPriceSummary } = await import('@/lib/subscriptions/plan-catalog');
-    expect(f('essentials', 'monthly').yearlyTotal).toBe('₹3,499');
-    expect(f('essentials', 'yearly').yearlyTotal).toBe('₹3,499');
-    expect(f('essentials', 'yearly').savingsPercent).toBe(27);
-    expect(f('professional', 'monthly').yearlyTotal).toBe('₹4,999');
-    expect(f('professional', 'yearly').savingsPercent).toBe(30);
-    expect(formatPlanPriceSummary('essentials')).toBe('₹399 / month (or ₹3,499 / year)');
-    expect(formatPlanPriceSummary('professional')).toBe('₹599 / month (or ₹4,999 / year)');
+    expect(f('essentials', 'monthly').yearlyTotal).toBe('₹3,999');
+    expect(f('essentials', 'yearly').yearlyTotal).toBe('₹3,999');
+    expect(f('essentials', 'yearly').savingsPercent).toBe(16);
+    expect(f('professional', 'monthly').yearlyTotal).toBe('₹5,999');
+    expect(f('professional', 'yearly').savingsPercent).toBe(17);
+    expect(formatPlanPriceSummary('essentials')).toBe('₹399 / month (or ₹3,999 / year)');
+    expect(formatPlanPriceSummary('professional')).toBe('₹599 / month (or ₹5,999 / year)');
   });
 
   it('plan screens never hand-type a non-zero rupee price (they must use PLAN_PRICING / formatPlanPrice)', () => {
@@ -137,7 +137,7 @@ describe('CLEAN-002 reviewer: one source for prices', () => {
 
   it('TRIAL_DURATION_DAYS has one definition, re-exported for the signup transaction', async () => {
     const ent = await import('@/lib/subscriptions/entitlements');
-    expect(ent.TRIAL_DURATION_DAYS).toBe(14);
+    expect(ent.TRIAL_DURATION_DAYS).toBe(7);
     const src = fs.readFileSync(path.resolve(process.cwd(), 'lib/business/save-profile-tx.ts'), 'utf8');
     expect(src).not.toMatch(/export const TRIAL_DURATION_DAYS\s*=/);
   });

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements'
 import { LegalContact, LegalPage, OperatorDetails, legalLink } from '../legal-page'
 
 export const metadata: Metadata = {
@@ -53,7 +54,7 @@ const sections = [
   {
     id: 'plans', title: 'Plans, trials and prices',
     body: <>
-      <p>Invoice BizFolio offers a Free plan and a 14-day trial, subject to eligibility and the features and limits shown for each plan. Review the available paid plan and exact price at checkout. A plan or feature marked coming soon is not available to purchase or use merely because it is displayed.</p>
+      <p>Invoice BizFolio offers a Free plan and a {TRIAL_DURATION_DAYS}-day trial, subject to eligibility and the features and limits shown for each plan. Review the available paid plan and exact price at checkout. A plan or feature marked coming soon is not available to purchase or use merely because it is displayed.</p>
       <p>A trial does not authorise a charge. When a trial or paid period expires, paid-only features may be restricted under the applicable Free plan limits. Prices, taxes, limits and features for future purchases may change. The amount shown for the selected term at checkout applies to that purchase. An annual equivalent displayed per month is a comparison figure. The annual price is paid for the full term.</p>
     </>,
   },
