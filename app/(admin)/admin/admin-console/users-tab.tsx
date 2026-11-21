@@ -65,7 +65,7 @@ export function UsersTab({
           />
         </div>
 
-        <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+        <div className="flex items-center gap-1 overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {roleFilterOptions.map((r) => (
             <button
               key={r}
@@ -85,7 +85,65 @@ export function UsersTab({
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-        <div className="overflow-x-auto">
+        {/* Phones: one card per user with every column of the table row. */}
+        <ul className="divide-y divide-border/40 md:hidden">
+          {paginatedUsers.length === 0 ? (
+            <li className="px-4 py-8 text-center text-sm font-semibold text-muted-foreground">No platform users found.</li>
+          ) : (
+            paginatedUsers.map((u) => {
+              const email = u.email?.trim() || null;
+              return (
+                <li key={u.id} className="space-y-2 px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-foreground [overflow-wrap:anywhere]">{u.displayName || 'No Name Set'}</p>
+                      <div className="mt-0.5 flex items-start gap-1.5 text-xs font-medium text-muted-foreground">
+                        <span className="min-w-0 [overflow-wrap:anywhere]">{email ?? 'E-mail not available'}</span>
+                        {email && (
+                          <button
+                            type="button"
+                            onClick={() => onCopy(email, `email-${u.id}`)}
+                            className="shrink-0 cursor-pointer transition hover:text-indigo-600"
+                            aria-label="Copy email address"
+                          >
+                            {copiedKey === `email-${u.id}` ? <Check className="size-3.5 text-emerald-700" /> : <Copy className="size-3.5" />}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        'shrink-0 rounded px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider border',
+                        u.role === 'owner' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-700 border-slate-200'
+                      )}
+                    >
+                      {u.role}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3 text-xs text-muted-foreground">
+                    <span className="min-w-0 [overflow-wrap:anywhere]">
+                      {u.businessName ? <span className="font-semibold text-foreground">{u.businessName}</span> : <span className="italic">Unassigned</span>}
+                    </span>
+                    <span className="shrink-0 tabular-nums">Since {formatIstDate(u.createdAt)}</span>
+                  </div>
+                  {u.businessId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (u.businessId) onEditIdentity(u.businessId);
+                      }}
+                      className="inline-flex w-full items-center justify-center gap-1 rounded-md border border-indigo-300 bg-background px-2.5 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50 dark:text-indigo-400 cursor-pointer"
+                    >
+                      <Edit3 className="size-3.5 shrink-0" />
+                      <span>Correct GSTIN / State</span>
+                    </button>
+                  )}
+                </li>
+              );
+            })
+          )}
+        </ul>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full table-auto text-left text-sm border-collapse [&_th]:align-middle [&_td]:align-middle">
             <thead>
               <tr className="border-b border-border bg-muted/40 text-xs font-bold text-muted-foreground uppercase tracking-wider">
