@@ -32,6 +32,7 @@ export function AppSidebar({
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mobileUserMenuOpen, setMobileUserMenuOpen] = useState(false)
+  const [signOutFailed, setSignOutFailed] = useState(false)
   usePageScrollLock(mobileOpen)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const mobileUserMenuRef = useRef<HTMLDivElement>(null)
@@ -94,8 +95,13 @@ export function AppSidebar({
   async function handleSignOut() {
     const { authClient } = await import('@/lib/auth/client')
     const result = await authClient.signOut()
-    // Forget unsaved invoice copies only once the session is really gone (a failed sign-out keeps them).
-    if (!result?.error) clearAllUnsavedInvoiceDrafts()
+    if (result?.error) {
+      // Still signed in: stay on the page and keep the unsaved invoice copies.
+      setSignOutFailed(true)
+      return
+    }
+    setSignOutFailed(false)
+    clearAllUnsavedInvoiceDrafts()
     router.push('/login')
     router.refresh()
   }
@@ -134,6 +140,21 @@ export function AppSidebar({
         mobileUserMenuRef={mobileUserMenuRef}
         onSignOut={handleSignOut}
       />
+      {signOutFailed && (
+        <div
+          role="alert"
+          className="fixed bottom-4 left-1/2 z-[60] flex -translate-x-1/2 items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800 shadow-lg print:hidden"
+        >
+          Could not sign out. Please check your connection and try again.
+          <button
+            type="button"
+            onClick={() => setSignOutFailed(false)}
+            className="rounded-md px-2 py-0.5 text-xs font-bold text-rose-700 hover:bg-rose-100 cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
     </TooltipProvider>
   )
 }
