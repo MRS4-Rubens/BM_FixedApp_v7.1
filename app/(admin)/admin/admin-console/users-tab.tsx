@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { Search, ChevronLeft, ChevronRight, Edit3, Check, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatIstDate } from '@/lib/invoices/ist-date';
+import { maskEmail } from '@/lib/team/invite-format';
 import { getVisiblePageNumbers, ROWS_PER_PAGE } from './pagination';
 import type { UserItem } from './types';
 import type { UserRoleFilter } from './use-user-directory';
@@ -40,6 +42,20 @@ export function UsersTab({
   onSetUserPage,
   onEditIdentity,
 }: UsersTabProps) {
+  // E-mails are masked on screen ("fa***@example.com"). Copy always copies the full address, and shows it for 5 s so the
+  // admin can read it back (or select it by hand if the browser blocked the clipboard).
+  const [revealedUserId, setRevealedUserId] = useState<string | null>(null);
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (revealTimer.current) clearTimeout(revealTimer.current);
+  }, []);
+  const copyAndReveal = (email: string, userId: string) => {
+    onCopy(email, `email-${userId}`);
+    setRevealedUserId(userId);
+    if (revealTimer.current) clearTimeout(revealTimer.current);
+    revealTimer.current = setTimeout(() => setRevealedUserId(null), 5000);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -126,11 +142,13 @@ export function UsersTab({
                             </span>
                             <div className="mt-0.5 flex items-start gap-1.5 text-xs font-medium text-muted-foreground">
                               <span className="shrink-0 whitespace-nowrap">Email ID:</span>
-                              <span className="min-w-0 [overflow-wrap:anywhere]">{email ?? 'Not available'}</span>
+                              <span className="min-w-0 [overflow-wrap:anywhere]">
+                                {email ? (revealedUserId === u.id ? email : maskEmail(email)) : 'Not available'}
+                              </span>
                               {email && (
                                 <button
                                   type="button"
-                                  onClick={() => onCopy(email, `email-${u.id}`)}
+                                  onClick={() => copyAndReveal(email, u.id)}
                                   className="shrink-0 hover:text-indigo-600 transition cursor-pointer"
                                   aria-label="Copy email address"
                                   title="Copy email address"
