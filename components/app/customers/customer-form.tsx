@@ -177,7 +177,7 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4.5 sm:space-y-5">
           {/* SECTION 1: Client & Business Identity */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-border/50">
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
               <div className="flex items-center gap-2">
                 <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-black text-white">
                   1
@@ -186,7 +186,7 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
                   Client &amp; Business Identity
                 </h3>
               </div>
-              <span className="text-xs font-medium text-muted-foreground">Basic credentials</span>
+              <span className="pl-7.5 sm:pl-0 text-xs font-medium text-muted-foreground">Basic credentials</span>
             </div>
 
             {/* Hybrid Row: Wider Business Name (~58%), Compact GSTIN (~42%) */}
@@ -235,7 +235,7 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
 
           {/* SECTION 2: Contact Coordinates */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-border/50">
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
               <div className="flex items-center gap-2">
                 <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-black text-white">
                   2
@@ -244,7 +244,7 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
                   Contact Coordinates
                 </h3>
               </div>
-              <span className="text-xs font-medium text-muted-foreground">For invoice dispatch</span>
+              <span className="pl-7.5 sm:pl-0 text-xs font-medium text-muted-foreground">For invoice dispatch</span>
             </div>
 
             {/* Hybrid Row: Wider Email (~58%), Compact Phone (~42%) */}
@@ -287,7 +287,7 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
 
           {/* SECTION 3: Billing Address & GST Place of Supply */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-border/50">
+            <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
               <div className="flex items-center gap-2">
                 <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-black text-white">
                   3
@@ -296,7 +296,7 @@ export function CustomerForm({ customer, sellerStateCode }: CustomerFormProps) {
                   Billing Address &amp; GST Place of Supply
                 </h3>
               </div>
-              <span className="text-xs font-medium text-muted-foreground">Determines CGST/SGST vs IGST</span>
+              <span className="pl-7.5 sm:pl-0 text-xs font-medium text-muted-foreground">Determines CGST/SGST vs IGST</span>
             </div>
 
             <div className="space-y-3">
