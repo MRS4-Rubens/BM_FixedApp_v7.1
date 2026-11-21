@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { useTabletPortrait } from './app-sidebar/use-tablet-portrait'
 import { DesktopSidebar } from './app-sidebar/desktop-sidebar'
 import { MobileDrawer } from './app-sidebar/mobile-drawer'
+import type { SidebarSubscription } from './app-sidebar/account-plan'
 import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock'
 
 export function AppSidebar({
@@ -18,11 +19,7 @@ export function AppSidebar({
   user?: { name: string; role: string; initials: string }
   collapsedPreference?: boolean | null
   isAdminUser?: boolean
-  subscription?: {
-    plan: string
-    status: string
-    endsAt: string | null
-  } | null
+  subscription?: SidebarSubscription | null
   businessLogoUrl?: string
 }) {
   const pathname = usePathname()
@@ -45,11 +42,6 @@ export function AppSidebar({
     setMobileUserMenuOpen(false)
   }
 
-  const [daysRemaining] = useState<number | null>(() => {
-    if (!subscription?.endsAt) return null
-    const diff = new Date(subscription.endsAt).getTime() - Date.now()
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
-  })
 
   // Listen for custom topbar mobile navigation toggle event
   useEffect(() => {
@@ -119,7 +111,6 @@ export function AppSidebar({
         handleToggle={handleToggle}
         isAdminUser={isAdminUser}
         subscription={subscription}
-        daysRemaining={daysRemaining}
         user={user}
         businessLogoUrl={businessLogoUrl}
         userMenuOpen={userMenuOpen}
@@ -133,7 +124,6 @@ export function AppSidebar({
         pathname={pathname}
         isAdminUser={isAdminUser}
         subscription={subscription}
-        daysRemaining={daysRemaining}
         user={user}
         businessLogoUrl={businessLogoUrl}
         mobileUserMenuOpen={mobileUserMenuOpen}

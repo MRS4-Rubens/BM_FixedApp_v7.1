@@ -6,7 +6,7 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { InvoiceBizFolioLogo } from '@/components/brand/invoice-bizfolio-logo'
 import { mainNav, accountNav, adminNavItem } from './nav-items'
 import { NavLink } from './nav-link'
-import { SubscriptionCard } from './subscription-card'
+import type { SidebarSubscription } from './account-plan'
 import { UserMenuPopover } from './user-menu-popover'
 
 export interface DesktopSidebarProps {
@@ -14,12 +14,7 @@ export interface DesktopSidebarProps {
   isCollapsed: boolean
   handleToggle: () => void
   isAdminUser?: boolean
-  subscription?: {
-    plan: string
-    status: string
-    endsAt: string | null
-  } | null
-  daysRemaining: number | null
+  subscription?: SidebarSubscription | null
   user?: { name: string; role: string; initials: string }
   businessLogoUrl?: string
   userMenuOpen: boolean
@@ -34,7 +29,6 @@ export function DesktopSidebar({
   handleToggle,
   isAdminUser,
   subscription,
-  daysRemaining,
   user,
   businessLogoUrl,
   userMenuOpen,
@@ -131,13 +125,6 @@ export function DesktopSidebar({
             />
           )}
         </div>
-
-        <SubscriptionCard
-          subscription={subscription}
-          daysRemaining={daysRemaining}
-          isCollapsed={isCollapsed}
-          isOwner={user ? user.role === 'owner' : undefined}
-        />
       </nav>
 
       {/* [DESIGN-SYSTEM-LOCK: Bottom Sidebar Toggle]
