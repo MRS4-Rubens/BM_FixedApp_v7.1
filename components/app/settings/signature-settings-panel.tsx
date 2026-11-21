@@ -1,14 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Upload,
-  RefreshCw,
-  Trash2,
-  CheckCircle2,
-  Lock,
-  AlertCircle,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle2, Lock, PenOff, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -260,6 +253,8 @@ export function SignatureSettingsPanel({
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title="Remove signature?"
+        category="danger"
+        icon={PenOff}
         description="New invoices will print a blank line for a hand signature. Invoices and credit notes already finalised keep the signature they were issued with."
         confirmLabel="Remove"
         tone="destructive"

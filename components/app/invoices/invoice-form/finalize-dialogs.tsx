@@ -4,6 +4,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { UpgradePromptModal } from '@/components/app/subscription/upgrade-prompt-modal';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { formatINR } from './form-calculations';
+import { CalendarClock, FileCheck2 } from 'lucide-react';
 
 export function FinalizeDialogs({
   showQuotaUpgradeModal,
@@ -49,6 +50,8 @@ export function FinalizeDialogs({
         open={showFinalizeDialog}
         onOpenChange={setShowFinalizeDialog}
         title="Finalize invoice?"
+        category="document"
+        icon={FileCheck2}
         confirmLabel="Finalize invoice"
         description={
           <div className="space-y-3 text-sm">
@@ -85,6 +88,8 @@ export function FinalizeDialogs({
         open={showCrossFyDialog}
         onOpenChange={setShowCrossFyDialog}
         title="Finalize back-dated invoice?"
+        category="caution"
+        icon={CalendarClock}
         confirmLabel="Finalize back-dated invoice"
         description={
           <div className="space-y-2 text-sm">

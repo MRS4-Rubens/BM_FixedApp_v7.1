@@ -1,22 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { 
-  ArrowLeft, 
-  Printer, 
-  Download, 
-  Mail, 
-  BellRing, 
-  Check, 
-  Copy, 
-  FileText, 
-  CheckCircle2, 
-  ShieldCheck, 
-  Receipt,
-  Ban,
-  Crown,
-  RotateCcw
-} from 'lucide-react'
+import { ArrowLeft, Ban, BellRing, Check, CheckCircle2, Copy, Crown, Download, FileText, Mail, Printer, Receipt, RotateCcw, Send, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -769,6 +754,8 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
         open={emailConfirmOpen}
         onOpenChange={setEmailConfirmOpen}
         title="Send invoice to customer?"
+        category="document"
+        icon={Send}
         description="Send this invoice to the customer via email?"
         confirmLabel="Send invoice"
         onConfirm={onConfirmEmail}
@@ -778,6 +765,8 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
         open={reminderConfirmOpen}
         onOpenChange={setReminderConfirmOpen}
         title="Send payment reminder?"
+        category="document"
+        icon={BellRing}
         description="Send a payment reminder to the customer via email?"
         confirmLabel="Send reminder"
         onConfirm={onConfirmReminder}

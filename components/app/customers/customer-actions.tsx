@@ -6,7 +6,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { deactivateCustomer } from '@/lib/actions/customers/deactivate-customer';
 import { reactivateCustomer } from '@/lib/actions/customers/reactivate-customer';
 import { useRouter } from 'next/navigation';
-import { Power, PowerOff } from 'lucide-react';
+import { Power, PowerOff, UserCheck, UserX } from 'lucide-react';
 import { useCanEdit } from '@/components/app/current-user-role';
 
 export function CustomerActions({ customerId, isActive }: { customerId: string; isActive: boolean }) {
@@ -76,6 +76,8 @@ export function CustomerActions({ customerId, isActive }: { customerId: string; 
           setConfirmOpen(open);
         }}
         title={isActive ? 'Deactivate customer?' : 'Reactivate customer?'}
+        category={isActive ? 'danger' : 'tools'}
+        icon={isActive ? UserX : UserCheck}
         description={confirmMessage}
         confirmLabel={isActive ? 'Deactivate' : 'Reactivate'}
         tone={isActive ? 'destructive' : 'default'}

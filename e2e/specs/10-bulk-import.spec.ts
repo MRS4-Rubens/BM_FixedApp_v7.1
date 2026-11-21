@@ -65,7 +65,7 @@ test.describe('10 - Bulk Customer and Product Import Journey', () => {
       await expect(ownerPage.locator('input[type="file"]')).toHaveCount(0);
 
       // Close dialog
-      await ownerPage.getByRole('button', { name: 'Close dialog' }).click();
+      await ownerPage.getByRole('button', { name: 'Close import' }).click();
       await expect(dialog).toBeHidden();
 
       // ── Step 2: Admin upgrades business to Professional ───────────────────────
@@ -153,7 +153,7 @@ test.describe('10 - Bulk Customer and Product Import Journey', () => {
       await expect(nothingToImportBtn).toBeDisabled();
       await expect(ownerPage.getByText('Duplicates (2)')).toBeVisible();
 
-      await ownerPage.getByRole('button', { name: 'Close dialog' }).click();
+      await ownerPage.getByRole('button', { name: 'Close import' }).click();
       await expect(dialog).toBeHidden();
 
       // ── Step 5: Products CSV Import ───────────────────────────────────────────

@@ -104,7 +104,7 @@ export class InvoiceFormPage {
     await this.previewVerifiedCheckbox.check();
 
     // Close preview modal via the close button
-    const closeBtn = this.page.locator('button:has-text("Close"), button[title="Close dialog"], div:has(label:has-text("Preview Verified")) ~ button').last();
+    const closeBtn = this.page.getByRole('button', { name: 'Close preview' });
     if (await closeBtn.isVisible().catch(() => false)) {
       await closeBtn.click();
     } else {

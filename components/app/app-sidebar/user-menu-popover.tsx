@@ -1,18 +1,14 @@
 'use client'
 
 import type { RefObject, Dispatch, SetStateAction } from 'react'
-import Link from 'next/link'
-import { ChevronsUpDown, Settings, CreditCard, LogOut } from 'lucide-react'
+import { ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { roleLabel } from '@/components/app/current-user-role'
+import { AccountAvatar, AccountMenuBody, AccountPillSubline } from './account-menu'
+import { describeAccountPlan, type SidebarSubscription } from './account-plan'
 
 export interface UserMenuPopoverProps {
   user?: { name: string; role: string; initials: string }
-  subscription?: {
-    plan: string
-    status: string
-    endsAt: string | null
-  } | null
+  subscription?: SidebarSubscription | null
   businessLogoUrl?: string
   isCollapsed: boolean
   userMenuOpen: boolean
@@ -31,6 +27,7 @@ export function UserMenuPopover({
   userMenuRef,
   onSignOut,
 }: UserMenuPopoverProps) {
+  const display = describeAccountPlan(subscription, user?.role)
   return (
     <div
       className={cn(
@@ -53,31 +50,22 @@ export function UserMenuPopover({
         aria-expanded={userMenuOpen}
         aria-label="User profile and menu"
       >
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-amber-400 via-rose-400 to-violet-500 text-[11px] font-bold text-white shadow-sm transition-transform duration-200 group-hover/user:scale-105 overflow-hidden border border-border/40">
-          {businessLogoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={businessLogoUrl}
-              alt="Logo"
-              className="size-full object-contain p-0.5 bg-white"
-            />
-          ) : (
-            user?.initials || 'U'
-          )}
-        </div>
+        <AccountAvatar
+          user={user}
+          businessLogoUrl={businessLogoUrl}
+          className="size-8 text-[11px] transition-transform duration-200 group-hover/user:scale-105"
+        />
 
         <div
           className={cn(
-            'min-w-0 flex-1 flex flex-col leading-none transition-all duration-300 ease-in-out origin-left overflow-hidden whitespace-nowrap',
+            'min-w-0 flex-1 flex flex-col items-start leading-none transition-all duration-300 ease-in-out origin-left overflow-hidden whitespace-nowrap',
             isCollapsed ? 'opacity-0 max-w-0' : 'opacity-100 max-w-36',
           )}
         >
-          <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
+          <p className="truncate max-w-full text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
             {user?.name || 'User'}
           </p>
-          <p className="text-[11px] font-semibold text-muted-foreground mt-0.5">
-            {roleLabel(user?.role)}
-          </p>
+          <AccountPillSubline display={display} role={user?.role} />
         </div>
 
         {!isCollapsed && (
@@ -85,7 +73,6 @@ export function UserMenuPopover({
         )}
       </button>
 
-      {/* Interactive Popover Menu */}
       {userMenuOpen && (
         <div
           className={cn(
@@ -95,74 +82,18 @@ export function UserMenuPopover({
               : 'bottom-full mb-2 left-1.5 right-1.5 min-w-[190px]',
           )}
         >
-          {/* Popover Header with User Details */}
-          <div className="flex items-center gap-2.5 p-2 rounded-xl bg-muted/40 mb-1 border border-border/40">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-amber-400 via-rose-400 to-violet-500 text-xs font-bold text-white shadow-sm overflow-hidden border border-border/40">
-              {businessLogoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={businessLogoUrl}
-                  alt="Logo"
-                  className="size-full object-contain p-0.5 bg-white"
-                />
-              ) : (
-                user?.initials || 'U'
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-foreground truncate">
-                {user?.name || 'User'}
-              </p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                  {roleLabel(user?.role)}
-                </span>
-                {subscription?.plan && (
-                  <span className="text-[10px] text-muted-foreground capitalize">
-                    • {subscription.plan}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Popover Quick Links */}
-          <div className="space-y-0.5 py-1">
-            <Link
-              href="/settings"
-              onClick={() => setUserMenuOpen(false)}
-              className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
-            >
-              <Settings className="size-3.5 text-muted-foreground" />
-              <span>Account Settings</span>
-            </Link>
-            <Link
-              href="/settings?tab=Billing & Usage"
-              onClick={() => setUserMenuOpen(false)}
-              className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
-            >
-              <CreditCard className="size-3.5 text-muted-foreground" />
-              <span>Billing & Plan</span>
-            </Link>
-          </div>
-
-          <div className="h-px bg-border/60 my-1" />
-
-          {/* Prominent Sign Out Button */}
-          <button
-            type="button"
-            onClick={() => {
+          <AccountMenuBody
+            user={user}
+            businessLogoUrl={businessLogoUrl}
+            display={display}
+            onNavigate={() => setUserMenuOpen(false)}
+            onSignOut={() => {
               setUserMenuOpen(false)
               onSignOut()
             }}
-            className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 w-full text-left transition-colors cursor-pointer group"
-          >
-            <LogOut className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-            <span>Sign Out</span>
-          </button>
+          />
         </div>
       )}
     </div>
   )
 }
-

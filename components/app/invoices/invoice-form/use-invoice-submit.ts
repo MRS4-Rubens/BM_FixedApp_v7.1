@@ -9,9 +9,12 @@ import { finalizeInvoice } from '@/lib/actions/invoices/finalize-invoice';
 export function useInvoiceSubmit({
   isPreviewVerified,
   setShowPreviewWarning,
+  onDraftSaved,
 }: {
   isPreviewVerified: boolean;
   setShowPreviewWarning: (show: boolean) => void;
+  /** Called as soon as the invoice exists in the database (drops the browser-only safety copy). */
+  onDraftSaved?: () => void;
 }) {
   const router = useRouter();
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -28,6 +31,7 @@ export function useInvoiceSubmit({
     setGlobalError(null);
     const res = await saveInvoiceDraft(data);
     if (res.success) {
+      onDraftSaved?.();
       router.push(`/invoices/${res.data?.invoiceId}`);
     } else {
       setGlobalError(res.error.message);
@@ -74,6 +78,7 @@ export function useInvoiceSubmit({
       }
       const invoiceId = draftRes.data?.invoiceId ?? null;
       setPendingSavedInvoiceId(invoiceId);
+      onDraftSaved?.();
 
       if (!invoiceId) {
         setIsFinalizing(false);

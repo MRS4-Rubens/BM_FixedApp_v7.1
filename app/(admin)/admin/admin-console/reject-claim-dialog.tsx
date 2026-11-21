@@ -3,6 +3,7 @@
 import { useState, type TransitionStartFunction } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog } from '@base-ui/react/dialog';
+import { ModalHeader } from '@/components/ui/modal-header';
 import { XCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { processSubscriptionClaim } from '@/lib/actions/subscriptions/process-request';
@@ -66,23 +67,21 @@ export function RejectClaimDialog({
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200" />
           <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <Dialog.Popup data-viewport-dialog className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl relative animate-in fade-in zoom-in duration-200">
-              <Dialog.Title
-                render={
-                  <h3 className="text-lg font-bold text-foreground font-heading border-b border-border/40 pb-3 flex items-center gap-2">
-                    <XCircle className="size-5 text-rose-600" /> Reject Payment Claim
-                  </h3>
-                }
+            <Dialog.Popup data-viewport-dialog className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl relative max-h-[92dvh] overflow-y-auto animate-in fade-in zoom-in duration-200">
+              <ModalHeader
+                tone="danger"
+                icon={XCircle}
+                title="Reject Payment Claim"
+                description={`Claim from ${rejectingClaim.businessName}`}
+                closeLabel="Close reject claim"
+                closeDisabled={isPending}
+                className="-mx-6 -mt-6 -top-6"
               />
-              <Dialog.Description
-                render={
-                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-                    Claim for <b className="text-foreground">{rejectingClaim.businessName}</b> (UTR:{' '}
-                    <span className="font-mono text-indigo-600 font-bold">{rejectingClaim.paymentReference}</span>).
-                    Please provide a clear rejection reason.
-                  </p>
-                }
-              />
+              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+                Claim for <b className="text-foreground">{rejectingClaim.businessName}</b> (UTR:{' '}
+                <span className="font-mono text-indigo-600 font-bold">{rejectingClaim.paymentReference}</span>).
+                Please provide a clear rejection reason.
+              </p>
 
               {/* Reason presets */}
               <div className="mt-3.5 space-y-1.5">

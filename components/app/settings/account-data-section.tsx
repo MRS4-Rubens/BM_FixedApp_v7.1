@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
-import { AlertTriangle, CheckCircle2, Loader2, X } from 'lucide-react';
+import { ModalHeader } from '@/components/ui/modal-header';
+import { AlertTriangle, CheckCircle2, DoorClosed, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { requestAccountClosureAction } from '@/lib/actions/account/request-account-closure';
 
@@ -132,41 +133,18 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           <Dialog.Popup data-viewport-dialog data-form-dialog-frame className="relative w-full max-w-lg bg-card border border-border shadow-2xl rounded-2xl p-5 text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto">
-            <Dialog.Close
-              render={
-                <button
-                  type="button"
-                  disabled={isClosurePending}
-                  aria-label="Close dialog"
-                  onClick={() => {
-                    setClosureDialogOpen(false);
-                    setClosureError(null);
-                    setConfirmationGstin('');
-                    setClosureReason('');
-                  }}
-                  className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer disabled:pointer-events-none"
-                >
-                  <X className="size-4" />
-                </button>
-              }
+            <ModalHeader
+              tone="danger"
+              icon={DoorClosed}
+              title="Request account closure"
+              description="Your workspace closes within 30 days"
+              closeLabel="Close account closure"
+              closeDisabled={isClosurePending}
+              className="-mx-5 -mt-5 shrink-0 -top-5"
             />
-
-            <div className="mb-4 pr-6">
-              <Dialog.Title
-                render={
-                  <h2 className="text-lg font-bold text-foreground tracking-tight">
-                    Request account closure
-                  </h2>
-                }
-              />
-              <Dialog.Description
-                render={
-                  <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            <p className="mt-3 mb-4 text-sm text-muted-foreground leading-relaxed">
                     We will close your workspace within 30 days and erase data we are not required to keep. Invoices, credit notes, payment records and the business and customer details on them must be kept for 8 years after the end of their financial year under Indian GST and tax law; they stay locked in our archive and are deleted after that period. Download your data first if you need a copy.
                   </p>
-                }
-              />
-            </div>
 
             {closureError && (
               <div

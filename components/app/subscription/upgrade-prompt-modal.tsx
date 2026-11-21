@@ -3,13 +3,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Dialog } from '@base-ui/react/dialog';
-import {
-  Crown,
-  Sparkles,
-  X,
-  CheckCircle2,
-  ArrowRight,
-} from 'lucide-react';
+import { ModalHeader } from '@/components/ui/modal-header';
+import { Crown, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsOwner } from '@/components/app/current-user-role';
 import { useIsClient } from '@/lib/hooks/use-is-client';
@@ -52,50 +47,14 @@ export function UpgradePromptModal({
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
           <Dialog.Popup data-viewport-dialog className="relative w-full max-w-lg sm:max-w-[480px] rounded-2xl border border-indigo-100 bg-white shadow-2xl overflow-hidden max-h-[92dvh] overflow-y-auto animate-in zoom-in-95 duration-200">
-            {/* Top Gradient Banner */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-4 sm:px-5 sm:py-4.5 text-white">
-              <div className="absolute -top-12 -right-12 size-36 rounded-full bg-white/10 blur-xl pointer-events-none" />
-              <div className="absolute -bottom-10 -left-10 size-32 rounded-full bg-violet-400/20 blur-xl pointer-events-none" />
-
-              {/* Close button with elevated z-index */}
-              <Dialog.Close
-                render={
-                  <button
-                    type="button"
-                    className="absolute top-4 right-4 z-10 flex size-8 items-center justify-center rounded-full bg-white/10 text-white/80 hover:bg-white/20 hover:text-white transition-all cursor-pointer"
-                    aria-label="Close modal"
-                  >
-                    <X className="size-4" />
-                  </button>
-                }
-              />
-
-              {/* Feature Badge with right clearance to prevent collision with (X) button */}
-              <div className="flex items-center gap-2 mb-2 pr-10">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur-md px-3 py-1 text-xs font-bold text-amber-300 border border-white/10 max-w-full">
-                  <Crown className="size-3.5 shrink-0" />
-                  <span className="truncate sm:whitespace-normal">
-                    {featureName ? `${featureName} is a Pro Feature` : 'Upgrade Required'}
-                  </span>
-                </span>
-              </div>
-
-              <Dialog.Title
-                render={
-                  <h3 className="text-xl sm:text-2xl font-black tracking-tight font-heading pr-8 sm:pr-0">
-                    {title}
-                  </h3>
-                }
-              />
-
-              <Dialog.Description
-                render={
-                  <p className="mt-1.5 text-xs sm:text-sm text-indigo-100/90 leading-relaxed pr-6 sm:pr-0">
-                    {description}
-                  </p>
-                }
-              />
-            </div>
+            <ModalHeader
+              tone="premium"
+              icon={Crown}
+              title={title}
+              description={featureName ? `${featureName} is a Pro Feature` : 'Upgrade Required'}
+              closeLabel="Close upgrade"
+            />
+            <p className="px-4 pt-3 sm:px-5 text-sm text-slate-600 leading-relaxed">{description}</p>
 
             {/* Modal Body */}
             <div className="p-4 sm:px-3.5 sm:py-4 space-y-3">

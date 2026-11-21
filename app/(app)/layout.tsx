@@ -7,6 +7,7 @@ import { isPlatformAdmin } from '@/lib/auth/admin'
 import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { buildLogoUrl } from '@/lib/storage/logo-url'
 import { isAppRole } from '@/lib/auth/rbac'
+import { resolveBusinessPlan } from '@/lib/subscriptions/entitlements'
 import { CurrentUserRoleProvider } from '@/components/app/current-user-role'
 
 export const metadata: Metadata = {
@@ -46,12 +47,12 @@ export default async function AppLayout({
   const business = user?.business_id ? await getCurrentBusiness() : null
 
   if (business && user?.business_id) {
+    // Resolved (not stored) plan: an end date that has passed reads as expired here before the nightly job runs.
+    const resolved = resolveBusinessPlan(business)
     subscriptionProp = {
-      plan: business.subscription_plan,
-      status: business.subscription_status,
-      endsAt: business.subscription_ends_at
-        ? business.subscription_ends_at.toISOString()
-        : (business.trial_ends_at ? business.trial_ends_at.toISOString() : null),
+      plan: resolved.tier,
+      status: resolved.effectiveStatus,
+      endsAt: resolved.targetExpiry ? resolved.targetExpiry.toISOString() : null,
     }
 
     if (business.logo_storage_key) {

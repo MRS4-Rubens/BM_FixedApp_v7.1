@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { acceptTeamInvite } from '@/lib/actions/team/accept-team-invite';
+import { clearAllUnsavedInvoiceDrafts } from '@/components/app/invoices/invoice-form/use-unsaved-invoice-draft';
 
 /** Feature A: the "Join <business>" button on the invite page. */
 export function AcceptInviteButton({ token, businessName }: { token: string; businessName: string }) {
@@ -49,19 +50,34 @@ export function AcceptInviteButton({ token, businessName }: { token: string; bus
 export function SwitchAccountButton({ continueHref }: { continueHref: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [signOutError, setSignOutError] = useState(false);
 
   const handleSwitch = () => {
+    setSignOutError(false);
     startTransition(async () => {
       const { authClient } = await import('@/lib/auth/client');
-      await authClient.signOut();
+      const result = await authClient.signOut();
+      if (result?.error) {
+        // Still signed in: stay here (and keep unsaved invoice copies).
+        setSignOutError(true);
+        return;
+      }
+      clearAllUnsavedInvoiceDrafts();
       router.push(continueHref);
       router.refresh();
     });
   };
 
   return (
+    <>
     <Button type="button" variant="outline" onClick={handleSwitch} disabled={isPending} className="w-full h-10 font-bold">
       {isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : 'Sign out and use the invited account'}
     </Button>
+    {signOutError && (
+      <p role="alert" className="mt-2 text-xs font-semibold text-red-700">
+        Could not sign out. Please check your connection and try again.
+      </p>
+    )}
+    </>
   );
 }

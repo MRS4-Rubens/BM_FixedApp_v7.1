@@ -1,9 +1,12 @@
 'use client';
 
+import { useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useModalFocus } from '@/lib/hooks/use-modal-focus';
 import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock';
 import { useIsClient } from '@/lib/hooks/use-is-client';
-import { X, CheckCircle2, Clock, AlertCircle, Printer } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Printer, ReceiptText } from 'lucide-react';
+import { ModalHeader } from '@/components/ui/modal-header';
 import { Button } from '@/components/ui/button';
 import { formatIstDate } from '@/lib/invoices/ist-date';
 import { formatPaiseAsInr } from '@/lib/money';
@@ -22,6 +25,8 @@ export function ReceiptModal({
 }: ReceiptModalProps) {
   const mounted = useIsClient();
   usePageScrollLock(Boolean(selectedReceipt));
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useModalFocus(dialogRef, Boolean(selectedReceipt) && mounted, onClose);
   if (!selectedReceipt || !mounted) return null;
 
   const handlePrintReceipt = () => {
@@ -30,16 +35,18 @@ export function ReceiptModal({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs print:p-0 print:bg-white">
-      <div data-viewport-dialog className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl print:border-none print:shadow-none print:p-0">
-        {/* Close Button (Hidden in Print) */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors cursor-pointer print:hidden"
-          title="Close" aria-label="Close receipt"
-        >
-          <X className="size-5" />
-        </button>
+      <div ref={dialogRef} data-viewport-dialog role="dialog" aria-modal="true" aria-labelledby="receipt-modal-title" className="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl max-h-[92dvh] overflow-y-auto print:max-h-none print:overflow-visible print:border-none print:shadow-none print:p-0">
+        <ModalHeader
+          mode="plain"
+          titleId="receipt-modal-title"
+          tone="money"
+          icon={ReceiptText}
+          title="Payment Receipt"
+          description="Subscription payment voucher"
+          closeLabel="Close receipt"
+          onClose={onClose}
+          className="-mx-6 -mt-6 mb-4 rounded-t-2xl print:hidden -top-6"
+        />
 
         {/* Receipt Content */}
         <div className="space-y-4">

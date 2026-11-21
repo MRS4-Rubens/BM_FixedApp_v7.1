@@ -1,22 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useSyncExternalStore } from 'react';
+import { useModalFocus } from '@/lib/hooks/use-modal-focus';
 import { createPortal } from 'react-dom';
 import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock';
-import {
-  Sparkles,
-  X,
-  Check,
-  Copy,
-  Hash,
-  ArrowRight,
-  ShieldCheck,
-  Calendar,
-  Layers,
-  HelpCircle,
-  Lock,
-} from 'lucide-react';
+import { Sparkles, Check, Copy, Hash, ArrowRight, ShieldCheck, Calendar, Layers, HelpCircle, Lock } from 'lucide-react';
 import { resolveInvoiceNumber } from '@/lib/invoices/number-format';
+import { ModalHeader } from '@/components/ui/modal-header';
 
 export interface InvoiceFormatGuideModalProps {
   isOpen: boolean;
@@ -99,6 +89,8 @@ export function InvoiceFormatGuideModal({
   const modalRef = useRef<HTMLDivElement>(null);
 
   usePageScrollLock(isOpen);
+  // Focus into the guide, Tab kept inside, focus back to the trigger on close (Escape is handled below).
+  useModalFocus(modalRef, isOpen && isMounted);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -146,36 +138,17 @@ export function InvoiceFormatGuideModal({
         data-viewport-dialog data-contained-dialog ref={modalRef}
         className="relative flex flex-col w-full max-w-[850px] max-h-[90vh] bg-card border border-border shadow-2xl rounded-2xl overflow-hidden text-foreground"
       >
-        {/* Sticky Header: Compact & balanced */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border/80 bg-muted/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-900 text-white shadow-xs">
-              <Sparkles className="size-3.5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 id="invoice-format-guide-title" className="text-sm sm:text-base font-bold text-foreground font-heading tracking-tight leading-tight">
-                  Invoice Number Format Guide &amp; Presets
-                </h2>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-blue-50 text-blue-900 border border-blue-200/80 shrink-0">
-                  <span className="text-blue-700/80">Active FY:</span>
-                  <strong className="font-bold text-blue-950">{currentFyLabel}</strong>
-                </span>
-              </div>
-              <p className="text-[11px] text-muted-foreground leading-none mt-1">
-                Statutory CGST Rule 46(b) compliance specifications and ready-to-use template series
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close guide modal"
-            className="flex size-7 items-center justify-center rounded-lg border border-border/80 bg-background text-muted-foreground transition-all duration-150 hover:border-red-400 hover:bg-red-500/10 hover:text-red-500 hover:shadow-[0_0_8px_rgba(239,68,68,0.35)] active:scale-95 cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-red-400"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
+        <ModalHeader
+          mode="plain"
+          titleId="invoice-format-guide-title"
+          tone="document"
+          icon={Sparkles}
+          title="Invoice Number Format Guide & Presets"
+          description={`CGST Rule 46(b) series formats · Active FY ${currentFyLabel}`}
+          closeLabel="Close guide modal"
+          onClose={onClose}
+          className="shrink-0"
+        />
 
         {/* Scrollable Content Body: Consistent spacing */}
         <div className="min-h-0 min-w-0 flex-1 overflow-auto px-4 pt-2.5 pb-3.5 space-y-2.5">

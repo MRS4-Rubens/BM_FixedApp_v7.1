@@ -6,6 +6,8 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { useTabletPortrait } from './app-sidebar/use-tablet-portrait'
 import { DesktopSidebar } from './app-sidebar/desktop-sidebar'
 import { MobileDrawer } from './app-sidebar/mobile-drawer'
+import type { SidebarSubscription } from './app-sidebar/account-plan'
+import { clearAllUnsavedInvoiceDrafts } from './invoices/invoice-form/use-unsaved-invoice-draft'
 import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock'
 
 export function AppSidebar({
@@ -18,11 +20,7 @@ export function AppSidebar({
   user?: { name: string; role: string; initials: string }
   collapsedPreference?: boolean | null
   isAdminUser?: boolean
-  subscription?: {
-    plan: string
-    status: string
-    endsAt: string | null
-  } | null
+  subscription?: SidebarSubscription | null
   businessLogoUrl?: string
 }) {
   const pathname = usePathname()
@@ -34,6 +32,7 @@ export function AppSidebar({
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [mobileUserMenuOpen, setMobileUserMenuOpen] = useState(false)
+  const [signOutFailed, setSignOutFailed] = useState(false)
   usePageScrollLock(mobileOpen)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const mobileUserMenuRef = useRef<HTMLDivElement>(null)
@@ -45,11 +44,6 @@ export function AppSidebar({
     setMobileUserMenuOpen(false)
   }
 
-  const [daysRemaining] = useState<number | null>(() => {
-    if (!subscription?.endsAt) return null
-    const diff = new Date(subscription.endsAt).getTime() - Date.now()
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
-  })
 
   // Listen for custom topbar mobile navigation toggle event
   useEffect(() => {
@@ -100,7 +94,14 @@ export function AppSidebar({
 
   async function handleSignOut() {
     const { authClient } = await import('@/lib/auth/client')
-    await authClient.signOut()
+    const result = await authClient.signOut()
+    if (result?.error) {
+      // Still signed in: stay on the page and keep the unsaved invoice copies.
+      setSignOutFailed(true)
+      return
+    }
+    setSignOutFailed(false)
+    clearAllUnsavedInvoiceDrafts()
     router.push('/login')
     router.refresh()
   }
@@ -119,7 +120,6 @@ export function AppSidebar({
         handleToggle={handleToggle}
         isAdminUser={isAdminUser}
         subscription={subscription}
-        daysRemaining={daysRemaining}
         user={user}
         businessLogoUrl={businessLogoUrl}
         userMenuOpen={userMenuOpen}
@@ -133,7 +133,6 @@ export function AppSidebar({
         pathname={pathname}
         isAdminUser={isAdminUser}
         subscription={subscription}
-        daysRemaining={daysRemaining}
         user={user}
         businessLogoUrl={businessLogoUrl}
         mobileUserMenuOpen={mobileUserMenuOpen}
@@ -141,6 +140,21 @@ export function AppSidebar({
         mobileUserMenuRef={mobileUserMenuRef}
         onSignOut={handleSignOut}
       />
+      {signOutFailed && (
+        <div
+          role="alert"
+          className="fixed bottom-4 left-1/2 z-[60] flex -translate-x-1/2 items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800 shadow-lg print:hidden"
+        >
+          Could not sign out. Please check your connection and try again.
+          <button
+            type="button"
+            onClick={() => setSignOutFailed(false)}
+            className="rounded-md px-2 py-0.5 text-xs font-bold text-rose-700 hover:bg-rose-100 cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
     </TooltipProvider>
   )
 }

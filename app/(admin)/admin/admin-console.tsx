@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, BadgeCheck } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useIsClient } from '@/lib/hooks/use-is-client';
 
@@ -279,6 +279,8 @@ export function AdminConsole({
           if (!open) claims.setApprovingClaimId(null);
         }}
         title="Approve payment claim?"
+        category="money"
+        icon={BadgeCheck}
         description="Approve this manual payment claim and activate the subscription immediately?"
         confirmLabel="Approve claim"
         onConfirm={claims.handleConfirmApprove}

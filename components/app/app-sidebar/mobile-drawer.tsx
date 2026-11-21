@@ -1,26 +1,20 @@
 'use client'
 
 import type { RefObject, Dispatch, SetStateAction } from 'react'
-import Link from 'next/link'
 import { InvoiceBizFolioLogo } from '@/components/brand/invoice-bizfolio-logo'
-import { X, ChevronsUpDown, Settings, CreditCard, LogOut } from 'lucide-react'
+import { X, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { mainNav, accountNav, adminNavItem } from './nav-items'
 import { NavLink } from './nav-link'
-import { SubscriptionCard } from './subscription-card'
-import { roleLabel } from '@/components/app/current-user-role'
+import { AccountAvatar, AccountMenuBody, AccountPillSubline } from './account-menu'
+import { describeAccountPlan, type SidebarSubscription } from './account-plan'
 
 export interface MobileDrawerProps {
   mobileOpen: boolean
   setMobileOpen: Dispatch<SetStateAction<boolean>>
   pathname: string
   isAdminUser?: boolean
-  subscription?: {
-    plan: string
-    status: string
-    endsAt: string | null
-  } | null
-  daysRemaining: number | null
+  subscription?: SidebarSubscription | null
   user?: { name: string; role: string; initials: string }
   businessLogoUrl?: string
   mobileUserMenuOpen: boolean
@@ -35,7 +29,6 @@ export function MobileDrawer({
   pathname,
   isAdminUser,
   subscription,
-  daysRemaining,
   user,
   businessLogoUrl,
   mobileUserMenuOpen,
@@ -44,6 +37,11 @@ export function MobileDrawer({
   onSignOut,
 }: MobileDrawerProps) {
   if (!mobileOpen) return null
+  const display = describeAccountPlan(subscription, user?.role)
+  const closeAll = () => {
+    setMobileUserMenuOpen(false)
+    setMobileOpen(false)
+  }
 
   return (
     <div className="fixed inset-0 z-50 md:hidden print:hidden">
@@ -120,14 +118,6 @@ export function MobileDrawer({
               />
             )}
           </div>
-
-          <SubscriptionCard
-            subscription={subscription}
-            daysRemaining={daysRemaining}
-            isCollapsed={false}
-            onCardNavigate={() => setMobileOpen(false)}
-            isOwner={user ? user.role === 'owner' : undefined}
-          />
         </nav>
 
         {/* Mobile User Profile Dock */}
@@ -145,26 +135,13 @@ export function MobileDrawer({
             aria-expanded={mobileUserMenuOpen}
             aria-label="User profile and menu"
           >
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-amber-400 via-rose-400 to-violet-500 text-[11px] font-bold text-white shadow-sm overflow-hidden border border-border/40">
-              {businessLogoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={businessLogoUrl}
-                  alt="Logo"
-                  className="size-full object-contain p-0.5 bg-white"
-                />
-              ) : (
-                user?.initials || 'U'
-              )}
-            </div>
+            <AccountAvatar user={user} businessLogoUrl={businessLogoUrl} className="size-8 text-[11px]" />
 
-            <div className="min-w-0 flex-1 flex flex-col leading-none overflow-hidden whitespace-nowrap">
-              <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
+            <div className="min-w-0 flex-1 flex flex-col items-start leading-none overflow-hidden whitespace-nowrap">
+              <p className="truncate max-w-full text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">
                 {user?.name || 'User'}
               </p>
-              <p className="text-[11px] font-semibold text-muted-foreground mt-0.5">
-                {roleLabel(user?.role)}
-              </p>
+              <AccountPillSubline display={display} role={user?.role} />
             </div>
 
             <ChevronsUpDown className="size-3.5 text-muted-foreground/60 shrink-0 ml-auto" />
@@ -172,45 +149,16 @@ export function MobileDrawer({
 
           {mobileUserMenuOpen && (
             <div className="absolute bottom-full mb-2 left-1.5 right-1.5 min-w-[190px] z-50 rounded-2xl border border-border/70 bg-card/95 backdrop-blur-xl p-2 shadow-2xl shadow-indigo-500/10 animate-in fade-in-0 zoom-in-95">
-              <div className="space-y-0.5 py-1">
-                <Link
-                  href="/settings"
-                  onClick={() => {
-                    setMobileUserMenuOpen(false)
-                    setMobileOpen(false)
-                  }}
-                  className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
-                >
-                  <Settings className="size-3.5 text-muted-foreground" />
-                  <span>Account Settings</span>
-                </Link>
-                <Link
-                  href="/settings?tab=Billing & Usage"
-                  onClick={() => {
-                    setMobileUserMenuOpen(false)
-                    setMobileOpen(false)
-                  }}
-                  className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
-                >
-                  <CreditCard className="size-3.5 text-muted-foreground" />
-                  <span>Billing & Plan</span>
-                </Link>
-              </div>
-
-              <div className="h-px bg-border/60 my-1" />
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileUserMenuOpen(false)
-                  setMobileOpen(false)
+              <AccountMenuBody
+                user={user}
+                businessLogoUrl={businessLogoUrl}
+                display={display}
+                onNavigate={closeAll}
+                onSignOut={() => {
+                  closeAll()
                   onSignOut()
                 }}
-                className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 w-full text-left transition-colors cursor-pointer group"
-              >
-                <LogOut className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-                <span>Sign Out</span>
-              </button>
+              />
             </div>
           )}
         </div>

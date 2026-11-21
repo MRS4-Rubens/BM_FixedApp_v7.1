@@ -35,6 +35,8 @@ import { GstBreakdownCard } from './invoice-form/gst-breakdown-card';
 import { TotalsSummaryCard } from './invoice-form/totals-summary-card';
 import { InvoicePreviewModal } from './invoice-form/invoice-preview-modal-lazy';
 import { FinalizeDialogs } from './invoice-form/finalize-dialogs';
+import { useUnsavedInvoiceDraft } from './invoice-form/use-unsaved-invoice-draft';
+import { UnsavedDraftNotice } from './invoice-form/unsaved-draft-notice';
 
 /**
  * DEBT-001: a saved draft line can hold a unit that is no longer in UNIT_OF_MEASUREMENT_OPTIONS (the DB column is free
@@ -114,9 +116,12 @@ export function InvoiceForm({
   const watchBillingGstin = useWatch({ control, name: 'billing_gstin' }) || '';
 
   const {
-    selectedCustomer, customerOptions, isSuggestionsOpen,
+    selectedCustomer, setSelectedCustomer, customerOptions, isSuggestionsOpen,
     setIsSuggestionsOpen, handleSelectCustomer, handleNameChange,
   } = useCustomerSearch({ billingNameVal, setValue, initialCustomer });
+
+  // New invoice only: unsaved copy kept in this browser (back-swipe / reload safety).
+  const unsaved = useUnsavedInvoiceDraft({ enabled: !initialData, businessId: business.id, methods, defaultValues, selectedCustomer, setSelectedCustomer });
 
   const {
     suggestIdx, isProdSuggestionsOpen,
@@ -165,10 +170,7 @@ export function InvoiceForm({
     onSaveDraft,
     onFinalizeClick,
     executeFinalize,
-  } = useInvoiceSubmit({
-    isPreviewVerified,
-    setShowPreviewWarning,
-  });
+  } = useInvoiceSubmit({ isPreviewVerified, setShowPreviewWarning, onDraftSaved: unsaved.markSavedToServer });
 
   // Fetch sequence value dynamically from DB when date changes
   useEffect(() => {
@@ -253,6 +255,7 @@ export function InvoiceForm({
             ) : null}
           </div>
 
+          {unsaved.restoredAt !== null && <UnsavedDraftNotice restoredAt={unsaved.restoredAt} onDiscard={unsaved.discard} onDismiss={unsaved.dismissNotice} />}
           {globalError && (
             <div role="alert" className="flex items-start gap-3 rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive font-medium animate-shake">
               <AlertCircle className="size-5 shrink-0 mt-0.5" />
