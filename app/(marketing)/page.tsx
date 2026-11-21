@@ -10,7 +10,6 @@ import { PricingSection } from '@/components/landing/pricing-section'
 import { FaqSection } from '@/components/landing/faq-section'
 import { AuthTriggerButton } from '@/components/auth/trigger-button'
 import { ArrowRight, CheckCircle2 } from 'lucide-react'
-import { getRequestSession } from '@/lib/auth/request-session'
 
 export const metadata: Metadata = {
   alternates: {
@@ -18,17 +17,9 @@ export const metadata: Metadata = {
   },
 }
 
-export const dynamic = 'force-dynamic'
-
-export default async function MarketingHomePage() {
-  let isLoggedIn = false
-  try {
-    const session = await getRequestSession()
-    isLoggedIn = Boolean(session?.data?.user)
-  } catch {
-    isLoggedIn = false
-  }
-
+// B7: the home page is the same for everyone, so it is served as a static page (no per-visit session lookup).
+// The pricing buttons check "signed in?" only when clicked (PricingSection).
+export default function MarketingHomePage() {
   return (
     <>
       {/* SVG Sprite Definition Block (Keep existing symbols) */}
@@ -142,7 +133,7 @@ export default async function MarketingHomePage() {
       <CalculatorSection />
       <HowItWorks />
       <ComparisonTable />
-      <PricingSection isLoggedIn={isLoggedIn} />
+      <PricingSection />
       <FaqSection />
 
       <section aria-labelledby="signup-heading" className="px-5 pb-8 pt-3 sm:px-8 sm:pb-10 sm:pt-4">

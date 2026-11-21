@@ -23,17 +23,12 @@ export default async function NewInvoicePage() {
     redirect('/settings');
   }
 
-  const activeFys = await db.select().from(financialYears).where(eq(financialYears.business_id, appUser.business_id));
-  const allTaxRates = await db.select().from(taxRates).where(eq(taxRates.is_active, true));
-
-  let signatureDataUri: string | null = null;
-  if (business.signature_storage_key) {
-    try {
-      signatureDataUri = await loadSignatureDataUri(business.signature_storage_key);
-    } catch {
-      signatureDataUri = null;
-    }
-  }
+  // B3: the three loads are independent, so run them together (was one after another). The signature is cached by key.
+  const [activeFys, allTaxRates, signatureDataUri] = await Promise.all([
+    db.select().from(financialYears).where(eq(financialYears.business_id, appUser.business_id)),
+    db.select().from(taxRates).where(eq(taxRates.is_active, true)),
+    business.signature_storage_key ? loadSignatureDataUri(business.signature_storage_key) : Promise.resolve(null),
+  ]);
 
   return (
     <InvoiceForm 

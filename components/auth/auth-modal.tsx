@@ -50,6 +50,15 @@ export function AuthenticationModal() {
 
   const modalRef = useRef<HTMLDivElement>(null)
   const lastActiveElementRef = useRef<HTMLElement | null>(null)
+  const warmedRef = useRef(false)
+
+  // B2: wake the database while the person types, so the dashboard opens fast after Sign in. Once per page; the server
+  // caps how often this really touches the database (lib/db/warmup-policy.ts).
+  useEffect(() => {
+    if (!isOpen || warmedRef.current) return
+    warmedRef.current = true
+    void fetch('/api/warm', { method: 'POST', keepalive: true, credentials: 'omit' }).catch(() => undefined)
+  }, [isOpen])
 
   // Restore focus to trigger button when closed
   useEffect(() => {
