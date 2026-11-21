@@ -13,6 +13,17 @@ export const BUSINESS_PROFILE_MAPPINGS: readonly PgConstraintMapping[] = [
   },
 ];
 
+/** MONEY-01: a number format that prints an earlier invoice's number again (the transaction rolls back; nothing is burned). */
+export const FINALIZE_INVOICE_MAPPINGS: readonly PgConstraintMapping[] = [
+  {
+    sqlState: UNIQUE_VIOLATION,
+    constraint: DB_CONSTRAINTS.INVOICES_BUSINESS_INVOICE_NUMBER_UNIQUE,
+    code: 'DUPLICATE_INVOICE_NUMBER',
+    message:
+      'Your invoice number format would repeat an earlier invoice number, so this invoice was not finalized. Go to Settings → Invoice Settings and add {FY} to the number format (for example INV/{FY}/{SEQ:4}), then finalize again.',
+  },
+];
+
 export const CUSTOMER_MAPPINGS: readonly PgConstraintMapping[] = [
   {
     sqlState: UNIQUE_VIOLATION,

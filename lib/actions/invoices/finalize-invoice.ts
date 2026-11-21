@@ -3,6 +3,7 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { EDITOR_ROLES } from '@/lib/auth/rbac';
 import { toThrowable } from '@/lib/actions/_shared/action-error-mapping';
+import { FINALIZE_INVOICE_MAPPINGS } from '@/lib/actions/_shared/pg-constraint-mappings';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { db } from '@/lib/db/client';
@@ -47,7 +48,7 @@ export const finalizeInvoice = createAuthenticatedAction(
 
       return result;
     } catch (error: unknown) {
-      throw toThrowable(error);
+      throw toThrowable(error, FINALIZE_INVOICE_MAPPINGS);
     }
   },
   'finalize-invoice',

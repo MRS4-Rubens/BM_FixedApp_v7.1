@@ -88,8 +88,8 @@ describe('Invoice Number Formatting Engine (TEST-001)', () => {
 
   describe('SPEC: 16-Character Legal Limit under CGST Rule 46(b)', () => {
     it('accepts format resolving to exactly 16 characters', () => {
-      // 'ABCDEFGHI/' (10) + '{SEQ:6}' (6) = 16
-      const res = validateInvoiceNumberFormat('ABCDEFGHI/{SEQ:6}');
+      // 'ABCD' (4) + '{FY}' (5) + '/' (1) + '{SEQ:6}' (6) = 16 (MONEY-01: a yearly-reset format needs {FY})
+      const res = validateInvoiceNumberFormat('ABCD{FY}/{SEQ:6}');
       expect(res.valid).toBe(true);
       if (res.valid) {
         expect(res.maxResolvedLength).toBe(16);

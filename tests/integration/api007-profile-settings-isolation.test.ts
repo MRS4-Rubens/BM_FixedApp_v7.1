@@ -260,7 +260,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
       default_gst_rate_type: 'exclusive',
       invoice_terms: 'X',
       payment_due_days: 1,
-      invoice_number_format: 'ZZ/{SEQ:3}',
+      invoice_number_format: 'ZZ/{FY}/{SEQ:3}', // MONEY-01: valid format; the test is about the stale key being ignored
       credit_note_number_prefix: 'ZZ',
     });
 
@@ -358,7 +358,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     }
 
     const formatResult = await saveInvoiceSettings({
-      invoice_number_format: 'XYZ/{SEQ:4}',
+      invoice_number_format: 'XYZ/{FY}/{SEQ:4}', // MONEY-01: valid custom format; the test is about the plan gate
       credit_note_number_prefix: 'CN',
       payment_due_days: 30,
       default_invoice_template: 'template_1',
