@@ -70,9 +70,11 @@ export function ServerHealthCard() {
         </button>
       </div>
 
-      {failed && !health && (
+      {failed && (
         <p role="alert" className="mt-3 text-sm font-semibold text-rose-700">
-          Could not read server health. Try Refresh.
+          {health
+            ? 'Refresh failed. The reading below is from the last successful check.'
+            : 'Could not read server health. Try Refresh.'}
         </p>
       )}
 

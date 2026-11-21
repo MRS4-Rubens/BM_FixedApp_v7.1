@@ -24,4 +24,11 @@ describe('B6 daily Redis keepalive', () => {
     }
     expect(outcome).toBe('false');
   });
+
+  it('gives up on a stalled write so the notifications still start', async () => {
+    set.mockImplementationOnce(() => new Promise(() => {}));
+    const started = Date.now();
+    expect(await touchRedisKeepalive(new Date(), 30)).toBe(false);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
 });
