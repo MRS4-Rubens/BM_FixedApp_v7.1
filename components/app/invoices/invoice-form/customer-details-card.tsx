@@ -1,11 +1,12 @@
 'use client';
 
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 import { ChevronDown, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import type { InvoiceDraftInput } from '@/lib/validations/invoice';
 import type { CustomerOption } from '@/lib/pickers/types';
+import { normalizeBuyerGstin } from '@/lib/invoices/buyer-snapshot';
 
 const inputCls = "w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-all hover:border-muted-foreground/30 shadow-sm";
 const labelCls = "mb-1 block text-xs font-bold text-muted-foreground uppercase tracking-wider whitespace-nowrap";
@@ -30,7 +31,11 @@ export function CustomerDetailsCard({
   handleSelectCustomer: (cust: CustomerOption) => void;
   handleNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
-  const { register, formState: { errors } } = useFormContext<InvoiceDraftInput>();
+  const { register, control, formState: { errors } } = useFormContext<InvoiceDraftInput>();
+  // MONEY-02: the GSTIN typed here is what the finalized invoice uses; say so when it differs from the saved customer.
+  const billingGstinVal = useWatch({ control, name: 'billing_gstin' });
+  const gstinDiffersFromCustomer =
+    selectedCustomer !== null && normalizeBuyerGstin(billingGstinVal) !== normalizeBuyerGstin(selectedCustomer.gstin);
 
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm lg:col-span-5">
@@ -82,6 +87,11 @@ export function CustomerDetailsCard({
               {...register('billing_gstin')}
             />
             {errors.billing_gstin && <p className="mt-1 text-xs text-destructive font-medium">{errors.billing_gstin.message}</p>}
+            {!errors.billing_gstin && gstinDiffersFromCustomer ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {selectedCustomer?.gstin ? `Saved customer's GSTIN is ${selectedCustomer.gstin}.` : 'The saved customer has no GSTIN.'} This invoice will use the GSTIN entered here.
+              </p>
+            ) : null}
           </div>
           <div>
             <label htmlFor="place-of-supply-input" className={labelCls}>Place of Supply State</label>
