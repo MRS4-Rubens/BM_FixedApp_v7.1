@@ -67,7 +67,7 @@ export function InvoiceTaglineField({
                     className="text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
                     aria-label="Close examples"
                   >
-                    <X className="size-3.5" />
+                    <X className="size-3.5 text-red-500 dark:text-red-400" />
                   </Popover.Close>
                 </div>
                 <div className="mt-2.5 space-y-2 max-h-72 overflow-y-auto divide-y divide-slate-100">

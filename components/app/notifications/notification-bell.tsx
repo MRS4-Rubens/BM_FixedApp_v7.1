@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import type { NotificationList, NotificationListItem } from '@/lib/notifications/list';
 import { markNotificationsRead } from '@/lib/actions/notifications/mark-notifications-read';
 import { badgeText, relativeTime, safeInternalLink } from './notification-format';
+import { FOCUS_THROTTLE_MS, shouldTimedRefresh } from './refresh-policy';
 
 /**
  * Backup re-check while the tab is visible. The bell also refreshes on window focus, on every page change and when
@@ -76,16 +77,32 @@ export function NotificationBell() {
 
   useEffect(() => {
     // Initial load after mount (async, so no synchronous setState inside the effect body).
-    const first = setTimeout(() => void refresh(), 0);
+    let lastActivityAt = Date.now();
+    let lastFetchAt = Date.now();
+    const run = () => {
+      lastFetchAt = Date.now();
+      void refresh();
+    };
+    const first = setTimeout(run, 0);
     const timer = setInterval(() => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (shouldTimedRefresh(document.visibilityState === 'visible', Date.now(), lastActivityAt)) run();
     }, REFRESH_MS);
-    const onFocus = () => void refresh();
+    const onActivity = () => {
+      lastActivityAt = Date.now();
+    };
+    const onFocus = () => {
+      onActivity();
+      if (Date.now() - lastFetchAt >= FOCUS_THROTTLE_MS) run();
+    };
     window.addEventListener('focus', onFocus);
+    window.addEventListener('pointerdown', onActivity, { passive: true });
+    window.addEventListener('keydown', onActivity, { passive: true });
     return () => {
       clearTimeout(first);
       clearInterval(timer);
       window.removeEventListener('focus', onFocus);
+      window.removeEventListener('pointerdown', onActivity);
+      window.removeEventListener('keydown', onActivity);
     };
   }, [refresh]);
 

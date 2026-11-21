@@ -32,9 +32,16 @@ const listProductsSchema = z
 export type ProductRow = typeof products.$inferSelect;
 export type TaxRateRow = typeof taxRates.$inferSelect;
 
+/**
+ * B4: only the fields the products list shows (plus the paging key), not whole rows. With 50 rows per page this keeps
+ * the page payload small on phones.
+ */
 export interface ProductListItem {
-  readonly product: ProductRow;
-  readonly taxRate: TaxRateRow | null;
+  readonly product: Pick<
+    ProductRow,
+    'id' | 'name' | 'hsn_sac_code' | 'unit_of_measurement' | 'default_sale_price_paise' | 'stock_quantity' | 'is_active'
+  >;
+  readonly taxRate: Pick<TaxRateRow, 'label'> | null;
 }
 
 export const listProducts = createAuthenticatedAction(
@@ -96,8 +103,16 @@ export const listProducts = createAuthenticatedAction(
     const [rows, countResult] = await Promise.all([
       db
         .select({
-          product: products,
-          taxRate: taxRates,
+          product: {
+            id: products.id,
+            name: products.name,
+            hsn_sac_code: products.hsn_sac_code,
+            unit_of_measurement: products.unit_of_measurement,
+            default_sale_price_paise: products.default_sale_price_paise,
+            stock_quantity: products.stock_quantity,
+            is_active: products.is_active,
+          },
+          taxRate: { label: taxRates.label },
         })
         .from(products)
         .leftJoin(taxRates, eq(products.default_tax_rate_id, taxRates.id))

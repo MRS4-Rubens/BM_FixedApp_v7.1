@@ -81,7 +81,7 @@ export function BusinessesTab({
               onClick={() => onChangeBizSearch('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <X className="size-4" />
+              <X className="size-4 text-red-500 dark:text-red-400" />
             </button>
           )}
         </div>

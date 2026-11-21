@@ -48,7 +48,7 @@ export function SignatureUploadExamples() {
           />
         </div>
         <p className="mt-1 text-[11px] font-semibold text-rose-700 flex items-center justify-center gap-1 whitespace-nowrap">
-          <X className="size-3 shrink-0" />
+          <X className="size-3 shrink-0 text-red-500 dark:text-red-400" />
           <span>Lined paper, shadows, or red ink</span>
         </p>
       </div>
@@ -65,7 +65,7 @@ export function SignatureUploadExamples() {
           />
         </div>
         <p className="mt-1 text-[11px] font-semibold text-rose-700 flex items-center justify-center gap-1 whitespace-nowrap">
-          <X className="size-3 shrink-0" />
+          <X className="size-3 shrink-0 text-red-500 dark:text-red-400" />
           <span>Tilted or upright (please rotate)</span>
         </p>
       </div>

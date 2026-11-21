@@ -193,7 +193,7 @@ export function AuthenticationModal() {
           aria-label="Close dialog"
           className="absolute right-4 top-4 rounded-full p-2 text-slate-500 hover:bg-zinc-100 hover:text-zinc-700 transition cursor-pointer"
         >
-          <X className="size-5" />
+          <X className="size-5 text-red-500 dark:text-red-400" />
         </button>
 
         {/* Brand Header */}
