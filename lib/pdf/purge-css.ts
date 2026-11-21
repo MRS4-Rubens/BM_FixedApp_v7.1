@@ -19,6 +19,15 @@ type CssNode =
 
 const RECURSE_AT_RULES = /^@(media|supports|layer|container)\b/i;
 
+// HTML class separators and CSS whitespace are only tab, LF, FF, CR and space. JavaScript's \s and trim() also match
+// U+00A0 and other Unicode spaces, which are valid inside class names.
+const ASCII_WS = /[\t\n\f\r ]/;
+const ASCII_WS_RUN = /[\t\n\f\r ]+/;
+
+function trimAscii(value: string): string {
+  return value.replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, '');
+}
+
 /** Index of the matching closing brace for the "{" at `open`, skipping strings and comments. */
 function matchBrace(css: string, open: number): number {
   let depth = 0;
@@ -74,7 +83,7 @@ function splitSelectorList(selector: string): string[] {
     }
   }
   parts.push(selector.slice(start));
-  return parts.map((p) => p.trim()).filter(Boolean);
+  return parts.map(trimAscii).filter(Boolean);
 }
 
 /** Reads one CSS identifier with escapes from `start`, returning the unescaped name and the end index. */
@@ -140,7 +149,7 @@ function parse(css: string): CssNode[] {
   const nodes: CssNode[] = [];
   let i = 0;
   while (i < css.length) {
-    while (i < css.length && /\s/.test(css[i])) i++;
+    while (i < css.length && ASCII_WS.test(css[i])) i++;
     if (i >= css.length) break;
     if (css.startsWith('/*', i)) {
       const end = css.indexOf('*/', i + 2);
@@ -165,7 +174,7 @@ function parse(css: string): CssNode[] {
       i = j + 1;
       continue;
     }
-    const prelude = css.slice(i, j).trim();
+    const prelude = trimAscii(css.slice(i, j));
     const close = matchBrace(css, j);
     const inner = css.slice(j + 1, close);
     if (prelude.startsWith('@')) {
@@ -210,7 +219,7 @@ export function collectHtmlClasses(html: string): Set<string> {
   let m: RegExpExecArray | null;
   while ((m = attr.exec(html)) !== null) {
     const value = (m[2] ?? m[3] ?? '').replace(/&(#x27|#39|amp|lt|gt|quot|apos);/g, (_, e: string) => HTML_ENTITIES[e]);
-    for (const c of value.split(/\s+/)) if (c) classes.add(c);
+    for (const c of value.split(ASCII_WS_RUN)) if (c) classes.add(c);
   }
   return classes;
 }

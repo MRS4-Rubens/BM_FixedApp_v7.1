@@ -38,6 +38,13 @@ describe('B9a PDF stylesheet trimming', () => {
     expect(out).not.toContain('.b .c'); // needs .c too
   });
 
+  it('treats only ASCII whitespace as a class separator (U+00A0 stays part of the class name)', () => {
+    const nbsp = ' ';
+    expect([...collectHtmlClasses(`<p class="price${nbsp}label  a\tb"></p>`)].sort()).toEqual(['a', 'b', `price${nbsp}label`]);
+    const css = `.price${nbsp}label{font-weight:700}.price{color:red}`;
+    expect(purgeCssForHtml(css, `<p class="price${nbsp}label"></p>`)).toBe(`.price${nbsp}label{font-weight:700}`);
+  });
+
   it('keeps escaped Tailwind variant classes the page uses', () => {
     const css = '.md\\:flex{display:flex}.lg\\:hidden{display:none}';
     expect(purgeCssForHtml(css, '<div class="md:flex"></div>')).toBe('.md\\:flex{display:flex}');
