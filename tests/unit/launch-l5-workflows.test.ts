@@ -88,4 +88,11 @@ describe('LAUNCH-L5 E2E workflow runs the app on the runner', () => {
     expect(wf).toContain('cancel-in-progress: false');
     expect(wf).not.toContain('pull_request_target');
   });
+
+  it('CI-01: fails (not skips) when the E2E secrets are missing on a same-repo PR or manual run', () => {
+    const check = wf.slice(wf.indexOf('- name: Check staging configuration'), wf.indexOf('  e2e:'));
+    expect(check).toContain('::error::E2E is not configured');
+    expect(check).toMatch(/configured=false" >> "\$GITHUB_OUTPUT"\s*\n\s*exit 1/);
+    expect(check).not.toContain('::notice::');
+  });
 });
