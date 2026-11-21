@@ -9,6 +9,7 @@ import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { buildLogoUrl } from '@/lib/storage/logo-url'
 import { canEditBusinessData, isAppRole } from '@/lib/auth/rbac'
 import { CurrentUserRoleProvider } from '@/components/app/current-user-role'
+import { DesktopViewSync } from '@/components/app/desktop-view'
 
 export const metadata: Metadata = {
   robots: {
@@ -81,6 +82,7 @@ export default async function AppLayout({
           </CurrentUserRoleProvider>
         </main>
         {/* Phones: bottom tab bar under the scrolling page (it carries the safe-area inset itself). */}
+        <DesktopViewSync />
         <MobileTabBar canCreate={Boolean(user?.business_id && isAppRole(user.role) && canEditBusinessData(user.role))} />
       </div>
     </div>

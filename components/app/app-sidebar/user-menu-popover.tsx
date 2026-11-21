@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronsUpDown, Settings, CreditCard, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { roleLabel } from '@/components/app/current-user-role'
+import { DesktopViewToggle } from '@/components/app/desktop-view'
 
 export interface UserMenuPopoverProps {
   user?: { name: string; role: string; initials: string }
@@ -145,6 +146,9 @@ export function UserMenuPopover({
               <span>Billing & Plan</span>
             </Link>
           </div>
+
+          {/* Phones only: switch between the phone layout and the full desktop layout. */}
+          <DesktopViewToggle onToggled={() => setUserMenuOpen(false)} />
 
           <div className="h-px bg-border/60 my-1" />
 

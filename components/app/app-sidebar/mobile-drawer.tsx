@@ -6,6 +6,7 @@ import { InvoiceBizFolioLogo } from '@/components/brand/invoice-bizfolio-logo'
 import { X, ChevronsUpDown, Settings, CreditCard, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { mainNav, accountNav, adminNavItem } from './nav-items'
+import { DesktopViewToggle } from '@/components/app/desktop-view'
 import { NavLink } from './nav-link'
 import { SubscriptionCard } from './subscription-card'
 import { roleLabel } from '@/components/app/current-user-role'
@@ -119,6 +120,7 @@ export function MobileDrawer({
                 onNavigate={() => setMobileOpen(false)}
               />
             )}
+            <DesktopViewToggle onToggled={() => setMobileOpen(false)} />
           </div>
 
           <SubscriptionCard

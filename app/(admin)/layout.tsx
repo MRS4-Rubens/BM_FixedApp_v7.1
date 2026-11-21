@@ -5,6 +5,7 @@ import { AppSidebar } from '@/components/app/app-sidebar';
 import { AppTopbar } from '@/components/app/app-topbar';
 import { getPlatformAdminDecision } from '@/lib/auth/admin';
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { DesktopViewSync } from '@/components/app/desktop-view'
 
 export const metadata: Metadata = {
   robots: {
@@ -47,6 +48,7 @@ export default async function AdminLayout({
       </div>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden print:overflow-visible">
         <AppTopbar />
+        <DesktopViewSync />
         <main data-app-scroll-region className="relative min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain p-4 md:p-6 lg:p-8 bg-muted/20 print:overflow-visible print:p-0">
           <div className="max-w-7xl mx-auto">{children}</div>
         </main>
