@@ -277,7 +277,7 @@ export function InvoiceForm({
           <form className="flex flex-col gap-3.5">
             {/* Hidden calculation mode input registered in Hook Form */}
             <input type="hidden" {...register('gst_rate_type')} />
-            <div className="grid gap-3.5 lg:grid-cols-12">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-12">
               <InvoiceDetailsCard
                 invoiceNumberFormatPreview={invoiceNumberFormatPreview}
                 showPreviewWarning={showPreviewWarning}
@@ -330,7 +330,7 @@ export function InvoiceForm({
               handleDescFocus={handleDescFocus}
             />
 
-            <div className="grid gap-3.5 lg:grid-cols-[1fr_1.3fr_1fr]">
+            <div className="grid grid-cols-[minmax(0,1fr)] gap-3.5 lg:grid-cols-[1fr_1.3fr_1fr]">
               <InternalNotesCard />
               <GstBreakdownCard
                 sortedGstRates={sortedGstRates}
