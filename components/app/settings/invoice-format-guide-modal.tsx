@@ -322,7 +322,7 @@ export function InvoiceFormatGuideModal({
                   <span>1. Annual / FY Series</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  When neither <code className="font-mono text-foreground font-semibold">{'{MM}'}</code> nor <code className="font-mono text-foreground font-semibold">{'{DD}'}</code> is present, your sequence runs continuously from April 1 to March 31, restarting at 0001 every new Financial Year.
+                  When neither <code className="font-mono text-foreground font-semibold">{'{MM}'}</code> nor <code className="font-mono text-foreground font-semibold">{'{DD}'}</code> is present, your sequence runs continuously from April 1 to March 31, restarting at 0001 every new Financial Year. Include <code className="font-mono text-foreground font-semibold">{'{FY}'}</code> or <code className="font-mono text-foreground font-semibold">{'{FYYYY}'}</code> so a new year never repeats an old number.
                 </p>
               </div>
 
@@ -332,7 +332,7 @@ export function InvoiceFormatGuideModal({
                   <span>2. Monthly Series</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Including <code className="font-mono text-foreground font-semibold">{'{MM}'}</code> instructs the billing engine to maintain a distinct counter for each month. At 00:00 on the 1st of every month, your counter starts from 0001.
+                  Including <code className="font-mono text-foreground font-semibold">{'{MM}'}</code> instructs the billing engine to maintain a distinct counter for each month. At 00:00 on the 1st of every month, your counter starts from 0001. Also include a year (<code className="font-mono text-foreground font-semibold">{'{FY}'}</code>, <code className="font-mono text-foreground font-semibold">{'{YY}'}</code> or <code className="font-mono text-foreground font-semibold">{'{YYYY}'}</code>).
                 </p>
               </div>
 
@@ -342,7 +342,7 @@ export function InvoiceFormatGuideModal({
                   <span>3. Daily Retail Series</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-relaxed">
-                  Including <code className="font-mono text-foreground font-semibold">{'{DD}'}</code> causes the counter to reset every single midnight. Ideal for high-turnover walk-in stores needing fresh numbers like 001 daily.
+                  Including <code className="font-mono text-foreground font-semibold">{'{DD}'}</code> causes the counter to reset every single midnight. Ideal for high-turnover walk-in stores needing fresh numbers like 001 daily. Also include <code className="font-mono text-foreground font-semibold">{'{MM}'}</code> and a year.
                 </p>
               </div>
             </div>

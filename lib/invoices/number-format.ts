@@ -124,7 +124,12 @@ export function validateInvoiceNumberFormat(format: string): { valid: true; maxR
     if (maxResolvedLength > 16) {
       return { valid: false, error: `This format resolves to ${maxResolvedLength} characters, which exceeds the 16-character legal limit under CGST Rule 46(b). Shorten it by ${maxResolvedLength - 16} character(s).` };
     }
-    
+
+    const uniquenessError = periodUniquenessError(tokens);
+    if (uniquenessError !== null) {
+      return { valid: false, error: uniquenessError };
+    }
+
     return { valid: true, maxResolvedLength };
   } catch (error) {
     if (error instanceof InvoiceNumberFormatError) {
@@ -132,6 +137,38 @@ export function validateInvoiceNumberFormat(format: string): { valid: true; maxR
     }
     return { valid: false, error: "An unknown error occurred while validating the format." };
   }
+}
+
+/**
+ * MONEY-01: the counter restarts every financial year (or month / day when {MM} / {DD} is present), but invoice numbers
+ * must be unique across ALL of a business's invoices (DB key invoices_business_id_invoice_number_unique). So the printed
+ * number must name its counter period, or a later period repeats an earlier number and every finalize fails.
+ *  - yearly reset:  needs {FY} or {FYYYY}. {YY}/{YYYY} are calendar years, which overlap two financial years.
+ *  - monthly reset: needs {MM} plus a year token ({FY}, {FYYYY}, {YY} or {YYYY}).
+ *  - daily reset:   needs {DD}, {MM} and a year token.
+ * Every token except {SEQ} has a fixed width, so distinct periods always print distinct numbers.
+ */
+function periodUniquenessError(tokens: readonly Token[]): string | null {
+  const has = (type: TokenType) => tokens.some((t) => t.type === type);
+  const hasFy = has('fy') || has('fyyyy');
+  const hasYear = hasFy || has('yy') || has('yyyy');
+
+  if (has('dd')) {
+    if (!has('mm') || !hasYear) {
+      return 'A format with {DD} restarts its counter every day, so it must also contain {MM} and a year ({FY}, {YY} or {YYYY}). Otherwise the same day of another month or year repeats an earlier invoice number. Example: INV-{DD}/{MM}/{YY}/{SEQ:3}.';
+    }
+    return null;
+  }
+  if (has('mm')) {
+    if (!hasYear) {
+      return 'A format with {MM} restarts its counter every month, so it must also contain a year ({FY}, {YY} or {YYYY}). Otherwise the same month next year repeats an earlier invoice number. Example: INV/{YY}{MM}/{SEQ:4}.';
+    }
+    return null;
+  }
+  if (!hasFy) {
+    return 'The counter restarts every financial year, so the format must contain {FY} or {FYYYY}. Otherwise the new year repeats earlier invoice numbers ({YY} and {YYYY} are calendar years and are not enough). Example: INV/{FY}/{SEQ:4}.';
+  }
+  return null;
 }
 
 export function getResetGranularity(format: string): 'daily' | 'monthly' | 'yearly' {
