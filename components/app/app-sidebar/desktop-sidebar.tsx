@@ -45,10 +45,12 @@ export function DesktopSidebar({
   const navigationId = useId()
   const toggleLabel = isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'
 
+  // z-30: backdrop-blur makes the sidebar its own layer, so without a z-index the page column (painted later)
+  // covers the account menu that opens to the right of the collapsed sidebar. Stays under the top bar (z-40) and dialogs.
   return (
     <aside
       className={cn(
-        'relative hidden md:flex h-full shrink-0 flex-col border-r border-border/50 bg-card/85 backdrop-blur-xl shadow-xs print:hidden transition-[width] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
+        'relative z-30 hidden md:flex h-full shrink-0 flex-col border-r border-border/50 bg-card/85 backdrop-blur-xl shadow-xs print:hidden transition-[width] duration-[220ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
         isCollapsed ? 'w-[68px]' : 'w-[220px]',
       )}
     >
