@@ -93,12 +93,32 @@ export function clearAllUnsavedInvoiceDrafts() {
   storageKeys(KEY_PREFIX).forEach(safeRemove);
 }
 
-function writeEntry(key: string, d: StoredDraft) {
+/**
+ * True when a sign-out happened (in any tab) after this form was opened. Checked synchronously right before every
+ * write, so a form in another tab cannot write a copy back in the gap before its 'storage' event arrives.
+ * PURE given the stored marker, exported for tests.
+ */
+export function signedOutSince(markerValue: string | null, formOpenedAt: number): boolean {
+  const at = markerValue ? Number(markerValue) : NaN;
+  return Number.isFinite(at) && at >= formOpenedAt;
+}
+
+function readSignoutMarker(): string | null {
+  try {
+    return window.localStorage.getItem(SIGNOUT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeEntry(key: string, d: StoredDraft, formOpenedAt: number): boolean {
+  if (signedOutSince(readSignoutMarker(), formOpenedAt)) return false;
   try {
     window.localStorage.setItem(key, JSON.stringify(d));
   } catch {
     /* storage full or blocked */
   }
+  return true;
 }
 
 export function useUnsavedInvoiceDraft({
@@ -126,6 +146,8 @@ export function useUnsavedInvoiceDraft({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dirtyRef = useRef(false);
   const savedAtRef = useRef(0);
+  /** When this form was opened; a sign-out marker newer than this blocks every write from this form. */
+  const openedAtRef = useRef(0);
 
   useEffect(() => {
     customerRef.current = selectedCustomer;
@@ -148,7 +170,16 @@ export function useUnsavedInvoiceDraft({
     dirtyRef.current = true;
     savedAtRef.current = Date.now();
     // Storage full or blocked: writeEntry ignores it; the beforeunload warning below still protects reloads.
-    writeEntry(key, { savedAt: savedAtRef.current, aliveAt: savedAtRef.current, values, customer: customerRef.current });
+    const written = writeEntry(
+      key,
+      { savedAt: savedAtRef.current, aliveAt: savedAtRef.current, values, customer: customerRef.current },
+      openedAtRef.current,
+    );
+    if (!written) {
+      // Signed out in another tab: stop for good (the 'storage' event may not have arrived yet).
+      activeRef.current = false;
+      dirtyRef.current = false;
+    }
   }, [methods]);
 
   /** Leaving this form: flush the last edits, then mark the copy free for the next New Invoice to adopt. */
@@ -157,7 +188,7 @@ export function useUnsavedInvoiceDraft({
     const key = keyRef.current;
     if (!activeRef.current || !key) return;
     const d = safeRead(key);
-    if (d && !d.releasedAt) writeEntry(key, { ...d, releasedAt: Date.now() });
+    if (d && !d.releasedAt) writeEntry(key, { ...d, releasedAt: Date.now() }, openedAtRef.current);
   }, [writeNow]);
 
   // Arrival: drop expired copies, take a fresh own key, adopt a free copy and restore it. Done in a timer so no state is set during the effect.
@@ -165,6 +196,7 @@ export function useUnsavedInvoiceDraft({
     if (!enabled) return;
     const t = setTimeout(() => {
       const now = Date.now();
+      openedAtRef.current = now;
       const prefix = `${KEY_PREFIX}${businessId}:`;
       for (const k of storageKeys(prefix)) {
         const d = safeRead(k);
@@ -184,7 +216,7 @@ export function useUnsavedInvoiceDraft({
       const stored = candidate?.d ?? null;
       if (candidate) {
         safeRemove(candidate.k);
-        writeEntry(ownKey, { ...candidate.d, aliveAt: now, releasedAt: undefined });
+        writeEntry(ownKey, { ...candidate.d, aliveAt: now, releasedAt: undefined }, now);
       }
       if (!stored) return;
       methods.reset({ ...defaultValues, ...stored.values });
@@ -225,7 +257,7 @@ export function useUnsavedInvoiceDraft({
       if (!activeRef.current || !key || !dirtyRef.current) return;
       const d = safeRead(key);
       if (!d || d.releasedAt) return;
-      writeEntry(key, { ...d, aliveAt: Date.now() });
+      if (!writeEntry(key, { ...d, aliveAt: Date.now() }, openedAtRef.current)) activeRef.current = false;
     }, ALIVE_EVERY_MS);
     const onPageHide = () => release();
     // Back/forward cache restored this page: take our copy back (unless another form already adopted it).
@@ -233,7 +265,7 @@ export function useUnsavedInvoiceDraft({
       const key = keyRef.current;
       if (!e.persisted || !activeRef.current || !key) return;
       const d = safeRead(key);
-      if (d?.releasedAt) writeEntry(key, { ...d, releasedAt: undefined, aliveAt: Date.now() });
+      if (d?.releasedAt) writeEntry(key, { ...d, releasedAt: undefined, aliveAt: Date.now() }, openedAtRef.current);
     };
     const onClear = () => {
       activeRef.current = false;
