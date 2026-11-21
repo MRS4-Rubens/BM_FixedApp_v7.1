@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { NO_AUDIT_REQUEST_CONTEXT } from '@/lib/audit/log';
 import * as schema from '@/lib/db/schema';
 import { mapKnownDatabaseError } from '@/lib/actions/_shared/action-error-mapping';
@@ -85,7 +85,7 @@ describe('MONEY-01: a repeated invoice number is refused and explained (REAL Pos
     const [row] = await testDb
       .select({ status: schema.invoices.lifecycle_status })
       .from(schema.invoices)
-      .where(eq(schema.invoices.id, second.invoiceId));
+      .where(and(eq(schema.invoices.id, second.invoiceId), eq(schema.invoices.business_id, testBusiness.id)));
     expect(row?.status).toBe('draft');
   }, 60_000);
 });
