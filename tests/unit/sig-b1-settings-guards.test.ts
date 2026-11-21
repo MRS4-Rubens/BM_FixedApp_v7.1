@@ -106,11 +106,11 @@ describe('SPEC: Signature settings screen architecture guards (SIG-B1)', () => {
     expect(content).not.toMatch(/['"]use client['"]/);
   });
 
-  it('6. lib/security/signature-limits.ts exists and SIGNATURE_MAX_BYTES equals 512 * 1024', () => {
+  it('6. lib/security/signature-limits.ts exists and SIGNATURE_MAX_BYTES equals 20 * 1024 (B9b)', () => {
     const limitsPath = path.resolve(ROOT_DIR, 'lib/security/signature-limits.ts');
     expect(fs.existsSync(limitsPath)).toBe(true);
 
-    expect(SIGNATURE_MAX_BYTES).toBe(512 * 1024);
+    expect(SIGNATURE_MAX_BYTES).toBe(20 * 1024);
   });
 });
 

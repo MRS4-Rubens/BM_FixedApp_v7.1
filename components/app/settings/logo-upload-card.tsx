@@ -10,6 +10,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { buildLogoUrl } from '@/lib/storage/logo-url';
+import { IMAGE_PICK_MAX_BYTES, LOGO_MAX_BYTES } from '@/lib/security/upload-limits';
+import { formatBytes, shrinkImage } from '@/lib/images/shrink-image';
 
 interface LogoUploadCardProps {
   business: {
@@ -58,17 +60,21 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('Image size exceeds 5MB. Please choose a smaller image.');
+    if (file.size > IMAGE_PICK_MAX_BYTES) {
+      setErrorMessage('This image is too large to process. Please choose an image under 25 MB.');
       return;
     }
 
-    setSelectedFile(file);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreviewDataUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    // B9b: logos are stored at <= 30 KB. Shrink here (keeps transparency) so any normal logo just works.
+    void shrinkImage(file, { maxBytes: LOGO_MAX_BYTES, maxEdge: 600, minEdge: 160 }).then((shrunk) => {
+      if (!shrunk) {
+        setErrorMessage('This logo could not be made small enough (30 KB). Please try a simpler PNG or JPEG logo.');
+        return;
+      }
+      setSelectedFile(new File([shrunk.blob], file.name, { type: shrunk.mime }));
+      setPreviewDataUrl(shrunk.dataUrl);
+      setSuccessMessage(`Logo optimised to ${formatBytes(shrunk.blob.size)}. Click Save to upload it.`);
+    });
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -300,7 +306,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
                   {selectedFile ? selectedFile.name : hasSavedLogo ? 'Click or drag to replace logo' : 'Click to upload or drag and drop your logo'}
                 </p>
                 <p className="mt-0.5 text-[11px] sm:text-xs text-muted-foreground font-medium">
-                  PNG (recommended), JPEG, or WebP • Max file size: 5MB
+                  PNG (recommended), JPEG, or WebP • Saved at up to 30 KB (we shrink it for you)
                 </p>
                 <p className="mt-1 text-[10.5px] font-semibold text-indigo-600/80 dark:text-indigo-400/80">
                   Auto-fits proportionally into all 4 invoice templates

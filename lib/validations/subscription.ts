@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { maxBase64Chars } from '@/lib/security/upload-limits';
+import { maxBase64Chars, PAYMENT_SCREENSHOT_MAX_BYTES } from '@/lib/security/upload-limits';
 import { PAID_PLAN_NAMES, CLAIM_BILLING_CYCLES, CLAIM_PAYMENT_METHODS } from '@/lib/db/domain-values';
 
 export const subscriptionClaimSchema = z.object({
@@ -16,7 +16,7 @@ export const subscriptionClaimSchema = z.object({
     .max(50, 'Transaction reference/UTR is too long')
     .regex(/^[A-Za-z0-9/-]+$/, 'Reference can only contain letters, numbers, / and -')
     .transform((val) => val.trim().toUpperCase()),
-  screenshot_base64: z.string().max(maxBase64Chars(4 * 1024 * 1024)).optional().or(z.literal('')),
+  screenshot_base64: z.string().max(maxBase64Chars(PAYMENT_SCREENSHOT_MAX_BYTES)).optional().or(z.literal('')),
   // client hint, ignored by the server
   screenshot_mime: z.string().max(100).optional().or(z.literal('')),
 });
