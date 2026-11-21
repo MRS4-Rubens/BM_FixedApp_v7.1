@@ -45,7 +45,7 @@ export default async function EditCustomerPage({ params }: { params: Promise<{ i
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground font-heading uppercase">
             EDIT CUSTOMER
           </h1>
-          <p className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px] sm:text-justify sm:[text-align-last:justify]">
+          <p className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px]" style={{ textAlign: 'justify', textAlignLast: 'justify' }}>
             Effortlessly Track, Organize, Maintain, and <br />
             Update Business Details in Your Directory
           </p>

@@ -79,7 +79,7 @@ export function ManageSubscriptionDialog({
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200" />
           <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            <Dialog.Popup data-viewport-dialog className="w-full max-w-2xl rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 max-h-[min(92vh,100dvh_-_24px_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px))] overflow-y-auto">
+            <Dialog.Popup data-viewport-dialog data-subscription-frame className="w-full max-w-2xl rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto">
               <Dialog.Close
                 render={
                   <button
@@ -108,6 +108,7 @@ export function ManageSubscriptionDialog({
                 }
               />
 
+              <div data-dialog-body><div data-desktop-canvas data-modal-canvas>
               {/* SECTION 1: Subscription override inputs */}
               <div className="mt-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 px-3.5 py-3 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
@@ -231,7 +232,7 @@ export function ManageSubscriptionDialog({
                   <Button
                     disabled={isPending || isSaveDisabled}
                     onClick={onSaveOverride}
-                    className="h-8 px-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap"
+                    className="max-xl:hidden h-8 px-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap"
                   >
                     {isPending ? <Loader2 className="size-3.5 animate-spin" /> : 'Save Subscription Changes'}
                   </Button>
@@ -249,6 +250,16 @@ export function ManageSubscriptionDialog({
                 onSetBizHistoryPage={onSetBizHistoryPage}
                 onViewProof={onViewProof}
               />
+              </div></div>
+              <div data-dialog-actions className="xl:hidden">
+                  <Button
+                    disabled={isPending || isSaveDisabled}
+                    onClick={onSaveOverride}
+                    className="h-8 px-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap"
+                  >
+                    {isPending ? <Loader2 className="size-3.5 animate-spin" /> : 'Save Subscription Changes'}
+                  </Button>
+              </div>
             </Dialog.Popup>
           </Dialog.Viewport>
         </Dialog.Portal>

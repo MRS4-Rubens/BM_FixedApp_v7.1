@@ -89,7 +89,7 @@ export function VoidCreditNoteDialog({
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <Dialog.Popup data-viewport-dialog data-contained-dialog className="w-full max-w-lg bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[min(92vh,100dvh_-_24px_-_env(safe-area-inset-top,0px)_-_env(safe-area-inset-bottom,0px))] animate-in zoom-in-95 duration-150">
+          <Dialog.Popup data-viewport-dialog data-form-dialog-frame className="w-full max-w-lg bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-150">
             {/* Header */}
             <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-2 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
@@ -128,7 +128,9 @@ export function VoidCreditNoteDialog({
             </div>
 
             {/* Form Body */}
-            <form onSubmit={handleSubmit} className="p-4 space-y-2 overflow-y-auto">
+            <form data-complex-dialog-form onSubmit={handleSubmit} className="p-4 space-y-2 overflow-y-auto">
+<div data-dialog-body><div data-desktop-canvas data-modal-canvas style={{ minWidth: '480px' }}>
+
               {/* Statutory Compliance Callout */}
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
                 <AlertTriangle className="size-5 text-amber-700 shrink-0 mt-0.5" />
@@ -232,7 +234,9 @@ export function VoidCreditNoteDialog({
               </label>
 
               {/* Action Buttons */}
-              <div data-modal-footer className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+              
+</div></div>
+<div data-modal-footer className="flex items-center justify-end gap-2 pt-2 border-t border-border">
                 <Button
                   type="button"
                   variant="outline"

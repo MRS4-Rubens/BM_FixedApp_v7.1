@@ -110,13 +110,13 @@ export function ProductsClient({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         {/* Left Side: Heading & Justified Tagline */}
         <div className="flex flex-col gap-1 shrink-0">
           <h1 className="text-3xl font-extrabold tracking-tight text-foreground font-heading uppercase">
             PRODUCTS & SERVICES
           </h1>
-          <p className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px] sm:text-justify sm:[text-align-last:justify]">
+          <p className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px]" style={{ textAlign: 'justify', textAlignLast: 'justify' }}>
             Effortlessly Track, Organize, Maintain, and <br />
             Manage Your Complete Product Catalogue
           </p>
@@ -124,7 +124,7 @@ export function ProductsClient({
 
         {/* Right Side: Filter and Action Bar */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center justify-between bg-card p-3 rounded-xl border border-border/70 shadow-[0_1px_3px_rgba(99,102,241,0.03),0_8px_16px_-8px_rgba(99,102,241,0.08)] flex-1 lg:max-w-4xl w-full">
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm w-full xl:max-w-xs focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all shadow-sm">
+          <div className="flex flex-1 items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm w-full sm:max-w-xs focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all shadow-sm">
             <Search className="size-4 shrink-0 text-muted-foreground" />
             <input
               type="text"
@@ -198,7 +198,7 @@ export function ProductsClient({
 
       <div className={cn("transition-opacity duration-150", isPending && "opacity-60 pointer-events-none")}>
         {/* Product cards */}
-        <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {items.map(({ product, taxRate }) => {
             const isService = Boolean(product.hsn_sac_code && product.hsn_sac_code.startsWith('99'));
             const codePrefix = isService ? 'SAC' : 'HSN';
@@ -208,7 +208,7 @@ export function ProductsClient({
                 {/* Line 1: Name on Left, GST% on Complete Right */}
                 <div className="flex items-start justify-between gap-3">
                   <p className={cn(
-                    "font-bold text-base sm:text-lg text-foreground block leading-snug flex-1 min-w-0 max-xl:line-clamp-2 max-xl:[overflow-wrap:anywhere] xl:truncate",
+                    "font-bold text-base sm:text-lg text-foreground truncate block leading-snug flex-1",
                     canEdit && "group-hover:text-indigo-600 transition-colors"
                   )}>
                     {product.name}
@@ -256,7 +256,7 @@ export function ProductsClient({
             );
 
             const cardClassName = cn(
-              "group relative min-w-0 rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs transition-all duration-200 flex flex-col justify-between",
+              "group relative rounded-xl border border-border bg-card px-4 py-3.5 shadow-xs transition-all duration-200 flex flex-col justify-between",
               canEdit && "hover:shadow-md hover:border-indigo-500/30",
               !product.is_active && "opacity-60 bg-muted/20"
             );

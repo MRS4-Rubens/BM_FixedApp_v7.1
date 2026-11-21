@@ -172,7 +172,7 @@ export function ProductForm({
             <h1 className="text-3xl font-extrabold tracking-tight text-foreground font-heading uppercase">
               {isEdit ? 'EDIT PRODUCT/SERVICE' : 'ADD PRODUCT/SERVICE'}
             </h1>
-            <p className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px] sm:text-justify sm:[text-align-last:justify]">
+            <p className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px]" style={{ textAlign: 'justify', textAlignLast: 'justify' }}>
               {isEdit ? (
                 <>
                   Effortlessly Track, Organize, Maintain, and <br />
@@ -188,9 +188,8 @@ export function ProductForm({
           </div>
 
           {/* Right: Item Classification: Goods vs Service Toggle Box (+ optional headerActions in Edit mode) */}
-          <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto">
-            {/* Phones: text above the switch (full width) instead of squeezed beside it. */}
-            <div className="w-full sm:w-auto rounded-lg border border-border/60 bg-muted/20 px-3.5 py-2 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 shadow-2xs">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="rounded-lg border border-border/60 bg-muted/20 px-3.5 py-2 flex items-center justify-between gap-3 shadow-2xs">
               <div>
                 <p className="text-xs font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wide">
                   <Package className="size-3.5 text-indigo-600" />
@@ -206,9 +205,6 @@ export function ProductForm({
                 </span>
                 <button
                   type="button"
-                  role="switch"
-                  aria-checked={isService}
-                  aria-label="Item is a service (SAC code)"
                   onClick={() => {
                     const next = !isService
                     setIsServiceManual(next)
@@ -265,7 +261,7 @@ export function ProductForm({
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4.5 sm:space-y-5">
               {/* SECTION 1: Classification & Identity */}
               <div className="space-y-3">
-                <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
+                <div className="flex items-center justify-between pb-2 border-b border-border/50">
                   <div className="flex items-center gap-2">
                     <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-black text-white">
                       1
@@ -274,7 +270,7 @@ export function ProductForm({
                       Classification &amp; Identity
                     </h3>
                   </div>
-                  <span className="pl-7.5 sm:pl-0 text-xs font-medium text-muted-foreground">Type, naming &amp; GST code</span>
+                  <span className="text-xs font-medium text-muted-foreground">Type, naming &amp; GST code</span>
                 </div>
 
                 {/* Single Hybrid Row: Product Name (8 cols) + HSN/SAC Code (4 cols) */}
@@ -354,7 +350,7 @@ export function ProductForm({
 
               {/* SECTION 2: Pricing & Taxation */}
               <div className="space-y-3">
-                <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
+                <div className="flex items-center justify-between pb-2 border-b border-border/50">
                   <div className="flex items-center gap-2">
                     <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-black text-white">
                       2
@@ -363,7 +359,7 @@ export function ProductForm({
                       Pricing &amp; Taxation
                     </h3>
                   </div>
-                  <span className="pl-7.5 sm:pl-0 text-xs font-medium text-muted-foreground">Standard rate &amp; GST slab</span>
+                  <span className="text-xs font-medium text-muted-foreground">Standard rate &amp; GST slab</span>
                 </div>
 
                 <div className="space-y-2.5">
@@ -466,7 +462,7 @@ export function ProductForm({
 
               {/* SECTION 3: Inventory & Specifications */}
               <div className="space-y-3">
-                <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between pb-2 border-b border-border/50">
+                <div className="flex items-center justify-between pb-2 border-b border-border/50">
                   <div className="flex items-center gap-2">
                     <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-black text-white">
                       3
@@ -475,7 +471,7 @@ export function ProductForm({
                       Inventory &amp; Specifications
                     </h3>
                   </div>
-                  <span className="pl-7.5 sm:pl-0 text-xs font-medium text-muted-foreground">Stock &amp; line item details</span>
+                  <span className="text-xs font-medium text-muted-foreground">Stock &amp; line item details</span>
                 </div>
 
                 <div className="space-y-3">

@@ -130,7 +130,8 @@ export function SettingsClient({
           SETTINGS
         </h1>
         <p
-          className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px] sm:text-justify sm:[text-align-last:justify]"
+          className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px]"
+          style={{ textAlign: 'justify', textAlignLast: 'justify' }}
         >
           Effortlessly Track, Organize, Maintain, and <br />
           Manage Your Business Account Configurations
@@ -139,8 +140,7 @@ export function SettingsClient({
 
       <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-start sm:gap-6">
         {/* -- Mobile Horizontal Tab Bar (< 640px) --------------------------- */}
-        {/* Swipe sideways through the sections; no scrollbar track under the tabs on phones. */}
-        <div className="overflow-x-auto sm:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-3 overflow-x-auto px-3 sm:hidden">
           <nav
             aria-label="Settings sections"
             className="flex w-max min-w-full gap-1.5 rounded-lg border border-border bg-card p-1 shadow-xs"
