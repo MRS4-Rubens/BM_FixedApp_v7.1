@@ -13,7 +13,7 @@ test.describe.configure({ mode: 'serial' });
 /**
  * Feature G (launch Professional), as the journey owner — screens only, no payment claim is submitted
  * (01-journey covers claims and approval; the plan-change money rule is covered by unit/integration/real-Postgres tests):
- * 1. /checkout?plan=professional: Professional is selectable (no "Coming soon"), ₹599 monthly, ₹4,999 yearly.
+ * 1. /checkout?plan=professional: Professional is selectable (no "Coming soon"), ₹599 monthly, ₹5,999 yearly.
  * 2. The conversion note appears EXACTLY when it should: the business's real plan is read from the database, and the
  *    "unused days become" note must be visible when a different paid plan is running (Essentials → Professional) and
  *    absent otherwise.
@@ -69,7 +69,7 @@ test.describe('12 - Professional plan on sale: checkout and pricing', () => {
       }
 
       await checkout.yearlyCycleButton.first().click();
-      await expect(page.getByText('₹4,999').first()).toBeVisible();
+      await expect(page.getByText('₹5,999').first()).toBeVisible();
 
       // ── 3. Landing page pricing ─────────────────────────────────────────────
       await gotoApp(page, '/');

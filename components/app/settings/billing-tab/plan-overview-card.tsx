@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { formatIstDate } from '@/lib/invoices/ist-date';
+import { TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements';
 import type { businesses } from '@/lib/db/schema';
 import type { PlanDefinition } from './plan-configs';
 
@@ -67,7 +68,7 @@ export function PlanOverviewCard({
             ) : status === 'trial' && !isExpired ? (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-3 py-1 text-sm font-bold text-amber-800 shadow-2xs">
                 <Clock className="size-4" />
-                Trial Period ({daysRemaining ?? 14} days left)
+                Trial Period ({daysRemaining ?? TRIAL_DURATION_DAYS} days left)
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200/80 bg-rose-50 px-3 py-1 text-sm font-bold text-rose-700 shadow-2xs">

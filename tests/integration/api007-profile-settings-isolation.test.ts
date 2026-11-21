@@ -452,7 +452,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     expect(bizRow1.subscription_plan).toBe('trial');
     expect(bizRow1.subscription_status).toBe('trial');
 
-    const expectedTrialEnd = Date.now() + 14 * 24 * 60 * 60 * 1000;
+    const expectedTrialEnd = Date.now() + 7 * 24 * 60 * 60 * 1000;
     const actualTrialEnd = new Date(bizRow1.trial_ends_at ?? 0).getTime();
     expect(Math.abs(actualTrialEnd - expectedTrialEnd)).toBeLessThan(60000);
 
