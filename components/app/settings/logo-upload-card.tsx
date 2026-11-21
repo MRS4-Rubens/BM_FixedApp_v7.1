@@ -43,6 +43,8 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   const [hasSavedLogo, setHasSavedLogo] = useState<boolean>(Boolean(business?.logo_storage_key));
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** Only the latest pick may update the preview (an older, slower shrink must not overwrite it or undo Cancel). */
+  const selectionRef = useRef(0);
 
   const currentLogoUrl = business?.id && hasSavedLogo && savedLogoKey
     ? buildLogoUrl(business.id, savedLogoKey)
@@ -66,15 +68,22 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
     }
 
     // B9b: logos are stored at <= 30 KB. Shrink here (keeps transparency) so any normal logo just works.
-    void shrinkImage(file, { maxBytes: LOGO_MAX_BYTES, maxEdge: 600, minEdge: 160 }).then((shrunk) => {
-      if (!shrunk) {
-        setErrorMessage('This logo could not be made small enough (30 KB). Please try a simpler PNG or JPEG logo.');
-        return;
-      }
-      setSelectedFile(new File([shrunk.blob], file.name, { type: shrunk.mime }));
-      setPreviewDataUrl(shrunk.dataUrl);
-      setSuccessMessage(`Logo optimised to ${formatBytes(shrunk.blob.size)}. Click Save to upload it.`);
-    });
+    const selection = ++selectionRef.current;
+    shrinkImage(file, { maxBytes: LOGO_MAX_BYTES, maxEdge: 600, minEdge: 160 })
+      .then((shrunk) => {
+        if (selection !== selectionRef.current) return;
+        if (!shrunk) {
+          setErrorMessage('This logo could not be made small enough (30 KB). Please try a simpler PNG or JPEG logo.');
+          return;
+        }
+        setSelectedFile(new File([shrunk.blob], file.name, { type: shrunk.mime }));
+        setPreviewDataUrl(shrunk.dataUrl);
+        setSuccessMessage(`Logo optimised to ${formatBytes(shrunk.blob.size)}. Click Save to upload it.`);
+      })
+      .catch(() => {
+        if (selection !== selectionRef.current) return;
+        setErrorMessage('This image could not be read. Please choose it again.');
+      });
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -135,6 +144,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   };
 
   const handleCancelSelection = () => {
+    selectionRef.current += 1;
     setPreviewDataUrl(null);
     setSelectedFile(null);
     setErrorMessage(null);
@@ -146,6 +156,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
 
   const handleRemove = () => {
+    selectionRef.current += 1;
     setRemoveConfirmOpen(true);
   };
 

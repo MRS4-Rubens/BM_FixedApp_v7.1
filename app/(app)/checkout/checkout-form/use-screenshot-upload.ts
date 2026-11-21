@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { UseFormSetValue } from 'react-hook-form';
 import type { SubscriptionClaimInput } from '@/lib/validations/subscription';
 import { IMAGE_PICK_MAX_BYTES, PAYMENT_SCREENSHOT_MAX_BYTES } from '@/lib/security/upload-limits';
@@ -18,6 +18,8 @@ export function useScreenshotUpload({
   const [fileSizeStr, setFileSizeStr] = useState<string>('');
   /** True while a picked screenshot is being shrunk; the claim cannot be submitted until it is ready. */
   const [isPreparingScreenshot, setIsPreparingScreenshot] = useState(false);
+  /** Only the latest pick may fill the form (an older, slower shrink must not replace it or undo Remove). */
+  const selectionRef = useRef(0);
 
   const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -31,21 +33,32 @@ export function useScreenshotUpload({
     // B9b: payment proofs are stored at <= 50 KB. Shrink here; 1280 px keeps the UTR and amount readable for approval.
     setFormError(null);
     setIsPreparingScreenshot(true);
-    void shrinkImage(file, { maxBytes: PAYMENT_SCREENSHOT_MAX_BYTES, maxEdge: 1280, minEdge: 640 }).then((shrunk) => {
-      setIsPreparingScreenshot(false);
-      if (!shrunk) {
-        setFormError('This screenshot could not be made small enough (50 KB). Please crop it to the payment details and try again.');
-        return;
-      }
-      setFileName(file.name);
-      setFileSizeStr(`${formatBytes(shrunk.blob.size)} (optimised from ${formatBytes(file.size)})`);
-      setValue('screenshot_mime', shrunk.mime);
-      setScreenshotBase64(shrunk.dataUrl);
-      setValue('screenshot_base64', shrunk.dataUrl);
-    });
+    const selection = ++selectionRef.current;
+    shrinkImage(file, { maxBytes: PAYMENT_SCREENSHOT_MAX_BYTES, maxEdge: 1280, minEdge: 640 })
+      .then((shrunk) => {
+        if (selection !== selectionRef.current) return;
+        if (!shrunk) {
+          setFormError('This screenshot could not be made small enough (50 KB). Please crop it to the payment details and try again.');
+          return;
+        }
+        setFileName(file.name);
+        setFileSizeStr(`${formatBytes(shrunk.blob.size)} (optimised from ${formatBytes(file.size)})`);
+        setValue('screenshot_mime', shrunk.mime);
+        setScreenshotBase64(shrunk.dataUrl);
+        setValue('screenshot_base64', shrunk.dataUrl);
+      })
+      .catch(() => {
+        if (selection !== selectionRef.current) return;
+        setFormError('This screenshot could not be read. Please choose it again.');
+      })
+      .finally(() => {
+        if (selection === selectionRef.current) setIsPreparingScreenshot(false);
+      });
   };
 
   const handleRemoveScreenshot = () => {
+    selectionRef.current += 1;
+    setIsPreparingScreenshot(false);
     setFileName('');
     setFileSizeStr('');
     setScreenshotBase64('');
