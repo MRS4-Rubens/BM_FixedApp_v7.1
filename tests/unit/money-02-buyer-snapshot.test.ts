@@ -11,6 +11,9 @@ const customer = {
   pincode: '411001',
 };
 
+/** A saved customer whose record holds a DIFFERENT GSTIN from the one typed on the draft. */
+const customerWithGstin = { ...customer, gstin: '29ABCDE1234F1ZW' };
+
 const draft = (name: string | null, gstin: string | null) => ({
   billing_name_snapshot: name,
   billing_gstin_snapshot: gstin,
@@ -25,12 +28,15 @@ describe('MONEY-02: buyer snapshot at finalize', () => {
   });
 
   it('keeps a corrected GSTIN instead of the saved customer GSTIN', () => {
-    expect(resolveBuyerSnapshot(draft('Sharma Traders', '27aapfu0939f1zv '), customer).billingGstin).toBe('27AAPFU0939F1ZV');
+    const buyer = resolveBuyerSnapshot(draft('Sharma Traders', '27aapfu0939f1zv '), customerWithGstin);
+    expect(buyer.billingGstin).toBe('27AAPFU0939F1ZV');
+    expect(buyer.billingGstin).not.toBe(customerWithGstin.gstin);
   });
 
   it('a GSTIN cleared on the draft stays cleared (B2C, as previewed)', () => {
-    expect(resolveBuyerSnapshot(draft('Sharma Traders', ''), customer).billingGstin).toBeNull();
-    expect(resolveBuyerSnapshot(draft('Sharma Traders', null), customer).billingGstin).toBeNull();
+    // The saved customer HAS a GSTIN, so this proves the record's GSTIN is not swapped back in.
+    expect(resolveBuyerSnapshot(draft('Sharma Traders', ''), customerWithGstin).billingGstin).toBeNull();
+    expect(resolveBuyerSnapshot(draft('Sharma Traders', null), customerWithGstin).billingGstin).toBeNull();
   });
 
   it('a linked customer still supplies the name (editing the name in the form unlinks the customer)', () => {
