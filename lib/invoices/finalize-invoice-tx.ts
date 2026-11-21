@@ -17,6 +17,7 @@ import { evaluateInvoiceDate } from '@/lib/invoices/invoice-date-policy';
 import { assertInvoiceQuotaAvailable } from '@/lib/invoices/invoice-quota';
 import { formatIstDateAsIso, getIstDateParts, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
+import { resolveBuyerSnapshot } from '@/lib/invoices/buyer-snapshot';
 import { captureSellerSnapshot } from '@/lib/invoices/seller-snapshot';
 import { captureDisplayPrefsSnapshot, parseStoredDisplayPrefs } from '@/lib/invoices/display-prefs';
 import { quantityFormatViolation } from '@/lib/invoices/quantity-format';
@@ -162,21 +163,12 @@ export async function finalizeDraftInvoiceInTransaction(
     invoiceDate
   });
 
-  // 7. Snapshot fields
-  let billingNameSnapshot = invoice.billing_name_snapshot;
-  let billingGstinSnapshot = invoice.billing_gstin_snapshot;
-  let billingAddressSnapshot = invoice.billing_address_snapshot;
-
-  if (customer) {
-    billingNameSnapshot = customer.name;
-    billingGstinSnapshot = customer.gstin;
-    const cityStatePincode = [customer.city, customer.state_code, customer.pincode].filter(Boolean).join(', ');
-    billingAddressSnapshot = [
-      customer.address_line1,
-      customer.address_line2,
-      cityStatePincode
-    ].filter(Boolean).join('\n');
-  }
+  // 7. Buyer snapshot (MONEY-02): the draft's GSTIN is what the user saw on the preview and is authoritative; a linked
+  //    customer supplies the name and address. Never silently swap in the customer record's GSTIN.
+  const buyer = resolveBuyerSnapshot(invoice, customer);
+  const billingNameSnapshot = buyer.billingName;
+  const billingGstinSnapshot = buyer.billingGstin;
+  const billingAddressSnapshot = buyer.billingAddress;
 
   const { year, month, day } = getIstDateParts(invoiceDate);
   const dueIstDate = new Date(Date.UTC(year, month - 1, day + business.payment_due_days));
