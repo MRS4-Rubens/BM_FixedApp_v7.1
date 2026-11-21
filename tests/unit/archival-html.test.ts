@@ -53,22 +53,28 @@ describe('archival-html document builder', () => {
 
 
 describe('LAUNCH-L7 embedded PDF font', () => {
-  it('embeds all four TeX Gyre Schola faces (unmodified files) as Century Schoolbook, plus a ₹ fallback', async () => {
+  it('embeds all four faces as small WOFF2 subsets under Century Schoolbook, plus a ₹ fallback (B9a)', async () => {
     const { readFileSync } = await import('node:fs');
     const { createHash } = await import('node:crypto');
     const { getPdfFontFaceCss } = await import('@/lib/pdf/pdf-fonts');
     const css = getPdfFontFaceCss();
-    expect(css.match(/font-family: 'Century Schoolbook'; src: url\(data:font\/otf;base64,/g)).toHaveLength(4);
+    expect(css.match(/font-family: 'Century Schoolbook'; src: url\(data:font\/woff2;base64,/g)).toHaveLength(4);
     expect(css).toContain('font-weight: 700; font-style: italic;');
     expect(css).toContain('unicode-range: U+20B9;');
+    // B9a: was ~743 KB of base64 for four full OTF faces.
+    expect(css.length).toBeLessThan(200 * 1024);
     const doc = buildArchivalHtmlDocument({ title: 'T', bodyHtml: '<p>x</p>' });
-    expect(doc).toContain("font-family: 'Century Schoolbook'; src: url(data:font/otf;base64,");
-    // The embedded bytes are the original CTAN files (licence: unmodified), checked against the README checksums.
+    expect(doc).toContain("font-family: 'Century Schoolbook'; src: url(data:font/woff2;base64,");
+    // The original CTAN files stay unmodified (checked against the README checksums); the embedded subsets are
+    // renamed derived files (licence: modified versions get new names), built by scripts/fonts/subset-pdf-fonts.py.
     const readme = readFileSync('assets/fonts/tex-gyre-schola/README-TEX-GYRE-SCHOLA.txt', 'utf8');
     for (const name of ['regular', 'bold', 'italic', 'bolditalic']) {
-      const file = readFileSync(`assets/fonts/tex-gyre-schola/texgyreschola-${name}.otf`);
-      expect(file.subarray(0, 4).toString('latin1')).toBe('OTTO');
-      expect(readme).toContain(createHash('sha256').update(file).digest('hex'));
+      const original = readFileSync(`assets/fonts/tex-gyre-schola/texgyreschola-${name}.otf`);
+      expect(original.subarray(0, 4).toString('latin1')).toBe('OTTO');
+      expect(readme).toContain(createHash('sha256').update(original).digest('hex'));
+      const subset = readFileSync(`assets/fonts/tex-gyre-schola/pdf/bizfolio-schola-pdf-${name}.woff2`);
+      expect(subset.subarray(0, 4).toString('latin1')).toBe('wOF2');
+      expect(subset.length).toBeLessThan(40 * 1024);
     }
   });
 

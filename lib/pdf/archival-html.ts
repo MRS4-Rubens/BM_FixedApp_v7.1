@@ -1,5 +1,6 @@
 import { PRINT_STYLESHEET } from '@/lib/pdf/print-stylesheet.generated';
 import { getPdfFontFaceCss } from '@/lib/pdf/pdf-fonts';
+import { purgeCssForHtml } from '@/lib/pdf/purge-css';
 
 export function escapeHtml(value: string): string {
   return value
@@ -26,6 +27,10 @@ function stripGoogleFontImports(markup: string): string {
 }
 
 export function buildArchivalHtmlDocument(parts: ArchivalHtmlParts): string {
+  const bodyHtml = stripGoogleFontImports(parts.bodyHtml);
+  const bodyAttr = parts.bodyClass ? ` class="${escapeHtml(parts.bodyClass)}"` : '';
+  // B9a: send the renderer only the style rules this document can use (was the whole app stylesheet, ~255 KB).
+  const printCss = purgeCssForHtml(PRINT_STYLESHEET, `<body${bodyAttr}>${bodyHtml}`);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,10 +38,10 @@ export function buildArchivalHtmlDocument(parts: ArchivalHtmlParts): string {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(parts.title)}</title>
   <style>${getPdfFontFaceCss()}</style>
-  <style>${PRINT_STYLESHEET}</style>
+  <style>${printCss}</style>
   <style>${parts.extraCss ?? ''}</style>
 </head>
-<body${parts.bodyClass ? ` class="${escapeHtml(parts.bodyClass)}"` : ''}>${stripGoogleFontImports(parts.bodyHtml)}</body>
+<body${bodyAttr}>${bodyHtml}</body>
 </html>`;
 }
 
