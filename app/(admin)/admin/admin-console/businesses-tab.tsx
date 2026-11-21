@@ -87,7 +87,7 @@ export function BusinessesTab({
         </div>
 
         {/* Status pills */}
-        <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+        <div className="flex items-center gap-1 overflow-x-auto py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {(['all', 'active', 'trial', 'expired', 'suspended'] as const).map((st) => (
             <button
               key={st}
@@ -108,7 +108,60 @@ export function BusinessesTab({
 
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-        <div className="overflow-x-auto">
+        {/* Phones: one card per business with every column of the table row. */}
+        <ul className="divide-y divide-border/40 md:hidden">
+          {paginatedBusinesses.length === 0 ? (
+            <li className="px-4 py-8 text-center text-sm font-semibold text-muted-foreground">
+              No businesses found matching current filters.
+            </li>
+          ) : (
+            paginatedBusinesses.map((biz) => (
+              <li key={biz.id} className="space-y-2 px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-foreground [overflow-wrap:anywhere]">{biz.legalName}</p>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <span className="font-mono">{biz.gstin}</span>
+                      <button
+                        type="button"
+                        onClick={() => onCopy(biz.gstin, `gstin-${biz.id}`)}
+                        className="shrink-0 cursor-pointer transition hover:text-indigo-600"
+                        aria-label="Copy GSTIN"
+                      >
+                        {copiedKey === `gstin-${biz.id}` ? <Check className="size-3.5 text-emerald-700" /> : <Copy className="size-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="text-xs font-bold capitalize text-foreground">{biz.subscriptionPlan}</span>
+                    <SubscriptionStatusBadge status={biz.subscriptionStatus} />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <span>
+                    Expires{' '}
+                    <span className="font-semibold text-foreground">
+                      {biz.subscriptionEndsAt ? formatIstDate(biz.subscriptionEndsAt) : 'Lifetime / Unset'}
+                    </span>
+                  </span>
+                  <span className="tabular-nums">
+                    <span className="font-bold text-foreground">{biz.invoiceCount}</span> invoices ·{' '}
+                    <span className="font-bold text-foreground">{biz.userCount}</span> staff
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onOpenManageBiz(biz)}
+                  className="h-8 w-full text-xs font-bold text-indigo-600 hover:bg-indigo-50 border-indigo-200"
+                >
+                  Manage
+                </Button>
+              </li>
+            ))
+          )}
+        </ul>
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full table-auto text-left text-sm border-collapse [&_th]:align-middle [&_td]:align-middle">
             <thead>
               <tr className="border-b border-border bg-muted/40 text-xs font-bold text-muted-foreground uppercase tracking-wider">
@@ -156,11 +209,6 @@ export function BusinessesTab({
                 </tr>
               ) : (
                 paginatedBusinesses.map((biz) => {
-                  const isPaying = biz.subscriptionStatus === 'active';
-                  const isSuspended = biz.subscriptionStatus === 'suspended';
-                  const isTrial = biz.subscriptionStatus === 'trial';
-                  const isExpired = biz.subscriptionStatus === 'expired';
-
                   return (
                     <tr key={biz.id} className="hover:bg-muted/15 transition-colors">
                       <td className="px-4 py-3">
@@ -190,26 +238,7 @@ export function BusinessesTab({
                           <span className="font-bold text-foreground capitalize text-xs">
                             {biz.subscriptionPlan}
                           </span>
-                          <span
-                            className={cn(
-                              'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider border',
-                              isPaying && 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                              isTrial && 'bg-amber-50 text-amber-700 border-amber-200',
-                              isSuspended && 'bg-rose-50 text-rose-700 border-rose-200',
-                              isExpired && 'bg-zinc-100 text-zinc-700 border-zinc-200'
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                'size-1.5 rounded-full',
-                                isPaying && 'bg-emerald-500',
-                                isTrial && 'bg-amber-500',
-                                isSuspended && 'bg-rose-500',
-                                isExpired && 'bg-zinc-400'
-                              )}
-                            />
-                            {biz.subscriptionStatus}
-                          </span>
+                          <SubscriptionStatusBadge status={biz.subscriptionStatus} />
                         </div>
                       </td>
 
@@ -315,3 +344,32 @@ export function BusinessesTab({
   );
 }
 
+/** Subscription status pill (shared by the phone cards and the desktop table). */
+function SubscriptionStatusBadge({ status }: { status: string }) {
+  const isPaying = status === 'active';
+  const isTrial = status === 'trial';
+  const isSuspended = status === 'suspended';
+  const isExpired = status === 'expired';
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider border',
+        isPaying && 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        isTrial && 'bg-amber-50 text-amber-700 border-amber-200',
+        isSuspended && 'bg-rose-50 text-rose-700 border-rose-200',
+        isExpired && 'bg-zinc-100 text-zinc-700 border-zinc-200'
+      )}
+    >
+      <span
+        className={cn(
+          'size-1.5 rounded-full',
+          isPaying && 'bg-emerald-500',
+          isTrial && 'bg-amber-500',
+          isSuspended && 'bg-rose-500',
+          isExpired && 'bg-zinc-400'
+        )}
+      />
+      {status}
+    </span>
+  );
+}

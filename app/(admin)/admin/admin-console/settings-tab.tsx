@@ -69,9 +69,9 @@ export function SettingsTab({
         startTransition={startTransition}
       />
 
-      <div className="grid gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-12">
         {/* Payee UPI Information */}
-        <div className="lg:col-span-5 rounded-xl border border-border bg-card p-5 shadow-xs space-y-4">
+        <div className="min-w-0 lg:col-span-5 rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
           <div className="flex items-center gap-2.5">
             <div className="rounded-lg bg-indigo-500/10 p-2 text-indigo-600">
               <QrCode className="size-5" />
@@ -113,7 +113,7 @@ export function SettingsTab({
         </div>
 
         {/* Direct Bank Account */}
-        <div className="lg:col-span-7 rounded-xl border border-border bg-card p-5 shadow-xs space-y-4">
+        <div className="min-w-0 lg:col-span-7 rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
           <div className="flex items-center gap-2.5">
             <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-700">
               <CreditCard className="size-5" />
@@ -222,19 +222,20 @@ export function SettingsTab({
             When users submit bug reports or feedback via the topbar or settings form, the payload and screenshots are packaged in-memory and delivered via Resend directly to your inbox. You can reply directly to the submitting user from Gmail.
           </p>
 
-          <div className="grid gap-3 sm:grid-cols-2 pt-1">
-            <div className="rounded-lg bg-muted/40 p-3 border border-border/50 text-sm">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-3 sm:grid-cols-2 pt-1">
+            <div className="min-w-0 rounded-lg bg-muted/40 p-3 border border-border/50 text-sm">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
                 Active Recipient Email
               </span>
-              <div className="flex items-center justify-between">
-                <span className="font-mono font-bold text-foreground">
+              <div className="flex items-center justify-between gap-2">
+                <span className="min-w-0 font-mono font-bold text-foreground [overflow-wrap:anywhere]">
                   {FEEDBACK_RECIPIENT_EMAIL}
                 </span>
                 <button
                   type="button"
+                  aria-label="Copy feedback recipient e-mail"
                   onClick={() => onCopy(FEEDBACK_RECIPIENT_EMAIL, 'feedback-email')}
-                  className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
+                  className="shrink-0 text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
                 >
                   {copiedKey === 'feedback-email' ? (
                     <Check className="size-4 text-emerald-700" />
