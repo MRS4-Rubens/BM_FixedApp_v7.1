@@ -266,6 +266,8 @@ export function useUnsavedInvoiceDraft({
       if (!e.persisted || !activeRef.current || !key) return;
       const d = safeRead(key);
       if (d?.releasedAt) writeEntry(key, { ...d, releasedAt: undefined, aliveAt: Date.now() }, openedAtRef.current);
+      // Another form adopted (moved) our copy while this page was cached: write this form's values again.
+      else if (!d && dirtyRef.current) writeNow();
     };
     const onClear = () => {
       activeRef.current = false;
