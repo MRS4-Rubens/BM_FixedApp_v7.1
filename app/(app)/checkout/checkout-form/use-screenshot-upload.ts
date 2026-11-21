@@ -27,6 +27,12 @@ export function useScreenshotUpload({
     if (!file) return;
     // Any new pick (even one rejected below) supersedes an earlier pick that is still being prepared.
     const selection = selectionRef.current.start();
+    // A new pick replaces the previous screenshot at once, so a failed replacement can never send the earlier proof.
+    setFileName('');
+    setFileSizeStr('');
+    setScreenshotBase64('');
+    setValue('screenshot_base64', '');
+    setValue('screenshot_mime', '');
 
     if (file.size > IMAGE_PICK_MAX_BYTES) {
       setIsPreparingScreenshot(false);

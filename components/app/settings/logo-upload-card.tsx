@@ -58,6 +58,10 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
     const selection = selectionRef.current.start();
     setErrorMessage(null);
     setSuccessMessage(null);
+    // A new pick replaces the unsaved preview at once: Save stays unavailable until this logo is ready, and a failed
+    // pick can never save the previous one.
+    setPreviewDataUrl(null);
+    setSelectedFile(null);
 
     const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
     if (!validTypes.includes(file.type.toLowerCase())) {
@@ -116,6 +120,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
 
   const handleSaveUpload = () => {
     if (!previewDataUrl || !selectedFile) return;
+    const uploading = selectionRef.current.start();
 
     startTransition(async () => {
       try {
@@ -132,8 +137,11 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
           setHasSavedLogo(true);
           // Each upload gets a new storage key, so it produces a versioned immutable URL.
           setSavedLogoKey(result.data.storageKey);
-          setPreviewDataUrl(null);
-          setSelectedFile(null);
+          // Only clear the preview if no newer logo was picked while this one was uploading.
+          if (selectionRef.current.isCurrent(uploading)) {
+            setPreviewDataUrl(null);
+            setSelectedFile(null);
+          }
           setSuccessMessage('Business logo uploaded and saved successfully!');
           setTimeout(() => setSuccessMessage(null), 4000);
         } else {
