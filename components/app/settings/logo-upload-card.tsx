@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { buildLogoUrl } from '@/lib/storage/logo-url';
 import { IMAGE_PICK_MAX_BYTES, LOGO_MAX_BYTES } from '@/lib/security/upload-limits';
 import { formatBytes, shrinkImage } from '@/lib/images/shrink-image';
+import { createLatestPick } from '@/lib/images/latest-pick';
 
 interface LogoUploadCardProps {
   business: {
@@ -44,7 +45,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   /** Only the latest pick may update the preview (an older, slower shrink must not overwrite it or undo Cancel). */
-  const selectionRef = useRef(0);
+  const selectionRef = useRef(createLatestPick());
 
   const currentLogoUrl = business?.id && hasSavedLogo && savedLogoKey
     ? buildLogoUrl(business.id, savedLogoKey)
@@ -53,6 +54,8 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   const activeDisplayUrl = previewDataUrl || currentLogoUrl;
 
   const handleFile = (file: File) => {
+    // Any new pick (even one rejected below) supersedes an earlier pick that is still being shrunk.
+    const selection = selectionRef.current.start();
     setErrorMessage(null);
     setSuccessMessage(null);
 
@@ -68,10 +71,9 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
     }
 
     // B9b: logos are stored at <= 30 KB. Shrink here (keeps transparency) so any normal logo just works.
-    const selection = ++selectionRef.current;
     shrinkImage(file, { maxBytes: LOGO_MAX_BYTES, maxEdge: 600, minEdge: 160 })
       .then((shrunk) => {
-        if (selection !== selectionRef.current) return;
+        if (!selectionRef.current.isCurrent(selection)) return;
         if (!shrunk) {
           setErrorMessage('This logo could not be made small enough (30 KB). Please try a simpler PNG or JPEG logo.');
           return;
@@ -81,7 +83,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
         setSuccessMessage(`Logo optimised to ${formatBytes(shrunk.blob.size)}. Click Save to upload it.`);
       })
       .catch(() => {
-        if (selection !== selectionRef.current) return;
+        if (!selectionRef.current.isCurrent(selection)) return;
         setErrorMessage('This image could not be read. Please choose it again.');
       });
   };
@@ -144,7 +146,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   };
 
   const handleCancelSelection = () => {
-    selectionRef.current += 1;
+    selectionRef.current.invalidate();
     setPreviewDataUrl(null);
     setSelectedFile(null);
     setErrorMessage(null);
@@ -156,7 +158,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
 
   const handleRemove = () => {
-    selectionRef.current += 1;
+    selectionRef.current.invalidate();
     setRemoveConfirmOpen(true);
   };
 
