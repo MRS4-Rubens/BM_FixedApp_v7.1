@@ -10,16 +10,19 @@ import type { CustomerOption } from '@/lib/pickers/types';
  * tab no longer loses it. Nothing goes to the server or the database (no Neon / Render cost).
  *
  * - Saved in this browser's localStorage shortly after each change, and immediately when the page is left.
- * - Each browser tab keeps its own copy (two New Invoice tabs never overwrite each other). A NEW tab picks up the most
- *   recent copy that no open tab is still using (open tabs refresh an "alive" stamp every few seconds).
+ * - Every open form writes only to its own copy (two New Invoice tabs never overwrite each other). A form that is left
+ *   (back, reload, closed tab, another page) flushes and marks its copy "released". A newly opened form adopts the
+ *   newest released copy, or one whose form stopped stamping "alive" (crash), and moves it to its own key.
+ * - Sign Out in any tab stops every open form (also in other tabs) before the copies are removed.
  * - Restored when the user comes back to New Invoice (with a "Discard" option).
  * - Removed when the invoice is saved to the database (Save Draft / Finalize), on Sign Out, on Discard, and when it
  *   has not been changed for UNSAVED_INVOICE_TTL_MS.
  */
 
 const KEY_PREFIX = 'bizfolio:unsaved-invoice:v2:';
-const TAB_ID_PREFIX = 'bizfolio:unsaved-invoice-tab:';
 const CLEAR_EVENT = 'bizfolio:unsaved-invoice-clear';
+/** Written on sign-out so forms open in OTHER tabs stop too (they receive a 'storage' event). */
+const SIGNOUT_KEY = 'bizfolio:unsaved-invoice-signout';
 const UNSAVED_INVOICE_TTL_MS = 30 * 60 * 1000;
 const SAVE_DELAY_MS = 800;
 const ALIVE_EVERY_MS = 5_000;
@@ -29,6 +32,8 @@ const ABANDONED_AFTER_MS = 15_000;
 interface StoredDraft {
   savedAt: number;
   aliveAt: number;
+  /** Set when the owning form was left; such a copy may be adopted at once. */
+  releasedAt?: number;
   values: InvoiceDraftInput;
   customer: CustomerOption | null;
 }
@@ -74,23 +79,6 @@ function newTabId() {
     : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
 
-/** This tab's own id, or null if the tab has none yet (a freshly opened tab). */
-function readTabId(businessId: string): string | null {
-  try {
-    return window.sessionStorage.getItem(TAB_ID_PREFIX + businessId);
-  } catch {
-    return null;
-  }
-}
-
-function writeTabId(businessId: string, tabId: string) {
-  try {
-    window.sessionStorage.setItem(TAB_ID_PREFIX + businessId, tabId);
-  } catch {
-    /* storage blocked: the id lives only for this page visit */
-  }
-}
-
 /**
  * Sign Out: forget every unsaved invoice kept in this browser (any business). Open forms are told first, so a pending
  * save cannot write a copy back after it was cleared. Call only after sign-out succeeded.
@@ -98,10 +86,19 @@ function writeTabId(businessId: string, tabId: string) {
 export function clearAllUnsavedInvoiceDrafts() {
   try {
     window.dispatchEvent(new Event(CLEAR_EVENT));
+    window.localStorage.setItem(SIGNOUT_KEY, String(Date.now()));
   } catch {
-    /* no window */
+    /* no window / storage blocked */
   }
   storageKeys(KEY_PREFIX).forEach(safeRemove);
+}
+
+function writeEntry(key: string, d: StoredDraft) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(d));
+  } catch {
+    /* storage full or blocked */
+  }
 }
 
 export function useUnsavedInvoiceDraft({
@@ -121,6 +118,7 @@ export function useUnsavedInvoiceDraft({
   setSelectedCustomer: (c: CustomerOption | null) => void;
 }) {
   const [restoredAt, setRestoredAt] = useState<number | null>(null);
+  /** This form's own copy. A fresh id per form, so no two open forms ever share a key. */
   const keyRef = useRef<string | null>(null);
   const activeRef = useRef(enabled);
   const customerRef = useRef(selectedCustomer);
@@ -149,20 +147,20 @@ export function useUnsavedInvoiceDraft({
     }
     dirtyRef.current = true;
     savedAtRef.current = Date.now();
-    try {
-      const payload: StoredDraft = {
-        savedAt: savedAtRef.current,
-        aliveAt: savedAtRef.current,
-        values,
-        customer: customerRef.current,
-      };
-      window.localStorage.setItem(key, JSON.stringify(payload));
-    } catch {
-      /* storage full or blocked: the beforeunload warning below still protects reloads */
-    }
+    // Storage full or blocked: writeEntry ignores it; the beforeunload warning below still protects reloads.
+    writeEntry(key, { savedAt: savedAtRef.current, aliveAt: savedAtRef.current, values, customer: customerRef.current });
   }, [methods]);
 
-  // Arrival: pick this tab's key, drop expired copies, restore. Done in a timer so no state is set during the effect.
+  /** Leaving this form: flush the last edits, then mark the copy free for the next New Invoice to adopt. */
+  const release = useCallback(() => {
+    if (timerRef.current) writeNow();
+    const key = keyRef.current;
+    if (!activeRef.current || !key) return;
+    const d = safeRead(key);
+    if (d && !d.releasedAt) writeEntry(key, { ...d, releasedAt: Date.now() });
+  }, [writeNow]);
+
+  // Arrival: drop expired copies, take a fresh own key, adopt a free copy and restore it. Done in a timer so no state is set during the effect.
   useEffect(() => {
     if (!enabled) return;
     const t = setTimeout(() => {
@@ -173,20 +171,21 @@ export function useUnsavedInvoiceDraft({
         if (!d || now - d.savedAt > UNSAVED_INVOICE_TTL_MS) safeRemove(k);
       }
 
-      let tabId = readTabId(businessId);
-      let stored = tabId ? safeRead(entryKey(businessId, tabId)) : null;
-      if (!tabId) {
-        // Fresh tab: adopt the newest copy that no open tab is still using (e.g. the tab that was closed).
-        const abandoned = storageKeys(prefix)
-          .map((k) => ({ k, d: safeRead(k) }))
-          .filter((x): x is { k: string; d: StoredDraft } => !!x.d && now - (x.d.aliveAt ?? x.d.savedAt) > ABANDONED_AFTER_MS)
-          .sort((a, b) => b.d.savedAt - a.d.savedAt)[0];
-        tabId = abandoned ? abandoned.k.slice(prefix.length) : newTabId();
-        stored = abandoned?.d ?? null;
-        writeTabId(businessId, tabId);
+      const ownKey = entryKey(businessId, newTabId());
+      keyRef.current = ownKey;
+      // Adopt the newest copy whose form was left (released) or stopped stamping "alive"; move it to our own key.
+      const candidate = storageKeys(prefix)
+        .map((k) => ({ k, d: safeRead(k) }))
+        .filter(
+          (x): x is { k: string; d: StoredDraft } =>
+            !!x.d && (!!x.d.releasedAt || now - (x.d.aliveAt ?? x.d.savedAt) > ABANDONED_AFTER_MS),
+        )
+        .sort((x, y) => y.d.savedAt - x.d.savedAt)[0];
+      const stored = candidate?.d ?? null;
+      if (candidate) {
+        safeRemove(candidate.k);
+        writeEntry(ownKey, { ...candidate.d, aliveAt: now, releasedAt: undefined });
       }
-      keyRef.current = entryKey(businessId, tabId);
-
       if (!stored) return;
       methods.reset({ ...defaultValues, ...stored.values });
       setSelectedCustomer(stored.customer ?? null);
@@ -225,15 +224,16 @@ export function useUnsavedInvoiceDraft({
       const key = keyRef.current;
       if (!activeRef.current || !key || !dirtyRef.current) return;
       const d = safeRead(key);
-      if (!d) return;
-      try {
-        window.localStorage.setItem(key, JSON.stringify({ ...d, aliveAt: Date.now() }));
-      } catch {
-        /* storage blocked */
-      }
+      if (!d || d.releasedAt) return;
+      writeEntry(key, { ...d, aliveAt: Date.now() });
     }, ALIVE_EVERY_MS);
-    const onPageHide = () => {
-      if (timerRef.current) writeNow();
+    const onPageHide = () => release();
+    // Back/forward cache restored this page: take our copy back (unless another form already adopted it).
+    const onPageShow = (e: PageTransitionEvent) => {
+      const key = keyRef.current;
+      if (!e.persisted || !activeRef.current || !key) return;
+      const d = safeRead(key);
+      if (d?.releasedAt) writeEntry(key, { ...d, releasedAt: undefined, aliveAt: Date.now() });
     };
     const onClear = () => {
       activeRef.current = false;
@@ -241,14 +241,24 @@ export function useUnsavedInvoiceDraft({
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = null;
     };
+    // Sign-out in another tab arrives as a 'storage' event for SIGNOUT_KEY.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === SIGNOUT_KEY) onClear();
+    };
     window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('pageshow', onPageShow);
     window.addEventListener(CLEAR_EVENT, onClear);
+    window.addEventListener('storage', onStorage);
     return () => {
       clearInterval(alive);
       window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pageshow', onPageShow);
       window.removeEventListener(CLEAR_EVENT, onClear);
+      window.removeEventListener('storage', onStorage);
+      // Navigating away inside the app (form unmounts): hand the copy over to the next New Invoice.
+      release();
     };
-  }, [enabled, writeNow]);
+  }, [enabled, writeNow, release]);
 
   // Laptop reload / tab close with unsaved work: the browser's own "Leave site?" prompt.
   useEffect(() => {

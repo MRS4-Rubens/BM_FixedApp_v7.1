@@ -50,6 +50,12 @@ export function useModalFocus(
         return;
       }
       if (e.key !== 'Tab') return;
+      // Another dialog is open on top (e.g. the upgrade prompt over the preview): let that dialog handle Tab.
+      const box = containerRef.current;
+      const target = e.target instanceof Element ? e.target : null;
+      if (box?.closest('[inert]') || (target && !box?.contains(target) && target.closest('[role="dialog"],[role="alertdialog"],[aria-modal="true"]'))) {
+        return;
+      }
       const list = focusables();
       if (list.length === 0) {
         e.preventDefault();
