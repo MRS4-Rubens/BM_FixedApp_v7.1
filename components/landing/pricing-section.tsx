@@ -5,12 +5,24 @@ import { useRouter } from 'next/navigation'
 import { useAuthModal } from '@/components/auth/auth-modal-context'
 import { PLAN_CATALOG, formatPlanPrice } from '@/lib/subscriptions/plan-catalog'
 
-export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
+/** B7: asked only when a plan button is clicked, so the home page itself can stay static. */
+async function isSignedIn(): Promise<boolean> {
+  try {
+    const { authClient } = await import('@/lib/auth/client')
+    const session = await authClient.getSession()
+    return Boolean(session?.data?.user)
+  } catch {
+    return false
+  }
+}
+
+export function PricingSection() {
   const router = useRouter()
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   const { openSignup } = useAuthModal()
 
-  const handlePlanSelect = (plan: 'free' | 'essentials' | 'professional') => {
+  const handlePlanSelect = async (plan: 'free' | 'essentials' | 'professional') => {
+    const isLoggedIn = await isSignedIn()
     if (plan === 'free') {
       if (isLoggedIn) {
         router.push('/dashboard')
@@ -103,7 +115,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               </ul>
             </div>
             <button
-              type="button" onClick={() => handlePlanSelect('free')}
+              type="button" onClick={() => void handlePlanSelect('free')}
               className="block w-full text-center border-2 border-zinc-200 hover:border-indigo-600 hover:text-indigo-600 text-zinc-700 font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base cursor-pointer"
             >
               Start Free
@@ -150,7 +162,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               </ul>
             </div>
             <button
-              type="button" onClick={() => handlePlanSelect('essentials')}
+              type="button" onClick={() => void handlePlanSelect('essentials')}
               className="block w-full text-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base glow-btn cursor-pointer"
             >
               Get Started →
@@ -194,7 +206,7 @@ export function PricingSection({ isLoggedIn = false }: { isLoggedIn?: boolean })
               </ul>
             </div>
             <button
-              type="button" onClick={() => handlePlanSelect('professional')}
+              type="button" onClick={() => void handlePlanSelect('professional')}
               className="block w-full text-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base glow-btn cursor-pointer"
             >
               Get Started →
