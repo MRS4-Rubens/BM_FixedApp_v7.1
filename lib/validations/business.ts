@@ -2,6 +2,11 @@ import { z } from 'zod';
 import { GSTIN_REGEX, PAN_REGEX, IFSC_REGEX, PINCODE_REGEX } from './patterns';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { validateInvoiceNumberFormat } from '@/lib/invoices/number-format';
+import {
+  CREDIT_NOTE_PREFIX_LENGTH_MESSAGE,
+  CREDIT_NOTE_PREFIX_MAX_LENGTH,
+  CREDIT_NOTE_PREFIX_PATTERN,
+} from '@/lib/invoices/credit-note-prefix';
 import { INVOICE_TEMPLATE_IDS } from '@/lib/invoices/template-ids';
 import {
   INVOICE_TAGLINE_MAX,
@@ -40,7 +45,7 @@ export const businessProfileSchema = z.object({
       });
     }
   }),
-  credit_note_number_prefix: z.string().max(10).regex(/^[A-Za-z0-9/-]+$/, 'Only letters, numbers, / and - are allowed').optional().or(z.literal('')),
+  credit_note_number_prefix: z.string().max(CREDIT_NOTE_PREFIX_MAX_LENGTH, CREDIT_NOTE_PREFIX_LENGTH_MESSAGE).regex(CREDIT_NOTE_PREFIX_PATTERN, 'Only letters, numbers, / and - are allowed').optional().or(z.literal('')),
   invoice_terms: z.string().max(2000).optional(),
   payment_due_days: z.coerce.number().int().min(0).max(365).optional(),
   // API-007: NO `.default(...)`. "Not supplied" must stay `undefined`; a zod default would make every profile

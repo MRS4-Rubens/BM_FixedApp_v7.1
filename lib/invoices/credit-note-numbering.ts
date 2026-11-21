@@ -2,6 +2,7 @@ import { sql, eq, and } from 'drizzle-orm';
 import { financialYears } from '@/lib/db/schema';
 import { ActionError } from '@/lib/actions/_shared/errors';
 import type { DbTransaction } from '@/lib/db/client';
+import { formatCreditNoteNumber } from './credit-note-prefix';
 
 export interface NextCreditNoteNumberResult {
   creditNoteNumber: string;
@@ -43,10 +44,7 @@ export async function getNextCreditNoteNumber(
   const sequence = updatedFy[0].counter;
 
   // 2. Format: CN/26-27/001
-  const cleanPrefix = prefix.trim().toUpperCase() || 'CN';
-  const shortFy = fyLabel.length >= 5 ? fyLabel.slice(-5) : fyLabel;
-  const seqStr = String(sequence).padStart(3, '0');
-  const creditNoteNumber = `${cleanPrefix}/${shortFy}/${seqStr}`;
+  const creditNoteNumber = formatCreditNoteNumber(prefix, fyLabel, sequence);
 
   // 3. GST Rule 53 compliance checks
   if (creditNoteNumber.length > 16) {
