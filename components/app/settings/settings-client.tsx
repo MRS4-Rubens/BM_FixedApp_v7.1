@@ -139,7 +139,8 @@ export function SettingsClient({
 
       <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-start sm:gap-6">
         {/* -- Mobile Horizontal Tab Bar (< 640px) --------------------------- */}
-        <div className="-mx-3 overflow-x-auto px-3 sm:hidden">
+        {/* Swipe sideways through the sections; no scrollbar track under the tabs on phones. */}
+        <div className="overflow-x-auto sm:hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <nav
             aria-label="Settings sections"
             className="flex w-max min-w-full gap-1.5 rounded-lg border border-border bg-card p-1 shadow-xs"
