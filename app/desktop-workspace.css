@@ -17,7 +17,7 @@
     overflow: auto;
     overscroll-behavior: contain;
   }
-  [data-viewport-dialog] button[aria-label^="Close"] {
+  [data-viewport-dialog] button[aria-label^="Close"]:not([data-modal-header-close]) {
     position: sticky;
     top: 0;
     float: right;

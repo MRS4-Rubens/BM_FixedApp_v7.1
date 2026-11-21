@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Mail, Clock, RefreshCw, Loader2, AlertCircle } from 'lucide-react';
+import { AlertCircle, Clock, Loader2, Mail, MailX, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatIstDate } from '@/lib/invoices/ist-date';
@@ -161,6 +161,8 @@ export function PendingInvites({
         }}
         tone="destructive"
         title={`Cancel invite for ${inviteToRevoke?.email}?`}
+        category="danger"
+        icon={MailX}
         description="The invite link will stop working immediately."
         confirmLabel="Cancel invite"
         onConfirm={handleConfirmRevoke}

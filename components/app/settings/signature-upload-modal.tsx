@@ -2,7 +2,8 @@
 
 import { useState, useRef, useTransition } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
-import { Camera, CheckCircle2, X, AlertCircle, Loader2, FileImage } from 'lucide-react';
+import { ModalHeader } from '@/components/ui/modal-header';
+import { AlertCircle, Camera, CheckCircle2, FileImage, Loader2, Signature } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { uploadBusinessSignature } from '@/lib/actions/business/upload-signature';
@@ -166,26 +167,17 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
         <Dialog.Backdrop className="fixed inset-0 z-[70] bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
           <Dialog.Popup data-viewport-dialog className="relative w-[calc(100vw-2rem)] max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-white p-4 sm:p-5 shadow-xl flex flex-col justify-between">
-            <Dialog.Close
-              render={
-                <button
-                  type="button"
-                  aria-label="Close dialog"
-                  disabled={isPending}
-                  onClick={handleClose}
-                  className="absolute right-3 top-3 sm:right-3.5 sm:top-3.5 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer disabled:pointer-events-none"
-                >
-                  <X className="size-4" />
-                </button>
-              }
+            <ModalHeader
+              tone="tools"
+              icon={Signature}
+              title="Upload your signature"
+              description="Upload and confirm your authorised signature"
+              closeLabel="Close signature upload"
+              closeDisabled={isPending}
+              className="-mx-4 -mt-4 mb-3 sm:-mx-5 sm:-mt-5 -top-4 sm:-top-5"
             />
 
             <div>
-              <div className="mb-3 pr-6">
-                <Dialog.Title render={<h3 className="text-lg font-bold text-slate-900 tracking-tight">Upload your signature</h3>} />
-                <Dialog.Description render={<div className="sr-only">Upload and confirm your authorised signature</div>} />
-              </div>
-
               {/* PHASE: CHOOSE */}
               {phase === 'choose' && (
                 <div className="space-y-3.5">

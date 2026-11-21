@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { AlertDialog } from '@base-ui/react/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2 } from 'lucide-react';
+import { AlertTriangle, FileCheck2, Loader2, type LucideIcon } from 'lucide-react';
+import { ModalHeader, type ModalTone } from '@/components/ui/modal-header';
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -12,7 +13,12 @@ export interface ConfirmDialogProps {
   description: React.ReactNode;
   confirmLabel: string;
   cancelLabel?: string;
+  /** Button style: 'destructive' = red confirm button and focus starts on Cancel. */
   tone?: 'default' | 'destructive';
+  /** Header colour group. Defaults: destructive -> 'danger', default -> 'document'. */
+  category?: ModalTone;
+  /** Header icon. Defaults to a warning sign (danger) or a document tick. */
+  icon?: LucideIcon;
   onConfirm: () => void | Promise<void>;
 }
 
@@ -24,8 +30,12 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel = 'Cancel',
   tone = 'default',
+  category,
+  icon,
   onConfirm,
 }: ConfirmDialogProps) {
+  const headerTone: ModalTone = category ?? (tone === 'destructive' ? 'danger' : 'document');
+  const headerIcon = icon ?? (headerTone === 'danger' || headerTone === 'caution' ? AlertTriangle : FileCheck2);
   const [isPending, setIsPending] = React.useState(false);
   const cancelRef = React.useRef<HTMLButtonElement>(null);
   const confirmRef = React.useRef<HTMLButtonElement>(null);
@@ -54,12 +64,11 @@ export function ConfirmDialog({
         <AlertDialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           <AlertDialog.Popup data-viewport-dialog
             initialFocus={tone === 'destructive' ? cancelRef : confirmRef}
-            className="relative w-full max-w-md bg-card border border-border shadow-2xl rounded-2xl p-5 text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto animate-in zoom-in-95 duration-150"
+            className="relative w-full max-w-md bg-card border border-border shadow-2xl rounded-2xl text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto animate-in zoom-in-95 duration-150"
           >
-            <AlertDialog.Title className="text-lg font-bold text-foreground tracking-tight">
-              {title}
-            </AlertDialog.Title>
-            <AlertDialog.Description render={<div className="mt-2 text-sm text-muted-foreground leading-relaxed" />}>
+            <ModalHeader tone={headerTone} icon={headerIcon} title={title} closeDisabled={isPending} />
+            <div className="px-5 pt-4 pb-5">
+            <AlertDialog.Description render={<div className="text-sm text-muted-foreground leading-relaxed" />}>
               {description}
             </AlertDialog.Description>
             <div data-modal-footer className="mt-6 flex items-center justify-end gap-2.5">
@@ -85,6 +94,7 @@ export function ConfirmDialog({
                 {isPending && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
                 {confirmLabel}
               </Button>
+            </div>
             </div>
           </AlertDialog.Popup>
         </AlertDialog.Viewport>

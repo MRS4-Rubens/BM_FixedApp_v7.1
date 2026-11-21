@@ -2,19 +2,12 @@
 
 import { useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
-import { 
-  ShieldAlert, 
-  AlertTriangle, 
-  X, 
-  Loader2, 
-  Ban, 
-  Receipt,
-  FileText
-} from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Loader2, Ban, Receipt, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatPaiseAsInr } from '@/lib/money';
 import { VOID_CREDIT_NOTE_REASONS } from '@/lib/validations/credit-note';
 import { voidCreditNote } from '@/lib/actions/credit-notes/void-credit-note';
+import { ModalHeader } from '@/components/ui/modal-header';
 
 export interface VoidableCreditNote {
   id: string;
@@ -90,42 +83,15 @@ export function VoidCreditNoteDialog({
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           <Dialog.Popup data-viewport-dialog data-form-dialog-frame className="w-full max-w-lg bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-150">
-            {/* Header */}
-            <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-2 flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="size-8 rounded-full bg-destructive/15 text-red-700 flex items-center justify-center shrink-0">
-                  <ShieldAlert className="size-5" />
-                </div>
-                <div>
-                  <Dialog.Title
-                    render={
-                      <h2 className="text-[15px] font-bold text-foreground tracking-tight">
-                        Void Credit Note
-                      </h2>
-                    }
-                  />
-                  <Dialog.Description
-                    render={
-                      <p className="text-xs text-muted-foreground leading-tight">
-                        CGST Rule 53 &amp; GSTR-1 Table 13 Statutory Cancellation
-                      </p>
-                    }
-                  />
-                </div>
-              </div>
-              <Dialog.Close
-                render={
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    className="flex size-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors disabled:opacity-50 cursor-pointer"
-                    aria-label="Close dialog"
-                  >
-                    <X className="size-5" />
-                  </button>
-                }
-              />
-            </div>
+            <ModalHeader
+              tone="danger"
+              icon={ShieldAlert}
+              title="Void Credit Note"
+              description="CGST Rule 53 & GSTR-1 Table 13 Statutory Cancellation"
+              closeLabel="Close void credit note"
+              closeDisabled={isSubmitting}
+              className="shrink-0"
+            />
 
             {/* Form Body */}
             <form data-complex-dialog-form onSubmit={handleSubmit} className="p-4 space-y-2 overflow-y-auto">

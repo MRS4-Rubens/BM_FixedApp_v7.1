@@ -2,22 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { 
-  ArrowLeft, 
-  Printer, 
-  Download, 
-  CheckCircle, 
-  Trash2, 
-  AlertCircle, 
-  Check, 
-  Copy, 
-  Receipt, 
-  ShieldCheck, 
-  ExternalLink,
-  FileText,
-  Ban,
-  ShieldAlert
-} from 'lucide-react';
+import { AlertCircle, ArrowLeft, Ban, Check, CheckCircle, Copy, Download, ExternalLink, FileCheck2, FileText, Printer, Receipt, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { CreditNotePrintView, CreditNotePrintViewProps } from './credit-note-print-view';
@@ -569,6 +554,8 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
         open={finalizeConfirmOpen}
         onOpenChange={setFinalizeConfirmOpen}
         title="Finalize Credit Note?"
+        category="document"
+        icon={FileCheck2}
         description="Are you sure you want to finalize this Credit Note? Once finalized, it cannot be edited or deleted."
         confirmLabel="Finalize Credit Note"
         onConfirm={onConfirmFinalize}
@@ -578,6 +565,8 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
         title="Delete draft credit note?"
+        category="danger"
+        icon={Trash2}
         description="Are you sure you want to delete this draft credit note? This cannot be undone."
         confirmLabel="Delete Draft"
         tone="destructive"

@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Dialog } from '@base-ui/react/dialog';
-import { Lock, X } from 'lucide-react';
+import { ModalHeader } from '@/components/ui/modal-header';
+import { Crown, Lock, Upload } from 'lucide-react';
 import type { ImportKind } from '@/lib/import/columns';
 import {
   type BulkImportPreviewData,
@@ -87,7 +88,6 @@ export function BulkImportDialog({
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
           <Dialog.Popup data-viewport-dialog
-            aria-labelledby="bulk-import-dialog-title"
             className="relative w-full max-w-4xl bg-card border border-border shadow-2xl rounded-2xl p-5 sm:p-6 text-foreground overflow-hidden max-h-[92dvh] flex flex-col my-auto animate-in zoom-in-95 duration-150"
           >
             {/* Live region for accessibility */}
@@ -101,24 +101,14 @@ export function BulkImportDialog({
                 : ''}
             </div>
 
-            {/* Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-border">
-              <Dialog.Title
-                id="bulk-import-dialog-title"
-                className="text-xl font-extrabold tracking-tight text-foreground font-heading uppercase"
-              >
-                {title}
-              </Dialog.Title>
-              <button
-                type="button"
-                disabled={isRunning}
-                onClick={() => handleOpenChange(false)}
-                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                aria-label="Close dialog"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
+            <ModalHeader
+              tone={canImport ? 'tools' : 'premium'}
+              icon={canImport ? Upload : Crown}
+              title={title}
+              closeLabel="Close import"
+              closeDisabled={isRunning}
+              className="-mx-5 -mt-5 sm:-mx-6 sm:-mt-6 shrink-0 -top-5 sm:-top-6"
+            />
 
             {/* Content Body */}
             <div className="mt-4 flex-1 overflow-y-auto pr-1">

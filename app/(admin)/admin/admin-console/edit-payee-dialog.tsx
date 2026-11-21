@@ -3,7 +3,8 @@
 import { useState, type TransitionStartFunction } from 'react';
 import { useRouter } from 'next/navigation';
 import { Dialog } from '@base-ui/react/dialog';
-import { QrCode, CreditCard, X, Loader2, Save, AlertCircle } from 'lucide-react';
+import { ModalHeader } from '@/components/ui/modal-header';
+import { QrCode, CreditCard, Loader2, Save, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { updatePlatformPayeeAction } from '@/lib/actions/subscriptions/update-platform-payee';
 import type { UpiConfig } from './types';
@@ -85,35 +86,14 @@ export function EditPayeeDialog({
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <Dialog.Popup data-viewport-dialog className="w-full max-w-xl rounded-xl border border-border bg-card p-5 shadow-xl relative animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto">
-            <Dialog.Close
-              render={
-                <button
-                  type="button"
-                  aria-label="Close modal"
-                  className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
-                >
-                  <X className="size-5" />
-                </button>
-              }
+            <ModalHeader
+              tone="money"
+              icon={QrCode}
+              title="Edit Platform Payee Configuration"
+              description="Update live UPI and Bank Account endpoints presented to subscribers on /checkout."
+              closeLabel="Close payee settings"
+              className="-mx-5 -mt-5 -top-5"
             />
-
-            <div className="border-b border-border/40 pb-3">
-              <Dialog.Title
-                render={
-                  <h3 className="text-lg font-bold text-foreground font-heading flex items-center gap-2">
-                    <QrCode className="size-5 text-indigo-600" />
-                    Edit Platform Payee Configuration
-                  </h3>
-                }
-              />
-              <Dialog.Description
-                render={
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Update live UPI and Bank Account endpoints presented to subscribers on /checkout.
-                  </p>
-                }
-              />
-            </div>
 
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               {error && (

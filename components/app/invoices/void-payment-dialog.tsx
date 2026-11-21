@@ -2,17 +2,9 @@
 
 import { useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
-import { 
-  ShieldAlert, 
-  AlertTriangle, 
-  X, 
-  Loader2, 
-  Ban, 
-  Calendar, 
-  CreditCard, 
-  Hash 
-} from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Loader2, Ban, Calendar, CreditCard, Hash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ModalHeader } from '@/components/ui/modal-header';
 import { formatPaiseAsInr } from '@/lib/money';
 import { VOID_PAYMENT_REASONS, VoidPaymentReasonCode } from '@/lib/validations/payment';
 import { voidPayment } from '@/lib/actions/payments/void-payment';
@@ -104,42 +96,15 @@ export function VoidPaymentDialog({
         <Dialog.Backdrop className="fixed inset-0 z-50 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-150" />
         <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           <Dialog.Popup data-viewport-dialog data-form-dialog-frame className="relative w-full max-w-lg bg-card border border-border shadow-2xl rounded-2xl p-4 sm:p-5 text-foreground overflow-hidden max-h-[92dvh] overflow-y-auto">
-            {/* Close Button */}
-            <Dialog.Close
-              render={
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  aria-label="Close dialog"
-                  className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer disabled:pointer-events-none"
-                >
-                  <X className="size-4" />
-                </button>
-              }
+            <ModalHeader
+              tone="danger"
+              icon={ShieldAlert}
+              title={`Void ${word} Record`}
+              description={`Invoice #${invoiceNumber} • Permanent Audit Trail Correction`}
+              closeLabel={`Close void ${word.toLowerCase()}`}
+              closeDisabled={isSubmitting}
+              className="-mx-4 -mt-4 mb-3 sm:-mx-5 sm:-mt-5 -top-4 sm:-top-5"
             />
-
-            {/* Header */}
-            <div className="flex items-start gap-3 mb-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive border border-destructive/20 shadow-xs">
-                <ShieldAlert className="size-5" />
-              </div>
-              <div>
-                <Dialog.Title
-                  render={
-                    <h2 className="text-[17px] font-bold text-foreground tracking-tight">
-                      Void {word} Record
-                    </h2>
-                  }
-                />
-                <Dialog.Description
-                  render={
-                    <p className="text-[13px] text-muted-foreground mt-0.5">
-                      Invoice #{invoiceNumber} • Permanent Audit Trail Correction
-                    </p>
-                  }
-                />
-              </div>
-            </div>
 
             {/* Payment Snapshot Card */}
             <div className="rounded-xl border border-border bg-muted/30 p-2.5 sm:px-3 sm:py-2.5 mb-3 space-y-1.5">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { UserCheck } from 'lucide-react';
+import { UserCheck, UserCog, UserMinus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { INVITABLE_ROLES, isOneOf } from '@/lib/db/domain-values';
@@ -272,6 +272,8 @@ export function MembersList({
         }}
         tone="destructive"
         title={`Remove ${memberToRemove?.name || memberToRemove?.email || 'this member'}?`}
+        category="danger"
+        icon={UserMinus}
         description="They lose access to this business immediately. Their account and everything they created stay."
         confirmLabel="Remove member"
         onConfirm={handleConfirmRemove}
@@ -284,6 +286,8 @@ export function MembersList({
           if (!open && !isPending) setPendingRoleChange(null);
         }}
         title="Change role?"
+        category="caution"
+        icon={UserCog}
         description={`${pendingRoleChange?.member.name || pendingRoleChange?.member.email || 'This member'} will become ${pendingRoleChange ? roleLabel(pendingRoleChange.newRole) : ''}. This takes effect on their next page load.`}
         confirmLabel="Change role"
         onConfirm={handleConfirmRoleChange}

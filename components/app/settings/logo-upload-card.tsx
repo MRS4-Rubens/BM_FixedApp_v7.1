@@ -1,20 +1,7 @@
 'use client';
 
 import { useState, useRef, useTransition } from 'react';
-import { 
-  Upload, 
-  Trash2, 
-  Image as ImageIcon, 
-  CheckCircle2, 
-  AlertCircle, 
-  ExternalLink, 
-  Sparkles, 
-  RefreshCw,
-  Eye,
-  Lock,
-  Crown,
-  ArrowRight
-} from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, Crown, ExternalLink, Eye, Image as ImageIcon, ImageOff, Lock, RefreshCw, Sparkles, Trash2, Upload } from 'lucide-react';
 import { uploadBusinessLogo } from '@/lib/actions/business/upload-logo';
 import { removeBusinessLogo } from '@/lib/actions/business/remove-logo';
 import { canUploadBusinessLogo } from '@/lib/subscriptions/entitlements';
@@ -506,6 +493,8 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
         open={removeConfirmOpen}
         onOpenChange={setRemoveConfirmOpen}
         title="Remove business logo?"
+        category="danger"
+        icon={ImageOff}
         description="Are you sure you want to remove your business logo? Invoices will no longer display a logo."
         confirmLabel="Remove logo"
         tone="destructive"

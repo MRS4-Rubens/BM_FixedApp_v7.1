@@ -1,7 +1,8 @@
 'use client';
 
 import { Dialog } from '@base-ui/react/dialog';
-import { X, Loader2, XCircle, RefreshCw } from 'lucide-react';
+import { ModalHeader } from '@/components/ui/modal-header';
+import { Loader2, XCircle, RefreshCw, ReceiptText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ProofViewer } from './types';
 
@@ -29,49 +30,27 @@ export function ProofLightbox({
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200" />
           <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <Dialog.Popup data-viewport-dialog className="w-full max-w-3xl rounded-xl border border-border bg-card p-4 shadow-2xl relative animate-in fade-in zoom-in duration-200">
-              <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-3">
-                <div>
-                  <Dialog.Title
-                    render={
-                      <h3 className="text-base font-bold text-foreground font-heading">
-                        {proofViewer?.title}
-                      </h3>
-                    }
-                  />
-                  <Dialog.Description
-                    render={
-                      <p className="text-xs font-mono text-muted-foreground font-bold">
-                        UTR: {proofViewer?.utr}
-                      </p>
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {proofViewer?.status === 'ready' && (
+            <Dialog.Popup data-viewport-dialog className="w-full max-w-3xl rounded-xl border border-border bg-card p-4 shadow-2xl relative max-h-[92dvh] overflow-y-auto animate-in fade-in zoom-in duration-200">
+              <ModalHeader
+                tone="tools"
+                icon={ReceiptText}
+                title={proofViewer?.title}
+                description={`UTR: ${proofViewer?.utr ?? ''}`}
+                closeLabel="Close proof viewer"
+                className="-mx-4 -mt-4 mb-3 -top-4"
+                actions={
+                  proofViewer?.status === 'ready' ? (
                     <a
                       href={proofViewer.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="rounded-md border border-border px-2.5 py-1 text-sm font-bold text-muted-foreground hover:text-indigo-600 hover:bg-muted transition"
+                      className="hidden sm:inline-flex rounded-md border border-border bg-card px-2.5 py-1 text-sm font-bold text-muted-foreground hover:text-indigo-600 hover:bg-muted transition"
                     >
                       Open Original ↗
                     </a>
-                  )}
-                  <Dialog.Close
-                    render={
-                      <button
-                        type="button"
-                        aria-label="Close proof viewer"
-                        className="text-muted-foreground hover:text-foreground p-1 cursor-pointer"
-                      >
-                        <X className="size-5" />
-                      </button>
-                    }
-                  />
-                </div>
-              </div>
+                  ) : null
+                }
+              />
 
               {proofViewer?.status === 'loading' && (
                 <div className="flex flex-col items-center justify-center min-h-[300px] gap-3 py-12">

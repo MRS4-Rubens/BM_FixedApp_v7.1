@@ -79,6 +79,8 @@ export function DeleteDraftButton({
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title="Delete draft invoice?"
+        category="danger"
+        icon={Trash2}
         description="Delete this draft invoice? This cannot be undone."
         confirmLabel="Delete draft"
         tone="destructive"

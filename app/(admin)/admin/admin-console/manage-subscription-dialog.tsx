@@ -1,13 +1,8 @@
 'use client';
 
 import { Dialog } from '@base-ui/react/dialog';
-import {
-  Building2,
-  X,
-  Settings,
-  Loader2,
-  AlertCircle,
-} from 'lucide-react';
+import { ModalHeader } from '@/components/ui/modal-header';
+import { Building2, Settings, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { isOneOf } from '@/lib/db/domain-values';
@@ -80,32 +75,13 @@ export function ManageSubscriptionDialog({
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200" />
           <Dialog.Viewport className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
             <Dialog.Popup data-viewport-dialog data-subscription-frame className="w-full max-w-2xl rounded-xl border border-border bg-card p-4 sm:p-5 shadow-2xl relative animate-in fade-in zoom-in duration-200 max-h-[92vh] overflow-y-auto">
-              <Dialog.Close
-                render={
-                  <button
-                    type="button"
-                    aria-label="Close modal"
-                    className="absolute top-4 right-4 text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    <X className="size-5" />
-                  </button>
-                }
-              />
-
-              <Dialog.Title
-                render={
-                  <h3 className="text-lg font-bold text-foreground font-heading border-b border-border/40 pb-2.5 flex items-center gap-2">
-                    <Building2 className="size-5 text-indigo-600" />
-                    Manage Subscription: {selectedBiz.legalName}
-                  </h3>
-                }
-              />
-              <Dialog.Description
-                render={
-                  <p className="sr-only">
-                    Manual subscription override and historical claims ledger for {selectedBiz.legalName}
-                  </p>
-                }
+              <ModalHeader
+                tone="money"
+                icon={Building2}
+                title={`Manage Subscription: ${selectedBiz.legalName}`}
+                description="Manual subscription override and historical claims ledger"
+                closeLabel="Close manage subscription"
+                className="-mx-4 -mt-4 sm:-mx-5 sm:-mt-5 shrink-0 -top-4 sm:-top-5"
               />
 
               <div data-dialog-body><div data-desktop-canvas data-modal-canvas>
