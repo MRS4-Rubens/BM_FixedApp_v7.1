@@ -10,6 +10,9 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { buildLogoUrl } from '@/lib/storage/logo-url';
+import { IMAGE_PICK_MAX_BYTES, LOGO_MAX_BYTES } from '@/lib/security/upload-limits';
+import { formatBytes, shrinkImage } from '@/lib/images/shrink-image';
+import { createLatestPick } from '@/lib/images/latest-pick';
 
 interface LogoUploadCardProps {
   business: {
@@ -41,6 +44,8 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   const [hasSavedLogo, setHasSavedLogo] = useState<boolean>(Boolean(business?.logo_storage_key));
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** Only the latest pick may update the preview (an older, slower shrink must not overwrite it or undo Cancel). */
+  const selectionRef = useRef(createLatestPick());
 
   const currentLogoUrl = business?.id && hasSavedLogo && savedLogoKey
     ? buildLogoUrl(business.id, savedLogoKey)
@@ -49,8 +54,14 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   const activeDisplayUrl = previewDataUrl || currentLogoUrl;
 
   const handleFile = (file: File) => {
+    // Any new pick (even one rejected below) supersedes an earlier pick that is still being shrunk.
+    const selection = selectionRef.current.start();
     setErrorMessage(null);
     setSuccessMessage(null);
+    // A new pick replaces the unsaved preview at once: Save stays unavailable until this logo is ready, and a failed
+    // pick can never save the previous one.
+    setPreviewDataUrl(null);
+    setSelectedFile(null);
 
     const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
     if (!validTypes.includes(file.type.toLowerCase())) {
@@ -58,17 +69,27 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage('Image size exceeds 5MB. Please choose a smaller image.');
+    if (file.size > IMAGE_PICK_MAX_BYTES) {
+      setErrorMessage('This image is too large to process. Please choose an image under 25 MB.');
       return;
     }
 
-    setSelectedFile(file);
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPreviewDataUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    // B9b: logos are stored at <= 30 KB. Shrink here (keeps transparency) so any normal logo just works.
+    shrinkImage(file, { maxBytes: LOGO_MAX_BYTES, maxEdge: 600, minEdge: 160 })
+      .then((shrunk) => {
+        if (!selectionRef.current.isCurrent(selection)) return;
+        if (!shrunk) {
+          setErrorMessage('This logo could not be made small enough (30 KB). Please try a simpler PNG or JPEG logo.');
+          return;
+        }
+        setSelectedFile(new File([shrunk.blob], file.name, { type: shrunk.mime }));
+        setPreviewDataUrl(shrunk.dataUrl);
+        setSuccessMessage(`Logo optimised to ${formatBytes(shrunk.blob.size)}. Click Save to upload it.`);
+      })
+      .catch(() => {
+        if (!selectionRef.current.isCurrent(selection)) return;
+        setErrorMessage('This image could not be read. Please choose it again.');
+      });
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -99,6 +120,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
 
   const handleSaveUpload = () => {
     if (!previewDataUrl || !selectedFile) return;
+    const uploading = selectionRef.current.start();
 
     startTransition(async () => {
       try {
@@ -115,8 +137,11 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
           setHasSavedLogo(true);
           // Each upload gets a new storage key, so it produces a versioned immutable URL.
           setSavedLogoKey(result.data.storageKey);
-          setPreviewDataUrl(null);
-          setSelectedFile(null);
+          // Only clear the preview if no newer logo was picked while this one was uploading.
+          if (selectionRef.current.isCurrent(uploading)) {
+            setPreviewDataUrl(null);
+            setSelectedFile(null);
+          }
           setSuccessMessage('Business logo uploaded and saved successfully!');
           setTimeout(() => setSuccessMessage(null), 4000);
         } else {
@@ -129,6 +154,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   };
 
   const handleCancelSelection = () => {
+    selectionRef.current.invalidate();
     setPreviewDataUrl(null);
     setSelectedFile(null);
     setErrorMessage(null);
@@ -140,6 +166,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
 
   const handleRemove = () => {
+    selectionRef.current.invalidate();
     setRemoveConfirmOpen(true);
   };
 
@@ -300,7 +327,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
                   {selectedFile ? selectedFile.name : hasSavedLogo ? 'Click or drag to replace logo' : 'Click to upload or drag and drop your logo'}
                 </p>
                 <p className="mt-0.5 text-[11px] sm:text-xs text-muted-foreground font-medium">
-                  PNG (recommended), JPEG, or WebP • Max file size: 5MB
+                  PNG (recommended), JPEG, or WebP • Saved at up to 30 KB (we shrink it for you)
                 </p>
                 <p className="mt-1 text-[10.5px] font-semibold text-indigo-600/80 dark:text-indigo-400/80">
                   Auto-fits proportionally into all 4 invoice templates

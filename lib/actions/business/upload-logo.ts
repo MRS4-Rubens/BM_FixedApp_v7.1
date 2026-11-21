@@ -23,10 +23,10 @@ import {
   buildUploadKey,
   IMAGE_MIMES,
 } from '@/lib/security/upload';
-import { maxBase64Chars } from '@/lib/security/upload-limits';
+import { LOGO_MAX_BYTES, maxBase64Chars } from '@/lib/security/upload-limits';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE_BYTES = LOGO_MAX_BYTES; // 30 KB (B9b): the browser shrinks logos to fit before uploading
 
 const uploadLogoSchema = z.object({
   base64Data: z.string().min(1, 'Image data is required').max(maxBase64Chars(MAX_FILE_SIZE_BYTES)),

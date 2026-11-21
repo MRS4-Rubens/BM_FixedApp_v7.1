@@ -23,8 +23,9 @@ import { getRequestSession } from '@/lib/auth/request-session';
 import { classifyClaimInsertError } from '@/lib/subscriptions/claim-errors';
 import { requireValidUpload, buildUploadKey, IMAGE_MIMES } from '@/lib/security/upload';
 import { getAuthoritativePayeeConfig } from '@/lib/config/payee';
+import { PAYMENT_SCREENSHOT_MAX_BYTES } from '@/lib/security/upload-limits';
 
-const SCREENSHOT_MAX_BYTES = 4 * 1024 * 1024; // module-level const (matches the checkout UI limit)
+const SCREENSHOT_MAX_BYTES = PAYMENT_SCREENSHOT_MAX_BYTES; // 50 KB (B9b): the checkout shrinks screenshots to fit
 
 const NEUTRAL_DUPLICATE_MESSAGE =
   'This payment reference could not be accepted. Please double-check the UTR/transaction ID; if it is correct, contact support and quote it.';

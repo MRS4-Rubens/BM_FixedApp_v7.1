@@ -18,6 +18,7 @@ export function ClaimSubmitCard({
   screenshotBase64,
   handleScreenshotChange,
   handleRemoveScreenshot,
+  isPreparingScreenshot = false,
 }: {
   register: UseFormRegister<SubscriptionClaimInput>;
   errors: FieldErrors<SubscriptionClaimInput>;
@@ -30,6 +31,8 @@ export function ClaimSubmitCard({
   screenshotBase64: string;
   handleScreenshotChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveScreenshot: () => void;
+  /** A picked screenshot is still being shrunk (B9b). */
+  isPreparingScreenshot?: boolean;
 }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -117,7 +120,7 @@ export function ClaimSubmitCard({
                   Click to upload or drag & drop payment screenshot
                 </span>
                 <span className="text-xs text-slate-500 mt-0.5">
-                  JPEG, PNG, WebP up to 4MB
+                  JPEG, PNG or WebP — we shrink it to 50 KB for you
                 </span>
               </div>
             ) : (
@@ -155,12 +158,16 @@ export function ClaimSubmitCard({
         {/* Submit CTA Button */}
         <Button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || isPreparingScreenshot}
           className="mt-3 w-full h-10 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 text-base"
         >
           {isPending ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" /> Verifying & Submitting Claim...
+            </>
+          ) : isPreparingScreenshot ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" /> Preparing screenshot...
             </>
           ) : (
             'Submit Payment Claim for Instant Review'

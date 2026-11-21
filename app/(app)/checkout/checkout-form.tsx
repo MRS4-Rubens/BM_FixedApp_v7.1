@@ -159,6 +159,7 @@ export function CheckoutForm({
     fileSizeStr,
     handleScreenshotChange,
     handleRemoveScreenshot,
+    isPreparingScreenshot,
   } = useScreenshotUpload({
     setValue,
     setFormError,
@@ -273,6 +274,7 @@ export function CheckoutForm({
           screenshotBase64={screenshotBase64}
           handleScreenshotChange={handleScreenshotChange}
           handleRemoveScreenshot={handleRemoveScreenshot}
+          isPreparingScreenshot={isPreparingScreenshot}
         />
       </div>
 

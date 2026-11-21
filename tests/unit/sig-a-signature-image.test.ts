@@ -39,7 +39,7 @@ function makePngHeader(width: number, height: number, colourType = 6): Buffer {
 
 describe('SPEC: Authorised signature image validation (SIG-A)', () => {
   it('exports expected constants', () => {
-    expect(SIGNATURE_MAX_BYTES).toBe(512 * 1024);
+    expect(SIGNATURE_MAX_BYTES).toBe(20 * 1024);
     expect(SIGNATURE_MIN_WIDTH_PX).toBe(300);
     expect(SIGNATURE_MAX_WIDTH_PX).toBe(1500);
   });
