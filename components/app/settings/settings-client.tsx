@@ -130,8 +130,7 @@ export function SettingsClient({
           SETTINGS
         </h1>
         <p
-          className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px]"
-          style={{ textAlign: 'justify', textAlignLast: 'justify' }}
+          className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px] sm:text-justify sm:[text-align-last:justify]"
         >
           Effortlessly Track, Organize, Maintain, and <br />
           Manage Your Business Account Configurations

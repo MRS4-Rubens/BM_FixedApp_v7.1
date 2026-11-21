@@ -27,7 +27,7 @@ export default async function NewCustomerPage() {
         <h1 className="text-3xl font-extrabold tracking-tight text-foreground font-heading uppercase">
           ADD CUSTOMER
         </h1>
-        <p className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px]" style={{ textAlign: 'justify', textAlignLast: 'justify' }}>
+        <p className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px] sm:text-justify sm:[text-align-last:justify]">
           Effortlessly Track, Organize, Maintain, and <br />
           Add a Customer to Your Directory
         </p>
