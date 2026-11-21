@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { acceptTeamInvite } from '@/lib/actions/team/accept-team-invite';
+import { clearAllUnsavedInvoiceDrafts } from '@/components/app/invoices/invoice-form/use-unsaved-invoice-draft';
 
 /** Feature A: the "Join <business>" button on the invite page. */
 export function AcceptInviteButton({ token, businessName }: { token: string; businessName: string }) {
@@ -53,6 +54,7 @@ export function SwitchAccountButton({ continueHref }: { continueHref: string }) 
   const handleSwitch = () => {
     startTransition(async () => {
       const { authClient } = await import('@/lib/auth/client');
+      clearAllUnsavedInvoiceDrafts();
       await authClient.signOut();
       router.push(continueHref);
       router.refresh();

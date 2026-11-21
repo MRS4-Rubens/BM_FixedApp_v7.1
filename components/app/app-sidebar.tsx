@@ -7,6 +7,7 @@ import { useTabletPortrait } from './app-sidebar/use-tablet-portrait'
 import { DesktopSidebar } from './app-sidebar/desktop-sidebar'
 import { MobileDrawer } from './app-sidebar/mobile-drawer'
 import type { SidebarSubscription } from './app-sidebar/account-plan'
+import { clearAllUnsavedInvoiceDrafts } from './invoices/invoice-form/use-unsaved-invoice-draft'
 import { usePageScrollLock } from '@/lib/hooks/use-page-scroll-lock'
 
 export function AppSidebar({
@@ -92,6 +93,7 @@ export function AppSidebar({
 
   async function handleSignOut() {
     const { authClient } = await import('@/lib/auth/client')
+    clearAllUnsavedInvoiceDrafts()
     await authClient.signOut()
     router.push('/login')
     router.refresh()
