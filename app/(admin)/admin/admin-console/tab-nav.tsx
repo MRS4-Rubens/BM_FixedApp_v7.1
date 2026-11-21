@@ -44,6 +44,7 @@ export function TabNav({
             <button
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
+              aria-pressed={isActive}
               className={cn(
                 'group flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-bold transition-all cursor-pointer select-none outline-none',
                 isActive

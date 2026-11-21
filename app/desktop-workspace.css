@@ -45,6 +45,12 @@
   [data-modal-canvas] { display: block; min-width: 632px; min-height: 0; padding: 0; }
   [data-dialog-actions] { flex: none; padding-top: 12px; display: flex; flex-wrap: wrap; justify-content: flex-end; border-top: 1px solid var(--border); }
 }
+/* Very short screens (e.g. a phone held sideways): the fixed header/notice/error blocks of a form dialog can squeeze its
+   form to zero height. Let the whole popup scroll instead; the action bar is sticky, so it stays reachable. */
+@media screen and (width < 80rem) and (height < 35rem) {
+  [data-form-dialog-frame] { overflow: auto; }
+  [data-complex-dialog-form], [data-complex-dialog-form] [data-dialog-body] { min-height: auto; overflow: visible; }
+}
 @media print {
   [data-desktop-canvas] { min-width: 0; min-height: 0; padding: 0; }
 }

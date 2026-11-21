@@ -205,6 +205,9 @@ export function ProductForm({
                 </span>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={isService}
+                  aria-label="Item is a service (SAC code)"
                   onClick={() => {
                     const next = !isService
                     setIsServiceManual(next)

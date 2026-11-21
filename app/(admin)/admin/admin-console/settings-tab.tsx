@@ -234,6 +234,7 @@ export function SettingsTab({
                 <button
                   type="button"
                   onClick={() => onCopy(FEEDBACK_RECIPIENT_EMAIL, 'feedback-email')}
+                  aria-label="Copy feedback recipient e-mail"
                   className="text-muted-foreground hover:text-indigo-600 transition cursor-pointer"
                 >
                   {copiedKey === 'feedback-email' ? (

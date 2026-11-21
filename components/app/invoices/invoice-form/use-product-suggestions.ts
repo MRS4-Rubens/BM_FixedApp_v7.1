@@ -12,7 +12,8 @@ function suggestionRect(el: HTMLInputElement) {
   const width = narrow ? Math.min(rect.width, window.innerWidth - 16) : rect.width;
   const left = narrow ? Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)) : rect.left;
   const bottom = window.visualViewport?.height ?? window.innerHeight;
-  const top = narrow && rect.bottom + 200 > bottom && rect.top >= 200 ? rect.top - 200 : rect.bottom;
+  // Open above the input when the ~200px list would run past the bottom of the screen (any width).
+  const top = rect.bottom + 200 > bottom && rect.top >= 200 ? rect.top - 200 : rect.bottom;
   return { top: top + window.scrollY, left: left + window.scrollX, width, height: rect.height };
 }
 
@@ -80,10 +81,15 @@ export function useProductSuggestions({
 
     window.addEventListener('scroll', handleUpdate, true);
     window.addEventListener('resize', handleUpdate);
+    // Phones: the on-screen keyboard often changes only the visual viewport, which fires neither event above.
+    window.visualViewport?.addEventListener('resize', handleUpdate);
+    window.visualViewport?.addEventListener('scroll', handleUpdate);
 
     return () => {
       window.removeEventListener('scroll', handleUpdate, true);
       window.removeEventListener('resize', handleUpdate);
+      window.visualViewport?.removeEventListener('resize', handleUpdate);
+      window.visualViewport?.removeEventListener('scroll', handleUpdate);
     };
   }, [activeInputRef]);
 

@@ -387,7 +387,7 @@ export function InvoiceFormatGuideModal({
               <span className="text-[10px] text-muted-foreground font-medium">Click &quot;Use This Format&quot; to apply instantly</span>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-card overflow-hidden shadow-2xs divide-y divide-border/60">
+            <div className="rounded-xl border border-slate-200 bg-card overflow-x-auto shadow-2xs divide-y divide-border/60">
               {PRESETS.map((preset) => {
                 const effectiveFormat = !canCustomize && preset.id === 'standard-b2b'
                   ? 'BMA/{FY}/{SEQ:4}'

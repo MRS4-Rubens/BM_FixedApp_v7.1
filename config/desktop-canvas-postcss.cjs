@@ -14,7 +14,8 @@ function desktopCanvas() {
           if (parent.type !== 'atrule') continue;
           if (parent.name === 'layer') continue;
           if (parent.name === 'media') {
-            const width = /^\(width >= (\d+(?:\.\d+)?)rem\)$/.exec(parent.params);
+            // Dev builds print "(width >= 64rem)"; production (minified) prints "(min-width:64rem)". Accept both.
+            const width = /^\((?:width\s*>=|min-width\s*:)\s*(\d+(?:\.\d+)?)rem\)$/.exec(parent.params);
             if (width) {
               if (Number(width[1]) > 80) return;
               matched = true;

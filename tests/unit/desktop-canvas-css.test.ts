@@ -19,4 +19,13 @@ describe('scoped desktop presentation', () => {
     const result = await postcss([canvas()]).process(source, { from: undefined });
     expect(result.css).not.toContain('[data-desktop-canvas]');
   });
+
+  it('also replays the minified production form of the breakpoint query', async () => {
+    // `next build` minifies Tailwind's output: "(width >= 64rem)" becomes "(min-width:64rem)".
+    const source = '@layer utilities { @media (min-width:64rem) { .lg\\:grid-cols-4 { grid-template-columns: repeat(4,1fr) } } }';
+    const result = await postcss([canvas()]).process(source, { from: undefined });
+    expect(result.css).toContain(':where([data-desktop-canvas]) .lg\\:grid-cols-4');
+    const wide = await postcss([canvas()]).process('@media (min-width:96rem) { .xl\\:block {display:block} }', { from: undefined });
+    expect(wide.css).not.toContain('[data-desktop-canvas]');
+  });
 });
