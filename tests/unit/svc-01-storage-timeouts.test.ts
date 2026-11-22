@@ -1,11 +1,12 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   STORAGE_CONNECTION_TIMEOUT_MS,
   STORAGE_MAX_ATTEMPTS,
   STORAGE_REQUEST_TIMEOUT_MS,
+  STORAGE_SOCKET_IDLE_TIMEOUT_MS,
   buildStorageClientConfig,
 } from '@/lib/storage/idrive';
 
@@ -27,8 +28,9 @@ describe('SVC-01: storage client timeouts', () => {
       connectionTimeout: STORAGE_CONNECTION_TIMEOUT_MS,
       requestTimeout: STORAGE_REQUEST_TIMEOUT_MS,
       throwOnRequestTimeout: true,
+      socketTimeout: STORAGE_SOCKET_IDLE_TIMEOUT_MS,
     });
-    expect([STORAGE_CONNECTION_TIMEOUT_MS, STORAGE_REQUEST_TIMEOUT_MS]).toEqual([5_000, 20_000]);
+    expect([STORAGE_CONNECTION_TIMEOUT_MS, STORAGE_REQUEST_TIMEOUT_MS, STORAGE_SOCKET_IDLE_TIMEOUT_MS]).toEqual([5_000, 20_000, 20_000]);
     expect(config.forcePathStyle).toBe(true);
   });
 
@@ -52,7 +54,10 @@ describe('SVC-01: storage client timeouts', () => {
 
     it('rejects with a timeout after exactly 2 attempts instead of hanging', async () => {
       const client = new S3Client(
-        buildStorageClientConfig({ ...env, IDRIVE_E2_ENDPOINT: endpoint }, { connectionTimeoutMs: 500, requestTimeoutMs: 300 }),
+        buildStorageClientConfig(
+          { ...env, IDRIVE_E2_ENDPOINT: endpoint },
+          { connectionTimeoutMs: 500, requestTimeoutMs: 300, socketIdleTimeoutMs: 400 },
+        ),
       );
       const started = Date.now();
       await expect(
@@ -60,6 +65,39 @@ describe('SVC-01: storage client timeouts', () => {
       ).rejects.toThrow(/requestTimeout|timeout/i);
       expect(Date.now() - started).toBeLessThan(10_000);
       expect(requests).toBe(2);
+      client.destroy();
+    }, 20_000);
+  });
+
+  describe('against a server that sends headers and half a file, then stalls', () => {
+    let server: Server;
+    let endpoint: string;
+
+    beforeAll(async () => {
+      server = createServer((_req, res) => {
+        res.writeHead(200, { 'content-type': 'image/png', 'content-length': '1000' });
+        res.write(Buffer.alloc(100)); // 100 of the promised 1000 bytes, then silence
+      });
+      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      endpoint = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+    });
+
+    afterAll(async () => {
+      server.closeAllConnections();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    });
+
+    it('a stalled download body fails on the idle-socket timeout instead of hanging', async () => {
+      const client = new S3Client(
+        buildStorageClientConfig(
+          { ...env, IDRIVE_E2_ENDPOINT: endpoint },
+          { connectionTimeoutMs: 500, requestTimeoutMs: 300, socketIdleTimeoutMs: 400 },
+        ),
+      );
+      const started = Date.now();
+      const response = await client.send(new GetObjectCommand({ Bucket: 'bucket', Key: 'logos/x.png' }));
+      await expect(response.Body!.transformToByteArray()).rejects.toThrow(/timed out|timeout|aborted/i);
+      expect(Date.now() - started).toBeLessThan(10_000);
       client.destroy();
     }, 20_000);
   });
