@@ -89,23 +89,51 @@ export async function checkRateLimit(limiter: RateLimiter, identifier: string): 
   return { allowed: success, retryAfterSeconds };
 }
 
-function firstValidIp(raw: string | null, pick: 'first' | 'last'): string | null {
-  if (raw === null) return null;
-  const entries = raw.split(',').map((entry) => entry.trim()).filter((entry) => entry !== '');
-  const ordered = pick === 'first' ? entries : [...entries].reverse();
-  for (const entry of ordered) if (isIP(entry) !== 0) return entry;
-  return null;
+function validIps(raw: string | null): string[] {
+  if (raw === null) return [];
+  return raw.split(',').map((entry) => entry.trim()).filter((entry) => entry !== '' && isIP(entry) !== 0);
+}
+
+/** Private, loopback, link-local and carrier-grade-NAT addresses: hops inside a hosting network, never a visitor. */
+export function isInternalIp(ip: string): boolean {
+  const version = isIP(ip);
+  if (version === 4) {
+    const [a = 0, b = 0] = ip.split('.').map(Number);
+    return (
+      a === 10 ||
+      a === 127 ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 169 && b === 254) ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      a === 0
+    );
+  }
+  if (version === 6) {
+    const lower = ip.toLowerCase();
+    if (lower === '::1' || lower === '::') return true;
+    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(lower);
+    if (mapped?.[1]) return isInternalIp(mapped[1]);
+    return /^f[cd]/.test(lower) || /^fe[89ab]/.test(lower);
+  }
+  return false;
 }
 
 /**
- * Real client IP. On Vercel `x-vercel-forwarded-for` is set by the platform and cannot be spoofed by clients.
- * Otherwise use the RIGHT-most valid `x-forwarded-for` entry (appended by the nearest trusted proxy; a client-supplied
- * left-most value is ignored). Returns 'unknown' when nothing valid is present. Never throws.
+ * Real client IP for rate limits (SEC-01). Render runs behind Cloudflare and an internal load balancer:
+ *  1. `cf-connecting-ip`: set by Cloudflare's edge to the visitor's address (a value sent by the visitor is
+ *     overwritten), so it cannot be faked.
+ *  2. Otherwise the RIGHT-most PUBLIC `x-forwarded-for` entry: internal hops (Render's own 10.x load balancer) are
+ *     skipped, and client-supplied left-most entries are never preferred over an address added by a proxy.
+ *  3. Only internal addresses (local development): the right-most of them.
+ * `x-vercel-forwarded-for` and `true-client-ip` are NOT trusted: on Render they can pass through from the visitor
+ * unchanged. Measured 2026-11-22 on the Render TEST service: the right-most `x-forwarded-for` entry was Render's
+ * private proxy (10.25.x.x), so every visitor shared one rate-limit bucket. Returns 'unknown' when nothing valid is
+ * present. Never throws.
  */
 export function getClientIp(headersList: Headers): string {
-  return (
-    firstValidIp(headersList.get('x-vercel-forwarded-for'), 'first') ??
-    firstValidIp(headersList.get('x-forwarded-for'), 'last') ??
-    'unknown'
-  );
+  const edge = validIps(headersList.get('cf-connecting-ip'))[0];
+  if (edge !== undefined) return edge;
+  const forwarded = validIps(headersList.get('x-forwarded-for')).reverse();
+  return forwarded.find((ip) => !isInternalIp(ip)) ?? forwarded[0] ?? 'unknown';
 }
