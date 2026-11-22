@@ -8,7 +8,7 @@ import { TriangleAlert } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-export type RouteErrorScope = 'app' | 'admin';
+export type RouteErrorScope = 'app' | 'admin' | 'invite';
 
 export interface RouteErrorViewProps {
   readonly error: Error & { digest?: string };
@@ -19,6 +19,8 @@ export interface RouteErrorViewProps {
 const HOME_LINK: Record<RouteErrorScope, { href: string; label: string }> = {
   app: { href: '/dashboard', label: 'Go to dashboard' },
   admin: { href: '/admin', label: 'Back to admin home' },
+  // BUG-06: the invite page is opened by people who may not have an account yet.
+  invite: { href: '/', label: 'Go to home page' },
 };
 
 export function RouteErrorView({ error, reset, scope }: RouteErrorViewProps): JSX.Element {
@@ -56,9 +58,10 @@ export function RouteErrorView({ error, reset, scope }: RouteErrorViewProps): JS
           This page couldn&apos;t be loaded
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our side and we&apos;ve been notified. The rest of the app is still working.
-          If you were saving or finalizing a document, open its list first to check whether it went through
-          before trying again.
+          Something went wrong on our side and we&apos;ve been notified.
+          {scope === 'invite'
+            ? ' Your invitation is still valid. Please try again in a moment.'
+            : ' The rest of the app is still working. If you were saving or finalizing a document, open its list first to check whether it went through before trying again.'}
         </p>
         {error.digest ? (
           <p className="mt-3 text-xs text-muted-foreground">

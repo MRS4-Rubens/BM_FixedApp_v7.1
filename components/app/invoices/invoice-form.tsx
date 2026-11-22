@@ -158,6 +158,7 @@ export function InvoiceForm({
 
   const {
     isFinalizing,
+    isSavingDraft,
     globalError,
     setGlobalError,
     showQuotaUpgradeModal,
@@ -349,7 +350,7 @@ export function InvoiceForm({
                 totalIGST={totalIGST}
                 roundOff={roundOff}
                 grandTotal={grandTotal}
-                isFinalizing={isFinalizing}
+                isFinalizing={isFinalizing} isSavingDraft={isSavingDraft}
                 onSaveDraft={onSaveDraft}
                 onFinalizeClick={onFinalizeClick}
                 taxLabel={taxLabel}
