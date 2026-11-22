@@ -4,7 +4,9 @@ import { getRequestSession } from '@/lib/auth/request-session';
 import { db } from '@/lib/db/client';
 import { users, businesses } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { exportLimiter, checkRateLimit } from '@/lib/rate-limit/upstash';
+import { exportLimiter } from '@/lib/rate-limit/upstash';
+import { enforceRateLimit } from '@/lib/rate-limit/enforce';
+import { actionErrorResponse, jsonError, rateLimitedResponse } from '@/lib/http/route-errors';
 import { getExportData } from '@/lib/actions/reports/get-export-data';
 import { writeSalesRegisterWorkbook } from '@/lib/excel/build-sales-register';
 import { getItrExportData } from '@/lib/actions/reports/get-itr-data';
@@ -20,23 +22,27 @@ import { logError } from '@/lib/actions/_shared/logger';
 import { runWithRequestId, requestIdFromHeaders } from '@/lib/observability/request-context';
 
 export const maxDuration = 60;
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// API-01: every error is JSON { error, code } (lib/http/route-errors.ts); successful downloads are unchanged.
 
 async function handleExport(request: NextRequest): Promise<Response> {
   // 1. Session Check (return 401 if unauthorized, no redirect)
   const sessionResponse = await getRequestSession();
   if (!sessionResponse || !sessionResponse.data || !sessionResponse.data.user) {
-    return new Response('Unauthorized', { status: 401 });
+    return jsonError(401, 'Please sign in again.', 'UNAUTHORIZED');
   }
 
   // Resolve the app user manually since requireSession redirects
   const userRows = await db.select().from(users).where(eq(users.auth_user_id, sessionResponse.data.user.id));
   if (userRows.length === 0) {
-    return new Response('Unauthorized', { status: 401 });
+    return jsonError(401, 'Please sign in again.', 'UNAUTHORIZED');
   }
   const appUser = userRows[0];
 
   if (!appUser.business_id) {
-    return new Response('No business profile linked to user.', { status: 400 });
+    return jsonError(400, 'Set up your business profile first.', 'NO_BUSINESS_LINKED');
   }
 
   // 2. Entitlement check for statutory Excel reports
@@ -49,35 +55,27 @@ async function handleExport(request: NextRequest): Promise<Response> {
     .limit(1);
 
   if (bizResult.length === 0) {
-    return new Response('Business profile not found.', { status: 404 });
+    return jsonError(404, 'Business profile not found.', 'BUSINESS_NOT_FOUND');
   }
 
   const suspended = checkAccountNotSuspended(bizResult[0]);
   if (!suspended.allowed) {
-    return new Response(JSON.stringify({ error: suspended.reason, code: suspended.code }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(403, suspended.reason ?? 'This account is suspended. Please contact support.', suspended.code ?? 'ACCOUNT_SUSPENDED');
   }
 
   const exportCheck = canExportStatutoryReport(bizResult[0]);
   if (!exportCheck.allowed) {
-    return new Response(
-      JSON.stringify({ error: exportCheck.reason, code: exportCheck.code }),
-      {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      }
-    );
+    return jsonError(403, exportCheck.reason ?? 'Your plan does not include statutory exports.', exportCheck.code ?? 'PLAN_LIMIT');
   }
 
-  const { allowed, retryAfterSeconds } = await checkRateLimit(exportLimiter, `export:${appUser.id}`);
-  if (!allowed) {
-    return new Response(`Too Many Requests. Retry after ${retryAfterSeconds} seconds.`, {
-      status: 429,
-      headers: { 'Retry-After': retryAfterSeconds.toString() }
-    });
-  }
+  // Fail closed: an export is heavy work on a 512 MB instance, so it waits when the limiter is unreachable (503).
+  const limit = await enforceRateLimit({
+    limiter: exportLimiter,
+    identifier: `export:${appUser.id}`,
+    policy: 'fail-closed',
+    scope: 'reports-export',
+  });
+  if (!limit.allowed) return rateLimitedResponse(limit);
 
   // 2. Parse search params
   const { searchParams } = new URL(request.url);
@@ -91,11 +89,8 @@ async function handleExport(request: NextRequest): Promise<Response> {
   if (!parsed.success) {
     const flattened = z.flattenError(parsed.error);
     return new Response(
-      JSON.stringify({ error: 'Invalid export parameters', fieldErrors: flattened.fieldErrors }),
-      {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: 'Invalid export parameters', code: 'VALIDATION_ERROR', fieldErrors: flattened.fieldErrors }),
+      { status: 400, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } },
     );
   }
 
@@ -106,7 +101,7 @@ async function handleExport(request: NextRequest): Promise<Response> {
   if (type === 'gstr1') {
     const gstr1DataRes = await getGstr1ExportData({ startDate, endDate, label });
     if (!gstr1DataRes.success) {
-      return new Response(gstr1DataRes.error.message, { status: 500 });
+      return actionErrorResponse(gstr1DataRes.error);
     }
 
     const gstr1Data = gstr1DataRes.data;
@@ -116,7 +111,7 @@ async function handleExport(request: NextRequest): Promise<Response> {
   if (type === 'itr_report') {
     const itrDataRes = await getItrExportData({ startDate, endDate, label });
     if (!itrDataRes.success) {
-      return new Response(itrDataRes.error.message, { status: 500 });
+      return actionErrorResponse(itrDataRes.error);
     }
 
     const itrData = itrDataRes.data;
@@ -126,7 +121,7 @@ async function handleExport(request: NextRequest): Promise<Response> {
   if (type === 'hsn_summary') {
     const gstr1DataRes = await getGstr1ExportData({ startDate, endDate, label });
     if (!gstr1DataRes.success) {
-      return new Response(gstr1DataRes.error.message, { status: 500 });
+      return actionErrorResponse(gstr1DataRes.error);
     }
 
     const hsnData = gstr1DataRes.data;
@@ -136,7 +131,7 @@ async function handleExport(request: NextRequest): Promise<Response> {
   // Default / Legacy fallback: Sales Register
   const exportDataRes = await getExportData({ startDate, endDate, label });
   if (!exportDataRes.success) {
-    return new Response(exportDataRes.error.message, { status: 500 });
+    return actionErrorResponse(exportDataRes.error);
   }
 
   const exportData = exportDataRes.data;
@@ -152,7 +147,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       return response;
     } catch (error) {
       logError('reports-export', error);
-      const res = new Response('Internal Server Error', { status: 500 });
+      const res = jsonError(500, 'Could not prepare the download. Please try again.', 'INTERNAL_ERROR');
       res.headers.set('x-request-id', requestId);
       return res;
     }
