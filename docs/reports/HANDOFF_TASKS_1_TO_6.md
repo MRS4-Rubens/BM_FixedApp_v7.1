@@ -1,6 +1,6 @@
 # HANDOFF DOCUMENTATION: IMPLEMENTATION OF TASKS 1 THROUGH 6
 
-**Workspace:** `e:\BM_Edits_Cld1.1\BM_FixApp_v1.1`  
+**Workspace:** the project root  
 **Date:** 2026-11-21  
 **Target Repository:** Original local working tree  
 
@@ -31,8 +31,7 @@ The repository contains two dedicated local branches representing the two phases
    - Contains Task 6 on top of Tasks 1–5.
    - Clean git state. All tests pass (tsc clean, 0 lint errors, 95/95 target unit tests pass including the new `tests/unit/desktop-canvas-css.test.ts`).
 3. **Safety Patch Backup:**
-   - A raw unified patch for Tasks 1–5 is stored in:
-     `C:\Users\nidee\.gemini\antigravity\brain\7a90b4e6-9ccb-4761-96a9-1a7c6e06bb4b\scratch\backup-tasks-1-to-5.patch`
+   - A raw unified patch for Tasks 1–5 was kept on the developer's machine at the time (local path removed in CLEAN-03).
 
 ---
 
