@@ -15,6 +15,7 @@ import { exportRangeSchema } from '@/lib/validations/export';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { isB2clLargeInvoice } from '@/lib/gst/thresholds';
 import { HsnSummaryAccumulator } from '@/lib/reports/hsn-summary';
+import { groupDocumentSeries, type DocumentSeriesRange } from '@/lib/reports/document-series';
 
 export interface Gstr1B2bRow {
   recipientGstin: string;
@@ -190,6 +191,7 @@ export const getGstr1ExportData = createAuthenticatedAction(exportRangeSchema, a
       trade_name: businesses.trade_name,
       gstin: businesses.gstin,
       state_code: businesses.state_code,
+      invoice_number_format: businesses.invoice_number_format,
     })
     .from(businesses)
     .where(eq(businesses.id, businessId));
@@ -611,31 +613,28 @@ export const getGstr1ExportData = createAuthenticatedAction(exportRangeSchema, a
   const hsnB2bRows: Gstr1HsnRow[] = hsnB2bSummary.rows();
   const hsnB2cRows: Gstr1HsnRow[] = hsnB2cSummary.rows();
 
-  // 7. Build Documents Issued (Table 13)
+  // 7. Build Documents Issued (Table 13). MONEY-07: one row PER SERIES (a monthly / daily reset or a changed format
+  //    or prefix starts a new series), "from"/"to" by counter, not by date (lib/reports/document-series.ts).
   const docRows: Gstr1DocRow[] = [];
-
-  if (rawInvoices.length > 0) {
-    docRows.push({
-      natureOfDocument: 'Invoices for outward supply',
-      srNoFrom: rawInvoices[0].invoice_number,
-      srNoTo: rawInvoices[rawInvoices.length - 1].invoice_number,
-      totalNumber: rawInvoices.length,
-      cancelled: 0,
-      netIssued: rawInvoices.length
-    });
-  }
-
-  if (rawCreditNotes.length > 0) {
-    const cancelledCount = rawCreditNotes.filter(cn => cn.status === 'voided').length;
-    docRows.push({
-      natureOfDocument: 'Credit Note',
-      srNoFrom: rawCreditNotes[0].credit_note_number,
-      srNoTo: rawCreditNotes[rawCreditNotes.length - 1].credit_note_number,
-      totalNumber: rawCreditNotes.length,
-      cancelled: cancelledCount,
-      netIssued: rawCreditNotes.length - cancelledCount
-    });
-  }
+  const toDocRow = (natureOfDocument: string) => (range: DocumentSeriesRange): Gstr1DocRow => ({
+    natureOfDocument,
+    srNoFrom: range.from,
+    srNoTo: range.to,
+    totalNumber: range.total,
+    cancelled: range.cancelled,
+    netIssued: range.total - range.cancelled,
+  });
+  docRows.push(
+    ...groupDocumentSeries(
+      rawInvoices.map((inv) => ({ number: inv.invoice_number ?? '', cancelled: false })),
+      business.invoice_number_format,
+    ).map(toDocRow('Invoices for outward supply')),
+  );
+  docRows.push(
+    ...groupDocumentSeries(
+      rawCreditNotes.map((cn) => ({ number: cn.credit_note_number ?? '', cancelled: cn.status === 'voided' })),
+    ).map(toDocRow('Credit Note')),
+  );
 
   // 8. Aggregate executive period totals
   let totalTaxablePaise = 0;

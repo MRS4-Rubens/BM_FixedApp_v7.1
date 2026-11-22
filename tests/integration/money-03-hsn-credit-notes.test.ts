@@ -230,4 +230,18 @@ describe('MONEY-03: GSTR-1 HSN summary nets every credit note of the period', ()
     expect(sum(october.hsnB2b)).toBe(sum(october.b2b));
     expect(sum(october.hsnB2c)).toBe(sum(october.b2cl) + sum(october.b2cs));
   });
+
+  it('MONEY-07: Table 13 has one row per daily series, "from"/"to" by counter (back-dated invoice included)', async () => {
+    // The business uses the default daily format INV-{DD}/{MM}/{YY}/{SEQ:3}. 002 of 1 Dec was entered after 001 of
+    // 2 Dec but back-dated, so by date it sorts between them.
+    await plantInvoice('INV-01/12/26/001', '2026-12-01', null, [{ hsn: '4820', quantity: '1.000', taxablePaise: 1_000 }]);
+    await plantInvoice('INV-02/12/26/001', '2026-12-02', null, [{ hsn: '4820', quantity: '1.000', taxablePaise: 1_000 }]);
+    await plantInvoice('INV-01/12/26/002', '2026-12-01', null, [{ hsn: '4820', quantity: '1.000', taxablePaise: 1_000 }]);
+    const result = await getGstr1ExportData({ startDate: '2026-12-01', endDate: '2026-12-31', label: 'December 2026' });
+    if (!result.success) throw new Error(`GSTR-1 export failed: ${result.error.code}`);
+    expect(result.data.docs).toEqual([
+      { natureOfDocument: 'Invoices for outward supply', srNoFrom: 'INV-01/12/26/001', srNoTo: 'INV-01/12/26/002', totalNumber: 2, cancelled: 0, netIssued: 2 },
+      { natureOfDocument: 'Invoices for outward supply', srNoFrom: 'INV-02/12/26/001', srNoTo: 'INV-02/12/26/001', totalNumber: 1, cancelled: 0, netIssued: 1 },
+    ]);
+  });
 });
