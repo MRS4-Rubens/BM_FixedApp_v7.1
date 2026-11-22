@@ -82,10 +82,11 @@ export async function markArchived(db: SqlExecutor, kind: ArchivalKind, id: stri
  * Cloudflare queue (10.5 s per render), so a long queue could outlive the 300 s lease and let another run claim and
  * render the same document again. Never touches an archived row.
  */
-export async function refreshClaim(db: SqlExecutor, kind: ArchivalKind, id: string): Promise<void> {
+export async function refreshClaim(db: SqlExecutor, kind: ArchivalKind, id: string, businessId: string): Promise<void> {
   await db.execute(sql`UPDATE ${table(kind)}
     SET archival_claimed_at = now()
-    WHERE id = ${id} AND archival_status <> 'archived' AND archival_claimed_at IS NOT NULL`);
+    WHERE id = ${id} AND business_id = ${businessId}
+      AND archival_status <> 'archived' AND archival_claimed_at IS NOT NULL`);
 }
 
 /** Never downgrades an already-archived row (a late failure from an expired lease must not undo a success). */

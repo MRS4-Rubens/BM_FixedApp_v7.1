@@ -73,8 +73,9 @@ function paced<T>(task: () => Promise<T>, sleep: (ms: number) => Promise<void>, 
   const run = async () => {
     const wait = lastRequestAt + CLOUDFLARE_MIN_INTERVAL_MS - Date.now();
     if (wait > 0) await sleep(wait);
-    lastRequestAt = Date.now();
     if (onTurn) await onTurn();
+    // Measured right before the request, so time spent in onTurn never shortens the 10.5 s spacing.
+    lastRequestAt = Date.now();
     return task();
   };
   const result = queueTail.then(run, run).finally(() => {

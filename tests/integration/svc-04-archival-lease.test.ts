@@ -153,10 +153,46 @@ describe('SVC-04: archival lease renewal and the busy render queue', () => {
     );
     const unclaimed = await pendingInvoice();
 
-    await refreshClaim(state.db as never, 'invoice', archived);
-    await refreshClaim(state.db as never, 'invoice', unclaimed);
+    await refreshClaim(state.db as never, 'invoice', archived, businessId);
+    await refreshClaim(state.db as never, 'invoice', unclaimed, businessId);
 
     expect((await row(archived)).claim_age_s).toBeGreaterThan(590);
     expect((await row(unclaimed)).claim_age_s).toBeNull();
+  });
+
+  it("refreshClaim only renews the lease within the document's own business", async () => {
+    const id = await pendingInvoice();
+    await claimBatch(state.db as never, 'invoice', 1);
+    await pg.query(`UPDATE invoices SET archival_claimed_at = now() - interval '200 seconds' WHERE id = $1`, [id]);
+    await refreshClaim(state.db as never, 'invoice', id, '00000000-0000-4000-8000-000000000000');
+    expect((await row(id)).claim_age_s).toBeGreaterThan(190); // other business: untouched
+    await refreshClaim(state.db as never, 'invoice', id, businessId);
+    expect((await row(id)).claim_age_s).toBeLessThan(5);
+    await pg.query(`UPDATE invoices SET archival_status = 'archived', archived_at = now(), pdf_storage_key = 'k', archival_claimed_at = NULL WHERE id = $1`, [id]);
+  });
+
+  it('a lease renewal that hangs does not block the render (bounded, then rendering continues)', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const id = await pendingInvoice();
+      const [claim] = await claimBatch(state.db as never, 'invoice', 1);
+      const claims = await import('@/lib/storage/archival-claims');
+      const hang = vi.spyOn(claims, 'refreshClaim').mockReturnValue(new Promise<void>(() => undefined));
+      let rendered = false;
+      state.render = async (options) => {
+        const turn = options.onTurn?.();
+        await vi.advanceTimersByTimeAsync(3_000);
+        await turn;
+        rendered = true;
+        return Buffer.from('%PDF-1.7');
+      };
+      const result = await archiveClaimedDocument('invoice', id, claim!.attempts);
+      expect(hang).toHaveBeenCalled();
+      expect(rendered).toBe(true);
+      expect(result.success).toBe(true);
+      hang.mockRestore();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -25,6 +25,23 @@ export interface ArchivalResult {
   readonly error?: string;
 }
 
+/** SVC-04: the lease renewal runs inside the shared render queue, so it must never hold the queue for long. */
+const LEASE_REFRESH_DEADLINE_MS = 3_000;
+
+async function withDeadline<T>(work: Promise<T>, ms: number, label: string): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      work,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms} ms`)), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 function alertArchivalExhausted(kind: ArchivalKind, id: string, attempts: number): void {
   Sentry.captureMessage('Document archival exhausted all attempts', {
     level: 'error',
@@ -84,10 +101,10 @@ export async function archiveClaimedDocument(
 
     const { html } = await buildArchivalHtml(kind, id);
     const pdfBuffer = await renderHtmlToPdfBuffer(html, {
-      // SVC-04: renew the lease when this document's turn in the render queue comes.
+      // SVC-04: renew the lease when this document's turn in the render queue comes (bounded, never fatal).
       onTurn: async () => {
         try {
-          await refreshClaim(db, kind, id);
+          await withDeadline(refreshClaim(db, kind, id, doc.businessId), LEASE_REFRESH_DEADLINE_MS, 'Archival lease refresh');
         } catch (refreshErr: unknown) {
           logError('archival-refresh-claim-failed', refreshErr, { kind, documentId: id });
         }
