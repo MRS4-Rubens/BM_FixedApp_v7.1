@@ -101,7 +101,7 @@ Environment variables are validated centrally and lazily via `lib/env.ts`, split
 | `NEON_AUTH_BASE_URL` | Core: Auth | No | **Yes** | Base URL of the Neon Auth service for session authentication. | Fails boot (`EnvConfigError`). Must be a valid `https://` URL. |
 | `NEON_AUTH_COOKIE_SECRET` | Core: Auth | No | **Yes** | Symmetric key used to encrypt and sign authentication session cookies. | Fails boot (`EnvConfigError`). Must be at least 32 characters long. |
 | `IDRIVE_E2_ENDPOINT` | Feature: Storage | No | **Yes** (Archival) | S3-compatible endpoint host for iDrive e2 object storage (PDF archival and logos). | Fails callers on use. Logged as issue at boot. Bare host required. |
-| `IDRIVE_E2_REGION` | Feature: Storage | No | **Yes** (Archival) | Storage region identifier for iDrive e2 bucket (e.g. `ap-southeast-1`). | Fails callers on use. Logged as issue at boot. |
+| `IDRIVE_E2_REGION` | Feature: Storage | No | **Yes** (Archival) | Storage region identifier for iDrive e2 bucket (e.g. `ap-southeast-2`, the region the launch buckets use). | Fails callers on use. Logged as issue at boot. |
 | `IDRIVE_E2_BUCKET_NAME` | Feature: Storage | No | **Yes** (Archival) | Bucket name for storing archived statutory invoice/credit-note PDFs and business logos. | Fails callers on use. Logged as issue at boot. |
 | `IDRIVE_E2_ACCESS_KEY` | Feature: Storage | No | **Yes** (Archival) | S3 access key ID for iDrive e2 bucket authentication. | Fails callers on use. Logged as issue at boot. |
 | `IDRIVE_E2_SECRET_KEY` | Feature: Storage | No | **Yes** (Archival) | S3 secret access key for iDrive e2 bucket authentication. | Fails callers on use. Logged as issue at boot. |
