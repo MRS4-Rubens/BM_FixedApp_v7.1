@@ -261,7 +261,19 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
       isCurrent: !!invoice.emailed_at && invoice.payment_status !== 'paid',
       icon: Mail
     },
-    {
+    historyLoadFailed ? {
+      // BUG-04: settled / refund due / the payment date all come from the payments that failed to load, so the step
+      // says "Unavailable" (matching the "Settlement unavailable" badge) instead of guessing.
+      step: 4,
+      name: 'Settlement',
+      subtext: 'Unavailable',
+      date: null,
+      pendingLabel: 'Unavailable',
+      isCompleted: false,
+      isCurrent: false,
+      isWarning: false,
+      icon: ShieldCheck
+    } : {
       step: 4,
       // REFUND: while money is owed back, the last step is an amber "Refund Due" instead of a completed "Settled".
       name: isRefundDue ? 'Refund Due' : 'Settled',

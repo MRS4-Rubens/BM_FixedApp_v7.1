@@ -438,9 +438,12 @@ describe('Accountant Read-Only View Across App (B2-CA-UI)', () => {
       expect(failed).toContain('Reload page');
       expect(failed).not.toMatch(/Record (Payment|Refund)/); // no payment pre-filled with the full total
       expect(failed).not.toContain('No credit notes issued'); // not "none" when we simply don't know
-      // The balance strip is hidden: its "Settled" label is gone (the timeline step of the same name stays).
-      const settledCount = (html: string) => html.split('>Settled<').length - 1;
-      expect(settledCount(failed)).toBe(settledCount(normal) - 1);
+      // Neither the balance strip's "Settled" label nor the timeline's "Settled" step is shown: the last timeline step
+      // reads "Settlement / Unavailable" instead of guessing settled, refund due or a payment date.
+      expect(normal).toContain('>Settled<');
+      expect(failed).not.toContain('>Settled<');
+      expect(failed).toContain('>Settlement<');
+      expect(failed).toContain('>Unavailable<');
       expect(failed).toContain('Print'); // the rest of the invoice still works
       // The header badge would read "0% Settled" from the empty list: it says the settlement is unavailable instead.
       expect(normal).toMatch(/\d+% Settled/);
