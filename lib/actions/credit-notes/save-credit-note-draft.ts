@@ -46,18 +46,20 @@ export const saveCreditNoteDraft = createAuthenticatedAction(
         if (originalInvoice.lifecycle_status !== 'finalized') {
           throw new ActionError('Credit notes can only be issued against finalized invoices.', { code: 'INVALID_STATUS' });
         }
-        // MONEY-08: a date sent with the draft must pass the same rule finalize applies (never the future, never
-        // before the invoice, current financial year, at most 30 days back).
-        if (input.issue_date) {
+        // MONEY-08 / MONEY-09: the date the note will carry (a sent date, else today) must pass the same rule finalize
+        // applies (never the future, never before the invoice, current financial year, at most 30 days back, and not
+        // after the CGST section 34 deadline for this invoice).
+        {
+          const todayIso = formatIstDateAsIso(new Date());
           const dateDecision = evaluateCreditNoteDate({
-            issueDateIso: input.issue_date,
-            todayIso: formatIstDateAsIso(new Date()),
+            issueDateIso: input.issue_date ?? todayIso,
+            todayIso,
             originalInvoiceDateIso: originalInvoice.invoice_date,
           });
           if (!dateDecision.ok) {
             throw new ActionError(dateDecision.message, {
               code: dateDecision.code,
-              fieldErrors: { issue_date: [dateDecision.message] },
+              ...(input.issue_date ? { fieldErrors: { issue_date: [dateDecision.message] } } : {}),
             });
           }
         }

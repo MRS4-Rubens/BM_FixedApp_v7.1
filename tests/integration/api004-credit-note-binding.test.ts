@@ -34,6 +34,7 @@ vi.mock('@/lib/actions/_shared/logger', () => ({ logError: () => undefined }));
 import { finalizeCreditNote } from '@/lib/actions/credit-notes/finalize-credit-note';
 import { saveCreditNoteDraft } from '@/lib/actions/credit-notes/save-credit-note-draft';
 import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
+import { getCreditNoteFormData } from '@/lib/actions/credit-notes/get-credit-note-form-data';
 
 const DRIZZLE_DIR = join(process.cwd(), 'drizzle');
 const API004_SUFFIX = '_api004_credit_note_original_line_link';
@@ -642,6 +643,48 @@ describe('API-004: Credit note binding to original invoice lines', () => {
 
       await pg.query('DELETE FROM credit_note_line_items WHERE credit_note_id = $1', [stale.id]);
       await pg.query('DELETE FROM credit_notes WHERE id = $1', [stale.id]);
+    });
+
+    it('MONEY-09: an invoice past its section 34 deadline cannot get a credit note (form, save)', async () => {
+      // Dated two financial years before today's, so its deadline (30 Nov after its FY) is always in the past.
+      const today = formatIstDateAsIso(new Date());
+      const [year, month] = today.split('-').map(Number);
+      const currentFyStartYear = (month ?? 1) >= 4 ? (year ?? 0) : (year ?? 0) - 1;
+      const oldDate = `${currentFyStartYear - 2}-06-15`;
+      const oldInvId = await insertOne(
+        pg,
+        `INSERT INTO invoices (business_id, financial_year_id, invoice_number, customer_id, lifecycle_status,
+           place_of_supply_state_code, subtotal_paise, total_tax_paise, grand_total_paise, invoice_date, due_date, seller_gstin_snapshot)
+         VALUES ($1, $2, 'INV-OLD-S34', $3, 'draft', '29', 10000, 1800, 11800, $4, $4, '29ABCDE1234F1Z5') RETURNING id`,
+        [businessId, financialYearId, customerId, oldDate],
+      );
+      const oldLineId = await insertOne(
+        pg,
+        `INSERT INTO invoice_line_items (invoice_id, description, hsn_sac_code, quantity, unit_of_measurement, unit_price_paise,
+           discount_paise, taxable_value_paise, tax_rate_percentage, line_total_paise, cgst_paise, sgst_paise)
+         VALUES ($1, 'Old Widget', '8471', 1.000, 'NOS', 10000, 0, 10000, '18.00', 11800, 900, 900) RETURNING id`,
+        [oldInvId],
+      );
+      await pg.query(
+        `UPDATE invoices SET lifecycle_status = 'finalized', invoice_sequence = 90, finalized_at = now(),
+           seller_name_snapshot = 'Acme Corp', seller_address_snapshot = '{"city":"Bengaluru"}'::jsonb,
+           seller_state_code_snapshot = '29', seller_snapshot_source = 'captured_at_finalization'
+         WHERE id = $1`,
+        [oldInvId],
+      );
+
+      const form = await getCreditNoteFormData({ invoiceId: oldInvId });
+      expectFailure(form, 'CREDIT_NOTE_PAST_DEADLINE');
+      if (!form.success) expect(form.error.message).toContain(`30/11/${currentFyStartYear - 1}`);
+
+      const save = await saveCreditNoteDraft({
+        original_invoice_id: oldInvId,
+        reason: '01-sales-return',
+        line_items: [{ original_line_item_id: oldLineId, quantity: 1 }],
+      });
+      expectFailure(save, 'CREDIT_NOTE_PAST_DEADLINE');
+      const notes = await pg.query<{ n: number }>('SELECT count(*)::int AS n FROM credit_notes WHERE original_invoice_id = $1', [oldInvId]);
+      expect(notes.rows[0]?.n).toBe(0);
     });
   });
 });

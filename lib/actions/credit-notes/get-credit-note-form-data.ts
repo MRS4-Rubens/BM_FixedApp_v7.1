@@ -9,6 +9,8 @@ import { CreditNoteRuleError } from '@/lib/credit-notes/derivation';
 import { db } from '@/lib/db/client';
 import { businesses, invoices } from '@/lib/db/schema';
 import { parseStoredDisplayPrefs } from '@/lib/invoices/display-prefs';
+import { creditNoteDeadlineIso, creditNoteDeadlineMessage } from '@/lib/invoices/credit-note-date-policy';
+import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 
 const getCreditNoteFormDataSchema = z
   .object({
@@ -39,6 +41,10 @@ export const getCreditNoteFormData = createAuthenticatedAction(
 
     if (originalInvoice.lifecycle_status !== 'finalized') {
       throw new ActionError('Credit notes can only be issued against finalized invoices.', { code: 'INVALID_STATUS' });
+    }
+    // MONEY-09: say so before the form opens when the CGST section 34 deadline for this invoice has passed.
+    if (originalInvoice.invoice_date && formatIstDateAsIso(new Date()) > creditNoteDeadlineIso(originalInvoice.invoice_date)) {
+      throw new ActionError(creditNoteDeadlineMessage(originalInvoice.invoice_date), { code: 'CREDIT_NOTE_PAST_DEADLINE' });
     }
 
     // 2. Fetch business profile
