@@ -300,6 +300,7 @@ describe('Refunds: recording, limits, voids and audit integrity', () => {
     ok(await voidPayment({ id: cash.id, reason: 'clerical_error', notes: 'reopen for BUG-05 test' }));
     const before = (await entries()).filter((e) => e.status === 'active').length;
 
+    revalidatePathMock.mockClear(); // forget the void's calls, so the checks below are about recordPayment only
     revalidatePathMock.mockImplementation(() => {
       throw new Error('revalidate failed after commit');
     });
@@ -308,7 +309,8 @@ describe('Refunds: recording, limits, voids and audit integrity', () => {
       // Before the fix this was { success: false, code: 'INTERNAL_ERROR' } for a payment that WAS saved, so the form
       // unlocked and a retry recorded it twice.
       expect(result.success).toBe(true);
-      expect(revalidatePathMock).toHaveBeenCalled();
+      // recordPayment itself hit the failing revalidation, for both pages (one failure does not stop the next).
+      expect(revalidatePathMock.mock.calls).toEqual([['/invoices'], [`/invoices/${invoiceId}`]]);
     } finally {
       revalidatePathMock.mockReset();
       revalidatePathMock.mockImplementation(() => undefined);
