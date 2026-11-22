@@ -132,13 +132,19 @@ describe('AUTH-004: identity change waits for an in-flight finalize, then is ref
         changeFinished = true;
       });
 
-    // Postgres itself reports session 2 waiting on the lock, and it has not finished.
-    expect(await waitForBlockedSession(10_000)).toBe(true);
-    expect(changeFinished).toBe(false);
-
-    releaseFinalize();
-    await finalizeSession;
-    const changeError = await changeSession;
+    let changeError: unknown;
+    try {
+      // Postgres itself reports session 2 waiting on the lock, and it has not finished.
+      expect(await waitForBlockedSession(10_000)).toBe(true);
+      expect(changeFinished).toBe(false);
+    } finally {
+      // Always let session 1 commit and both sessions settle, even when an assertion above fails, so the business lock
+      // never outlives the test and blocks the cleanup in afterAll.
+      releaseFinalize();
+      await finalizeSession.catch(() => undefined);
+      changeError = await changeSession;
+    }
+    await finalizeSession; // surfaces a real failure of session 1 (it was only silenced inside finally)
 
     expect(changeError).not.toBeNull();
     expect((changeError as { code?: string }).code).toBe('IDENTITY_LOCKED');

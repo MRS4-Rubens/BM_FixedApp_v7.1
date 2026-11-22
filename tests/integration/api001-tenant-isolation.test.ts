@@ -312,7 +312,7 @@ describe('API-001: tenant isolation of customers, products and invoices', () => 
     });
   });
 
-  // TEST-02: replaces a describe.skip block (product-based input, superseded by API-004 line binding) that left the
+  // TEST-02: replaces a switched-off block (product-based input, superseded by API-004 line binding) that left the
   // cross-tenant credit-note path untested.
   describe("writes: saveCreditNoteDraft only against the caller's own invoices", () => {
     async function firstLineId(invoiceId: string): Promise<string> {
@@ -354,15 +354,26 @@ describe('API-001: tenant isolation of customers, products and invoices', () => 
 
   // TEST-02: the master-data write actions had no cross-tenant behaviour test.
   describe("writes: another business's customer or product can never be changed", () => {
-    async function productRow(id: string) {
-      return (await pg.query<{ name: string; is_active: boolean }>('SELECT name, is_active FROM products WHERE id = $1', [id])).rows[0];
+    // Scoped by the expected owner, so an ownership change would also show up as a missing row.
+    async function productRow(id: string, businessId: string) {
+      return (
+        await pg.query<{ name: string; is_active: boolean }>(
+          'SELECT name, is_active FROM products WHERE id = $1 AND business_id = $2',
+          [id, businessId],
+        )
+      ).rows[0];
     }
-    async function customerRow(id: string) {
-      return (await pg.query<{ name: string; is_active: boolean }>('SELECT name, is_active FROM customers WHERE id = $1', [id])).rows[0];
+    async function customerRow(id: string, businessId: string) {
+      return (
+        await pg.query<{ name: string; is_active: boolean }>(
+          'SELECT name, is_active FROM customers WHERE id = $1 AND business_id = $2',
+          [id, businessId],
+        )
+      ).rows[0];
     }
 
     it('updateProduct: NOT_FOUND, victim product unchanged', async () => {
-      const before = await productRow(b.productId);
+      const before = await productRow(b.productId, b.businessId);
       expectFailure(
         await updateProduct({
           id: b.productId,
@@ -377,22 +388,22 @@ describe('API-001: tenant isolation of customers, products and invoices', () => 
         'NOT_FOUND',
         /^Product not found.$/,
       );
-      expect(await productRow(b.productId)).toEqual(before);
+      expect(await productRow(b.productId, b.businessId)).toEqual(before);
       expect(before?.name).toBe(VICTIM_PRODUCT_NAME);
     });
 
     it('deactivateProduct and reactivateProduct: NOT_FOUND, victim product unchanged', async () => {
-      const before = await productRow(b.productId);
+      const before = await productRow(b.productId, b.businessId);
       expectFailure(await deactivateProduct({ id: b.productId }), 'NOT_FOUND', /^Product not found.$/);
-      expect(await productRow(b.productId)).toEqual(before);
+      expect(await productRow(b.productId, b.businessId)).toEqual(before);
       await pg.query('UPDATE products SET is_active = false WHERE id = $1', [b.productId]);
       expectFailure(await reactivateProduct({ id: b.productId }), 'NOT_FOUND', /^Product not found.$/);
-      expect((await productRow(b.productId))?.is_active).toBe(false);
+      expect((await productRow(b.productId, b.businessId))?.is_active).toBe(false);
       await pg.query('UPDATE products SET is_active = true WHERE id = $1', [b.productId]);
     });
 
     it('updateCustomer: NOT_FOUND, victim customer unchanged', async () => {
-      const before = await customerRow(b.customerId);
+      const before = await customerRow(b.customerId, b.businessId);
       expectFailure(
         await updateCustomer({
           id: b.customerId,
@@ -409,15 +420,15 @@ describe('API-001: tenant isolation of customers, products and invoices', () => 
         'NOT_FOUND',
         /^Customer not found.$/,
       );
-      expect(await customerRow(b.customerId)).toEqual(before);
+      expect(await customerRow(b.customerId, b.businessId)).toEqual(before);
       expect(before?.name).toBe(VICTIM_CUSTOMER_NAME);
     });
 
     it("the same actions still work on the caller's own rows (the guard is not a blanket refusal)", async () => {
       expectSuccess(await deactivateProduct({ id: a.productId }));
-      expect((await productRow(a.productId))?.is_active).toBe(false);
+      expect((await productRow(a.productId, a.businessId))?.is_active).toBe(false);
       expectSuccess(await reactivateProduct({ id: a.productId }));
-      expect((await productRow(a.productId))?.is_active).toBe(true);
+      expect((await productRow(a.productId, a.businessId))?.is_active).toBe(true);
     });
   });
 

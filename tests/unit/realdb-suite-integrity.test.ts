@@ -23,19 +23,42 @@ function getAllFiles(dir: string): string[] {
   return files;
 }
 
+/**
+ * Test modifiers that skip or narrow a run. Matched as a property, not only when a call follows, so chains such as
+ * it.skip.each([...]), describe.concurrent.skip(...) or "it.skip (" are caught too (TEST-02).
+ */
+const SKIP_MODIFIERS: ReadonlyArray<{ readonly pattern: RegExp; readonly name: string }> = [
+  { pattern: /\.(?:skip|only|todo)\b/, name: '.skip/.only/.todo' },
+  { pattern: /\.(?:skipIf|runIf)\b/, name: '.skipIf/.runIf' },
+];
+
+function skipModifiersIn(content: string): string[] {
+  return SKIP_MODIFIERS.filter(({ pattern }) => pattern.test(content)).map(({ name }) => name);
+}
+
 describe('RealDB Suite Integrity Guard (TEST-002)', () => {
+  it('TEST-02: the skip detector catches chained and spaced modifiers and leaves ordinary tests alone', () => {
+    for (const code of [
+      "it.skip.each([1])('case %i', () => {})",
+      "describe.concurrent.skip('x', () => {})",
+      "it.skip ('x', () => {})",
+      "test.only('x', () => {})",
+      "it.todo('x')",
+      "describe.skipIf(!url)('x', () => {})",
+      "describe.runIf(flag)('x', () => {})",
+    ]) {
+      expect(skipModifiersIn(code), code).not.toEqual([]);
+    }
+    for (const code of ["it.each([1])('case %i', () => {})", "describe('x', () => { it('y', () => {}) })", 'const skipped = 0;']) {
+      expect(skipModifiersIn(code), code).toEqual([]);
+    }
+  });
+
   it('scans all tests/realdb files and ensures no skips, todos, onlys, or retries', () => {
     const realDbDir = join(projectRoot, 'tests', 'realdb');
     const files = getAllFiles(realDbDir);
 
-    const forbiddenPatterns = [
-      { pattern: /\.skip\(/, name: '.skip(' },
-      { pattern: /\.todo\(/, name: '.todo(' },
-      { pattern: /\.only\(/, name: '.only(' },
-      { pattern: /skipIf\(/, name: 'skipIf(' },
-      { pattern: /runIf\(/, name: 'runIf(' },
-      { pattern: /retry:\s*[1-9]/, name: 'retry > 0' },
-    ];
+    const forbiddenPatterns = [...SKIP_MODIFIERS, { pattern: /retry:\s*[1-9]/, name: 'retry > 0' }];
 
     const violations: string[] = [];
 
@@ -58,7 +81,7 @@ describe('RealDB Suite Integrity Guard (TEST-002)', () => {
       'perf001-list-performance.test.ts': 'benchmark, runs only with RUN_PERF_TESTS=1',
     };
     const files = getAllFiles(join(projectRoot, 'tests', 'integration'));
-    const forbidden = [/\.skip\(/, /\.only\(/, /\.todo\(/, /skipIf\(/, /runIf\(/, /TEST_DATABASE_URL/];
+    const forbidden = [...SKIP_MODIFIERS.map(({ pattern }) => pattern), /TEST_DATABASE_URL/];
 
     const violations: string[] = [];
     for (const file of files) {
