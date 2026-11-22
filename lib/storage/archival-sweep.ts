@@ -32,14 +32,16 @@ export async function runArchivalSweep(
   let succeededCount = 0;
   let failedCount = 0;
   let skippedCount = 0;
+  // SVC-02: each document is claimed at most once per run (a failed one waits for the next nightly run).
+  const triedThisRun: Record<ArchivalKind, string[]> = { invoice: [], credit_note: [] };
 
   while (now() < deadline) {
     let kind: ArchivalKind = 'invoice';
-    let batch = await claimBatch(db, kind, ARCHIVAL_SWEEP_BATCH_SIZE);
+    let batch = await claimBatch(db, kind, ARCHIVAL_SWEEP_BATCH_SIZE, triedThisRun.invoice);
 
     if (batch.length === 0) {
       kind = 'credit_note';
-      batch = await claimBatch(db, kind, ARCHIVAL_SWEEP_BATCH_SIZE);
+      batch = await claimBatch(db, kind, ARCHIVAL_SWEEP_BATCH_SIZE, triedThisRun.credit_note);
     }
 
     if (batch.length === 0) {
@@ -48,6 +50,7 @@ export async function runArchivalSweep(
     }
 
     claimedCount += batch.length;
+    triedThisRun[kind].push(...batch.map((claim) => claim.id));
 
     const results = await mapWithConcurrency(
       batch,
