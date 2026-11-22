@@ -267,7 +267,12 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
       name: isRefundDue ? 'Refund Due' : 'Settled',
       subtext: isRefundDue
         ? 'Refund due'
-        : invoice.payment_status === 'paid' ? 'Paid in full' : (existingSum > 0 ? 'Partially settled' : 'Balance unpaid'),
+        : invoice.payment_status === 'paid'
+          ? 'Paid in full'
+          // BUG-04: if the payments failed to load, use the invoice's stored status instead of the (empty) list.
+          : (historyLoadFailed ? invoice.payment_status === 'partially_paid' : existingSum > 0)
+            ? 'Partially settled'
+            : 'Balance unpaid',
       date: !isRefundDue && invoice.payment_status === 'paid' ? latestPaymentDate : null,
       isCompleted: !isRefundDue && invoice.payment_status === 'paid',
       isCurrent: invoice.payment_status === 'paid',
@@ -490,7 +495,12 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                     Lifecycle &amp; Settlement
                   </h3>
                 </div>
-                {isRefundDue ? (
+                {historyLoadFailed ? (
+                  // BUG-04: computed from the payments that failed to load, so it would wrongly read "0% Settled".
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    Settlement unavailable
+                  </span>
+                ) : isRefundDue ? (
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
                     Refund Due
                   </span>

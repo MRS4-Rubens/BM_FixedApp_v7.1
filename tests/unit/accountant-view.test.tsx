@@ -442,6 +442,10 @@ describe('Accountant Read-Only View Across App (B2-CA-UI)', () => {
       const settledCount = (html: string) => html.split('>Settled<').length - 1;
       expect(settledCount(failed)).toBe(settledCount(normal) - 1);
       expect(failed).toContain('Print'); // the rest of the invoice still works
+      // The header badge would read "0% Settled" from the empty list: it says the settlement is unavailable instead.
+      expect(normal).toMatch(/\d+% Settled/);
+      expect(failed).not.toMatch(/\d+% Settled/);
+      expect(failed).toContain('Settlement unavailable');
     });
 
     it('staff sees the Record Payment form that the accountant does not', () => {
