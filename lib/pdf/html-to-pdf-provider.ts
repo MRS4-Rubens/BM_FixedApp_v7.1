@@ -18,7 +18,14 @@ const MAX_ERROR_TEXT_CHARS = 200;
 export const CLOUDFLARE_MIN_INTERVAL_MS = 10_500;
 const MAX_RETRY_AFTER_MS = 30_000;
 
-export type PdfRenderFailureKind = 'timeout' | 'network' | 'http' | 'invalid_response' | 'invalid_input';
+export type PdfRenderFailureKind = 'timeout' | 'network' | 'http' | 'invalid_response' | 'invalid_input' | 'busy';
+
+/**
+ * SVC-04: at most this many renders may wait in (or run from) the queue. At 10.5 s each, 20 is ~3.5 minutes of work;
+ * beyond that a render fails at once with kind 'busy' (callers give the attempt back and retry later) instead of
+ * queueing without limit.
+ */
+export const MAX_QUEUED_RENDERS = 20;
 
 export class PdfRenderError extends Error {
   readonly kind: PdfRenderFailureKind;
@@ -42,6 +49,8 @@ export interface RenderOptions {
   readonly sleep?: (ms: number) => Promise<void>;
   /** Test seam: skip the process-wide queue (each test gets fresh pacing). */
   readonly unpaced?: boolean;
+  /** SVC-04: called when this render's turn in the queue comes, right before the request (e.g. to renew a lease). */
+  readonly onTurn?: () => Promise<void>;
 }
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -49,15 +58,29 @@ const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(r
 // One request at a time, spaced apart (free-plan REST limit). Module state = one queue per server process.
 let queueTail: Promise<unknown> = Promise.resolve();
 let lastRequestAt = 0;
+let queuedRenders = 0;
 
-function paced<T>(task: () => Promise<T>, sleep: (ms: number) => Promise<void>): Promise<T> {
+/** Number of renders waiting in or running from the queue (for tests and diagnostics). */
+export function queuedRenderCount(): number {
+  return queuedRenders;
+}
+
+function paced<T>(task: () => Promise<T>, sleep: (ms: number) => Promise<void>, onTurn?: () => Promise<void>): Promise<T> {
+  if (queuedRenders >= MAX_QUEUED_RENDERS) {
+    return Promise.reject(new PdfRenderError('busy', 'Too many PDFs are waiting to be rendered; this one will be retried later.'));
+  }
+  queuedRenders += 1;
   const run = async () => {
     const wait = lastRequestAt + CLOUDFLARE_MIN_INTERVAL_MS - Date.now();
     if (wait > 0) await sleep(wait);
+    if (onTurn) await onTurn();
+    // Measured right before the request, so time spent in onTurn never shortens the 10.5 s spacing.
     lastRequestAt = Date.now();
     return task();
   };
-  const result = queueTail.then(run, run);
+  const result = queueTail.then(run, run).finally(() => {
+    queuedRenders -= 1;
+  });
   queueTail = result.catch(() => undefined);
   return result;
 }
@@ -116,7 +139,7 @@ export async function renderHtmlToPdfBuffer(html: string, options: RenderOptions
 
   let bytes: Buffer;
   try {
-    bytes = options.unpaced ? await run() : await paced(run, sleep);
+    bytes = options.unpaced ? await run() : await paced(run, sleep, options.onTurn);
   } catch (error: unknown) {
     if (error instanceof PdfRenderError) throw error;
     if (isAbortLike(error)) throw new PdfRenderError('timeout', 'PDF rendering timed out.');
