@@ -267,12 +267,7 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
       name: isRefundDue ? 'Refund Due' : 'Settled',
       subtext: isRefundDue
         ? 'Refund due'
-        : invoice.payment_status === 'paid'
-          ? 'Paid in full'
-          // BUG-04: if the payments failed to load, use the invoice's stored status instead of the (empty) list.
-          : (historyLoadFailed ? invoice.payment_status === 'partially_paid' : existingSum > 0)
-            ? 'Partially settled'
-            : 'Balance unpaid',
+        : invoice.payment_status === 'paid' ? 'Paid in full' : (existingSum > 0 ? 'Partially settled' : 'Balance unpaid'),
       date: !isRefundDue && invoice.payment_status === 'paid' ? latestPaymentDate : null,
       isCompleted: !isRefundDue && invoice.payment_status === 'paid',
       isCurrent: invoice.payment_status === 'paid',
