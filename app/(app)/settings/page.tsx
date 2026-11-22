@@ -2,10 +2,11 @@ import { getCurrentAppUser } from '@/lib/auth/session';
 import { getCurrentBusiness } from '@/lib/auth/current-business';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests, users, invoices, customers, products } from '@/lib/db/schema';
-import { eq, and, desc, sql, between } from 'drizzle-orm';
+import { eq, desc, sql } from 'drizzle-orm';
 import { SettingsClient } from '@/components/app/settings/settings-client';
 import { redirect } from 'next/navigation';
 import { getCurrentMonthRange } from '@/lib/reports/period';
+import { countFinalizedInvoicesInRange } from '@/lib/invoices/invoice-quota';
 import { hasFinalizedInvoices } from '@/lib/business/identity-lock';
 import { getCurrentFinancialYearLabel } from '@/lib/invoices/financial-year';
 import { getRequestTimeMs } from '@/lib/time/request-time';
@@ -93,15 +94,8 @@ export default async function SettingsPage({
           .leftJoin(users, eq(subscriptionRequests.user_id, users.id))
           .where(eq(subscriptionRequests.business_id, business.id))
           .orderBy(desc(subscriptionRequests.created_at)),
-        db
-          .select({ count: sql<number>`count(*)` })
-          .from(invoices)
-          .where(
-            and(
-              eq(invoices.business_id, business.id),
-              between(invoices.invoice_date, monthRange.startDate, monthRange.endDate)
-            )
-          ),
+        // MONEY-06: the same count the finalize quota enforces (finalized only; drafts do not use up the limit).
+        countFinalizedInvoicesInRange(db, business.id, monthRange),
         db
           .select({ count: sql<number>`count(*)` })
           .from(invoices)
@@ -124,7 +118,7 @@ export default async function SettingsPage({
       // owner-or-platform-admin), so it never reaches a staff member's browser, even though their tab is hidden.
       subscriptionHistory = isOwnerRole(appUser.role) ? historyRows : [];
 
-      usageStats.invoicesThisMonth = Number(invoicesMonthRes[0]?.count || 0);
+      usageStats.invoicesThisMonth = invoicesMonthRes;
       usageStats.invoicesTotal = Number(invoicesTotalRes[0]?.count || 0);
       usageStats.teamMembersCount = Math.max(1, Number(teamMembersRes[0]?.count || 0));
       usageStats.customersCount = Number(customersRes[0]?.count || 0);
