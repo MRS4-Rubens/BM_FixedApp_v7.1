@@ -1,6 +1,6 @@
 [
  {
-  "name": "HSN Summary",
+  "name": "HSN Summary (B2B)",
   "views": [
    {
     "state": "frozen",
@@ -31,8 +31,7 @@
   "rowHeights": {
    "6": 25,
    "7": 20,
-   "8": 20,
-   "9": 24
+   "8": 24
   },
   "cells": [
    {
@@ -199,7 +198,7 @@
    },
    {
     "address": "A3",
-    "value": "HSN / SAC Outward Supplies Summary (Table 12) — FY 2026-27",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2B Supplies) — FY 2026-27",
     "font": {
      "bold": true,
      "color": {
@@ -216,7 +215,7 @@
    },
    {
     "address": "B3",
-    "value": "HSN / SAC Outward Supplies Summary (Table 12) — FY 2026-27",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2B Supplies) — FY 2026-27",
     "font": {
      "bold": true,
      "color": {
@@ -233,7 +232,7 @@
    },
    {
     "address": "C3",
-    "value": "HSN / SAC Outward Supplies Summary (Table 12) — FY 2026-27",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2B Supplies) — FY 2026-27",
     "font": {
      "bold": true,
      "color": {
@@ -250,7 +249,7 @@
    },
    {
     "address": "D3",
-    "value": "HSN / SAC Outward Supplies Summary (Table 12) — FY 2026-27",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2B Supplies) — FY 2026-27",
     "font": {
      "bold": true,
      "color": {
@@ -267,7 +266,7 @@
    },
    {
     "address": "E3",
-    "value": "HSN / SAC Outward Supplies Summary (Table 12) — FY 2026-27",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2B Supplies) — FY 2026-27",
     "font": {
      "bold": true,
      "color": {
@@ -284,7 +283,7 @@
    },
    {
     "address": "F3",
-    "value": "HSN / SAC Outward Supplies Summary (Table 12) — FY 2026-27",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2B Supplies) — FY 2026-27",
     "font": {
      "bold": true,
      "color": {
@@ -1195,7 +1194,1086 @@
    },
    {
     "address": "A8",
-    "value": 2,
+    "value": "",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "B8",
+    "value": "TOTAL",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "C8",
+    "value": "1 Unique HSN/SAC Categories",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "D8",
+    "value": "",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "E8",
+    "value": 12,
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "alignment": {
+     "horizontal": "right",
+     "vertical": "middle"
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "F8",
+    "value": "",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "G8",
+    "value": 12000,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "alignment": {
+     "horizontal": "right",
+     "vertical": "middle"
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "H8",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "alignment": {
+     "horizontal": "right",
+     "vertical": "middle"
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "I8",
+    "value": 0,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "alignment": {
+     "horizontal": "right",
+     "vertical": "middle"
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "J8",
+    "value": 2160,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "alignment": {
+     "horizontal": "right",
+     "vertical": "middle"
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "K8",
+    "value": 2160,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "alignment": {
+     "horizontal": "right",
+     "vertical": "middle"
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   },
+   {
+    "address": "L8",
+    "value": 14160,
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFFEF3C7"
+     }
+    },
+    "alignment": {
+     "horizontal": "right",
+     "vertical": "middle"
+    },
+    "border": {
+     "top": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     },
+     "bottom": {
+      "style": "medium",
+      "color": {
+       "argb": "FFD97706"
+      }
+     }
+    }
+   }
+  ]
+ },
+ {
+  "name": "HSN Summary (B2C)",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 6
+   }
+  ],
+  "merges": [
+   "A1:F1",
+   "A2:F2",
+   "A3:F3",
+   "A4:F4"
+  ],
+  "columnWidths": [
+   8,
+   16,
+   34,
+   14,
+   16,
+   12,
+   18,
+   16,
+   16,
+   16,
+   16,
+   18
+  ],
+  "rowHeights": {
+   "6": 25,
+   "7": 20,
+   "8": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "Fixture Traders Pvt Ltd",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B1",
+    "value": "Fixture Traders Pvt Ltd",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "Fixture Traders Pvt Ltd",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Fixture Traders Pvt Ltd",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Fixture Traders Pvt Ltd",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Fixture Traders Pvt Ltd",
+    "font": {
+     "bold": true,
+     "size": 14,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
+    "value": "GSTIN: 29ABCDE1234F1Z5",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B2",
+    "value": "GSTIN: 29ABCDE1234F1Z5",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "C2",
+    "value": "GSTIN: 29ABCDE1234F1Z5",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D2",
+    "value": "GSTIN: 29ABCDE1234F1Z5",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "E2",
+    "value": "GSTIN: 29ABCDE1234F1Z5",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F2",
+    "value": "GSTIN: 29ABCDE1234F1Z5",
+    "font": {
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A3",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2C Supplies) — FY 2026-27",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFB45309"
+     },
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B3",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2C Supplies) — FY 2026-27",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFB45309"
+     },
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "C3",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2C Supplies) — FY 2026-27",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFB45309"
+     },
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D3",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2C Supplies) — FY 2026-27",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFB45309"
+     },
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "E3",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2C Supplies) — FY 2026-27",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFB45309"
+     },
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F3",
+    "value": "HSN / SAC Outward Supplies Summary (Table 12, B2C Supplies) — FY 2026-27",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFB45309"
+     },
+     "size": 11,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A4",
+    "value": "Generated on: 8/11/2026  |  Window: 2026-04-01 to 2027-03-31",
+    "font": {
+     "color": {
+      "argb": "FF737373"
+     },
+     "size": 9,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "B4",
+    "value": "Generated on: 8/11/2026  |  Window: 2026-04-01 to 2027-03-31",
+    "font": {
+     "color": {
+      "argb": "FF737373"
+     },
+     "size": 9,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "C4",
+    "value": "Generated on: 8/11/2026  |  Window: 2026-04-01 to 2027-03-31",
+    "font": {
+     "color": {
+      "argb": "FF737373"
+     },
+     "size": 9,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "D4",
+    "value": "Generated on: 8/11/2026  |  Window: 2026-04-01 to 2027-03-31",
+    "font": {
+     "color": {
+      "argb": "FF737373"
+     },
+     "size": 9,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "E4",
+    "value": "Generated on: 8/11/2026  |  Window: 2026-04-01 to 2027-03-31",
+    "font": {
+     "color": {
+      "argb": "FF737373"
+     },
+     "size": 9,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "F4",
+    "value": "Generated on: 8/11/2026  |  Window: 2026-04-01 to 2027-03-31",
+    "font": {
+     "color": {
+      "argb": "FF737373"
+     },
+     "size": 9,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "none"
+    },
+    "border": {}
+   },
+   {
+    "address": "A6",
+    "value": "S.No",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "B6",
+    "value": "HSN / SAC Code",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C6",
+    "value": "Description of Goods / Services",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D6",
+    "value": "UQC",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E6",
+    "value": "Total Quantity",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F6",
+    "value": "Tax Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G6",
+    "value": "Taxable Value (₹)",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H6",
+    "value": "CGST (₹)",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I6",
+    "value": "SGST/UTGST (₹)",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "J6",
+    "value": "IGST (₹)",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "K6",
+    "value": "Total Tax (₹)",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "L6",
+    "value": "Total Value (₹)",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FFD97706"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A7",
+    "value": 1,
     "font": {
      "size": 10,
      "name": "Arial"
@@ -1236,7 +2314,7 @@
     }
    },
    {
-    "address": "B8",
+    "address": "B7",
     "value": "8471",
     "font": {
      "size": 10,
@@ -1278,7 +2356,7 @@
     }
    },
    {
-    "address": "C8",
+    "address": "C7",
     "value": "Laptops",
     "font": {
      "size": 10,
@@ -1320,7 +2398,7 @@
     }
    },
    {
-    "address": "D8",
+    "address": "D7",
     "value": "NOS",
     "font": {
      "size": 10,
@@ -1362,7 +2440,7 @@
     }
    },
    {
-    "address": "E8",
+    "address": "E7",
     "value": 3,
     "font": {
      "size": 10,
@@ -1404,7 +2482,7 @@
     }
    },
    {
-    "address": "F8",
+    "address": "F7",
     "value": "28%",
     "font": {
      "size": 10,
@@ -1446,7 +2524,7 @@
     }
    },
    {
-    "address": "G8",
+    "address": "G7",
     "value": 140000,
     "numFmt": "#,##0.00",
     "font": {
@@ -1489,7 +2567,7 @@
     }
    },
    {
-    "address": "H8",
+    "address": "H7",
     "value": 19600,
     "numFmt": "#,##0.00",
     "font": {
@@ -1532,7 +2610,7 @@
     }
    },
    {
-    "address": "I8",
+    "address": "I7",
     "value": 19600,
     "numFmt": "#,##0.00",
     "font": {
@@ -1575,7 +2653,7 @@
     }
    },
    {
-    "address": "J8",
+    "address": "J7",
     "value": 0,
     "numFmt": "#,##0.00",
     "font": {
@@ -1618,7 +2696,7 @@
     }
    },
    {
-    "address": "K8",
+    "address": "K7",
     "value": 39200,
     "numFmt": "#,##0.00",
     "font": {
@@ -1661,7 +2739,7 @@
     }
    },
    {
-    "address": "L8",
+    "address": "L7",
     "value": 179200,
     "numFmt": "#,##0.00",
     "font": {
@@ -1704,7 +2782,7 @@
     }
    },
    {
-    "address": "A9",
+    "address": "A8",
     "value": "",
     "font": {
      "bold": true,
@@ -1734,7 +2812,7 @@
     }
    },
    {
-    "address": "B9",
+    "address": "B8",
     "value": "TOTAL",
     "font": {
      "bold": true,
@@ -1764,8 +2842,8 @@
     }
    },
    {
-    "address": "C9",
-    "value": "2 Unique HSN/SAC Categories",
+    "address": "C8",
+    "value": "1 Unique HSN/SAC Categories",
     "font": {
      "bold": true,
      "size": 10,
@@ -1794,7 +2872,7 @@
     }
    },
    {
-    "address": "D9",
+    "address": "D8",
     "value": "",
     "font": {
      "bold": true,
@@ -1824,8 +2902,8 @@
     }
    },
    {
-    "address": "E9",
-    "value": 15,
+    "address": "E8",
+    "value": 3,
     "font": {
      "bold": true,
      "size": 10,
@@ -1858,7 +2936,7 @@
     }
    },
    {
-    "address": "F9",
+    "address": "F8",
     "value": "",
     "font": {
      "bold": true,
@@ -1888,8 +2966,8 @@
     }
    },
    {
-    "address": "G9",
-    "value": 152000,
+    "address": "G8",
+    "value": 140000,
     "numFmt": "#,##0.00",
     "font": {
      "bold": true,
@@ -1923,7 +3001,7 @@
     }
    },
    {
-    "address": "H9",
+    "address": "H8",
     "value": 19600,
     "numFmt": "#,##0.00",
     "font": {
@@ -1958,7 +3036,7 @@
     }
    },
    {
-    "address": "I9",
+    "address": "I8",
     "value": 19600,
     "numFmt": "#,##0.00",
     "font": {
@@ -1993,8 +3071,8 @@
     }
    },
    {
-    "address": "J9",
-    "value": 2160,
+    "address": "J8",
+    "value": 0,
     "numFmt": "#,##0.00",
     "font": {
      "bold": true,
@@ -2028,8 +3106,8 @@
     }
    },
    {
-    "address": "K9",
-    "value": 41360,
+    "address": "K8",
+    "value": 39200,
     "numFmt": "#,##0.00",
     "font": {
      "bold": true,
@@ -2063,8 +3141,8 @@
     }
    },
    {
-    "address": "L9",
-    "value": 193360,
+    "address": "L8",
+    "value": 179200,
     "numFmt": "#,##0.00",
     "font": {
      "bold": true,

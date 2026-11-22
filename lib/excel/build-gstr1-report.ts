@@ -1,6 +1,6 @@
 import type { Writable } from 'node:stream';
 import type ExcelJS from 'exceljs';
-import type { Gstr1ExportData } from '@/lib/actions/reports/get-gstr1-data';
+import type { Gstr1ExportData, Gstr1HsnRow } from '@/lib/actions/reports/get-gstr1-data';
 import { paiseToRupees } from '@/lib/money';
 import { commitDataRow, createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
 
@@ -325,9 +325,11 @@ export async function writeGstr1Workbook(data: Gstr1ExportData, stream: Writable
   }));
 
   // =========================================================================
-  // SHEET 6: hsn (Official Table 12: HSN-wise summary of outward supplies)
+  // SHEET 6: hsn(b2b) + hsn(b2c) (Official Table 12: HSN-wise summary of outward supplies).
+  // MONEY-05: since the May 2025 return period the portal's Table 12 has two tabs, "B2B Supplies" and
+  // "B2C Supplies" (GSTN Phase-3 advisory). One sheet per tab, same columns as before.
   // =========================================================================
-  await writeGstnTableSheet(workbook, 'hsn', [
+  const hsnColumns: Partial<ExcelJS.Column>[] = [
     { header: 'HSN', key: 'hsn', width: 15 },
     { header: 'Description', key: 'desc', width: 30 },
     { header: 'UQC', key: 'uqc', width: 10 },
@@ -339,7 +341,8 @@ export async function writeGstr1Workbook(data: Gstr1ExportData, stream: Writable
     { header: 'Central Tax Amount', key: 'cgst', width: 18, style: { numFmt: currencyFormat } },
     { header: 'State/UT Tax Amount', key: 'sgst', width: 18, style: { numFmt: currencyFormat } },
     { header: 'Cess Amount', key: 'cess', width: 14, style: { numFmt: currencyFormat } }
-  ], data.hsn, (item) => ({
+  ];
+  const hsnRow = (item: Gstr1HsnRow): Record<string, ExcelJS.CellValue> => ({
     hsn: item.hsnSacCode,
     desc: item.description,
     uqc: item.uqc,
@@ -351,7 +354,9 @@ export async function writeGstr1Workbook(data: Gstr1ExportData, stream: Writable
     cgst: paiseToRupees(item.centralTaxPaise),
     sgst: paiseToRupees(item.stateUtTaxPaise),
     cess: paiseToRupees(item.cessAmountPaise)
-  }));
+  });
+  await writeGstnTableSheet(workbook, 'hsn(b2b)', hsnColumns, data.hsnB2b, hsnRow);
+  await writeGstnTableSheet(workbook, 'hsn(b2c)', hsnColumns, data.hsnB2c, hsnRow);
 
   // =========================================================================
   // SHEET 7: doc (Official Table 13: Documents issued during the tax period)

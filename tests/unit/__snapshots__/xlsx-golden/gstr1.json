@@ -6199,7 +6199,7 @@
   ]
  },
  {
-  "name": "hsn",
+  "name": "hsn(b2b)",
   "views": [
    {
     "state": "frozen",
@@ -6628,25 +6628,324 @@
      "pattern": "none"
     },
     "border": {}
+   }
+  ]
+ },
+ {
+  "name": "hsn(b2c)",
+  "views": [
+   {
+    "state": "frozen",
+    "xSplit": 0,
+    "ySplit": 1
+   }
+  ],
+  "merges": [],
+  "columnWidths": [
+   15,
+   30,
+   10,
+   15,
+   16,
+   10,
+   16,
+   20,
+   18,
+   18,
+   14
+  ],
+  "rowHeights": {
+   "1": 24
+  },
+  "cells": [
+   {
+    "address": "A1",
+    "value": "HSN",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
    },
    {
-    "address": "A3",
+    "address": "B1",
+    "value": "Description",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "C1",
+    "value": "UQC",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "D1",
+    "value": "Total Quantity",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "E1",
+    "value": "Total Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "F1",
+    "value": "Rate",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "G1",
+    "value": "Taxable Value",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "H1",
+    "value": "Integrated Tax Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "I1",
+    "value": "Central Tax Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "J1",
+    "value": "State/UT Tax Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "K1",
+    "value": "Cess Amount",
+    "numFmt": "#,##0.00",
+    "font": {
+     "bold": true,
+     "color": {
+      "argb": "FFFFFFFF"
+     },
+     "size": 10,
+     "name": "Arial"
+    },
+    "fill": {
+     "type": "pattern",
+     "pattern": "solid",
+     "fgColor": {
+      "argb": "FF1F4E79"
+     }
+    },
+    "alignment": {
+     "horizontal": "center",
+     "vertical": "middle"
+    },
+    "border": {}
+   },
+   {
+    "address": "A2",
     "value": "8471"
    },
    {
-    "address": "B3",
+    "address": "B2",
     "value": "Laptops"
    },
    {
-    "address": "C3",
+    "address": "C2",
     "value": "NOS"
    },
    {
-    "address": "D3",
+    "address": "D2",
     "value": 3
    },
    {
-    "address": "E3",
+    "address": "E2",
     "value": 179200,
     "numFmt": "#,##0.00",
     "font": {
@@ -6665,11 +6964,11 @@
     "border": {}
    },
    {
-    "address": "F3",
+    "address": "F2",
     "value": 28
    },
    {
-    "address": "G3",
+    "address": "G2",
     "value": 140000,
     "numFmt": "#,##0.00",
     "font": {
@@ -6688,7 +6987,7 @@
     "border": {}
    },
    {
-    "address": "H3",
+    "address": "H2",
     "value": 0,
     "numFmt": "#,##0.00",
     "font": {
@@ -6707,7 +7006,7 @@
     "border": {}
    },
    {
-    "address": "I3",
+    "address": "I2",
     "value": 19600,
     "numFmt": "#,##0.00",
     "font": {
@@ -6726,7 +7025,7 @@
     "border": {}
    },
    {
-    "address": "J3",
+    "address": "J2",
     "value": 19600,
     "numFmt": "#,##0.00",
     "font": {
@@ -6745,7 +7044,7 @@
     "border": {}
    },
    {
-    "address": "K3",
+    "address": "K2",
     "value": 0,
     "numFmt": "#,##0.00",
     "font": {

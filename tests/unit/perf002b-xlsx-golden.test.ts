@@ -64,7 +64,7 @@ describe('PERF-002b streamed Excel exports match the recorded pre-streaming outp
   });
 
   it('empty reports (no data rows)', async () => {
-    const emptyGstr1 = { ...gstr1Fixture, b2b: [], b2cl: [], b2cs: [], cdnr: [], cdnur: [], hsn: [], docs: [] };
+    const emptyGstr1 = { ...gstr1Fixture, b2b: [], b2cl: [], b2cs: [], cdnr: [], cdnur: [], hsnB2b: [], hsnB2c: [], docs: [] };
     await expectGolden('gstr1-empty', (s) => writeGstr1Workbook(emptyGstr1, s));
     await expectGolden('hsn-empty', (s) => writeHsnWorkbook(emptyGstr1, s));
     const emptyRegister = { ...salesRegisterFixture, invoices: [], creditNotes: [], hsnSummary: [] };
@@ -74,8 +74,10 @@ describe('PERF-002b streamed Excel exports match the recorded pre-streaming outp
   it('keeps the title block in row 1 when the column header row is further down', async () => {
     const name = gstr1Fixture.business.legal_name;
     const hsn = await loadWorkbook(await writeToBuffer((s) => writeHsnWorkbook(gstr1Fixture, s)));
-    expect(hsn.getWorksheet('HSN Summary')?.getCell('A1').value).toBe(name);
-    expect(hsn.getWorksheet('HSN Summary')?.getCell('G1').value).toBeNull();
+    for (const sheetName of ['HSN Summary (B2B)', 'HSN Summary (B2C)']) {
+      expect(hsn.getWorksheet(sheetName)?.getCell('A1').value, sheetName).toBe(name);
+      expect(hsn.getWorksheet(sheetName)?.getCell('G1').value, sheetName).toBeNull();
+    }
 
     const register = await loadWorkbook(await writeToBuffer((s) => writeSalesRegisterWorkbook(salesRegisterFixture, s)));
     for (const sheetName of ['Sales Register', 'HSN Summary', 'Credit Notes']) {
@@ -98,7 +100,8 @@ describe('PERF-002b streamed Excel exports match the recorded pre-streaming outp
     expect(register.getWorksheet('Summary')?.getCell('A7').value).toBe('Total SGST/UTGST');
 
     const hsn = await loadWorkbook(await writeToBuffer((s) => writeHsnWorkbook(gstr1Fixture, s)));
-    expect(hsn.getWorksheet('HSN Summary')?.getCell('I6').value).toBe('SGST/UTGST (₹)');
+    expect(hsn.getWorksheet('HSN Summary (B2B)')?.getCell('I6').value).toBe('SGST/UTGST (₹)');
+    expect(hsn.getWorksheet('HSN Summary (B2C)')?.getCell('I6').value).toBe('SGST/UTGST (₹)');
 
     const gstr1 = await loadWorkbook(await writeToBuffer((s) => writeGstr1Workbook(gstr1Fixture, s)));
     expect(gstr1.getWorksheet('GSTR-1 Summary')?.getCell('A15').value).toBe('State/UT Tax (SGST/UTGST)');

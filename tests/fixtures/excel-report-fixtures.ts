@@ -60,8 +60,11 @@ export const gstr1Fixture: Gstr1ExportData = {
   cdnur: [
     { urType: 'B2CL', noteNumber: 'CN-UR-1', noteDate: '20-Aug-2026', documentType: 'C', originalInvoiceNumber: 'INV-B2CL-1', originalInvoiceDate: '02-Aug-2026', placeOfSupply: '33-Tamil Nadu', noteValuePaise: 11_800_00, applicableTaxRatePercent: '', ratePercentage: 18, taxableValuePaise: 10_000_00, cessAmountPaise: 0 },
   ],
-  hsn: [
+  // MONEY-05: Table 12 B2B and B2C tabs (one row each, so both sheets are covered by the golden files).
+  hsnB2b: [
     { hsnSacCode: '998313', description: 'IT consulting', uqc: 'NA', totalQuantity: 12, totalValuePaise: 14_160_00, ratePercentage: 18, taxableValuePaise: 12_000_00, integratedTaxPaise: 2_160_00, centralTaxPaise: 0, stateUtTaxPaise: 0, cessAmountPaise: 0 },
+  ],
+  hsnB2c: [
     { hsnSacCode: '8471', description: 'Laptops', uqc: 'NOS', totalQuantity: 3, totalValuePaise: 1_79_200_00, ratePercentage: 28, taxableValuePaise: 1_40_000_00, integratedTaxPaise: 0, centralTaxPaise: 19_600_00, stateUtTaxPaise: 19_600_00, cessAmountPaise: 0 },
   ],
   docs: [

@@ -185,7 +185,8 @@ describe('MONEY-03: GSTR-1 HSN summary nets every credit note of the period', ()
   });
 
   it('includes the cross-period credit note as a negative HSN row (it used to be dropped)', () => {
-    const laptops = november.hsn.find((row) => row.hsnSacCode === '8471');
+    // B2B sale -> its credit note belongs to the B2B tab (MONEY-05).
+    const laptops = november.hsnB2b.find((row) => row.hsnSacCode === '8471');
     expect(laptops).toBeDefined();
     expect(laptops?.taxableValuePaise).toBe(-4_000_000);
     expect(laptops?.centralTaxPaise).toBe(-tax18(4_000_000).cgst);
@@ -195,7 +196,7 @@ describe('MONEY-03: GSTR-1 HSN summary nets every credit note of the period', ()
   });
 
   it('nets the same-HSN credit note with exact quantities and no clamp at zero', () => {
-    const notebooks = november.hsn.find((row) => row.hsnSacCode === '4820');
+    const notebooks = november.hsnB2c.find((row) => row.hsnSacCode === '4820');
     // 0.100 + 0.200 sold − 3.000 returned = −2.700 (money and quantity move together).
     expect(notebooks?.totalQuantity).toBe(-2.7);
     expect(notebooks?.taxableValuePaise).toBe(1_000 + 2_000 - 30_000);
@@ -203,9 +204,30 @@ describe('MONEY-03: GSTR-1 HSN summary nets every credit note of the period', ()
 
   it('Table 12 taxable total equals B2B + B2CL + B2CS − CDNR − CDNUR (the portal reconciliation)', () => {
     const sum = (rows: ReadonlyArray<{ taxableValuePaise: number }>) => rows.reduce((total, row) => total + row.taxableValuePaise, 0);
-    const hsnTotal = sum(november.hsn);
+    const hsnTotal = sum(november.hsnB2b) + sum(november.hsnB2c);
     const tablesTotal = sum(november.b2b) + sum(november.b2cl) + sum(november.b2cs) - sum(november.cdnr) - sum(november.cdnur);
     expect(november.cdnr.length).toBe(1); // the laptop credit note is reported in Table 9B...
     expect(hsnTotal).toBe(tablesTotal); // ...and now also in Table 12
+  });
+
+  it('MONEY-05: Table 12 is split into the B2B and B2C tabs, each reconciling with its own tables', () => {
+    const sum = (rows: ReadonlyArray<{ taxableValuePaise: number }>) => rows.reduce((total, row) => total + row.taxableValuePaise, 0);
+    // The registered (B2B) laptop credit note is only in the B2B tab; unregistered notebooks only in the B2C tab.
+    expect(november.hsnB2b.map((row) => row.hsnSacCode)).toEqual(['8471']);
+    expect(november.hsnB2c.map((row) => row.hsnSacCode)).toEqual(['4820']);
+    // GSTN Phase-3 validation: B2B tab = Tables 4 + 9B (registered); B2C tab = Tables 5 + 7 + 9B (unregistered).
+    expect(sum(november.hsnB2b)).toBe(sum(november.b2b) - sum(november.cdnr));
+    expect(sum(november.hsnB2c)).toBe(sum(november.b2cl) + sum(november.b2cs) - sum(november.cdnur));
+  });
+
+  it('MONEY-05: invoice lines go to the tab of their invoice (October: one B2B and one B2C sale)', async () => {
+    const result = await getGstr1ExportData({ startDate: '2026-10-01', endDate: '2026-10-31', label: 'October 2026' });
+    if (!result.success) throw new Error(`GSTR-1 export failed: ${result.error.code}`);
+    const october = result.data;
+    expect(october.hsnB2b.map((row) => [row.hsnSacCode, row.totalQuantity, row.taxableValuePaise])).toEqual([['8471', 2, 8_000_000]]);
+    expect(october.hsnB2c.map((row) => [row.hsnSacCode, row.totalQuantity, row.taxableValuePaise])).toEqual([['4820', 10, 100_000]]);
+    const sum = (rows: ReadonlyArray<{ taxableValuePaise: number }>) => rows.reduce((total, row) => total + row.taxableValuePaise, 0);
+    expect(sum(october.hsnB2b)).toBe(sum(october.b2b));
+    expect(sum(october.hsnB2c)).toBe(sum(october.b2cl) + sum(october.b2cs));
   });
 });
