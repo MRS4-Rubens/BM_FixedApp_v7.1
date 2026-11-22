@@ -96,6 +96,42 @@ export default defineConfig({
         trace: 'retain-on-failure',
       },
     },
+    // TEST-01: specs 10–12 existed but were never registered, so they never ran. Every spec file must be matched by a
+    // project (tests/unit/test-01-e2e-projects.test.ts). Each depends only on the journey (its owner, business and
+    // admin sessions), so a failure elsewhere cannot silently skip them. Plan changes are restored in each spec.
+    {
+      name: 'import',
+      testMatch: '10-bulk-import.spec.ts',
+      dependencies: ['journey'],
+      retries: 0, // changes the business plan (restored in a finally block); a retry would repeat that
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        trace: 'retain-on-failure',
+      },
+    },
+    {
+      name: 'notifications',
+      testMatch: '11-notifications.spec.ts',
+      dependencies: ['journey'],
+      retries: 0,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        trace: 'retain-on-failure',
+      },
+    },
+    {
+      name: 'checkout',
+      testMatch: '12-professional-checkout.spec.ts',
+      dependencies: ['journey'],
+      retries: process.env.CI ? 1 : 0, // read-only screens: a retry is safe
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        trace: 'retain-on-failure',
+      },
+    },
   ],
 });
 
