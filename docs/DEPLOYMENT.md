@@ -315,7 +315,7 @@ Follow this checklist when processing an account closure request:
    **Reading the result:** the comparison is close, not exact (the reference and the dump are seconds apart).
    - All counts match **and** both numbering queries return the same rows (every counter value and every
      business's newest invoice number): **pass**. A numbering difference is judged like a row difference below: a
-     restored counter or number **behind** the reference is explained only by an invoice finalized inside the step.
+     restored counter or number **behind** the reference is explained only by an invoice whose `finalized_at` is inside the step.
    - Rows **missing** from the restore whose `created_at` is before the "Dump the database" step: **fail**. The restore
      is incomplete; do not trust that backup and find out why.
    - Rows explained by `created_at` / `updated_at` inside the step: **pass**.
@@ -337,8 +337,9 @@ Follow this checklist when processing an account closure request:
      (SELECT count(*) FROM tax_rates)         AS tax_rates;
    -- Numbering: the counters and the newest invoice number of every business.
    SELECT business_id, period_key, counter_value FROM invoice_number_counters ORDER BY business_id, period_key;
-   SELECT DISTINCT ON (business_id) business_id, invoice_number, created_at
-     FROM invoices WHERE lifecycle_status <> 'draft' ORDER BY business_id, created_at DESC;
+   -- Newest by finalized_at: finalizing an old draft does not change its created_at.
+   SELECT DISTINCT ON (business_id) business_id, invoice_number, finalized_at
+     FROM invoices WHERE lifecycle_status = 'finalized' ORDER BY business_id, finalized_at DESC, invoice_sequence DESC;
    ```
 5. Record the result (date, file, time taken) and delete the branch.
 
