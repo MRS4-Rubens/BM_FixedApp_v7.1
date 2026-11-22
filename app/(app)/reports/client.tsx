@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   BarChart,
@@ -253,6 +253,7 @@ export function ReportsClient({
   const [customStart, setCustomStart] = useState<string>(startDate)
   const [customEnd, setCustomEnd] = useState<string>(endDate)
   const [customError, setCustomError] = useState<string | null>(null)
+  const rangeMessageId = useId()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const isMounted = useIsClient()
   const [chartMode, setChartMode] = useState<'turnover_tax' | 'tax_split'>('turnover_tax')
@@ -274,6 +275,7 @@ export function ReportsClient({
   const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value
     setSelectedPreset(val)
+    setCustomError(null)
     if (val !== 'custom') {
       router.push(`/reports?period=${val}`)
     }
@@ -324,7 +326,7 @@ export function ReportsClient({
             </span>
           </div>
           {(customError ?? rangeNotice) && (
-            <p role="status" className="text-xs sm:text-sm font-medium text-amber-700 dark:text-amber-400">
+            <p id={rangeMessageId} role="status" className="text-xs sm:text-sm font-medium text-amber-700 dark:text-amber-400">
               {customError ?? rangeNotice}
             </p>
           )}
@@ -353,6 +355,8 @@ export function ReportsClient({
               <input
                 type="date"
                 aria-label="Start date"
+                aria-invalid={customError !== null}
+                aria-describedby={customError !== null ? rangeMessageId : undefined}
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
                 className="w-[130px] rounded-lg border border-border/80 bg-background px-2.5 py-1.5 h-9 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 shrink-0"
@@ -361,6 +365,8 @@ export function ReportsClient({
               <input
                 type="date"
                 aria-label="End date"
+                aria-invalid={customError !== null}
+                aria-describedby={customError !== null ? rangeMessageId : undefined}
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
                 className="w-[130px] rounded-lg border border-border/80 bg-background px-2.5 py-1.5 h-9 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 shrink-0"
