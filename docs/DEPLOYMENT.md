@@ -10,7 +10,7 @@
 1. Work happens on a branch (never directly on `main`).
 2. Open a pull request. GitHub runs **7 checks**: Quality gates (typecheck, lint ratchet, migration-history check, tests, production build), Dependency audit, Real-Postgres integration tests, E2E staging configuration, Playwright E2E Suite (the PR built and started on the runner, against the test database), and the two Vercel preview checks (until Vercel is removed).
 3. Merge only when **all checks are green on the latest commit**. After every new push, wait for all of them again.
-4. Render deploys `main` automatically after the merge (build `pnpm install --frozen-lockfile && pnpm build`, start `pnpm start`).
+4. Render deploys `main` automatically after the merge (build `pnpm install --frozen-lockfile && pnpm build`, start `node_modules/.bin/next start`: Next runs directly, without an extra pnpm process, to save memory on the 512 MB instance; checklist 3.10).
 
 ## Hosting (Render) and scheduled jobs
 - **Render Free web service**, region Singapore: 512 MB RAM, 0.1 CPU, sleeps after 15 minutes without traffic (the first request then takes up to about a minute), 5 GB outbound bandwidth per month. Upgrade path: Starter ($7/month) when the first shop pays or pages feel slow (checklist section 10).
@@ -25,8 +25,9 @@
 ## What the gates mean
 - **Typecheck / tests / db:check / build**: must pass.
 - **Lint ratchet**: the number of lint problems may not go up (baseline in `scripts/ci/lint-baseline.json`). When you fix some, run `pnpm lint:ratchet --update` and commit the lower baseline.
-- **Dependency audit (report only)**: informational until the known advisories are resolved; then make it blocking.
+- **Dependency audit** (`scripts/ci/audit-gate.mjs`): **blocking**. Any high/critical advisory fails the PR unless it is in `security/audit-allowlist.json` with a reason and an expiry date (`docs/security/dependencies.md`). An expired entry fails too; an entry that is no longer reported is printed as `STALE` and should be removed.
 - Run the same checks locally with `pnpm verify` (plus `pnpm build`).
+- **Local production build:** `pnpm build` on your PC needs a public HTTPS app address, because the build checks `NEXT_PUBLIC_APP_URL`. Use a placeholder that is never served: `NEXT_PUBLIC_APP_URL=https://bm-local.test pnpm build` (PowerShell: `$env:NEXT_PUBLIC_APP_URL='https://bm-local.test'; pnpm build`).
 
 ## Database migrations (production)
 Migrations are NOT applied automatically. Use GitHub -> Actions -> "Production DB migration (manual)".
@@ -142,7 +143,7 @@ If any query returns a non-zero count, remediate legacy rows before migrating:
 - **Settings in `lib/db/pool-config.ts`**:
   - `DB_POOL_MAX_CONNECTIONS = 5`: Limits concurrent connections per serverless instance to prevent overwhelming Neon's pooler under burst load.
   - `DB_POOL_IDLE_TIMEOUT_MS = 10_000`: Closes idle sockets quickly (10s) because serverless isolates freeze and idle sockets rot.
-  - `DB_POOL_CONNECTION_TIMEOUT_MS = 5_000`: Fails fast (5s) instead of hanging indefinitely when the pool is fully subscribed or the network is disrupted.
+  - `DB_POOL_CONNECTION_TIMEOUT_MS = 15_000` (`lib/db/pool-config.ts`): a query fails after 15 s instead of hanging when the pool is fully used or the network is disrupted. It was 5 s until 2026-11-14; that was too tight for a new Neon connection plus a waking (scale-to-zero) compute.
 - **Error Observability**: Idle client terminations (e.g. compute suspends or restarts) emit an `'error'` event on the pool. This is caught safely by `attachPoolErrorHandler` and logged under scope `db-pool` (with Sentry tag `scope=db-pool`).
 - **Tuning Guidance**: To tune pool limits, edit `lib/db/pool-config.ts` directly (re-checking Neon compute/pooler limits). There is intentionally no environment variable override.
 
@@ -303,7 +304,43 @@ Follow this checklist when processing an account closure request:
 1. Download the newest file: `aws s3 cp --endpoint-url <BACKUP_S3_ENDPOINT> s3://bizfolio-backups/daily/<file>.dump.gpg .`
 2. Decrypt in a terminal: `gpg --pinentry-mode loopback --decrypt --output db.dump <file>.dump.gpg`. It asks for the passphrase (do **not** add `--batch`: batch mode never asks, so decryption would fail).
 3. In the **test** Neon project, create a new branch and an **empty** database in it (e.g. `restore_check`), then restore into that database and stop at the first error: `pg_restore --exit-on-error --no-owner --no-acl --dbname "<restore_check direct URL>" db.dump` (Postgres 17 client). Check the exit status is **0** (`echo $?`). Without `--exit-on-error`, `pg_restore` skips failed objects (for example a missing constraint or guard trigger) and still finishes, so the data checks below could pass on an incomplete copy. If it fails, drop and re-create the empty database and try again; never continue on a partial restore.
-4. Check: invoice counts and numbers, latest invoices, credit notes, payments, `invoice_number_counters`, and that a test login works.
+4. Check with SQL, running the same queries on the **restored** database and on a **frozen reference** of the source.
+   The live source keeps changing after the dump (new invoices, payments, sign-ups), so never compare with it directly.
+   **Reference:** in the source Neon project, create a branch **from a past time** = the moment the dump ran: open the
+   backup run in GitHub → Actions → step **"Dump the database"** and use the time it **finished** (UTC; the step
+   takes seconds). `pg_dump` takes its snapshot inside that step, so the reference and the dump differ by seconds at
+   most. Neon's Free history covers **6 hours**, so restore and check within 6 hours of the dump: for a drill, start
+   the backup workflow by hand (Run workflow) at a quiet time and continue right away. Run the queries on that
+   reference branch and delete it afterwards; production is never paused for a drill.
+   **Reading the result:** the comparison is close, not exact (the reference and the dump are seconds apart).
+   - All counts match **and** both numbering queries return the same rows (every counter value and every
+     business's newest invoice number): **pass**. A numbering difference is judged like a row difference below: a
+     restored counter or number **behind** the reference is explained only by an invoice whose `finalized_at` is inside the step.
+   - Rows **missing** from the restore whose `created_at` is before the "Dump the database" step: **fail**. The restore
+     is incomplete; do not trust that backup and find out why.
+   - Rows explained by `created_at` / `updated_at` inside the step: **pass**.
+   - Anything else, for example an **extra** row in the restore (a delete leaves no timestamp, so its time cannot be
+     checked): **inconclusive**. Repeat the drill at a quieter time; only a fail or a repeated unexplained difference
+     counts against the backup.
+   Signing in cannot test logins here: the Render app and its Auth URL point at another database, so count the login
+   rows instead.
+   ```sql
+   -- Users and logins (Neon Auth lives in the same database), then the money tables.
+   SELECT
+     (SELECT count(*) FROM neon_auth."user")  AS auth_users,
+     (SELECT count(*) FROM neon_auth.account) AS auth_accounts,
+     (SELECT count(*) FROM users)             AS app_users,
+     (SELECT count(*) FROM businesses)        AS businesses,
+     (SELECT count(*) FROM invoices)          AS invoices,
+     (SELECT count(*) FROM credit_notes)      AS credit_notes,
+     (SELECT count(*) FROM payments)          AS payments,
+     (SELECT count(*) FROM tax_rates)         AS tax_rates;
+   -- Numbering: the counters and the newest invoice number of every business.
+   SELECT business_id, period_key, counter_value FROM invoice_number_counters ORDER BY business_id, period_key;
+   -- Newest by finalized_at: finalizing an old draft does not change its created_at.
+   SELECT DISTINCT ON (business_id) business_id, invoice_number, finalized_at
+     FROM invoices WHERE lifecycle_status = 'finalized' ORDER BY business_id, finalized_at DESC, invoice_sequence DESC;
+   ```
 5. Record the result (date, file, time taken) and delete the branch.
 
 For a real incident (both paths: Neon 6-hour restore **and** restore from a dump):

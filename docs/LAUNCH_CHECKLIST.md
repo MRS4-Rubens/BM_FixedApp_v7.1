@@ -110,12 +110,16 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [ ] Copy into the password manager (TEST): pooled URL, direct URL, Auth URL, project ID.
 
 **Set up both databases** (from your PC, in the project folder)
-- [ ] Test: `DATABASE_URL_UNPOOLED=<test direct URL>` → run `pnpm db:migrate` then `pnpm db:seed`.
-- [ ] Production: `DATABASE_URL_UNPOOLED=<prod direct URL>` → run `pnpm db:migrate` then `pnpm db:seed`. **After this, do not sign up or create anything on production until section 7.**
-- [ ] Proof (production): the database has **0** rows in businesses, users, invoices, payments and audit_log; only the seeded tax rates exist.
+> Set **both** variables for the target first. `pnpm db:migrate` uses `DATABASE_URL_UNPOOLED` (direct URL), but
+> `pnpm db:seed` writes through the app's normal connection, `DATABASE_URL` (pooled URL). The seed also reads
+> `.env.local`; values set in the terminal win over that file, so nothing goes to the database named there. Close the
+> terminal afterwards so the next command cannot reach this database by mistake.
+- [ ] Test (PowerShell): `$env:DATABASE_URL='<test pooled URL>'; $env:DATABASE_URL_UNPOOLED='<test direct URL>'; pnpm db:migrate; if ($LASTEXITCODE -eq 0) { pnpm db:seed }`
+- [ ] Production, in a **new** terminal: `$env:DATABASE_URL='<prod pooled URL>'; $env:DATABASE_URL_UNPOOLED='<prod direct URL>'; pnpm db:migrate; if ($LASTEXITCODE -eq 0) { pnpm db:seed }`. If the migration prints an error, stop and fix it first; the seed only runs after a clean migration. **After this, do not sign up or create anything on production until section 7.** *(Production was set up this way on 2026-11-19; repeat only for a new database.)*
+- [ ] Proof (production): the database has **0** rows in businesses, users, invoices, payments and audit_log, and **`tax_rates` = 4** (0, 5, 18 and 40 %).
 
 ### 3.5 IDrive e2 — three buckets
-- [ ] Sign up (free 10 GB) → region **Singapore (ap-southeast-1)**.
+- [ ] Sign up (free 10 GB) → region **Singapore** (IDrive's region code is **`ap-southeast-2`**, endpoint `s3.ap-southeast-2.idrivee2.com`; not AWS's `ap-southeast-1`).
 - [ ] Create private buckets (public access OFF, **Object Lock OFF**): `bizfolio-prod-files`, `bizfolio-test-files`, `bizfolio-backups`.
 - [ ] Access keys → per-bucket keys **are** supported, so create **three** keys: **prod app key** (`bizfolio-prod-files` only), **test app key** (`bizfolio-test-files` only), **backup key** (`bizfolio-backups` only).
 - [ ] Note the S3 endpoint from the dashboard (Enabled regions). *Actual: `https://s3.ap-southeast-2.idrivee2.com`, region code `ap-southeast-2`.*
@@ -158,7 +162,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 - [ ] Build command `pnpm install && pnpm build`; start command `node_modules/.bin/next start` (runs Next directly, without an extra pnpm process, to save memory on the 512 MB instance); Node 24 (from `engines` / `.nvmrc`).
 - [ ] Health check path `/ping`.
 - [ ] Environment → add the **"During testing"** values from section 4.1. **Never set `SKIP_ENV_VALIDATION`.**
-- [ ] Deploy → note the address → set `NEXT_PUBLIC_APP_URL` to it → redeploy.
+- [ ] Deploy → note the address → set `NEXT_PUBLIC_APP_URL` to it → **Save, rebuild, and deploy** (it is a build-time value).
 
 ### 3.11 Neon Auth trusted domains
 - [ ] Test project: add `https://<name>.onrender.com`. `localhost` needs no entry while Allow Localhost is ON (Neon docs: localhost ports are pre-approved).
@@ -209,9 +213,9 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `EMAIL_FROM` | `"Invoice BizFolio <yourapp@gmail.com>"` | same | No |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Upstash DB | same (**flushed** at switch) | Token **Yes** |
 | `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | DSN | same | No (public by design) |
-| `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (added in 2.4; build time, so redeploy after changing) | `test` | **`production`** | No |
+| `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (added in 2.4; **build time**: after changing, use **Save, rebuild, and deploy**) | `test` | **`production`** | No |
 | `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | Build upload | same | Token **Yes** |
-| `NEXT_PUBLIC_SUPPORT_EMAIL` | `invoicebizfolio26+support@gmail.com` (**required**: the server won't start without it). Shown on the site; also the **reply-to** of invites and notifications, so replies land in the Support label | same | No |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | `invoicebizfolio26+support@gmail.com` (**required**: the server won't start without it; **build time**, so change it with **Save, rebuild, and deploy**). Shown on the site; also the **reply-to** of invites and notifications, so replies land in the Support label | same | No |
 | `FEEDBACK_RECIPIENT_EMAIL` | leave unset (= support address) or `…+support@gmail.com` | same | No |
 | `BILLING_EMAIL` | `invoicebizfolio26+billing@gmail.com`: payment-claim notices, sent as "Invoice BizFolio Billing" (unset = the admins) | same | No |
 | `ADMIN_UPI_ID` / `ADMIN_UPI_NAME` | Your real UPI (to test the QR) | same (**shown to customers**) | No |
@@ -231,6 +235,7 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 | `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`, `E2E_CONFIRM_STAGING` | Secret | Test values only | E2E |
 | `E2E_DB_HOST_ALLOWLIST` | Variable | **Test** Neon host | E2E safety guard |
 | `E2E_FORBIDDEN_DB_HOSTS` / `E2E_FORBIDDEN_HOSTS` | Variable | **Prod** Neon host / prod address | E2E safety guard |
+| `E2E_EXPECT_VERIFICATION_REQUIRED` (optional) | Variable | Default **`true`** (unset = true): the tests expect a new sign-up to need the e-mail code. Set `false` only if the test project's Verify at Sign-up is ever OFF | E2E sign-up specs (journey, team, CA) |
 | ~~`NEON_API_KEY`, `NEON_PROJECT_ID`, `NEON_STAGING_BRANCH_ID`, `E2E_VERCEL_BYPASS_SECRET`, `MAILOSAUR_*`, `E2E_UPSTASH_REST_URL`, `E2E_UPSTASH_REST_TOKEN`, `E2E_UPSTASH_HOST_ALLOWLIST`~~ | — | **No longer used** (L5): delete them from GitHub after L5 merges | — |
 | Cookie secret / cron secret for the runner app | — | Generated fresh **every run** by `e2e.yml` (never stored) | E2E app on the runner |
 
@@ -255,21 +260,36 @@ One launch-prep branch, one review, one PR. Never commit to `main` directly.
 
 Render is on "During testing" values. Finalizing invoices and recording payments is fine here.
 
+> **Expected while testing (not faults):**
+> - Sentry → Crons: the **archive** monitor shows **Missed** every night while the cron-job.org jobs are paused. It turns
+>   green after 7.9 (jobs resumed). A "Run now" check-in during testing turns it green once.
+> - The TEST database holds a backlog of invoices/credit notes whose PDF archiving failed: the CI browser tests finalize
+>   documents with **fake** Cloudflare/IDrive keys. The archive job retries them against the real test keys; failures
+>   for those E2E documents are harmless. Production never receives them (section 0).
+
 - [ ] **Speed:** dashboard, invoice list, new invoice; acceptable on 0.1 CPU? (if not → Starter $7)
-- [ ] **Memory:** a bulk Excel import and a report export finish without a crash (Render logs)
+- [ ] **Memory:** a bulk Excel import, a report export **and** an account data export (Settings → General → **Download your data**) finish without a crash (Render logs)
 - [ ] **Sign-up:** code e-mail arrives (check spam), code works, wrong/expired code rejected, resend works
+- [ ] **Rate limits per person (SEC-01):** two sign-ups or sign-ins within the hour from **two different networks** (phone on mobile data + laptop on Wi-Fi) → neither is rate-limited because of the other
 - [ ] **Admin:** set `PLATFORM_ADMIN_USER_IDS` to your test user ID → admin pages open
 - [ ] **Team invite:** invite e-mail arrives; accepting requires a verified e-mail
 - [ ] **Invoice:** finalize → PDF archived in `bizfolio-test-files` (archive status OK) → download works via signed link
+- [ ] **Invoice number format (MONEY-01):** Settings → a custom format without `{FY}` (for example `INV/{SEQ:4}`) is **rejected** with a clear message; `INV/{FY}/{SEQ:4}` is accepted
+- [ ] **Customer GSTIN (MONEY-02):** new invoice → pick a saved customer → edit the GSTIN field → the customer selection clears, and the finalized invoice shows the GSTIN you typed
 - [ ] **Credit note:** finalize → archived
+- [ ] **Credit-note prefix (MONEY-04):** Settings → a prefix longer than **6** characters is rejected; the live preview shows the number
 - [ ] **Customer e-mail buttons hidden;** WhatsApp shows the upgrade box on Free; download/print works
 - [ ] **Payment claim:** UPI QR shows *your* details; claim e-mail reaches your Gmail; approve → user gets the urgent e-mail
 - [ ] **Feedback** from Settings reaches your Gmail
 - [ ] **Bell:** updates on page change, focus and click
 - [ ] **Crons:** "Run now" each job in cron-job.org → reply 202 + work done (Sentry check-in for the archive job)
+- [ ] **Daily notifications run once per day (BUG-01):** "Run now" on the notifications job **twice** → the second run sends nothing new (the bell does not show duplicates)
+- [ ] *(Optional, SVC-02)* Archive with a temporarily **wrong** Cloudflare token: "Run now" the archive job twice → each failing document's attempt count rises by **1 per run** (not 5); put the right token back (Save and deploy) and run once more → archived
 - [ ] **Uptime:** both monitors green; a test alert reaches your Gmail
-- [ ] **Backup:** set variable `BACKUPS_ENABLED=true`, temporarily point `DATABASE_URL_UNPOOLED` at the **test** direct URL, and run the backup workflow manually (Actions → Nightly database backup → Run workflow) → encrypted file appears → **restore it into a Neon branch of the test project** and check invoices, numbers and logins → then set `DATABASE_URL_UNPOOLED` back to **prod** and delete `BACKUPS_ENABLED` again until 7.11 and delete the test backup files from `bizfolio-backups`
+- [ ] **Backup:** set variable `BACKUPS_ENABLED=true`, temporarily point `DATABASE_URL_UNPOOLED` at the **test** direct URL, and run the backup workflow manually (Actions → Nightly database backup → Run workflow) → encrypted file appears → restore it into an **empty** database in a new branch of the test project with the exact steps in `docs/DEPLOYMENT.md` → "Restore" (`pg_restore --exit-on-error`, exit status **0**) → run the SQL checks there and on a **reference branch of the test project created from the end of the run's "Dump the database" step** (same file, step 4; do it within 6 hours of the run). Login rows, invoices, credit notes, payments, counters and newest invoice numbers must match → then set `DATABASE_URL_UNPOOLED` back to **prod** and delete `BACKUPS_ENABLED` again until 7.11 and delete the test backup files from `bizfolio-backups`
 - [ ] **Sentry:** a test error arrives with environment `test`
+- [ ] **CSP reports (SEC-03 part 2):** Sentry → Issues filtered to CSP / security reports: **one week with no unexpected violation** on TEST. Only then switch `CSP_MODE` to `'enforce'` (`config/security-headers.mjs`) in its own PR
+- [ ] **Real iPhone (UX-01):** Safari on an iPhone → new invoice, customer and settings forms → tapping a small input does **not** zoom the page
 - [ ] **robots.txt** says disallow all (expected on Render)
 - [ ] **CI:** open a small PR → CI checks + browser tests pass on GitHub
 
@@ -283,9 +303,9 @@ Do this in one sitting, in order. Each step has a proof check.
 - [ ] **7.2** Generate new production `NEON_AUTH_COOKIE_SECRET` and `CRON_SECRET` (`openssl rand -hex 32`) → save in PRODUCTION folder.
 - [ ] **7.3** Render → Environment → change to the **"After switch"** column (section 4.1): `DATABASE_URL`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET`, `CRON_SECRET`, `IDRIVE_E2_BUCKET_NAME`, `IDRIVE_E2_ACCESS_KEY` / `IDRIVE_E2_SECRET_KEY` (**prod** app key: the test key cannot open the prod bucket), `NEXT_PUBLIC_SENTRY_ENVIRONMENT=production`, `PLATFORM_ADMIN_EMAILS` = your real business Gmail (removes the throwaway test admin). Remove the test `PLATFORM_ADMIN_USER_IDS` for now.
 - [ ] **7.4** Upstash → database → **Flush** (clears test rate-limit counters). Proof: key count **0**.
-- [ ] **7.5** Proof before redeploy — production database: **0** businesses, users, invoices, payments, audit_log rows. Production bucket `bizfolio-prod-files`: **empty**.
-- [ ] **7.6** Render → **Manual deploy** (redeploy with new values). Proof: `/ping` OK and `/health-db` OK.
-- [ ] **7.7** Sign up yourself on production (code e-mail works) → copy your new user ID → Render `PLATFORM_ADMIN_USER_IDS` → redeploy. Proof: admin pages open.
+- [ ] **7.5** Proof before redeploy — production database: **0** businesses, users, invoices, payments, audit_log rows and **`tax_rates` = 4**. Production bucket `bizfolio-prod-files`: **empty**.
+- [ ] **7.6** Save the 7.3 values with **Save, rebuild, and deploy** (or, if already saved: **Manual Deploy → Deploy latest commit**). Never **Save and deploy**: it reuses the old build, so the `NEXT_PUBLIC_…` values (Sentry environment, support e-mail) would stay at their test values. Proof: `/ping` OK, `/health-db` OK, and a test error in Sentry shows environment `production`.
+- [ ] **7.7** Sign up yourself on production (code e-mail works) → copy your new user ID → Render `PLATFORM_ADMIN_USER_IDS` → **Save and deploy** is enough here (a server-only value). Proof: admin pages open.
 - [ ] **7.8** Smoke test **without finalizing anything**: log in, open dashboard, customers, settings; upload your logo/signature if wanted. Your first real invoice will get number 1.
 - [ ] **7.9** cron-job.org: update both headers to the **production** `CRON_SECRET` → **resume** both jobs. Proof: next run succeeds (or "Run now" → 202).
 - [ ] **7.10** GitHub: update the `CRON_SECRET` and `CRON_APP_URL` secrets for the manual cron workflow; confirm `DATABASE_URL_UNPOOLED` = **prod**.
@@ -323,6 +343,7 @@ Do this in one sitting, in order. Each step has a proof check.
 | Weekly | Cloudflare → Workers & Pages → Browser Rendering usage (minutes/day) + failed/429 archives in Sentry | Often near 10 min/day → Workers Paid $5 |
 | Weekly | Sentry new issues | Fix |
 | Weekly | GitHub → Actions → **Nightly database backup**: one green run per night | A missed or failed night → run it by hand and find out why |
+| Weekly | GitHub → Actions → **Nightly database backup** is not marked **disabled**. GitHub switches off scheduled workflows in a public repository after **60 days without a commit** | Disabled → open the workflow → **Enable workflow**, then run it once by hand |
 | Monthly | Upstash commands, IDrive GB, Brevo daily sends | Near limits → section 1 triggers |
 | Weekly | Upstash console: database still listed and active (free databases can be removed after a week without requests) | Quiet week → sign in once; gone → recreate it and update Render |
 | Month 1 | Review "Failed to fetch" errors | Filter only harmless ones |

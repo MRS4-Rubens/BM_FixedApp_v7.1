@@ -14,7 +14,8 @@ name: Nightly database backup
 # Restore (drill every 3 months, into a Neon branch of the TEST project, never over production):
 #   aws s3 cp --endpoint-url "$ENDPOINT" s3://bizfolio-backups/daily/<file>.dump.gpg .
 #   gpg --pinentry-mode loopback --decrypt --output db.dump <file>.dump.gpg   # asks for the passphrase (no --batch)
-#   pg_restore --no-owner --no-acl --dbname "<TEST branch direct URL>" db.dump
+#   pg_restore --exit-on-error --no-owner --no-acl --dbname "<EMPTY restore_check database direct URL>" db.dump
+#   echo $?   # must be 0; then run the SQL checks in docs/DEPLOYMENT.md "Restore" step 4
 on:
   schedule:
     - cron: '0 21 * * *' # 21:00 UTC = 02:30 IST
