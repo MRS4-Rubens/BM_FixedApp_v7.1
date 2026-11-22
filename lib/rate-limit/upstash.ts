@@ -110,11 +110,22 @@ export function isInternalIp(ip: string): boolean {
     );
   }
   if (version === 6) {
-    const lower = ip.toLowerCase();
-    if (lower === '::1' || lower === '::') return true;
-    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(lower);
-    if (mapped?.[1]) return isInternalIp(mapped[1]);
-    return /^f[cd]/.test(lower) || /^fe[89ab]/.test(lower);
+    // Canonical form first, so expanded / upper-case / dotted or hex IPv4-mapped spellings classify the same way
+    // (WHATWG URL serialises IPv6 compressed and lower-case, and IPv4-mapped as ::ffff:hhhh:hhhh).
+    let canonical: string;
+    try {
+      canonical = new URL(`http://[${ip}]`).hostname.slice(1, -1);
+    } catch {
+      return false;
+    }
+    if (canonical === '::1' || canonical === '::') return true;
+    const mapped = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(canonical);
+    if (mapped?.[1] && mapped[2]) {
+      const high = parseInt(mapped[1], 16);
+      const low = parseInt(mapped[2], 16);
+      return isInternalIp(`${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`);
+    }
+    return /^f[cd]/.test(canonical) || /^fe[89ab]/.test(canonical);
   }
   return false;
 }

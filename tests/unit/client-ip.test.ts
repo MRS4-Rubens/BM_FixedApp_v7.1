@@ -66,4 +66,13 @@ describe('getClientIp (SEC-005, SEC-01)', () => {
       expect(isInternalIp(ip), ip).toBe(false);
     }
   });
+
+  it('classifies equivalent IPv6 spellings the same way (expanded, upper-case, hex IPv4-mapped)', () => {
+    for (const ip of ['0:0:0:0:0:0:0:1', 'FD00:0::1', 'FE80:0:0::1', '::FFFF:10.0.0.1', '::ffff:a19:6bb0', '0:0:0:0:0:ffff:0a00:0001']) {
+      expect(isInternalIp(ip), ip).toBe(true);
+    }
+    for (const ip of ['::ffff:808:808', '2409:40F0:0:0::1']) {
+      expect(isInternalIp(ip), ip).toBe(false);
+    }
+  });
 });
