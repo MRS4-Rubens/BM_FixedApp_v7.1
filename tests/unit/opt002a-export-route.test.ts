@@ -20,9 +20,18 @@ vi.mock('@/lib/audit/log', () => ({
 }));
 
 const mockLoadDataExport = vi.fn();
+const mockFailMidway = vi.fn(() => false);
+// API-02: the route streams the export. The mock turns the data mockLoadDataExport resolves to into a JSON text stream
+// of two chunks (like the real pages), generated lazily on the route's first read; mockFailMidway breaks chunk two.
 vi.mock('@/lib/account/data-export', () => ({
   DATA_EXPORT_VERSION: 1,
-  loadDataExport: (...args: unknown[]) => mockLoadDataExport(...args),
+  streamDataExport: (...args: unknown[]) =>
+    (async function* stream() {
+      const text = JSON.stringify(await mockLoadDataExport(...args));
+      yield text.slice(0, 20);
+      if (mockFailMidway()) throw new Error('db down midway');
+      yield text.slice(20);
+    })(),
 }));
 
 const mockLogError = vi.fn();
@@ -301,6 +310,30 @@ describe('OPT-002a: GET /api/account/export Route Unit Tests', () => {
       'account-data-export',
       expect.any(Error),
     );
+  });
+
+  it('API-02: a failure before the first chunk is a clean JSON 500; a failure mid-download errors the stream and is logged', async () => {
+    const asOwner = () => {
+      mockGetRequestSession.mockResolvedValue({ data: { user: { id: 'auth_owner' } } });
+      mockLimit
+        .mockResolvedValueOnce([{ id: 'user_owner_1', auth_user_id: 'auth_owner', business_id: 'biz_123', role: 'owner' }])
+        .mockResolvedValueOnce([{ id: 'biz_123', subscription_status: 'active' }]);
+    };
+
+    asOwner();
+    mockLoadDataExport.mockRejectedValueOnce(new Error('db down at start'));
+    const early = await GET(new NextRequest('http://localhost:3000/api/account/export'));
+    expect(early.status).toBe(500);
+    expect((await early.json()).code).toBe('INTERNAL_ERROR');
+    expect(mockWriteAudit).not.toHaveBeenCalled(); // nothing was exported
+
+    asOwner();
+    mockLoadDataExport.mockResolvedValueOnce({ format: 'bill-matrix-data-export', invoices: [] });
+    mockFailMidway.mockReturnValueOnce(true);
+    const midway = await GET(new NextRequest('http://localhost:3000/api/account/export'));
+    expect(midway.status).toBe(200); // headers were already sent
+    await expect(midway.text()).rejects.toThrow(); // the download fails instead of ending as a cut-off "complete" file
+    expect(mockLogError).toHaveBeenCalledWith('account-data-export-stream', expect.any(Error), { businessId: 'biz_123' });
   });
 });
 

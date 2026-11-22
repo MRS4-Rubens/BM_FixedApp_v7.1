@@ -6,7 +6,7 @@ import { users, businesses } from '@/lib/db/schema';
 import { exportLimiter } from '@/lib/rate-limit/upstash';
 import { enforceRateLimit } from '@/lib/rate-limit/enforce';
 import { jsonError, rateLimitedResponse } from '@/lib/http/route-errors';
-import { loadDataExport, DATA_EXPORT_VERSION } from '@/lib/account/data-export';
+import { streamDataExport, DATA_EXPORT_VERSION } from '@/lib/account/data-export';
 import { writeAudit, sanitizeIp, sanitizeUserAgent } from '@/lib/audit/log';
 import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import { logError } from '@/lib/actions/_shared/logger';
@@ -63,16 +63,19 @@ async function handleExport(request: NextRequest): Promise<Response> {
   });
   if (!limit.allowed) return rateLimitedResponse(limit);
 
-  // 6. Load data export
-  const exportData = await loadDataExport(db, appUser.business_id);
+  // 6. API-02: the file is STREAMED page by page (lib/account/data-export.ts) instead of built in memory. The first
+  //    chunk is read before answering, so a database failure at the start is still a clean JSON 500.
+  const businessId = appUser.business_id;
+  const chunks = streamDataExport(db, businessId);
+  const first = await chunks.next();
 
   // 7. Write audit record in ONE transaction
   await db.transaction(async (tx) => {
     await writeAudit(tx, {
-      businessId: appUser.business_id!,
+      businessId,
       actorUserId: appUser.id,
       entityType: 'business',
-      entityId: appUser.business_id!,
+      entityId: businessId,
       action: 'data_export',
       metadata: { version: DATA_EXPORT_VERSION },
       requestContext: {
@@ -82,12 +85,32 @@ async function handleExport(request: NextRequest): Promise<Response> {
     });
   });
 
-  // 8. Respond with JSON attachment (pretty-printed 2 spaces)
+  // 8. Respond with the JSON attachment (compact). A failure after the first chunk ends the download with an error
+  //    (the browser shows a failed download) and is logged; nothing partial is ever reported as complete.
+  const encoder = new TextEncoder();
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      if (first.done) controller.close();
+      else controller.enqueue(encoder.encode(first.value));
+    },
+    async pull(controller) {
+      try {
+        const next = await chunks.next();
+        if (next.done) controller.close();
+        else controller.enqueue(encoder.encode(next.value));
+      } catch (error: unknown) {
+        logError('account-data-export-stream', error, { businessId });
+        controller.error(error);
+      }
+    },
+    async cancel() {
+      await chunks.return(undefined);
+    },
+  });
+
   const istDateStr = formatIstDateAsIso(new Date());
   const filename = `bill-matrix-data-${istDateStr}.json`;
-  const jsonBody = JSON.stringify(exportData, null, 2);
-
-  return new Response(jsonBody, {
+  return new Response(body, {
     status: 200,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',

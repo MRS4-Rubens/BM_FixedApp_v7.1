@@ -16,7 +16,7 @@ This app uses Next.js Server Actions as the default way pages talk to the backen
 | `scripts/` | CI, staging and benchmark scripts (`scripts/ci`, `scripts/perf`). One-off data scripts go in `scripts/ops/` when needed; they must be idempotent and deleted after use. | Phase 8 |
 | `scripts/perf/` | Performance benchmark harnesses (`export-benchmark.ts`) and first-load JS bundle measurement (`first-load-js.mjs`). | Phase 8 / Phase 4 (PERF-002, PERF-005) |
 | `lib/auth/` | Neon Auth / Better Auth setup and session helpers. | Phase 3 |
-| `lib/account/` | DPDP data export loader (`data-export.ts`: business-scoped JSON, storage keys / archival internals / auth ids omitted). The closure request action lives in `lib/actions/account/request-account-closure.ts`. | Phase 4 (OPT-002a) |
+| `lib/account/` | DPDP data export (`data-export.ts`: business-scoped JSON streamed in pages, storage keys / archival internals / auth ids omitted). The closure request action lives in `lib/actions/account/request-account-closure.ts`. | Phase 4 (OPT-002a) |
 | `lib/audit/` | Append-only audit trail logger (`log.ts`), request context extractor (`request-context.ts`), and profile diff generator (`profile-diff.ts`). | Phase 4 (DB-007) |
 | `lib/business/` | Business profile helpers, logo resolution, and statutory identity lock checks. | Phase 5 & Phase 4 (AUTH-004) |
 | `lib/config/` | App-wide static configuration (`contact.ts` for support & feedback recipient emails, `payee.ts` for admin UPI & bank payee details). | Phase 4 |
@@ -978,7 +978,7 @@ The details are in "Monitoring & Logging" above. The alert rules and uptime moni
   - **Data export:** `GET /api/account/export` (`app/api/account/export/route.ts`).
     - Owner only, rate limited by `exportLimiter`, and audited as `business/data_export`.
     - Allowed even when the subscription has lapsed.
-    - Returns pretty-printed JSON built by `lib/account/data-export.ts`: the business, users, customers, products, financial years, invoices and credit notes (each with nested line items), payments and subscription requests.
+    - Returns compact JSON **streamed** by `streamDataExport` in `lib/account/data-export.ts` (API-02): the business, users, customers, products, financial years, invoices and credit notes (each with nested line items), payments and subscription requests, in that order. Large sections are read in keyset pages of 500 rows by `(created_at, id)` (cursor kept as Postgres text, so microseconds are exact), so a big business never sits in memory at once. The first chunk is read before answering (an early database failure is a JSON 500); a failure later aborts the download and is logged as `account-data-export-stream`.
     - Storage-key columns, archival internals and `auth_user_id` are omitted. `audit_log` and the invoice counters are not exported.
   - **Closure request:** `requestAccountClosureAction` (`lib/actions/account/request-account-closure.ts`).
     - Owner only, rate limited by `sensitiveActionLimiter`, and requires the owner to type the GSTIN.
