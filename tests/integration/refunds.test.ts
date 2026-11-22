@@ -27,7 +27,9 @@ vi.mock('@/lib/auth/session', () => ({
   }),
 }));
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
-vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
+// BUG-05: a test makes revalidation fail AFTER a committed payment; normally it does nothing.
+const revalidatePathMock = vi.hoisted(() => vi.fn((_path: string): void => undefined));
+vi.mock('next/cache', () => ({ revalidatePath: (path: string) => revalidatePathMock(path) }));
 vi.mock('@/lib/rate-limit/upstash', () => ({
   sensitiveActionLimiter: {},
   checkRateLimit: async () => ({ allowed: true, retryAfterSeconds: 0 }),
@@ -290,6 +292,30 @@ describe('Refunds: recording, limits, voids and audit integrity', () => {
     await expect(pg.query(`UPDATE invoices SET grand_total_paise = 1 WHERE id = $1`, [invoiceId])).rejects.toThrow(/grand_total_paise/);
     await pg.query(`UPDATE invoices SET refund_due_paise = refund_due_paise WHERE id = $1`, [invoiceId]);
     await expect(pg.query(`UPDATE invoices SET refund_due_paise = -1 WHERE id = $1`, [invoiceId])).rejects.toThrow();
+  });
+
+  it('11. BUG-05: a payment that committed is reported as SUCCESS even if page revalidation then fails', async () => {
+    // Re-open Rs80 of the balance by voiding the Rs80 cash payment (no refunds depend on it any more).
+    const cash = (await entries()).find((e) => e.kind === 'payment' && e.amount_paise === 8000 && e.status === 'active')!;
+    ok(await voidPayment({ id: cash.id, reason: 'clerical_error', notes: 'reopen for BUG-05 test' }));
+    const before = (await entries()).filter((e) => e.status === 'active').length;
+
+    revalidatePathMock.mockImplementation(() => {
+      throw new Error('revalidate failed after commit');
+    });
+    try {
+      const result = await recordPayment({ invoice_id: invoiceId, amount: 80, payment_date: today, payment_method: 'upi' });
+      // Before the fix this was { success: false, code: 'INTERNAL_ERROR' } for a payment that WAS saved, so the form
+      // unlocked and a retry recorded it twice.
+      expect(result.success).toBe(true);
+      expect(revalidatePathMock).toHaveBeenCalled();
+    } finally {
+      revalidatePathMock.mockReset();
+      revalidatePathMock.mockImplementation(() => undefined);
+    }
+    const after = (await entries()).filter((e) => e.status === 'active');
+    expect(after.length).toBe(before + 1); // saved exactly once
+    expect(await invoiceRow()).toEqual({ status: 'paid', refundDue: 0 });
   });
 });
 
