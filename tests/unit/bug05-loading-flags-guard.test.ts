@@ -27,10 +27,12 @@ function bodyAfter(source: string, marker: string): string {
 
 function expectGuarded(body: string, call: string, busyReset: string | null) {
   const tryAt = body.indexOf('try {');
-  const callAt = body.indexOf(call);
   expect(tryAt, 'has a try').toBeGreaterThanOrEqual(0);
-  expect(callAt, `calls ${call}`).toBeGreaterThan(tryAt); // the call is inside the try
-  expect(body).toMatch(/catch\s*(\([^)]*\))?\s*\{/);
+  // The call is inside the try block itself (not after a try/catch/finally that already ended), and only there.
+  const tryBlock = bodyAfter(body.slice(tryAt), 'try');
+  expect(tryBlock, `${call} inside the try block`).toContain(call);
+  expect(body.split(call).length - 1, `${call} appears once`).toBe(1);
+  expect(body.slice(tryAt + 'try '.length + tryBlock.length)).toMatch(/^\s*catch\s*(\([^)]*\))?\s*\{/);
   if (busyReset !== null) {
     const finallyBlock = bodyAfter(body, 'finally');
     expect(finallyBlock).toContain(busyReset);
@@ -48,7 +50,12 @@ describe('BUG-05: hand-made loading flags always reset', () => {
     const source = read('components/app/invoices/payment-section.tsx');
     const body = bodyAfter(source, 'const onSubmit = async');
     expectGuarded(body, 'await recordPayment(', 'setIsSubmitting(false)');
-    expect(body).toContain('setError(SERVER_UNREACHABLE_MESSAGE)');
+    expect(body).toContain('SERVER_UNREACHABLE_MESSAGE');
+    // We cannot know whether a payment whose reply was lost was saved: recording stays locked until a reload, so the
+    // same payment is never recorded twice (the button is disabled and the submit handler returns early).
+    expect(body).toContain('setMustReload(true)');
+    expect(body).toMatch(/if \(mustReload\) return;/);
+    expect(source).toContain('disabled={isSubmitting || mustReload}');
   });
 
   it('notification settings: load and save', () => {

@@ -83,6 +83,9 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
   const canEdit = useCanEdit();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // BUG-05: after a call that THREW we cannot know whether the payment was saved (the reply may have been lost after
+  // the server committed). Recording stays locked until a reload shows the real history, so it is never saved twice.
+  const [mustReload, setMustReload] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
   const [paymentToVoid, setPaymentToVoid] = useState<VoidablePayment | null>(null);
@@ -165,6 +168,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
   }, [isDropdownOpen]);
 
   const onSubmit = async (data: RecordPaymentInput) => {
+    if (mustReload) return; // also blocks Enter in a field (see mustReload)
     setIsSubmitting(true);
     setError(null);
     // BUG-05: a thrown call (network drop, old tab after a redeploy) must not leave the button on "Recording…".
@@ -185,7 +189,8 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
         });
       }
     } catch {
-      setError(SERVER_UNREACHABLE_MESSAGE);
+      setMustReload(true);
+      setError(`${SERVER_UNREACHABLE_MESSAGE} Check the payment history after reloading before you record it again — it may already have been saved.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -421,9 +426,9 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
                 <Button
                   type="submit"
                   className={cn("w-full h-8 px-3 py-1 font-bold shadow-xs cursor-pointer text-sm whitespace-nowrap", isRefundMode && "bg-amber-600 hover:bg-amber-700 text-white")}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || mustReload}
                 >
-                  {isSubmitting ? 'Recording...' : `Record ${word}`}
+                  {isSubmitting ? 'Recording...' : mustReload ? 'Reload to continue' : `Record ${word}`}
                 </Button>
               </div>
             </div>
