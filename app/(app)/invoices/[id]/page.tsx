@@ -144,6 +144,8 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
 
   let payments: PaymentListItem[] = [];
   let creditNotesList: readonly CreditNoteListItem[] = [];
+  // BUG-04: a failed load is NOT "no payments" — the detail view hides the balance and the payment form and says so.
+  let historyLoadFailed = false;
   if (invoice?.lifecycle_status === 'finalized') {
     const [pResult, cnResult] = await Promise.all([
       listPayments({ invoice_id: id }),
@@ -151,6 +153,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     ]);
     if (pResult.success) payments = pResult.data;
     if (cnResult.success) creditNotesList = cnResult.data.items;
+    historyLoadFailed = !pResult.success || !cnResult.success;
   }
 
   const displayPrefs = resolveFinalizedDisplayPrefs(invoice?.display_prefs_snapshot);
@@ -171,8 +174,9 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         subscription_status: business.subscription_status,
         trial_ends_at: business.trial_ends_at,
       }} 
-      payments={payments} 
+      payments={payments}
       creditNotes={creditNotesList}
+      historyLoadFailed={historyLoadFailed}
       businessStateCode={seller.stateCode}
       business={business}
     />
