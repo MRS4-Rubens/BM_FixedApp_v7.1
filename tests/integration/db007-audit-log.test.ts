@@ -307,12 +307,13 @@ describe('DB-007: Audit log integrity, append-only triggers, and coverage', () =
     expect(payAudit.rows[0].metadata.amount_paise).toBe(5000);
     expect(payAudit.rows[0].metadata.invoice_id).toBe(invId);
 
-    // 5c. finalizeCreditNote
+    // 5c. finalizeCreditNote (issue_date NULL like every draft the app saves: the credit note is dated the day it is
+    //     finalized; a hand-set old date is refused by the MONEY-08 date rule)
     const cnId = await insertOne(
       pg,
       `INSERT INTO credit_notes (business_id, original_invoice_id, financial_year_id, credit_note_number, reason,
          lifecycle_status, status, issue_date, subtotal_paise, total_cgst_paise, total_sgst_paise, total_igst_paise, total_tax_paise, grand_total_paise)
-       VALUES ($1, $2, $3, 'CN-DRAFT-AUDIT', '01-sales-return', 'draft', 'active', '2026-04-15', 5000, 450, 450, 0, 900, 5900) RETURNING id`,
+       VALUES ($1, $2, $3, 'CN-DRAFT-AUDIT', '01-sales-return', 'draft', 'active', NULL, 5000, 450, 450, 0, 900, 5900) RETURNING id`,
       [businessId, invId, financialYearId],
     );
     const origLine = await pg.query<IdRow>(`SELECT id FROM invoice_line_items WHERE invoice_id = $1 LIMIT 1`, [invId]);

@@ -33,6 +33,7 @@ vi.mock('@/lib/actions/_shared/logger', () => ({ logError: () => undefined }));
 
 import { finalizeCreditNote } from '@/lib/actions/credit-notes/finalize-credit-note';
 import { saveCreditNoteDraft } from '@/lib/actions/credit-notes/save-credit-note-draft';
+import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 
 const DRIZZLE_DIR = join(process.cwd(), 'drizzle');
 const API004_SUFFIX = '_api004_credit_note_original_line_link';
@@ -587,6 +588,60 @@ describe('API-004: Credit note binding to original invoice lines', () => {
 
       // Clean up
       await pg.query(`UPDATE credit_notes SET status = 'voided' WHERE id IN ($1, $2)`, [draft1A.id, draft1B.id]);
+    });
+
+    it('MONEY-08: a hand-sent or stored issue date is checked on save and again on finalize', async () => {
+      // Dates are relative to the real IST today, so this test never goes stale.
+      const todayIso = formatIstDateAsIso(new Date());
+      const shift = (days: number) => new Date(Date.parse(`${todayIso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+      const base = {
+        original_invoice_id: cleanInvId,
+        reason: '01-sales-return' as const,
+        line_items: [{ original_line_item_id: cleanLine2Id, quantity: 1 }],
+      };
+
+      const countDrafts = async () =>
+        (
+          await pg.query<{ n: number }>(
+            "SELECT count(*)::int AS n FROM credit_notes WHERE original_invoice_id = $1 AND lifecycle_status = 'draft'",
+            [cleanInvId],
+          )
+        ).rows[0]?.n;
+      const draftsBefore = await countDrafts();
+      expectFailure(await saveCreditNoteDraft({ ...base, issue_date: shift(1) }), 'CREDIT_NOTE_DATE_FUTURE');
+      expectFailure(await saveCreditNoteDraft({ ...base, issue_date: '2026-04-09' }), 'CREDIT_NOTE_DATE_BEFORE_INVOICE');
+      expect(await countDrafts()).toBe(draftsBefore); // a refused save writes nothing
+
+      // Today is always allowed, and the finalized note carries that date.
+      const dated = expectSuccess(await saveCreditNoteDraft({ ...base, issue_date: todayIso }));
+      const finalized = expectSuccess(await finalizeCreditNote({ id: dated.id }));
+      expect(finalized.id).toBe(dated.id);
+      const finalRow = await pg.query<{ issue_date: string; lifecycle_status: string }>(
+        "SELECT to_char(issue_date, 'YYYY-MM-DD') AS issue_date, lifecycle_status FROM credit_notes WHERE id = $1",
+        [dated.id],
+      );
+      expect(finalRow.rows[0]).toEqual({ issue_date: todayIso, lifecycle_status: 'finalized' });
+      await pg.query(`UPDATE credit_notes SET status = 'voided' WHERE id = $1`, [dated.id]);
+
+      // A draft whose stored date was hand-edited to 40 days ago is refused at finalize and stays a draft.
+      const stale = expectSuccess(await saveCreditNoteDraft(base));
+      await pg.query('UPDATE credit_notes SET issue_date = $2 WHERE id = $1', [stale.id, shift(-40)]);
+      const res = await finalizeCreditNote({ id: stale.id });
+      expect(res.success).toBe(false);
+      if (!res.success) {
+        // TOO_OLD normally; BEFORE_INVOICE / CROSS_FY when 40 days ago is before the fixture invoice or last FY.
+        expect(['CREDIT_NOTE_DATE_TOO_OLD', 'CREDIT_NOTE_DATE_BEFORE_INVOICE', 'CREDIT_NOTE_DATE_CROSS_FY']).toContain(
+          res.error.code,
+        );
+      }
+      const staleRow = await pg.query<{ lifecycle_status: string; finalized: boolean }>(
+        'SELECT lifecycle_status, finalized_at IS NOT NULL AS finalized FROM credit_notes WHERE id = $1',
+        [stale.id],
+      );
+      expect(staleRow.rows[0]).toEqual({ lifecycle_status: 'draft', finalized: false });
+
+      await pg.query('DELETE FROM credit_note_line_items WHERE credit_note_id = $1', [stale.id]);
+      await pg.query('DELETE FROM credit_notes WHERE id = $1', [stale.id]);
     });
   });
 });
