@@ -312,9 +312,14 @@ Follow this checklist when processing an account closure request:
    most. Neon's Free history covers **6 hours**, so restore and check within 6 hours of the dump: for a drill, start
    the backup workflow by hand (Run workflow) at a quiet time and continue right away. Run the queries on that
    reference branch and delete it afterwards; production is never paused for a drill.
-   **Reading the result:** every count must match. If one differs, list the extra or missing rows (`created_at`,
-   `updated_at`): the backup is fine only if **each** of them was written during the "Dump the database" step; any
-   other difference means the restore is incomplete, so do not trust that backup and find out why.
+   **Reading the result:** the comparison is close, not exact (the reference and the dump are seconds apart).
+   - All counts match: **pass**.
+   - Rows **missing** from the restore whose `created_at` is before the "Dump the database" step: **fail**. The restore
+     is incomplete; do not trust that backup and find out why.
+   - Rows explained by `created_at` / `updated_at` inside the step: **pass**.
+   - Anything else, for example an **extra** row in the restore (a delete leaves no timestamp, so its time cannot be
+     checked): **inconclusive**. Repeat the drill at a quieter time; only a fail or a repeated unexplained difference
+     counts against the backup.
    Signing in cannot test logins here: the Render app and its Auth URL point at another database, so count the login
    rows instead.
    ```sql
