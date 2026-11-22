@@ -28,7 +28,7 @@ vi.mock('@/lib/auth/session', () => ({
 }));
 vi.mock('next/headers', () => ({ headers: async () => new Headers() }));
 // BUG-05: a test makes revalidation fail AFTER a committed payment; normally it does nothing.
-const revalidatePathMock = vi.hoisted(() => vi.fn((_path: string): void => undefined));
+const revalidatePathMock = vi.hoisted(() => vi.fn<(path: string) => void>());
 vi.mock('next/cache', () => ({ revalidatePath: (path: string) => revalidatePathMock(path) }));
 vi.mock('@/lib/rate-limit/upstash', () => ({
   sensitiveActionLimiter: {},
