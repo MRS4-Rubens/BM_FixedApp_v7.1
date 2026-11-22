@@ -19,6 +19,7 @@ export function TotalsSummaryCard({
   roundOff,
   grandTotal,
   isFinalizing,
+  isSavingDraft = false,
   onSaveDraft,
   onFinalizeClick,
   taxLabel = 'SGST',
@@ -31,6 +32,8 @@ export function TotalsSummaryCard({
   roundOff: number;
   grandTotal: number;
   isFinalizing: boolean;
+  /** BUG-06: a draft save is running or its page is loading; both buttons stay disabled (no second draft). */
+  isSavingDraft?: boolean;
   onSaveDraft: (data: InvoiceDraftInput) => void;
   onFinalizeClick: (data: InvoiceDraftInput) => void;
   taxLabel?: StateTaxLabel;
@@ -97,10 +100,10 @@ export function TotalsSummaryCard({
           </div>
 
           <div className="mt-2.5 flex gap-2.5">
-            <Button variant="outline" size="sm" type="button" className="flex-1 shadow-sm font-bold text-sm whitespace-nowrap" disabled={isSubmitting || isFinalizing} onClick={handleSubmit(onSaveDraft)}>
-              Save Draft
+            <Button variant="outline" size="sm" type="button" className="flex-1 shadow-sm font-bold text-sm whitespace-nowrap" disabled={isSubmitting || isFinalizing || isSavingDraft} onClick={handleSubmit(onSaveDraft)}>
+              {isSavingDraft ? 'Saving...' : 'Save Draft'}
             </Button>
-            <Button type="button" size="sm" className="flex-1 shadow-sm font-bold text-sm hover:glow-btn whitespace-nowrap" disabled={isSubmitting || isFinalizing} onClick={handleSubmit(onFinalizeClick)}>
+            <Button type="button" size="sm" className="flex-1 shadow-sm font-bold text-sm hover:glow-btn whitespace-nowrap" disabled={isSubmitting || isFinalizing || isSavingDraft} onClick={handleSubmit(onFinalizeClick)}>
               <Send className="size-4 shrink-0" /> <span className="whitespace-nowrap">{isFinalizing ? 'Finalizing...' : 'Finalize Invoice'}</span>
             </Button>
           </div>

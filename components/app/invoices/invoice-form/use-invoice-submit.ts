@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { InvoiceDraftInput } from '@/lib/validations/invoice';
 import { saveInvoiceDraft } from '@/lib/actions/invoices/save-invoice-draft';
 import { finalizeInvoice } from '@/lib/actions/invoices/finalize-invoice';
+import { SERVER_UNREACHABLE_MESSAGE } from '@/lib/actions/_shared/client-errors';
+
+/** BUG-06: how long Save/Finalize stay locked after a successful draft save while the page navigates away. */
+const NAVIGATION_UNLOCK_MS = 15_000;
 
 export function useInvoiceSubmit({
   isPreviewVerified,
@@ -27,16 +31,50 @@ export function useInvoiceSubmit({
   const [pendingFinalizeData, setPendingFinalizeData] = useState<InvoiceDraftInput | null>(null);
   const [pendingSavedInvoiceId, setPendingSavedInvoiceId] = useState<string | null>(null);
 
+  // BUG-06: after a successful first save of a NEW invoice the page navigates to it, which can take a while on a cold
+  // server; react-hook-form's isSubmitting is already false and the form still has no id, so a second click used to
+  // save a SECOND draft. Now: one save at a time (ref, so even two clicks in the same frame), the buttons stay disabled
+  // until the navigation replaces this page, and a later save reuses the id of the draft just created.
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const savingDraftRef = useRef(false);
+
   const onSaveDraft = async (data: InvoiceDraftInput) => {
+    if (savingDraftRef.current) return;
+    savingDraftRef.current = true;
+    setIsSavingDraft(true);
     setGlobalError(null);
-    const res = await saveInvoiceDraft(data);
-    if (res.success) {
-      onDraftSaved?.();
-      router.push(`/invoices/${res.data?.invoiceId}`);
-    } else {
-      setGlobalError(res.error.message);
-      if (res.error.code === 'INVOICE_QUOTA_EXCEEDED' || res.error.code === 'QUOTA_EXCEEDED') {
-        setShowQuotaUpgradeModal(true);
+    let navigating = false;
+    const existingId = data.id ?? pendingSavedInvoiceId ?? undefined;
+    try {
+      const res = await saveInvoiceDraft({ ...data, id: existingId });
+      if (res.success) {
+        const invoiceId = res.data?.invoiceId ?? null;
+        setPendingSavedInvoiceId(invoiceId);
+        onDraftSaved?.();
+        router.push(`/invoices/${invoiceId}`);
+        // Only a NEW draft moves to another page (this one unmounts): keep the lock until then. Saving an existing
+        // draft stays on its own page, so the lock is released in `finally` as soon as the save is done.
+        if (existingId === undefined) {
+          navigating = true;
+          // Safety net if the navigation never completes: unlock after a while (a further save then updates the same
+          // draft through pendingSavedInvoiceId, so it still cannot create a duplicate).
+          setTimeout(() => {
+            savingDraftRef.current = false;
+            setIsSavingDraft(false);
+          }, NAVIGATION_UNLOCK_MS);
+        }
+      } else {
+        setGlobalError(res.error.message);
+        if (res.error.code === 'INVOICE_QUOTA_EXCEEDED' || res.error.code === 'QUOTA_EXCEEDED') {
+          setShowQuotaUpgradeModal(true);
+        }
+      }
+    } catch {
+      setGlobalError(SERVER_UNREACHABLE_MESSAGE);
+    } finally {
+      if (!navigating) {
+        savingDraftRef.current = false;
+        setIsSavingDraft(false);
       }
     }
   };
@@ -117,6 +155,7 @@ export function useInvoiceSubmit({
 
   return {
     isFinalizing,
+    isSavingDraft,
     globalError,
     setGlobalError,
     showQuotaUpgradeModal,

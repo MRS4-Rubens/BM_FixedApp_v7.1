@@ -21,6 +21,7 @@ const REQUIRED_FILES = [
   'components/app/not-found-view.tsx',
   'app/(app)/error.tsx',
   'app/(admin)/error.tsx',
+  'app/invite/[token]/error.tsx', // BUG-06
   'app/not-found.tsx',
   'app/(app)/not-found.tsx',
   'app/(app)/loading.tsx',
@@ -97,6 +98,7 @@ describe('FE-003: Route-level error, loading, and not-found boundaries', () => {
       'components/app/route-error-view.tsx',
       'app/(app)/error.tsx',
       'app/(admin)/error.tsx',
+      'app/invite/[token]/error.tsx', // BUG-06
     ];
 
     for (const file of errorFiles) {
