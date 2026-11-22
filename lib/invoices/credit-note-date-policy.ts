@@ -81,7 +81,9 @@ export function evaluateCreditNoteDate(args: {
   if (
     originalInvoiceDateIso !== null &&
     isValidIsoCalendarDate(originalInvoiceDateIso) &&
-    issueDateIso > creditNoteDeadlineIso(originalInvoiceDateIso)
+    // The note is reported when it is finalized, so TODAY decides (a back-dated note does not extend the deadline);
+    // the issue date can never be after today (checked above), so this also covers it.
+    todayIso > creditNoteDeadlineIso(originalInvoiceDateIso)
   ) {
     return { ok: false, code: 'CREDIT_NOTE_PAST_DEADLINE', message: creditNoteDeadlineMessage(originalInvoiceDateIso) };
   }

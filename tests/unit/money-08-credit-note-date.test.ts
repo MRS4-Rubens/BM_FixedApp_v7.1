@@ -50,4 +50,12 @@ describe('credit-note deadline (section 34)', () => {
     expect(late.ok ? 'OK' : late.code).toBe('CREDIT_NOTE_PAST_DEADLINE');
     expect(late.ok ? '' : late.message).toContain('section 34');
   });
+
+  it('a back-dated note finalized after the deadline is refused too (today decides)', () => {
+    const decide = (issueDateIso: string, todayIso: string) =>
+      evaluateCreditNoteDate({ issueDateIso, todayIso, originalInvoiceDateIso: '2026-06-15' });
+    const late = decide('2027-11-30', '2027-12-01');
+    expect(late.ok ? 'OK' : late.code).toBe('CREDIT_NOTE_PAST_DEADLINE');
+    expect(decide('2027-11-25', '2027-11-30').ok).toBe(true); // back-dated within the deadline still passes
+  });
 });
