@@ -24,7 +24,7 @@ import { getSalesByFinancialYear } from '@/lib/actions/reports/get-sales-by-fina
 import { getCurrentAppUser } from '@/lib/auth/session'
 import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { stateTaxLabel } from '@/lib/gst/indian-states'
-import { getCurrentFinancialYearRange } from '@/lib/reports/period'
+import { getDashboardDates } from '@/lib/reports/dashboard-dates'
 import { formatPaiseAsInr } from '@/lib/money'
 import { canEditBusinessData } from '@/lib/auth/rbac'
 import { DashboardChart } from '@/components/app/dashboard-chart-lazy'
@@ -41,17 +41,8 @@ export default async function DashboardPage() {
 
   const canEdit = canEditBusinessData(user.role)
 
-  const end = new Date()
-  const start = new Date()
-  start.setMonth(start.getMonth() - 11) // Last 12 months
-
-  const fyRange = getCurrentFinancialYearRange(end)
-  const fyStart = new Date(fyRange.startDate)
-
-  // Start date is the earlier of start of 12 months ago or start of current FY
-  const startDateVal = start < fyStart ? start : fyStart
-  const startDateStr = `${startDateVal.getFullYear()}-${String(startDateVal.getMonth() + 1).padStart(2, '0')}-01`
-  const endDateStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate()).padStart(2, '0')}`
+  // BUG-03: chart window, "this month" and greeting all in India time (the server runs in UTC).
+  const { startDate: startDateStr, endDate: endDateStr, currentMonthKey, greeting } = getDashboardDates(new Date())
 
   const [business, statsRes, recentInvoicesRes, salesByPeriodRes, fySalesRes] = await Promise.all([
     getCurrentBusiness(),
@@ -71,18 +62,9 @@ export default async function DashboardPage() {
   const salesData = salesByPeriodRes.data
   const fySalesData = fySalesRes.data
 
-  // Calculate greeting based on Indian Standard Time hour
-  const currentHour = new Date().getHours()
-  let greeting = 'Good evening'
-  if (currentHour < 12) {
-    greeting = 'Good morning'
-  } else if (currentHour < 17) {
-    greeting = 'Good afternoon'
-  }
   const userName = user?.display_name || 'User'
 
   // Extract current month's GST performance from salesByPeriod query
-  const currentMonthKey = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}`
   const currentMonthSales = salesData.find((d) => d.key === currentMonthKey) || {
     subtotal: 0,
     total_cgst: 0,

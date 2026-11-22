@@ -13,7 +13,15 @@ export function isPaidPlanName(value: string): value is PaidPlanName {
 
 /** Adds exactly one billing cycle in UTC, clamping to the last day of the target month (Jan 31 + 1 month = Feb 28/29). Time of day is preserved. */
 export function addBillingCycleUtc(base: Date, cycle: BillingCycle): Date {
-  const monthsToAdd = cycle === 'yearly' ? 12 : 1;
+  return addMonthsClampedUtc(base, cycle === 'yearly' ? 12 : 1);
+}
+
+/**
+ * Adds whole months in UTC, clamping to the last day of the target month (Jan 31 + 1 month = Feb 28/29). Time of day
+ * is preserved. BUG-03: the checkout and admin previews use this too, so they show the date the server stores
+ * (Date#setMonth rolls Jan 31 + 1 month over to 3 Mar).
+ */
+export function addMonthsClampedUtc(base: Date, monthsToAdd: number): Date {
   const targetIndex = base.getUTCMonth() + monthsToAdd;
   const targetYear = base.getUTCFullYear() + Math.floor(targetIndex / 12);
   const targetMonth = targetIndex % 12;

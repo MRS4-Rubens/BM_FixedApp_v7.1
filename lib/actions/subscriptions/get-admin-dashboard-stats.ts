@@ -5,6 +5,7 @@ import { db } from '@/lib/db/client';
 import { subscriptionRequests, businesses, invoices } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { getIstDateParts } from '@/lib/invoices/ist-date';
 
 export const getAdminDashboardStats = createAuthenticatedAction(
   z.object({}),
@@ -55,13 +56,14 @@ export const getAdminDashboardStats = createAuthenticatedAction(
     // 3. Monthly revenue trend for the last 6 calendar months
     const monthlyRevenueRows = await db
       .select({
-        monthSort: sql<string>`to_char(${subscriptionRequests.created_at}, 'YYYY-MM')`,
+        // BUG-03: months in India time (the database session runs in UTC).
+        monthSort: sql<string>`to_char(${subscriptionRequests.created_at} AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM')`,
         revenuePaise: sql<number>`coalesce(sum(${subscriptionRequests.amount_paise}), 0)`,
         claimCount: sql<number>`count(*)`,
       })
       .from(subscriptionRequests)
       .where(eq(subscriptionRequests.status, 'approved'))
-      .groupBy(sql`to_char(${subscriptionRequests.created_at}, 'YYYY-MM')`);
+      .groupBy(sql`to_char(${subscriptionRequests.created_at} AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM')`);
 
     const revenueByMonthSort = new Map<string, { revenuePaise: number; claimCount: number }>();
     for (const row of monthlyRevenueRows) {
@@ -71,16 +73,16 @@ export const getAdminDashboardStats = createAuthenticatedAction(
       });
     }
 
-    const now = new Date();
+    const { year: nowYear, month: nowMonth } = getIstDateParts(new Date());
     const last6Months = [];
     for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthLabel = d.toLocaleString('en-US', { month: 'short' });
-      const monthSort = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const d = new Date(Date.UTC(nowYear, nowMonth - 1 - i, 1));
+      const monthLabel = d.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+      const monthSort = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
       const match = revenueByMonthSort.get(monthSort);
 
       last6Months.push({
-        month: `${monthLabel} ${d.getFullYear() % 100}`,
+        month: `${monthLabel} ${d.getUTCFullYear() % 100}`,
         revenuePaise: match ? match.revenuePaise : 0,
         claimCount: match ? match.claimCount : 0,
       });
