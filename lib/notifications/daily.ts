@@ -103,26 +103,41 @@ async function loadMoney(dueDates: readonly string[]): Promise<Map<string, Map<s
   return map;
 }
 
-/** The last IST day the job finished for every business, or null when there is no readable record yet. */
-async function loadLastRunIso(): Promise<string | null> {
+interface LastRunRecord {
+  /** The last IST day the job finished for every business; null when there is no usable record. */
+  readonly usableIso: string | null;
+  /** The stored "date" text exactly as read (null when there is no row or no text), for the compare-and-set save. */
+  readonly storedText: string | null;
+}
+
+/**
+ * Reads the last-run record. It is usable only when it holds a real calendar date that is not after today: an
+ * unreadable value, an impossible date ("2027-02-30") or a future date (the server clock went backwards) is not used,
+ * and the save below replaces it.
+ */
+async function loadLastRun(todayIso: string): Promise<LastRunRecord> {
   const [row] = await db
     .select({ value: platformSettings.value })
     .from(platformSettings)
     .where(eq(platformSettings.key, DAILY_RUN_MARKER_KEY))
     .limit(1);
   const value: unknown = row?.value;
-  if (typeof value !== 'object' || value === null || !('date' in value)) return null;
-  const date: unknown = value.date;
-  return typeof date === 'string' && isIsoCalendarDate(date) ? date : null;
+  const date: unknown = typeof value === 'object' && value !== null && 'date' in value ? value.date : null;
+  const storedText = typeof date === 'string' ? date : null;
+  const usableIso = storedText !== null && isIsoCalendarDate(storedText) && storedText <= todayIso ? storedText : null;
+  return { usableIso, storedText };
 }
 
 /**
- * Records that every business was handled up to `finishedIso`. A valid stored day only ever moves forward (a slower
- * run finishing late never rewinds it); an unreadable stored value (not "YYYY-MM-DD") is simply replaced. A failure
- * here is logged, not thrown: the next run catches up again, and every item is de-duplicated, so nobody is told twice.
+ * Records that every business was handled up to `finishedIso`. A usable record only moves forward (a slower run
+ * finishing late never rewinds it). An unusable one is replaced, but only if it is still the value this run read
+ * (compare-and-set), so a newer day saved meanwhile by another run is kept. A failure here is logged, not thrown: the
+ * next run catches up again, and every item is de-duplicated, so nobody is told twice.
  */
-async function saveLastRunIso(finishedIso: string, now: Date): Promise<void> {
+async function saveLastRunIso(finishedIso: string, read: LastRunRecord, now: Date): Promise<void> {
   const stored = sql`${platformSettings.value}->>'date'`;
+  const unchangedUnusable =
+    read.usableIso === null ? sql` OR ${stored} IS NOT DISTINCT FROM ${read.storedText}::text` : sql``;
   try {
     await db
       .insert(platformSettings)
@@ -130,9 +145,7 @@ async function saveLastRunIso(finishedIso: string, now: Date): Promise<void> {
       .onConflictDoUpdate({
         target: platformSettings.key,
         set: { value: { date: finishedIso }, updated_at: now },
-        setWhere: sql`(${stored} IS NULL
-          OR ${stored} !~ '^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'
-          OR ${stored} < ${finishedIso})`,
+        setWhere: sql`(${stored} < ${finishedIso}${unchangedUnusable})`,
       });
   } catch (error: unknown) {
     logError('daily-notifications', error, { step: 'save-last-run', finishedIso });
@@ -198,7 +211,8 @@ export async function runDailyNotifications(
 ): Promise<DailyNotificationSummary> {
   const now = options.now ?? new Date();
   const todayIso = istTodayIso(now);
-  const days = catchUpDaysIso(await loadLastRunIso(), todayIso, CATCH_UP_MAX_DAYS);
+  const lastRun = await loadLastRun(todayIso);
+  const days = catchUpDaysIso(lastRun.usableIso, todayIso, CATCH_UP_MAX_DAYS);
 
   // For each covered day D: invoices due on D-1 became overdue on D; invoices due on D+3 were "due soon" on D (kept
   // only while that due date is still ahead of today).
@@ -302,7 +316,7 @@ export async function runDailyNotifications(
   // All covered days are finished only when no business failed. Otherwise the record is set to the day before the
   // first covered day (never later than what it was), so the next run retries these days, also after a failed
   // first-ever run that had no record yet.
-  await saveLastRunIso(businessErrors === 0 ? todayIso : addDaysIso(days[0] ?? todayIso, -1), now);
+  await saveLastRunIso(businessErrors === 0 ? todayIso : addDaysIso(days[0] ?? todayIso, -1), lastRun, now);
 
   const emails = await deliverNotificationEmails(options.send ? { send: options.send } : {});
   await expireStaleEmailQueue();

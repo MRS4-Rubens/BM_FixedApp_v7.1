@@ -486,7 +486,7 @@ describe('Feature C: notifications (PGlite)', () => {
     expect(sent.map((email) => email.titles)).toEqual([['Financial year 2026-27 ends on 31 March']]);
   });
 
-  it('BUG-01: the last-run record waits while a business fails, then catches up; it never moves backwards', async () => {
+  it('BUG-01: the last-run record waits while a business fails, then catches up', async () => {
     const biz = await createBusiness({ frequency: 'not_filing' });
     await createUser(biz, 'owner');
     await setLastRun('2026-12-05');
@@ -510,11 +510,33 @@ describe('Feature C: notifications (PGlite)', () => {
     expect(retried.days).toEqual(['2026-12-06', '2026-12-07', '2026-12-08']);
     expect((await rows(biz)).map((row) => row.title)).toEqual(['1 invoice became overdue on 7 Dec 2026']);
     expect(await lastRun()).toBe('2026-12-08');
+  });
 
-    // A run for an earlier day (e.g. one that started late) never rewinds the record.
-    const older = await runDailyNotifications({ now: new Date('2026-12-03T04:00:00Z'), send: sender });
-    expect(older.days).toEqual(['2026-12-03']);
-    expect(await lastRun()).toBe('2026-12-08');
+  it('BUG-01: a future record (the clock went backwards) is replaced, keeping a retry point if a business fails', async () => {
+    const biz = await createBusiness({ frequency: 'not_filing' });
+    await createUser(biz, 'owner');
+    await createInvoice(biz, { number: 'C/1', dueDate: '2026-12-07', totalPaise: 10_000 }); // overdue on 8 Dec
+    await setLastRun('2026-12-09'); // "tomorrow"
+
+    await pg.exec(`
+      CREATE FUNCTION bug01_fail_future() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'simulated failure'; END $$;
+      CREATE TRIGGER bug01_fail_future BEFORE INSERT ON notifications
+        FOR EACH ROW WHEN (NEW.business_id = '${biz}'::uuid) EXECUTE FUNCTION bug01_fail_future();
+    `);
+    try {
+      const failed = await runDailyNotifications({ now: NOW, send: sender });
+      expect(failed.days).toEqual(['2026-12-08']); // the future record is not used
+      expect(failed.businessErrors).toBe(1);
+      expect(await lastRun()).toBe('2026-12-07'); // replaced by the retry point
+    } finally {
+      await pg.exec('DROP TRIGGER bug01_fail_future ON notifications; DROP FUNCTION bug01_fail_future();');
+    }
+
+    const next = await runDailyNotifications({ now: new Date('2026-12-09T04:00:00Z'), send: sender });
+    expect(next.days).toEqual(['2026-12-08', '2026-12-09']);
+    expect((await rows(biz)).map((row) => row.title)).toEqual(['1 invoice became overdue on 8 Dec 2026']);
+    expect(await lastRun()).toBe('2026-12-09');
   });
 
   it('BUG-01: a business failing on the first run ever still leaves a retry point for that day', async () => {
@@ -555,6 +577,11 @@ describe('Feature C: notifications (PGlite)', () => {
     await pg.query(`UPDATE platform_settings SET value = '{"other":1}'::jsonb WHERE key = $1`, [DAILY_RUN_MARKER_KEY]);
     await runDailyNotifications({ now: NOW, send: sender });
     expect(await lastRun()).toBe('2026-12-08'); // a record without a date is replaced too
+
+    await setLastRun('2027-02-30'); // right shape, impossible date (and later than today as text)
+    const impossible = await runDailyNotifications({ now: NOW, send: sender });
+    expect(impossible.days).toEqual(['2026-12-08']);
+    expect(await lastRun()).toBe('2026-12-08');
   });
 
   it('plan expiring tomorrow is urgent and e-mailed on its own; the PDF-failure item reaches the owner', async () => {
