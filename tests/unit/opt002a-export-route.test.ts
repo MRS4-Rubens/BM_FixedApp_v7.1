@@ -159,6 +159,20 @@ describe('OPT-002a: GET /api/account/export Route Unit Tests', () => {
     expect(mockLoadDataExport).not.toHaveBeenCalled();
   });
 
+  it('API-01: returns 503 with Retry-After (not 500) when the rate limiter is unreachable', async () => {
+    mockGetRequestSession.mockResolvedValue({ data: { user: { id: 'auth_owner' } } });
+    mockLimit
+      .mockResolvedValueOnce([{ id: 'user_owner_1', auth_user_id: 'auth_owner', business_id: 'biz_123', role: 'owner' }])
+      .mockResolvedValueOnce([{ id: 'biz_123', subscription_status: 'active' }]);
+    mockCheckRateLimit.mockRejectedValueOnce(new Error('upstash down'));
+
+    const res = await GET(new NextRequest('http://localhost:3000/api/account/export'));
+    expect(res.status).toBe(503);
+    expect(res.headers.get('Retry-After')).toBe('30');
+    expect((await res.json()).code).toBe('SERVICE_UNAVAILABLE');
+    expect(mockLoadDataExport).not.toHaveBeenCalled();
+  });
+
   it('returns 200 with JSON attachment and logs audit record for owner', async () => {
     mockGetRequestSession.mockResolvedValue({
       data: { user: { id: 'auth_owner' } },

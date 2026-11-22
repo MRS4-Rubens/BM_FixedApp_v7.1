@@ -3,7 +3,9 @@ import { eq } from 'drizzle-orm';
 import { getRequestSession } from '@/lib/auth/request-session';
 import { db } from '@/lib/db/client';
 import { users, businesses } from '@/lib/db/schema';
-import { exportLimiter, checkRateLimit } from '@/lib/rate-limit/upstash';
+import { exportLimiter } from '@/lib/rate-limit/upstash';
+import { enforceRateLimit } from '@/lib/rate-limit/enforce';
+import { jsonError, rateLimitedResponse } from '@/lib/http/route-errors';
 import { loadDataExport, DATA_EXPORT_VERSION } from '@/lib/account/data-export';
 import { writeAudit, sanitizeIp, sanitizeUserAgent } from '@/lib/audit/log';
 import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
@@ -17,10 +19,7 @@ async function handleExport(request: NextRequest): Promise<Response> {
   // 1. Session check
   const sessionResponse = await getRequestSession();
   if (!sessionResponse?.data?.user) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(401, 'Unauthorized', 'UNAUTHORIZED');
   }
 
   // 2. Resolve app user
@@ -31,19 +30,13 @@ async function handleExport(request: NextRequest): Promise<Response> {
     .limit(1);
 
   if (userRows.length === 0) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(401, 'Unauthorized', 'UNAUTHORIZED');
   }
   const appUser = userRows[0];
 
   // 3. Resolve business
   if (!appUser.business_id) {
-    return new Response(JSON.stringify({ error: 'No business profile linked to user.' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(400, 'No business profile linked to user.', 'NO_BUSINESS_LINKED');
   }
 
   const bizRows = await db
@@ -53,40 +46,22 @@ async function handleExport(request: NextRequest): Promise<Response> {
     .limit(1);
 
   if (bizRows.length === 0) {
-    return new Response(JSON.stringify({ error: 'Business profile not found.' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return jsonError(404, 'Business profile not found.', 'BUSINESS_NOT_FOUND');
   }
 
   // 4. Role gate: only the owner can download full account data
   if (appUser.role !== 'owner') {
-    return new Response(
-      JSON.stringify({ error: 'Only the business owner can download the account data.' }),
-      {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      },
-    );
+    return jsonError(403, 'Only the business owner can download the account data.', 'FORBIDDEN');
   }
 
-  // 5. Rate limit
-  const { allowed, retryAfterSeconds } = await checkRateLimit(
-    exportLimiter,
-    `account-export:${appUser.id}`,
-  );
-  if (!allowed) {
-    return new Response(
-      JSON.stringify({ error: `Too Many Requests. Retry after ${retryAfterSeconds} seconds.` }),
-      {
-        status: 429,
-        headers: {
-          'Retry-After': retryAfterSeconds.toString(),
-          'Content-Type': 'application/json',
-        },
-      },
-    );
-  }
+  // 5. Rate limit (API-01: fail closed with 503 when the limiter is unreachable, instead of a generic 500)
+  const limit = await enforceRateLimit({
+    limiter: exportLimiter,
+    identifier: `account-export:${appUser.id}`,
+    policy: 'fail-closed',
+    scope: 'account-export',
+  });
+  if (!limit.allowed) return rateLimitedResponse(limit);
 
   // 6. Load data export
   const exportData = await loadDataExport(db, appUser.business_id);
@@ -131,10 +106,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       return response;
     } catch (error) {
       logError('account-data-export', error);
-      const res = new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const res = jsonError(500, 'Internal Server Error', 'INTERNAL_ERROR');
       res.headers.set('x-request-id', requestId);
       return res;
     }
