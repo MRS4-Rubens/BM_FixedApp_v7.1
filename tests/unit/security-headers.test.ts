@@ -82,8 +82,9 @@ describe('Security Headers & CSP (SEC-001)', () => {
     expect(policy).toContain("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com");
     expect(policy).toContain("font-src 'self' data: https://fonts.gstatic.com");
     expect(policy).toContain(
-      "img-src 'self' data: blob: https://api.qrserver.com https://s3.ap-northeast-1.idrivee2.com https://*.s3.ap-northeast-1.idrivee2.com"
+      "img-src 'self' data: blob: https://s3.ap-northeast-1.idrivee2.com https://*.s3.ap-northeast-1.idrivee2.com"
     );
+    expect(policy).not.toContain('qrserver'); // SEC-03: the checkout QR is generated locally (FE-005)
     expect(policy).toContain(
       "connect-src 'self' https://*.sentry.io https://o999999.ingest.sentry.io"
     );

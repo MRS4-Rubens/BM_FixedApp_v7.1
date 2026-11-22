@@ -92,8 +92,9 @@ export function buildAppCspPolicy(options) {
     // fonts.googleapis.com: inline @import in invoice templates 1-4 (tracked debt: self-host Lora).
     ['style-src', ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com']],
     ['font-src', ["'self'", 'data:', 'https://fonts.gstatic.com']],
-    // api.qrserver.com: checkout QR (REMOVE when FE-005 lands, before enforcing). Storage origins: admin payment-proof lightbox.
-    ['img-src', ["'self'", 'data:', 'blob:', 'https://api.qrserver.com', ...storageOrigins]],
+    // Storage origins: admin payment-proof lightbox. (SEC-03: api.qrserver.com removed; the checkout QR is a local data:
+    // SVG since FE-005, and tests/unit/fe005-guards.test.ts bans external QR hosts in app code.)
+    ['img-src', ["'self'", 'data:', 'blob:', ...storageOrigins]],
     ['connect-src', ["'self'", 'https://*.sentry.io', ...(sentry !== null ? [sentry.origin] : []),
       ...(options.isProduction ? [] : ['ws://localhost:*', 'ws://127.0.0.1:*', 'http://localhost:*'])]],
     ['worker-src', ["'self'", 'blob:']],

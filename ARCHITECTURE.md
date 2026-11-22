@@ -478,7 +478,7 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 ### 3. Allow-List Debt
 
 The current policy contains documented debt that should be retired before full enforcement:
-1. `https://api.qrserver.com`: Used in `app/(app)/checkout/checkout-form.tsx` for UPI QR code generation. Tracked under **FE-005** to be replaced with a client-side SVG QR generator.
+1. ~~`https://api.qrserver.com`~~: **retired (SEC-03)**. The UPI QR is generated locally as a `data:` SVG since FE-005, so the host was removed from `img-src`.
 2. `https://fonts.googleapis.com` and `https://fonts.gstatic.com`: Loaded via `@import` in invoice templates 1–4. To be replaced with self-hosted Lora webfonts matching `app/layout.tsx`.
 3. `'unsafe-inline'`: Required for inline styles and Next.js bootstrap scripts. Retained until the nonce phase.
 
@@ -486,7 +486,7 @@ The current policy contains documented debt that should be retired before full e
 
 1. **Step 1 (Current)**: Ship Report-Only (`CSP_MODE = 'report-only'`) with Sentry CSP report endpoint.
 2. **Step 2**: Monitor Sentry CSP/Security Headers issue stream for at least 7 days across production traffic.
-3. **Step 3**: Resolve allow-list debts (retire `api.qrserver.com` in FE-005, self-host print template fonts).
+3. **Step 3**: Resolve allow-list debts (`api.qrserver.com` retired in SEC-03; still to do: self-host print template fonts).
 4. **Step 4**: Flip `CSP_MODE` to `'enforce'` in a single dedicated pull request once the report log is clean.
 5. **Step 5**: Introduce per-request cryptographically secure nonces in `proxy.ts` to retire `'unsafe-inline'` for scripts.
 
