@@ -1,6 +1,6 @@
 import { and, between, eq, sql } from 'drizzle-orm';
 import { ActionError } from '@/lib/actions/_shared/errors';
-import type { DbTransaction } from '@/lib/db/client';
+import type { db, DbTransaction } from '@/lib/db/client';
 import { invoices } from '@/lib/db/schema';
 import { getMonthRangeForIsoDate } from '@/lib/reports/period';
 import {
@@ -17,14 +17,18 @@ function toCount(value: unknown): number {
   return parsed;
 }
 
-/** Finalized invoices of the business whose invoice_date falls in the IST month containing `invoiceDateIso`. Drafts never count. */
-async function countFinalizedInvoicesInMonthOf(
-  tx: DbTransaction,
+/**
+ * Finalized invoices of the business with invoice_date in [startDate, endDate] (IST calendar dates). Drafts never count.
+ * The ONE definition of "invoices used" for the monthly quota: the finalize check below and the Settings usage meter
+ * both use it, so the meter can never show a different number from the limit that is enforced (MONEY-06).
+ */
+export async function countFinalizedInvoicesInRange(
+  executor: typeof db | DbTransaction,
   businessId: string,
-  invoiceDateIso: string,
+  range: { readonly startDate: string; readonly endDate: string },
 ): Promise<number> {
-  const { startDate, endDate } = getMonthRangeForIsoDate(invoiceDateIso);
-  const [row] = await tx
+  const { startDate, endDate } = range;
+  const [row] = await executor
     .select({ total: sql<string | number>`count(*)` })
     .from(invoices)
     .where(
@@ -35,6 +39,11 @@ async function countFinalizedInvoicesInMonthOf(
       ),
     );
   return toCount(row?.total);
+}
+
+/** Finalized invoices in the IST month containing `invoiceDateIso`. */
+function countFinalizedInvoicesInMonthOf(tx: DbTransaction, businessId: string, invoiceDateIso: string): Promise<number> {
+  return countFinalizedInvoicesInRange(tx, businessId, getMonthRangeForIsoDate(invoiceDateIso));
 }
 
 /**
