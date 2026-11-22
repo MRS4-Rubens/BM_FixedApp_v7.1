@@ -54,3 +54,15 @@
 @media print {
   [data-desktop-canvas] { min-width: 0; min-height: 0; padding: 0; }
 }
+/* UX-01: iOS Safari zooms the whole page when an input with text smaller than 16px is focused, and does not zoom back,
+   so on an iPhone every tap into the invoice form zoomed in. -webkit-touch-callout is supported only by iOS / iPadOS
+   Safari (not macOS Safari, not Android, not desktop), so this raises in-app inputs to 16px there and nowhere else.
+   Covers the page canvas, dialogs (they render in portals, outside the canvas) and the top-bar search.
+   UNLAYERED on purpose: it must beat Tailwind's text-xs / text-sm utilities. Pinch-zoom stays enabled (no
+   maximum-scale in the viewport). */
+@supports (-webkit-touch-callout: none) {
+  :is([data-desktop-canvas], [data-viewport-dialog], [role='dialog'], [role='alertdialog'], [data-app-topbar])
+    :is(input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']), select, textarea) {
+    font-size: 16px;
+  }
+}
