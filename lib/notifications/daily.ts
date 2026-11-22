@@ -117,22 +117,25 @@ async function loadLastRunIso(): Promise<string | null> {
 }
 
 /**
- * Records that every business was handled up to `todayIso`. It only ever moves forward (a slower run finishing late
- * never rewinds it). A failure here is logged, not thrown: the next run simply catches up again, and every item is
- * de-duplicated, so nobody is told twice.
+ * Records that every business was handled up to `finishedIso`. A valid stored day only ever moves forward (a slower
+ * run finishing late never rewinds it); an unreadable stored value (not "YYYY-MM-DD") is simply replaced. A failure
+ * here is logged, not thrown: the next run catches up again, and every item is de-duplicated, so nobody is told twice.
  */
-async function saveLastRunIso(todayIso: string, now: Date): Promise<void> {
+async function saveLastRunIso(finishedIso: string, now: Date): Promise<void> {
+  const stored = sql`${platformSettings.value}->>'date'`;
   try {
     await db
       .insert(platformSettings)
-      .values({ key: DAILY_RUN_MARKER_KEY, value: { date: todayIso }, updated_at: now })
+      .values({ key: DAILY_RUN_MARKER_KEY, value: { date: finishedIso }, updated_at: now })
       .onConflictDoUpdate({
         target: platformSettings.key,
-        set: { value: { date: todayIso }, updated_at: now },
-        setWhere: sql`coalesce(${platformSettings.value}->>'date', '') < ${todayIso}`,
+        set: { value: { date: finishedIso }, updated_at: now },
+        setWhere: sql`(${stored} IS NULL
+          OR ${stored} !~ '^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'
+          OR ${stored} < ${finishedIso})`,
       });
   } catch (error: unknown) {
-    logError('daily-notifications', error, { step: 'save-last-run', todayIso });
+    logError('daily-notifications', error, { step: 'save-last-run', finishedIso });
   }
 }
 
@@ -188,7 +191,7 @@ interface DraftWithAudience {
  * for today and with the same de-duplication keys the missed run would have used. Reminders whose moment has passed
  * are not sent late: a "due soon" for an invoice that is already due, or a GST return whose due date has gone.
  * Trial / plan reminders need no catch-up: the next one still comes, and "has ended" is shown for 3 days.
- * The last finished day is saved only when every business succeeded, so a failed business is retried next run.
+ * Today is recorded as finished only when every business succeeded; otherwise the next run retries the covered days.
  */
 export async function runDailyNotifications(
   options: { readonly now?: Date; readonly send?: EmailSender } = {},
@@ -296,7 +299,10 @@ export async function runDailyNotifications(
     if (page.length < BUSINESS_PAGE) break;
   }
 
-  if (businessErrors === 0) await saveLastRunIso(todayIso, now);
+  // All covered days are finished only when no business failed. Otherwise the record is set to the day before the
+  // first covered day (never later than what it was), so the next run retries these days, also after a failed
+  // first-ever run that had no record yet.
+  await saveLastRunIso(businessErrors === 0 ? todayIso : addDaysIso(days[0] ?? todayIso, -1), now);
 
   const emails = await deliverNotificationEmails(options.send ? { send: options.send } : {});
   await expireStaleEmailQueue();

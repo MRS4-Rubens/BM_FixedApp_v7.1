@@ -517,6 +517,46 @@ describe('Feature C: notifications (PGlite)', () => {
     expect(await lastRun()).toBe('2026-12-08');
   });
 
+  it('BUG-01: a business failing on the first run ever still leaves a retry point for that day', async () => {
+    const biz = await createBusiness({ frequency: 'not_filing' });
+    await createUser(biz, 'owner');
+    await createInvoice(biz, { number: 'R/1', dueDate: '2026-12-07', totalPaise: 10_000 }); // overdue on 8 Dec
+    expect(await lastRun()).toBeNull();
+
+    await pg.exec(`
+      CREATE FUNCTION bug01_fail_first() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'simulated failure'; END $$;
+      CREATE TRIGGER bug01_fail_first BEFORE INSERT ON notifications
+        FOR EACH ROW WHEN (NEW.business_id = '${biz}'::uuid) EXECUTE FUNCTION bug01_fail_first();
+    `);
+    try {
+      const failed = await runDailyNotifications({ now: NOW, send: sender });
+      expect(failed.businessErrors).toBe(1);
+      expect(await lastRun()).toBe('2026-12-07'); // 8 Dec is not marked finished
+    } finally {
+      await pg.exec('DROP TRIGGER bug01_fail_first ON notifications; DROP FUNCTION bug01_fail_first();');
+    }
+
+    const next = await runDailyNotifications({ now: new Date('2026-12-09T04:00:00Z'), send: sender });
+    expect(next.days).toEqual(['2026-12-08', '2026-12-09']);
+    expect((await rows(biz)).map((row) => row.title)).toEqual(['1 invoice became overdue on 8 Dec 2026']);
+    expect(await lastRun()).toBe('2026-12-09');
+  });
+
+  it('BUG-01: an unreadable last-run record is replaced, so catch-up works again from the next day', async () => {
+    await pg.query(
+      `INSERT INTO platform_settings (key, value) VALUES ($1, '{"date":"garbage"}'::jsonb)`,
+      [DAILY_RUN_MARKER_KEY],
+    );
+    const run = await runDailyNotifications({ now: NOW, send: sender });
+    expect(run.days).toEqual(['2026-12-08']); // unreadable → today only
+    expect(await lastRun()).toBe('2026-12-08'); // "garbage" sorts after any date but is still replaced
+
+    await pg.query(`UPDATE platform_settings SET value = '{"other":1}'::jsonb WHERE key = $1`, [DAILY_RUN_MARKER_KEY]);
+    await runDailyNotifications({ now: NOW, send: sender });
+    expect(await lastRun()).toBe('2026-12-08'); // a record without a date is replaced too
+  });
+
   it('plan expiring tomorrow is urgent and e-mailed on its own; the PDF-failure item reaches the owner', async () => {
     const biz = await createBusiness({ frequency: 'not_filing', subscriptionEndsAt: '2026-12-09T10:00:00Z' });
     const owner = await createUser(biz, 'owner');
