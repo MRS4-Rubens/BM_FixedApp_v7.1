@@ -313,7 +313,9 @@ Follow this checklist when processing an account closure request:
    the backup workflow by hand (Run workflow) at a quiet time and continue right away. Run the queries on that
    reference branch and delete it afterwards; production is never paused for a drill.
    **Reading the result:** the comparison is close, not exact (the reference and the dump are seconds apart).
-   - All counts match: **pass**.
+   - All counts match **and** both numbering queries return the same rows (every counter value and every
+     business's newest invoice number): **pass**. A numbering difference is judged like a row difference below: a
+     restored counter or number **behind** the reference is explained only by an invoice finalized inside the step.
    - Rows **missing** from the restore whose `created_at` is before the "Dump the database" step: **fail**. The restore
      is incomplete; do not trust that backup and find out why.
    - Rows explained by `created_at` / `updated_at` inside the step: **pass**.
