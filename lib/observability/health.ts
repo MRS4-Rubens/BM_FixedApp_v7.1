@@ -5,8 +5,17 @@ import { logError, logWarn } from '@/lib/actions/_shared/logger';
 
 // OPT-001: dependency checks behind GET /api/health. Lives outside app/api/health/route.ts because a route file may
 // only export HTTP handlers and route config.
-const CHECK_TIMEOUT_MS = 3000;
+// SVC-05: 10 s per check. A cold Neon wake measured 2.3 s (Render baseline 2026-11-20) and the 6-hourly uptime check
+// is always a cold wake, so 3 s gave false "DOWN" alerts. UptimeRobot and cron-job.org wait 30 s.
+const CHECK_TIMEOUT_MS = 10_000;
 const CACHE_TTL_MS = 10_000;
+/**
+ * SVC-05: /health-db is public. Each real check wakes the Neon compute, and polling faster than its 5-minute sleep
+ * would keep it awake all month (~186 CU-h > the 100 CU-h free limit; Neon then suspends until next month). So a
+ * healthy answer is reused for 10 minutes per process; a failure only for 1 minute, so recovery shows up quickly.
+ */
+const DB_HEALTH_OK_INTERVAL_MS = 10 * 60_000;
+const DB_HEALTH_ERROR_INTERVAL_MS = 60_000;
 
 export interface HealthCheckResult {
   readonly status: 'ok' | 'error';
@@ -129,21 +138,32 @@ export interface DatabaseHealthResult {
 }
 
 let cachedDatabaseHealth: { result: DatabaseHealthResult; expiresAt: number } | null = null;
+let inflightDatabaseCheck: Promise<DatabaseHealthResult> | null = null;
 
 export function resetDatabaseHealthCacheForTests(): void {
   cachedDatabaseHealth = null;
+  inflightDatabaseCheck = null;
 }
 
 /**
  * Database-only check behind GET /health-db (polled every 6 h by the uptime monitor, so Neon Free can sleep).
  * Failures go to the server log (logWarn: a breadcrumb, never a Sentry issue): the uptime monitor already alerts on a 503, and a sleeping
- * or restarting database must not create Sentry issues.
+ * or restarting database must not create Sentry issues. SVC-05: at most one real check per 10 minutes (1 minute after
+ * a failure) per process, and concurrent requests share the check that is already running.
  */
 export async function getDatabaseHealth(): Promise<DatabaseHealthResult> {
   const now = Date.now();
   if (cachedDatabaseHealth && now < cachedDatabaseHealth.expiresAt) {
     return cachedDatabaseHealth.result;
   }
+  if (inflightDatabaseCheck) return inflightDatabaseCheck;
+  inflightDatabaseCheck = runDatabaseHealthCheck().finally(() => {
+    inflightDatabaseCheck = null;
+  });
+  return inflightDatabaseCheck;
+}
+
+async function runDatabaseHealthCheck(): Promise<DatabaseHealthResult> {
   let result: DatabaseHealthResult;
   try {
     await withTimeout(
@@ -159,6 +179,7 @@ export async function getDatabaseHealth(): Promise<DatabaseHealthResult> {
     logWarn('health-db', 'database check failed', { reason }); // breadcrumb only, never a Sentry issue
     result = { status: 'error', statusCode: 503 };
   }
-  cachedDatabaseHealth = { result, expiresAt: Date.now() + CACHE_TTL_MS };
+  const interval = result.status === 'ok' ? DB_HEALTH_OK_INTERVAL_MS : DB_HEALTH_ERROR_INTERVAL_MS;
+  cachedDatabaseHealth = { result, expiresAt: Date.now() + interval };
   return result;
 }

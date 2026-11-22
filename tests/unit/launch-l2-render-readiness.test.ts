@@ -113,4 +113,35 @@ describe('LAUNCH-L2 uptime routes', () => {
     expect(logWarn).toHaveBeenCalledWith('health-db', 'database check failed', { reason: 'Error' });
     expect(logError).not.toHaveBeenCalled();
   });
+
+  it('SVC-05: a healthy answer is reused for 10 minutes, so polling cannot keep Neon awake', async () => {
+    vi.useFakeTimers();
+    try {
+      dbExecute.mockResolvedValue([{ '?column?': 1 }]);
+      expect((await healthDbGet()).status).toBe(200);
+      await vi.advanceTimersByTimeAsync(9 * 60_000);
+      expect((await healthDbGet()).status).toBe(200);
+      expect(dbExecute).toHaveBeenCalledTimes(1); // the second answer came from the cache
+      await vi.advanceTimersByTimeAsync(61_000);
+      await healthDbGet();
+      expect(dbExecute).toHaveBeenCalledTimes(2); // after 10 minutes the database is checked again
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('SVC-05: a failure is re-checked after 1 minute; simultaneous requests share one check', async () => {
+    vi.useFakeTimers();
+    try {
+      dbExecute.mockRejectedValueOnce(new Error('cold')).mockResolvedValue([{ '?column?': 1 }]);
+      expect((await healthDbGet()).status).toBe(503);
+      expect((await healthDbGet()).status).toBe(503); // cached failure
+      await vi.advanceTimersByTimeAsync(61_000);
+      const [a, b] = await Promise.all([healthDbGet(), healthDbGet()]);
+      expect([a.status, b.status]).toEqual([200, 200]);
+      expect(dbExecute).toHaveBeenCalledTimes(2); // one failed check, then ONE shared check for both requests
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

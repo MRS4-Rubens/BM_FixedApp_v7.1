@@ -20,6 +20,14 @@ vi.mock('@/lib/actions/_shared/logger', () => ({
   logError: (...args: unknown[]) => mockLogError(...args),
 }));
 
+// SVC-05: /api/health is private (cron secret). Every request below sends it unless the test is about refusing.
+const CRON_SECRET = 'test-cron-secret-for-health-0123456789';
+vi.mock('@/lib/env', () => ({
+  getCronEnv: () => ({ CRON_SECRET }),
+  isEnvConfigError: () => false,
+}));
+const AUTH = { authorization: `Bearer ${CRON_SECRET}` };
+
 import { GET } from '@/app/api/health/route';
 import { resetHealthCacheForTests } from '@/lib/observability/health';
 
@@ -37,7 +45,7 @@ describe('OPT-001: /api/health endpoint', () => {
 
   it('returns 200 with exact body and no-store headers when both database and redis are healthy', async () => {
     const req = new NextRequest('http://localhost:3000/api/health', {
-      headers: { 'x-request-id': 'health-check-req-1' },
+      headers: { 'x-request-id': 'health-check-req-1', ...AUTH },
     });
 
     const res = await GET(req);
@@ -62,7 +70,7 @@ describe('OPT-001: /api/health endpoint', () => {
     const SECRET_ERROR_MSG = 'connection to server at neon.tech:5432 failed: password auth failed for user app_prod';
     mockDbExecute.mockRejectedValue(new Error(SECRET_ERROR_MSG));
 
-    const req = new NextRequest('http://localhost:3000/api/health');
+    const req = new NextRequest('http://localhost:3000/api/health', { headers: AUTH });
     const res = await GET(req);
 
     expect(res.status).toBe(503);
@@ -89,17 +97,36 @@ describe('OPT-001: /api/health endpoint', () => {
     );
   });
 
-  it('returns 503 with redis:error when Redis hangs past 3000ms timeout', async () => {
+  it('SVC-05: is private — no or a wrong cron secret gets 401 and touches neither the database nor Redis', async () => {
+    const attempts: Record<string, string>[] = [{}, { authorization: 'Bearer wrong' }];
+    for (const headers of attempts) {
+      const res = await GET(new NextRequest('http://localhost:3000/api/health', { headers }));
+      expect(res.status).toBe(401);
+      expect(res.headers.get('Cache-Control')).toBe('no-store');
+    }
+    expect(mockDbExecute).not.toHaveBeenCalled();
+    expect(mockRedisPing).not.toHaveBeenCalled();
+  });
+
+  it('SVC-05: a slow but healthy cold start (9.9 s) is still OK; past 10 s the check fails', async () => {
+    vi.useFakeTimers();
+    mockDbExecute.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve([{ '?column?': 1 }]), 9_900)));
+    const slow = GET(new NextRequest('http://localhost:3000/api/health', { headers: AUTH }));
+    await vi.advanceTimersByTimeAsync(9_900);
+    expect((await slow).status).toBe(200);
+  });
+
+  it('returns 503 with redis:error when Redis hangs past the 10 s timeout', async () => {
     vi.useFakeTimers();
 
     // Redis hangs forever
     mockRedisPing.mockImplementation(() => new Promise(() => {}));
 
-    const req = new NextRequest('http://localhost:3000/api/health');
+    const req = new NextRequest('http://localhost:3000/api/health', { headers: AUTH });
     const getPromise = GET(req);
 
-    // Advance fake timers by 3001 ms
-    await vi.advanceTimersByTimeAsync(3001);
+    // Advance fake timers just past the 10 s check timeout (SVC-05; it was 3 s)
+    await vi.advanceTimersByTimeAsync(10_001);
 
     const res = await getPromise;
     expect(res.status).toBe(503);
@@ -123,7 +150,7 @@ describe('OPT-001: /api/health endpoint', () => {
   it('memoizes the computed result for 10 seconds and re-runs after 10 seconds', async () => {
     vi.useFakeTimers();
 
-    const req1 = new NextRequest('http://localhost:3000/api/health');
+    const req1 = new NextRequest('http://localhost:3000/api/health', { headers: AUTH });
     const res1 = await GET(req1);
     expect(res1.status).toBe(200);
     expect(mockDbExecute).toHaveBeenCalledTimes(1);
@@ -131,7 +158,7 @@ describe('OPT-001: /api/health endpoint', () => {
 
     // Advance 5 seconds (within 10s TTL)
     await vi.advanceTimersByTimeAsync(5000);
-    const req2 = new NextRequest('http://localhost:3000/api/health');
+    const req2 = new NextRequest('http://localhost:3000/api/health', { headers: AUTH });
     const res2 = await GET(req2);
     expect(res2.status).toBe(200);
     // Checks NOT re-run
@@ -140,7 +167,7 @@ describe('OPT-001: /api/health endpoint', () => {
 
     // Advance another 6 seconds (total 11s > 10s TTL)
     await vi.advanceTimersByTimeAsync(6000);
-    const req3 = new NextRequest('http://localhost:3000/api/health');
+    const req3 = new NextRequest('http://localhost:3000/api/health', { headers: AUTH });
     const res3 = await GET(req3);
     expect(res3.status).toBe(200);
     // Checks re-run
@@ -153,21 +180,21 @@ describe('OPT-001: /api/health endpoint', () => {
     mockDbExecute.mockRejectedValue(new Error('db outage'));
 
     // First call computes and fails
-    const req1 = new NextRequest('http://localhost:3000/api/health');
+    const req1 = new NextRequest('http://localhost:3000/api/health', { headers: AUTH });
     const res1 = await GET(req1);
     expect(res1.status).toBe(503);
     expect(mockLogError).toHaveBeenCalledTimes(1);
 
     // Second call within 10s uses cache
     await vi.advanceTimersByTimeAsync(5000);
-    const req2 = new NextRequest('http://localhost:3000/api/health');
+    const req2 = new NextRequest('http://localhost:3000/api/health', { headers: AUTH });
     const res2 = await GET(req2);
     expect(res2.status).toBe(503);
     expect(mockLogError).toHaveBeenCalledTimes(1); // Still 1
 
     // After 10s, next call re-runs and logs again
     await vi.advanceTimersByTimeAsync(6000);
-    const req3 = new NextRequest('http://localhost:3000/api/health');
+    const req3 = new NextRequest('http://localhost:3000/api/health', { headers: AUTH });
     const res3 = await GET(req3);
     expect(res3.status).toBe(503);
     expect(mockLogError).toHaveBeenCalledTimes(2);

@@ -182,9 +182,9 @@ If any query returns a non-zero count, remediate legacy rows before migrating:
 
 ### Uptime monitoring (UptimeRobot)
 - **`GET /ping`** every **5 minutes**: answers 200 without touching the database or Redis, so it never wakes Neon or uses Upstash commands. It also keeps the Render service awake.
-- **`GET /health-db`** every **6 hours**: checks the database only (10 s cache); 200 `{"status":"ok"}` or 503 `{"status":"error"}`. Infrequent on purpose: each check wakes Neon and uses compute hours.
+- **`GET /health-db`** every **6 hours**: checks the database only (10 s timeout, enough for a cold Neon wake); 200 `{"status":"ok"}` or 503 `{"status":"error"}`. Infrequent on purpose: each check wakes Neon and uses compute hours. It is public, so a real check runs **at most once every 10 minutes** per instance (1 minute after a failure); other requests get the last answer, so nobody can keep Neon awake by polling it (SVC-05).
 - **Alert** after **2 failed checks**, to your Gmail (checklist 3.13).
-- **`GET /api/health`** (database + Redis) still exists for manual checks and is not polled; polling it every minute would keep Neon awake all day. Its response:
+- **`GET /api/health`** (database + Redis) is for **manual checks only** and is **private** (SVC-05): send `Authorization: Bearer <CRON_SECRET>` (otherwise 401). No monitor polls it; each call wakes Neon and uses an Upstash command. Its response:
   ```json
   {
     "status": "ok",
@@ -194,8 +194,8 @@ If any query returns a non-zero count, remediate legacy rows before migrating:
     }
   }
   ```
-  - `"status": "ok"` / HTTP 200: Both PostgreSQL (Neon) and Redis (Upstash) answered within 3000 ms.
-  - `"status": "error"` / HTTP 503: At least one dependency check failed or exceeded 3000 ms. The `checks` object indicates specifically which subsystem is degraded (`database` or `redis`).
+  - `"status": "ok"` / HTTP 200: Both PostgreSQL (Neon) and Redis (Upstash) answered within 10 s.
+  - `"status": "error"` / HTTP 503: At least one dependency check failed or exceeded 10 s. The `checks` object indicates specifically which subsystem is degraded (`database` or `redis`).
   - The endpoint never exposes stack traces, credentials, environment variables, or hostnames.
 - **Caching**: Results are memoized in module scope for **10 seconds** to prevent quota exhaustion or denial-of-service against Neon or Upstash. Any failed check logs `health-check` to server logs and Sentry once per computation (not on cached hits).
 
