@@ -174,7 +174,12 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
     // BUG-05: a thrown call (network drop, old tab after a redeploy) must not leave the button on "Recording…".
     try {
       const result = await recordPayment(data);
-      if (!result.success) {
+      if (!result.success && result.error.code === 'INTERNAL_ERROR') {
+        // An unexpected server error: we cannot be sure nothing was saved, so lock like a lost reply (see mustReload).
+        setMustReload(true);
+        setError(`${result.error.message} Reload the page and check the payment history before you record it again — it may already have been saved.`);
+      } else if (!result.success) {
+        // A known business error (validation, over-payment, plan, ...): nothing was saved, so the user may fix and retry.
         setError(result.error.message || `Failed to record ${word.toLowerCase()}`);
       } else {
         const remainingPaise = data.kind === 'refund' ? result.data.refund_due_paise : result.data.remaining_balance_paise;

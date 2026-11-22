@@ -10,7 +10,7 @@ import { withTransactionRetry } from '@/lib/db/transaction';
 import { recordPaymentInTransaction } from '@/lib/invoices/payment-tx';
 import { sensitiveActionLimiter } from '@/lib/rate-limit/upstash';
 import { recordPaymentSchema } from '@/lib/validations/payment';
-import { revalidatePath } from 'next/cache';
+import { revalidateAfterCommit } from '@/lib/actions/_shared/revalidate-after-commit';
 
 export const recordPayment = createAuthenticatedAction(
   recordPaymentSchema,
@@ -20,9 +20,10 @@ export const recordPayment = createAuthenticatedAction(
       throw new ActionError('Your account is not linked to a business profile.', { code: 'NO_BUSINESS_LINKED' });
     }
 
+    let result: Awaited<ReturnType<typeof recordPaymentInTransaction>>;
     try {
       const requestContext = await getAuditRequestContext();
-      const result = await withTransactionRetry(() =>
+      result = await withTransactionRetry(() =>
         db.transaction((tx) =>
           recordPaymentInTransaction(tx, {
             businessId,
@@ -32,14 +33,13 @@ export const recordPayment = createAuthenticatedAction(
           }),
         ),
       );
-
-      revalidatePath('/invoices');
-      revalidatePath(`/invoices/${input.invoice_id}`);
-
-      return result;
     } catch (error: unknown) {
       throw toThrowable(error);
     }
+
+    // BUG-05: the payment is committed. Nothing after this point may report a failure (a retry would record it twice).
+    revalidateAfterCommit('record-payment', ['/invoices', `/invoices/${input.invoice_id}`]);
+    return result;
   },
   'record-payment',
   {
