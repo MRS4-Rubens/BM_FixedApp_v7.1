@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { categoriesForRole, CATEGORY_ROLES, NOTIFICATION_KIND_CATEGORY } from '@/lib/notifications/catalog';
-import { addDaysIso, diffDaysIso, formatIsoDateShort } from '@/lib/notifications/dates';
+import {
+  addDaysIso,
+  catchUpDaysIso,
+  diffDaysIso,
+  formatIsoDateShort,
+  isIsoCalendarDate,
+} from '@/lib/notifications/dates';
 import { gstReturnsDueOn, gstr3bQuarterlyDueDay } from '@/lib/notifications/gst-calendar';
 import {
+  invoicesDueSoonDraft,
   invoicesOverdueDraft,
   memberJoinedDraft,
   paymentRejectedDraft,
@@ -117,6 +124,30 @@ describe('Feature C: notification rules', () => {
       );
       expect(paymentRejectedDraft('r', `  ${'x'.repeat(600)}  `).body.length).toBeLessThanOrEqual(1000);
     });
+
+    it('BUG-01: a caught-up day keeps its own de-duplication key but is worded for today', () => {
+      // Normal day: identical to before (today's key, "today", "in 3 days").
+      expect(invoicesOverdueDraft('2026-12-08', 2, 100, '2026-12-08')).toMatchObject({
+        title: '2 invoices became overdue today',
+        dedupeKey: 'invoices-overdue:2026-12-08',
+      });
+      expect(invoicesDueSoonDraft('2026-12-08', '2026-12-11', 1, 100)).toMatchObject({
+        title: '1 invoice due in 3 days',
+        dedupeKey: 'invoices-due-soon:2026-12-08',
+      });
+      // Caught up on 8 Dec for missed days 6 and 7 Dec.
+      expect(invoicesOverdueDraft('2026-12-06', 1, 100, '2026-12-08')).toMatchObject({
+        title: '1 invoice became overdue on 6 Dec 2026',
+        dedupeKey: 'invoices-overdue:2026-12-06',
+      });
+      expect(invoicesDueSoonDraft('2026-12-07', '2026-12-10', 2, 100, '2026-12-08')).toMatchObject({
+        title: '2 invoices due in 2 days',
+        dedupeKey: 'invoices-due-soon:2026-12-07',
+      });
+      const tomorrow = invoicesDueSoonDraft('2026-12-06', '2026-12-09', 1, 25_000, '2026-12-08');
+      expect(tomorrow.title).toBe('1 invoice due tomorrow');
+      expect(tomorrow.body).toContain('falls due on 9 Dec 2026');
+    });
   });
 
   describe('dates', () => {
@@ -125,6 +156,33 @@ describe('Feature C: notification rules', () => {
       expect(addDaysIso('2026-12-30', 3)).toBe('2027-01-02');
       expect(diffDaysIso('2026-12-08', '2026-12-11')).toBe(3);
       expect(formatIsoDateShort('2026-12-08')).toBe('8 Dec 2026');
+    });
+
+    it('recognises real calendar dates only', () => {
+      expect(isIsoCalendarDate('2028-02-29')).toBe(true);
+      expect(isIsoCalendarDate('2027-02-29')).toBe(false);
+      expect(isIsoCalendarDate('2026-02-30')).toBe(false);
+      expect(isIsoCalendarDate('2026-13-01')).toBe(false);
+      expect(isIsoCalendarDate('2026-1-01')).toBe(false);
+      expect(isIsoCalendarDate('')).toBe(false);
+    });
+
+    it('BUG-01: the days a daily run covers', () => {
+      // First run ever, or an unreadable record: today only (no flood of old reminders).
+      expect(catchUpDaysIso(null, '2026-12-08', 7)).toEqual(['2026-12-08']);
+      expect(catchUpDaysIso('garbage', '2026-12-08', 7)).toEqual(['2026-12-08']);
+      // Normal day after yesterday's run, and a second run on the same day.
+      expect(catchUpDaysIso('2026-12-07', '2026-12-08', 7)).toEqual(['2026-12-08']);
+      expect(catchUpDaysIso('2026-12-08', '2026-12-08', 7)).toEqual(['2026-12-08']);
+      // A record in the "future" (clock went backwards): today only.
+      expect(catchUpDaysIso('2026-12-20', '2026-12-08', 7)).toEqual(['2026-12-08']);
+      // Two missed days, across a month and a year end.
+      expect(catchUpDaysIso('2026-12-05', '2026-12-08', 7)).toEqual(['2026-12-06', '2026-12-07', '2026-12-08']);
+      expect(catchUpDaysIso('2026-12-30', '2027-01-01', 7)).toEqual(['2026-12-31', '2027-01-01']);
+      // A long outage: at most 7 days, the most recent ones.
+      expect(catchUpDaysIso('2026-11-20', '2026-12-08', 7)).toEqual([
+        '2026-12-02', '2026-12-03', '2026-12-04', '2026-12-05', '2026-12-06', '2026-12-07', '2026-12-08',
+      ]);
     });
   });
 });

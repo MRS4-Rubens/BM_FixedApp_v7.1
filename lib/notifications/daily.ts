@@ -1,10 +1,10 @@
-import { and, asc, gt, lt, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, gt, lt, ne, sql } from 'drizzle-orm';
 import { db } from '@/lib/db/client';
-import { businesses, notifications } from '@/lib/db/schema';
+import { businesses, notifications, platformSettings } from '@/lib/db/schema';
 import { logError } from '@/lib/actions/_shared/logger';
 import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
 import { ARCHIVAL_MAX_ATTEMPTS } from '@/lib/storage/archival-config';
-import { addDaysIso, istTodayIso } from './dates';
+import { addDaysIso, catchUpDaysIso, isIsoCalendarDate, istTodayIso } from './dates';
 import { deliverNotificationEmails, expireStaleEmailQueue, type DeliverySummary, type EmailSender } from './deliver';
 import { isGstFilingFrequency } from './guards';
 import { gstReturnsDueOn } from './gst-calendar';
@@ -26,8 +26,17 @@ const BUSINESS_PAGE = 200;
 const GST_REMINDER_DAYS_BEFORE = 3;
 const DUE_SOON_DAYS = 3;
 const ARCHIVAL_PER_RUN_LIMIT = 200;
+/**
+ * BUG-01: a run also covers the days the job missed (redeploy at 09:00, cron-job.org or Neon outage), up to this many
+ * days including today. Older missed days are dropped: their reminders would be stale.
+ */
+const CATCH_UP_MAX_DAYS = 7;
+/** platform_settings row holding the last IST day the job finished for every business: { "date": "YYYY-MM-DD" }. */
+export const DAILY_RUN_MARKER_KEY = 'daily_notifications_last_run';
 
 export interface DailyNotificationSummary {
+  /** The IST days this run covered, oldest first (just today unless it caught up on missed days). */
+  readonly days: readonly string[];
   readonly businesses: number;
   readonly created: number;
   readonly businessErrors: number;
@@ -35,11 +44,9 @@ export interface DailyNotificationSummary {
   readonly deleted: number;
 }
 
-interface MoneyRow {
-  readonly overdueCount: number;
-  readonly overdueAmount: number;
-  readonly soonCount: number;
-  readonly soonAmount: number;
+interface DueTotals {
+  readonly count: number;
+  readonly amountPaise: number;
 }
 
 function num(value: unknown): number {
@@ -47,14 +54,21 @@ function num(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-/** One query for every business: invoices that became overdue today (due yesterday) and those due in 3 days. */
-async function loadMoney(yesterdayIso: string, soonIso: string): Promise<Map<string, MoneyRow>> {
+/**
+ * One query for every business: the still-unpaid finalized invoices due on each of `dueDates`, totalled per business
+ * and due date (business id → "YYYY-MM-DD" → totals). Only dates with something left to collect appear.
+ */
+async function loadMoney(dueDates: readonly string[]): Promise<Map<string, Map<string, DueTotals>>> {
+  const map = new Map<string, Map<string, DueTotals>>();
+  if (dueDates.length === 0) return map;
+  const dateList = sql.join(
+    dueDates.map((iso) => sql`${iso}::date`),
+    sql`, `,
+  );
   const result = await db.execute(sql`
-    SELECT t.business_id,
-      count(*) FILTER (WHERE t.due_date = ${yesterdayIso}::date)::int AS overdue_count,
-      coalesce(sum(t.remaining) FILTER (WHERE t.due_date = ${yesterdayIso}::date), 0)::bigint AS overdue_amount,
-      count(*) FILTER (WHERE t.due_date = ${soonIso}::date)::int AS soon_count,
-      coalesce(sum(t.remaining) FILTER (WHERE t.due_date = ${soonIso}::date), 0)::bigint AS soon_amount
+    SELECT t.business_id, to_char(t.due_date, 'YYYY-MM-DD') AS due_iso,
+      count(*)::int AS invoice_count,
+      coalesce(sum(t.remaining), 0)::bigint AS amount
     FROM (
       SELECT i.business_id, i.due_date,
         greatest(0, i.grand_total_paise - coalesce(p.paid, 0) - coalesce(c.credited, 0)) AS remaining
@@ -71,24 +85,55 @@ async function loadMoney(yesterdayIso: string, soonIso: string): Promise<Map<str
       ) c ON true
       WHERE i.lifecycle_status = 'finalized'
         AND i.payment_status IN ('unpaid', 'partially_paid', 'overdue')
-        AND i.due_date IN (${yesterdayIso}::date, ${soonIso}::date)
+        AND i.due_date IN (${dateList})
     ) t
     WHERE t.remaining > 0
-    GROUP BY t.business_id
+    GROUP BY t.business_id, t.due_date
   `);
-  const map = new Map<string, MoneyRow>();
   for (const raw of result.rows) {
     if (typeof raw !== 'object' || raw === null) continue;
     const row = raw as Record<string, unknown>;
-    if (typeof row.business_id !== 'string') continue;
-    map.set(row.business_id, {
-      overdueCount: num(row.overdue_count),
-      overdueAmount: num(row.overdue_amount),
-      soonCount: num(row.soon_count),
-      soonAmount: num(row.soon_amount),
-    });
+    if (typeof row.business_id !== 'string' || typeof row.due_iso !== 'string') continue;
+    const count = num(row.invoice_count);
+    if (count <= 0) continue;
+    const perDate = map.get(row.business_id) ?? new Map<string, DueTotals>();
+    perDate.set(row.due_iso, { count, amountPaise: num(row.amount) });
+    map.set(row.business_id, perDate);
   }
   return map;
+}
+
+/** The last IST day the job finished for every business, or null when there is no readable record yet. */
+async function loadLastRunIso(): Promise<string | null> {
+  const [row] = await db
+    .select({ value: platformSettings.value })
+    .from(platformSettings)
+    .where(eq(platformSettings.key, DAILY_RUN_MARKER_KEY))
+    .limit(1);
+  const value: unknown = row?.value;
+  if (typeof value !== 'object' || value === null || !('date' in value)) return null;
+  const date: unknown = value.date;
+  return typeof date === 'string' && isIsoCalendarDate(date) ? date : null;
+}
+
+/**
+ * Records that every business was handled up to `todayIso`. It only ever moves forward (a slower run finishing late
+ * never rewinds it). A failure here is logged, not thrown: the next run simply catches up again, and every item is
+ * de-duplicated, so nobody is told twice.
+ */
+async function saveLastRunIso(todayIso: string, now: Date): Promise<void> {
+  try {
+    await db
+      .insert(platformSettings)
+      .values({ key: DAILY_RUN_MARKER_KEY, value: { date: todayIso }, updated_at: now })
+      .onConflictDoUpdate({
+        target: platformSettings.key,
+        set: { value: { date: todayIso }, updated_at: now },
+        setWhere: sql`coalesce(${platformSettings.value}->>'date', '') < ${todayIso}`,
+      });
+  } catch (error: unknown) {
+    logError('daily-notifications', error, { step: 'save-last-run', todayIso });
+  }
 }
 
 interface FailedDocument {
@@ -138,19 +183,35 @@ interface DraftWithAudience {
  * Feature C: the once-a-day job (around 9 AM IST). For every business that is not suspended it works out what
  * people need to know today, creates the notifications (idempotently: a second run the same day adds nothing),
  * then sends the e-mails and tidies up. One business failing never stops the others.
+ *
+ * BUG-01: if earlier days were missed, the run also creates those days' reminders (up to CATCH_UP_MAX_DAYS), worded
+ * for today and with the same de-duplication keys the missed run would have used. Reminders whose moment has passed
+ * are not sent late: a "due soon" for an invoice that is already due, or a GST return whose due date has gone.
+ * Trial / plan reminders need no catch-up: the next one still comes, and "has ended" is shown for 3 days.
+ * The last finished day is saved only when every business succeeded, so a failed business is retried next run.
  */
 export async function runDailyNotifications(
   options: { readonly now?: Date; readonly send?: EmailSender } = {},
 ): Promise<DailyNotificationSummary> {
   const now = options.now ?? new Date();
   const todayIso = istTodayIso(now);
-  const yesterdayIso = addDaysIso(todayIso, -1);
-  const soonIso = addDaysIso(todayIso, DUE_SOON_DAYS);
-  const gstCheckIso = addDaysIso(todayIso, GST_REMINDER_DAYS_BEFORE);
-  const isFyEndingDay = todayIso.endsWith('-03-25');
+  const days = catchUpDaysIso(await loadLastRunIso(), todayIso, CATCH_UP_MAX_DAYS);
+
+  // For each covered day D: invoices due on D-1 became overdue on D; invoices due on D+3 were "due soon" on D (kept
+  // only while that due date is still ahead of today).
+  const overdueByDay = days.map((day) => ({ day, dueIso: addDaysIso(day, -1) }));
+  const dueSoonByDay = days
+    .map((day) => ({ day, dueIso: addDaysIso(day, DUE_SOON_DAYS) }))
+    .filter((entry) => entry.dueIso > todayIso);
+  const gstCheckDays = days.map((day) => addDaysIso(day, GST_REMINDER_DAYS_BEFORE));
+  // A covered 25 March is at most CATCH_UP_MAX_DAYS - 1 = 6 days ago, so today is still in that financial year.
+  const isFyEndingDay = days.some((day) => day.endsWith('-03-25'));
   const fyLabel = getIndianFinancialYearForDate(now).label;
 
-  const [money, failedArchivals] = await Promise.all([loadMoney(yesterdayIso, soonIso), loadFailedArchivals()]);
+  const [money, failedArchivals] = await Promise.all([
+    loadMoney([...overdueByDay, ...dueSoonByDay].map((entry) => entry.dueIso)),
+    loadFailedArchivals(),
+  ]);
 
   let processed = 0;
   let created = 0;
@@ -184,11 +245,15 @@ export async function runDailyNotifications(
       const items: DraftWithAudience[] = [];
 
       const due = money.get(business.id);
-      if (due && due.overdueCount > 0) {
-        items.push({ draft: invoicesOverdueDraft(todayIso, due.overdueCount, due.overdueAmount) });
+      for (const { day, dueIso } of overdueByDay) {
+        const totals = due?.get(dueIso);
+        if (totals) items.push({ draft: invoicesOverdueDraft(day, totals.count, totals.amountPaise, todayIso) });
       }
-      if (due && due.soonCount > 0) {
-        items.push({ draft: invoicesDueSoonDraft(todayIso, soonIso, due.soonCount, due.soonAmount) });
+      for (const { day, dueIso } of dueSoonByDay) {
+        const totals = due?.get(dueIso);
+        if (totals) {
+          items.push({ draft: invoicesDueSoonDraft(day, dueIso, totals.count, totals.amountPaise, todayIso) });
+        }
       }
 
       // GST reminders apply to regular taxpayers only (composition dealers file different returns).
@@ -197,8 +262,11 @@ export async function runDailyNotifications(
         if (frequency === null) {
           items.push({ draft: gstFrequencyMissingDraft(), ownerOnly: true });
         } else {
-          for (const item of gstReturnsDueOn(gstCheckIso, frequency, business.state_code)) {
-            items.push({ draft: gstReturnDueDraft(item) });
+          for (const checkIso of gstCheckDays) {
+            for (const item of gstReturnsDueOn(checkIso, frequency, business.state_code)) {
+              // A due date that has already passed is not announced late as "is due on".
+              if (item.dueDateIso >= todayIso) items.push({ draft: gstReturnDueDraft(item) });
+            }
           }
         }
         if (isFyEndingDay) items.push({ draft: fyEndingDraft(fyLabel) });
@@ -228,6 +296,8 @@ export async function runDailyNotifications(
     if (page.length < BUSINESS_PAGE) break;
   }
 
+  if (businessErrors === 0) await saveLastRunIso(todayIso, now);
+
   const emails = await deliverNotificationEmails(options.send ? { send: options.send } : {});
   await expireStaleEmailQueue();
   const deleted = await db
@@ -235,6 +305,6 @@ export async function runDailyNotifications(
     .where(lt(notifications.created_at, new Date(now.getTime() - NOTIFICATION_RETENTION_DAYS * 86_400_000)))
     .returning({ id: notifications.id });
 
-  return { businesses: processed, created, businessErrors, emails, deleted: deleted.length };
+  return { days, businesses: processed, created, businessErrors, emails, deleted: deleted.length };
 }
 

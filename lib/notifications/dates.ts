@@ -20,6 +20,25 @@ export function diffDaysIso(fromIso: string, toIso: string): number {
   return Math.round((toUtcMidnight(toIso) - toUtcMidnight(fromIso)) / 86_400_000);
 }
 
+/** True for a real calendar date written as "YYYY-MM-DD" ("2026-02-30" and "2026-13-01" are false). */
+export function isIsoCalendarDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && addDaysIso(value, 0) === value;
+}
+
+/**
+ * BUG-01: the IST days one daily run must cover, oldest first, ending with today.
+ * - No earlier run on record (first run ever, or an unreadable record) → today only: never a flood of old items.
+ * - The last completed run was today or "later" (a re-run, or a clock that went backwards) → today only.
+ * - Otherwise every day after the last completed run, but never more than `maxDays` days (today included).
+ */
+export function catchUpDaysIso(lastRunIso: string | null, todayIso: string, maxDays: number): string[] {
+  if (lastRunIso === null || !isIsoCalendarDate(lastRunIso)) return [todayIso];
+  const missed = diffDaysIso(lastRunIso, todayIso);
+  if (missed <= 0) return [todayIso];
+  const count = Math.min(missed, Math.max(1, maxDays));
+  return Array.from({ length: count }, (_, index) => addDaysIso(todayIso, index - count + 1));
+}
+
 const MONTHS_LONG = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
