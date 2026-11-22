@@ -14,6 +14,7 @@ import { getArchivedPdfUrl } from '@/lib/actions/invoices/get-archived-pdf-url'
 import { openSignedPdf } from '@/lib/pdf/open-signed-pdf'
 import { getDisplayInvoiceStatus, getDisplayStatusLabel } from '@/lib/invoices/status'
 import { PaymentSection } from './payment-section'
+import { HistoryLoadNotice } from './history-load-notice'
 import { cn } from '@/lib/utils'
 import { InvoicePrintView, type InvoicePrintViewProps } from './invoice-print-view'
 import { generateWhatsAppInvoiceUrl } from '@/lib/subscriptions/whatsapp'
@@ -77,6 +78,8 @@ interface InvoiceDetailProps {
   }>
   businessStateCode: string
   displayPrefs: InvoiceDisplayPrefs
+  /** BUG-04: true when the payments or credit notes could not be loaded; their totals would be wrong, so hide them. */
+  historyLoadFailed?: boolean
   business?: {
     id?: string
     legal_name?: string
@@ -89,7 +92,7 @@ interface InvoiceDetailProps {
   } | null
 }
 
-export function InvoiceDetail({ invoice, payments = [], creditNotes = [], businessStateCode, business, displayPrefs }: InvoiceDetailProps) {
+export function InvoiceDetail({ invoice, payments = [], creditNotes = [], businessStateCode, business, displayPrefs, historyLoadFailed = false }: InvoiceDetailProps) {
   const canEdit = useCanEdit();
   const [printSize, setPrintSize] = useState<'A4' | 'A5'>(() => {
     if (typeof window !== 'undefined') {
@@ -258,7 +261,19 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
       isCurrent: !!invoice.emailed_at && invoice.payment_status !== 'paid',
       icon: Mail
     },
-    {
+    historyLoadFailed ? {
+      // BUG-04: settled / refund due / the payment date all come from the payments that failed to load, so the step
+      // says "Unavailable" (matching the "Settlement unavailable" badge) instead of guessing.
+      step: 4,
+      name: 'Settlement',
+      subtext: 'Unavailable',
+      date: null,
+      pendingLabel: 'Unavailable',
+      isCompleted: false,
+      isCurrent: false,
+      isWarning: false,
+      icon: ShieldCheck
+    } : {
       step: 4,
       // REFUND: while money is owed back, the last step is an amber "Refund Due" instead of a completed "Settled".
       name: isRefundDue ? 'Refund Due' : 'Settled',
@@ -487,7 +502,12 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                     Lifecycle &amp; Settlement
                   </h3>
                 </div>
-                {isRefundDue ? (
+                {historyLoadFailed ? (
+                  // BUG-04: computed from the payments that failed to load, so it would wrongly read "0% Settled".
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                    Settlement unavailable
+                  </span>
+                ) : isRefundDue ? (
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
                     Refund Due
                   </span>
@@ -561,7 +581,8 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                 })}
               </div>
 
-              {/* 3-Column Settlement Balance Metric Strip */}
+              {/* 3-Column Settlement Balance Metric Strip (BUG-04: hidden when the history could not be loaded) */}
+              {!historyLoadFailed && (
               <div className="grid grid-cols-3 gap-2 px-2 py-1 rounded-lg border border-border/80 bg-muted/20">
                 <div>
                   <span className="block text-[11px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
@@ -601,8 +622,13 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                   </span>
                 </div>
               </div>
+              )}
             </div>
 
+            {historyLoadFailed ? (
+              <HistoryLoadNotice />
+            ) : (
+            <>
             {/* COMBINED CARD 2: Settlement Payment Center & Transaction History */}
             <PaymentSection invoice={invoice} payments={payments} totalCreditedPaise={totalCreditedPaise} refundMinDate={refundMinDate} />
 
@@ -725,6 +751,8 @@ export function InvoiceDetail({ invoice, payments = [], creditNotes = [], busine
                 </div>
               )}
             </div>
+            </>
+            )}
 
           </div>
         </div>

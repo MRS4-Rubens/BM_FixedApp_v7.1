@@ -401,6 +401,56 @@ describe('Accountant Read-Only View Across App (B2-CA-UI)', () => {
       expect(html).toContain('Issue Credit Note');
     });
 
+    it('BUG-04: when payments / credit notes failed to load, the balance and payment form are replaced by a notice', () => {
+      const render = (historyLoadFailed: boolean) =>
+        text(
+          renderToStaticMarkup(
+            <CurrentUserRoleProvider role="owner">
+              <InvoiceDetail
+                invoice={mockDetailInvoice}
+                business={{ id: 'biz_1', legal_name: 'Acme Traders', subscription_plan: 'essentials', subscription_status: 'active' }}
+                payments={[]}
+                creditNotes={[]}
+                historyLoadFailed={historyLoadFailed}
+                businessStateCode="29"
+                displayPrefs={{
+                  discEnabled: false,
+                  showHsn: true,
+                  showNextNo: false,
+                  showSignatory: true,
+                  enableFixedRows: false,
+                  fixedRowsCount: 10,
+                  defaultGst: '18',
+                  quantityDecimals: 0,
+                }}
+              />
+            </CurrentUserRoleProvider>,
+          ),
+        );
+      const normal = render(false);
+      expect(normal).toMatch(/Record (Payment|Refund)/); // positive control: the form is there normally
+      expect(normal).toContain('Settled');
+      expect(normal).not.toContain('load payments and credit notes');
+
+      const failed = render(true);
+      expect(failed).toContain('role="alert"');
+      expect(failed).toContain('load payments and credit notes');
+      expect(failed).toContain('Reload page');
+      expect(failed).not.toMatch(/Record (Payment|Refund)/); // no payment pre-filled with the full total
+      expect(failed).not.toContain('No credit notes issued'); // not "none" when we simply don't know
+      // Neither the balance strip's "Settled" label nor the timeline's "Settled" step is shown: the last timeline step
+      // reads "Settlement / Unavailable" instead of guessing settled, refund due or a payment date.
+      expect(normal).toContain('>Settled<');
+      expect(failed).not.toContain('>Settled<');
+      expect(failed).toContain('>Settlement<');
+      expect(failed).toContain('>Unavailable<');
+      expect(failed).toContain('Print'); // the rest of the invoice still works
+      // The header badge would read "0% Settled" from the empty list: it says the settlement is unavailable instead.
+      expect(normal).toMatch(/\d+% Settled/);
+      expect(failed).not.toMatch(/\d+% Settled/);
+      expect(failed).toContain('Settlement unavailable');
+    });
+
     it('staff sees the Record Payment form that the accountant does not', () => {
       const props = { invoice: { id: 'inv_1', invoice_number: 'INV-001', grand_total_paise: 200000 }, payments: mockPayments };
       const staff = text(
