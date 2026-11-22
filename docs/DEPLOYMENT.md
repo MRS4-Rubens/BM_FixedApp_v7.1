@@ -306,10 +306,15 @@ Follow this checklist when processing an account closure request:
 3. In the **test** Neon project, create a new branch and an **empty** database in it (e.g. `restore_check`), then restore into that database and stop at the first error: `pg_restore --exit-on-error --no-owner --no-acl --dbname "<restore_check direct URL>" db.dump` (Postgres 17 client). Check the exit status is **0** (`echo $?`). Without `--exit-on-error`, `pg_restore` skips failed objects (for example a missing constraint or guard trigger) and still finishes, so the data checks below could pass on an incomplete copy. If it fails, drop and re-create the empty database and try again; never continue on a partial restore.
 4. Check with SQL, running the same queries on the **restored** database and on a **frozen reference** of the source.
    The live source keeps changing after the dump (new invoices, payments, sign-ups), so never compare with it directly.
-   **Reference:** in the source Neon project, create a branch **from a past time** = the start time of the backup run
-   (GitHub → Actions → the run's start time, in UTC). Neon's Free history covers **6 hours**, so restore and check
-   within 6 hours of the dump: for a drill, start the backup workflow by hand (Run workflow) and continue right away.
-   Run the queries on that reference branch and delete it afterwards; production is never paused for a drill.
+   **Reference:** in the source Neon project, create a branch **from a past time** = the moment the dump ran: open the
+   backup run in GitHub → Actions → step **"Dump the database"** and use the time it **finished** (UTC; the step
+   takes seconds). `pg_dump` takes its snapshot inside that step, so the reference and the dump differ by seconds at
+   most. Neon's Free history covers **6 hours**, so restore and check within 6 hours of the dump: for a drill, start
+   the backup workflow by hand (Run workflow) at a quiet time and continue right away. Run the queries on that
+   reference branch and delete it afterwards; production is never paused for a drill.
+   **Reading the result:** every count must match. If one differs, list the extra or missing rows (`created_at`,
+   `updated_at`): the backup is fine only if **each** of them was written during the "Dump the database" step; any
+   other difference means the restore is incomplete, so do not trust that backup and find out why.
    Signing in cannot test logins here: the Render app and its Auth URL point at another database, so count the login
    rows instead.
    ```sql
