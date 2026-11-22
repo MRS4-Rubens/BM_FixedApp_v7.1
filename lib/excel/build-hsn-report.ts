@@ -86,7 +86,7 @@ export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable):
   sheet.getRow(6).commit();
 
   let rowCount = 7;
-  let tQty = 0;
+  let tQtyThousandths = 0; // MONEY-03: exact sum (quantities have at most 3 decimals)
   let tTaxable = 0;
   let tCgst = 0;
   let tSgst = 0;
@@ -103,7 +103,7 @@ export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable):
     const tax = cgst + sgst + igst;
     const total = paiseToRupees(item.totalValuePaise);
 
-    tQty += item.totalQuantity;
+    tQtyThousandths += Math.round(item.totalQuantity * 1000);
     tTaxable += taxable;
     tCgst += cgst;
     tSgst += sgst;
@@ -153,7 +153,7 @@ export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable):
     hsn: 'TOTAL',
     desc: `${data.hsn.length} Unique HSN/SAC Categories`,
     uqc: '',
-    qty: tQty,
+    qty: tQtyThousandths / 1000,
     rate: '',
     taxable: tTaxable,
     cgst: tCgst,
