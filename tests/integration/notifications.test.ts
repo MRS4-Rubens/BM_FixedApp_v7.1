@@ -67,7 +67,7 @@ vi.mock('@/lib/env', () => ({
 }));
 
 import { db } from '@/lib/db/client';
-import { runDailyNotifications } from '@/lib/notifications/daily';
+import { DAILY_RUN_MARKER_KEY, runDailyNotifications } from '@/lib/notifications/daily';
 import { deliverNotificationEmails, type OutgoingEmail } from '@/lib/notifications/deliver';
 import { notify } from '@/lib/notifications/notify';
 import { gstReturnDueDraft, invoicesOverdueDraft, paymentApprovedDraft } from '@/lib/notifications/messages';
@@ -140,8 +140,26 @@ describe('Feature C: notifications (PGlite)', () => {
     await pg.exec(`
       UPDATE businesses SET subscription_status = 'suspended' WHERE subscription_status <> 'suspended';
       DELETE FROM notifications;
+      DELETE FROM platform_settings WHERE key = '${DAILY_RUN_MARKER_KEY}';
     `);
   });
+
+  /** BUG-01: the last IST day the daily job finished ("YYYY-MM-DD"), or null. */
+  async function lastRun(): Promise<string | null> {
+    const result = await pg.query<{ date: string | null }>(
+      `SELECT value->>'date' AS date FROM platform_settings WHERE key = $1`,
+      [DAILY_RUN_MARKER_KEY],
+    );
+    return result.rows[0]?.date ?? null;
+  }
+
+  async function setLastRun(date: string): Promise<void> {
+    await pg.query(
+      `INSERT INTO platform_settings (key, value) VALUES ($1, $2::jsonb)
+       ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+      [DAILY_RUN_MARKER_KEY, JSON.stringify({ date })],
+    );
+  }
 
   async function one(sqlText: string, params: unknown[]): Promise<string> {
     const result = await pg.query<{ id: string }>(sqlText, params);
@@ -352,6 +370,222 @@ describe('Feature C: notifications (PGlite)', () => {
 
     await runDailyNotifications({ now: new Date('2027-01-21T04:00:00Z'), send: sender }); // +3 = 24 Jan
     expect((await rows(delhi)).map((row) => row.title)).toEqual(['GSTR-3B for Oct–Dec 2026 is due on 24 Jan 2027']);
+  });
+
+  it('BUG-01: the first run ever covers today only and records the day; a normal next day covers that day only', async () => {
+    const biz = await createBusiness({ frequency: 'not_filing' });
+    await createUser(biz, 'owner');
+    await createInvoice(biz, { number: 'OLD/1', dueDate: '2026-12-01', totalPaise: 10_000 }); // overdue since 2 Dec
+
+    expect(await lastRun()).toBeNull();
+    const first = await runDailyNotifications({ now: NOW, send: sender });
+    expect(first.days).toEqual(['2026-12-08']);
+    expect(await rows(biz)).toEqual([]); // no flood of old reminders on the very first run
+    expect(await lastRun()).toBe('2026-12-08');
+
+    const next = await runDailyNotifications({ now: new Date('2026-12-09T04:00:00Z'), send: sender });
+    expect(next.days).toEqual(['2026-12-09']);
+    expect(await lastRun()).toBe('2026-12-09');
+  });
+
+  it('BUG-01: after two missed days the run creates their reminders once, worded for today; a re-run adds nothing', async () => {
+    const biz = await createBusiness({ frequency: 'not_filing' });
+    const owner = await createUser(biz, 'owner');
+    await setLastRun('2026-12-05'); // the job last finished on 5 Dec; 6 and 7 Dec were missed; today is 8 Dec
+
+    await createInvoice(biz, { number: 'D/04', dueDate: '2026-12-04', totalPaise: 40_000 }); // told on 5 Dec already
+    await createInvoice(biz, { number: 'D/05', dueDate: '2026-12-05', totalPaise: 10_000 }); // overdue on 6 Dec
+    await createInvoice(biz, { number: 'D/06', dueDate: '2026-12-06', totalPaise: 20_000 }); // overdue on 7 Dec
+    await createInvoice(biz, { number: 'D/07', dueDate: '2026-12-07', totalPaise: 30_000 }); // overdue today
+    await createInvoice(biz, { number: 'D/08', dueDate: '2026-12-08', totalPaise: 80_000 }); // due today: no item
+    await createInvoice(biz, { number: 'D/09', dueDate: '2026-12-09', totalPaise: 90_000 }); // "due soon" on 6 Dec
+    await createInvoice(biz, { number: 'D/10', dueDate: '2026-12-10', totalPaise: 11_000 }); // "due soon" on 7 Dec
+    await createInvoice(biz, { number: 'D/11', dueDate: '2026-12-11', totalPaise: 12_000 }); // "due soon" today
+
+    const summary = await runDailyNotifications({ now: NOW, send: sender });
+    expect(summary.days).toEqual(['2026-12-06', '2026-12-07', '2026-12-08']);
+    expect(summary.businessErrors).toBe(0);
+
+    const all = await rows(biz);
+    expect(all.every((row) => row.user_id === owner)).toBe(true);
+    expect(all.filter((row) => row.kind === 'invoices_overdue').map((row) => [row.title, row.body.slice(0, 4)])).toEqual(
+      expect.arrayContaining([
+        ['1 invoice became overdue on 6 Dec 2026', '₹100'],
+        ['1 invoice became overdue on 7 Dec 2026', '₹200'],
+        ['1 invoice became overdue today', '₹300'],
+      ]),
+    );
+    expect(all.filter((row) => row.kind === 'invoices_overdue')).toHaveLength(3);
+    expect(all.filter((row) => row.kind === 'invoices_due_soon').map((row) => row.title).sort()).toEqual([
+      '1 invoice due in 2 days',
+      '1 invoice due in 3 days',
+      '1 invoice due tomorrow',
+    ]);
+    expect(all.find((row) => row.title === '1 invoice due tomorrow')?.body).toContain('₹900');
+    expect(all.map((row) => row.body).join(' ')).not.toContain('₹400'); // 5 Dec was handled by its own run
+    expect(all.map((row) => row.body).join(' ')).not.toContain('₹800'); // due today is neither overdue nor "soon"
+    expect(await lastRun()).toBe('2026-12-08');
+
+    // The daily summary e-mail lists all six items once.
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.titles).toHaveLength(6);
+
+    sent = [];
+    const again = await runDailyNotifications({ now: NOW, send: sender });
+    expect(again.days).toEqual(['2026-12-08']);
+    expect(again.created).toBe(0);
+    expect(sent).toEqual([]);
+
+    // Even if the record were lost or rewound, the same days never tell anyone twice.
+    await setLastRun('2026-12-05');
+    const replay = await runDailyNotifications({ now: NOW, send: sender });
+    expect(replay.days).toHaveLength(3);
+    expect(replay.created).toBe(0);
+    expect(await rows(biz)).toHaveLength(6);
+  });
+
+  it('BUG-01: a long outage catches up 7 days at most', async () => {
+    const biz = await createBusiness({ frequency: 'not_filing' });
+    await createUser(biz, 'owner');
+    await setLastRun('2026-11-20');
+    await createInvoice(biz, { number: 'L/1', dueDate: '2026-11-30', totalPaise: 10_000 }); // overdue on 1 Dec: too old
+    await createInvoice(biz, { number: 'L/2', dueDate: '2026-12-01', totalPaise: 20_000 }); // overdue on 2 Dec: kept
+
+    const summary = await runDailyNotifications({ now: NOW, send: sender });
+    expect(summary.days).toEqual([
+      '2026-12-02', '2026-12-03', '2026-12-04', '2026-12-05', '2026-12-06', '2026-12-07', '2026-12-08',
+    ]);
+    expect((await rows(biz)).map((row) => row.title)).toEqual(['1 invoice became overdue on 2 Dec 2026']);
+  });
+
+  it('BUG-01: a missed GST reminder is caught up while the due date is ahead, never after it has passed', async () => {
+    const early = await createBusiness({ frequency: 'monthly' });
+    await createUser(early, 'owner');
+    await setLastRun('2026-12-07'); // 8 Dec (GSTR-1 due 11 Dec, 3 days ahead) was missed; today is 9 Dec
+    await runDailyNotifications({ now: new Date('2026-12-09T04:00:00Z'), send: sender });
+    expect((await rows(early)).map((row) => row.title)).toEqual(['GSTR-1 for November 2026 is due on 11 Dec 2026']);
+
+    await pg.query(`UPDATE businesses SET subscription_status = 'suspended' WHERE id = $1`, [early]);
+    const late = await createBusiness({ frequency: 'monthly' });
+    await createUser(late, 'owner');
+    await setLastRun('2026-12-07'); // 8 Dec missed, but today is 13 Dec: 11 Dec has passed
+    const summary = await runDailyNotifications({ now: new Date('2026-12-13T04:00:00Z'), send: sender });
+    expect(summary.days[0]).toBe('2026-12-08');
+    expect(await rows(late)).toEqual([]);
+  });
+
+  it('BUG-01: the 25 March year-end note is caught up when that day was missed', async () => {
+    const biz = await createBusiness({ frequency: 'not_filing' });
+    await createUser(biz, 'owner');
+    await setLastRun('2027-03-24');
+    const summary = await runDailyNotifications({ now: new Date('2027-03-27T04:00:00Z'), send: sender });
+    expect(summary.days).toEqual(['2027-03-25', '2027-03-26', '2027-03-27']);
+    expect(summary.created).toBe(1);
+    // Checked on the e-mail: the run's 90-day clean-up uses this test's 2027 date, while the row's created_at is the
+    // real date of the test run, so the bell row itself is tidied away at the end of this run.
+    expect(sent.map((email) => email.titles)).toEqual([['Financial year 2026-27 ends on 31 March']]);
+  });
+
+  it('BUG-01: the last-run record waits while a business fails, then catches up', async () => {
+    const biz = await createBusiness({ frequency: 'not_filing' });
+    await createUser(biz, 'owner');
+    await setLastRun('2026-12-05');
+    await createInvoice(biz, { number: 'F/1', dueDate: '2026-12-06', totalPaise: 10_000 }); // overdue on 7 Dec
+
+    await pg.exec(`
+      CREATE FUNCTION bug01_fail_notify() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'simulated failure'; END $$;
+      CREATE TRIGGER bug01_fail_notify BEFORE INSERT ON notifications
+        FOR EACH ROW WHEN (NEW.business_id = '${biz}'::uuid) EXECUTE FUNCTION bug01_fail_notify();
+    `);
+    try {
+      const failed = await runDailyNotifications({ now: NOW, send: sender });
+      expect(failed.businessErrors).toBe(1);
+      expect(await lastRun()).toBe('2026-12-05'); // not advanced: the next run retries these days
+    } finally {
+      await pg.exec('DROP TRIGGER bug01_fail_notify ON notifications; DROP FUNCTION bug01_fail_notify();');
+    }
+
+    const retried = await runDailyNotifications({ now: NOW, send: sender });
+    expect(retried.days).toEqual(['2026-12-06', '2026-12-07', '2026-12-08']);
+    expect((await rows(biz)).map((row) => row.title)).toEqual(['1 invoice became overdue on 7 Dec 2026']);
+    expect(await lastRun()).toBe('2026-12-08');
+  });
+
+  it('BUG-01: a future record (the clock went backwards) is replaced, keeping a retry point if a business fails', async () => {
+    const biz = await createBusiness({ frequency: 'not_filing' });
+    await createUser(biz, 'owner');
+    await createInvoice(biz, { number: 'C/1', dueDate: '2026-12-07', totalPaise: 10_000 }); // overdue on 8 Dec
+    await setLastRun('2026-12-09'); // "tomorrow"
+
+    await pg.exec(`
+      CREATE FUNCTION bug01_fail_future() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'simulated failure'; END $$;
+      CREATE TRIGGER bug01_fail_future BEFORE INSERT ON notifications
+        FOR EACH ROW WHEN (NEW.business_id = '${biz}'::uuid) EXECUTE FUNCTION bug01_fail_future();
+    `);
+    try {
+      const failed = await runDailyNotifications({ now: NOW, send: sender });
+      expect(failed.days).toEqual(['2026-12-08']); // the future record is not used
+      expect(failed.businessErrors).toBe(1);
+      expect(await lastRun()).toBe('2026-12-07'); // replaced by the retry point
+    } finally {
+      await pg.exec('DROP TRIGGER bug01_fail_future ON notifications; DROP FUNCTION bug01_fail_future();');
+    }
+
+    const next = await runDailyNotifications({ now: new Date('2026-12-09T04:00:00Z'), send: sender });
+    expect(next.days).toEqual(['2026-12-08', '2026-12-09']);
+    expect((await rows(biz)).map((row) => row.title)).toEqual(['1 invoice became overdue on 8 Dec 2026']);
+    expect(await lastRun()).toBe('2026-12-09');
+  });
+
+  it('BUG-01: a business failing on the first run ever still leaves a retry point for that day', async () => {
+    const biz = await createBusiness({ frequency: 'not_filing' });
+    await createUser(biz, 'owner');
+    await createInvoice(biz, { number: 'R/1', dueDate: '2026-12-07', totalPaise: 10_000 }); // overdue on 8 Dec
+    expect(await lastRun()).toBeNull();
+
+    await pg.exec(`
+      CREATE FUNCTION bug01_fail_first() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'simulated failure'; END $$;
+      CREATE TRIGGER bug01_fail_first BEFORE INSERT ON notifications
+        FOR EACH ROW WHEN (NEW.business_id = '${biz}'::uuid) EXECUTE FUNCTION bug01_fail_first();
+    `);
+    try {
+      const failed = await runDailyNotifications({ now: NOW, send: sender });
+      expect(failed.businessErrors).toBe(1);
+      expect(await lastRun()).toBe('2026-12-07'); // 8 Dec is not marked finished
+    } finally {
+      await pg.exec('DROP TRIGGER bug01_fail_first ON notifications; DROP FUNCTION bug01_fail_first();');
+    }
+
+    const next = await runDailyNotifications({ now: new Date('2026-12-09T04:00:00Z'), send: sender });
+    expect(next.days).toEqual(['2026-12-08', '2026-12-09']);
+    expect((await rows(biz)).map((row) => row.title)).toEqual(['1 invoice became overdue on 8 Dec 2026']);
+    expect(await lastRun()).toBe('2026-12-09');
+  });
+
+  it('BUG-01: an unreadable last-run record is replaced, so catch-up works again from the next day', async () => {
+    await pg.query(
+      `INSERT INTO platform_settings (key, value) VALUES ($1, '{"date":"garbage"}'::jsonb)`,
+      [DAILY_RUN_MARKER_KEY],
+    );
+    const run = await runDailyNotifications({ now: NOW, send: sender });
+    expect(run.days).toEqual(['2026-12-08']); // unreadable → today only
+    expect(await lastRun()).toBe('2026-12-08'); // "garbage" sorts after any date but is still replaced
+
+    await pg.query(`UPDATE platform_settings SET value = '{"other":1}'::jsonb WHERE key = $1`, [DAILY_RUN_MARKER_KEY]);
+    await runDailyNotifications({ now: NOW, send: sender });
+    expect(await lastRun()).toBe('2026-12-08'); // a record without a date is replaced too
+
+    await pg.query(`UPDATE platform_settings SET value = '{"date":9999}'::jsonb WHERE key = $1`, [DAILY_RUN_MARKER_KEY]);
+    await runDailyNotifications({ now: NOW, send: sender });
+    expect(await lastRun()).toBe('2026-12-08'); // a non-string date is replaced too
+
+    await setLastRun('2027-02-30'); // right shape, impossible date (and later than today as text)
+    const impossible = await runDailyNotifications({ now: NOW, send: sender });
+    expect(impossible.days).toEqual(['2026-12-08']);
+    expect(await lastRun()).toBe('2026-12-08');
   });
 
   it('plan expiring tomorrow is urgent and e-mailed on its own; the PDF-failure item reaches the owner', async () => {

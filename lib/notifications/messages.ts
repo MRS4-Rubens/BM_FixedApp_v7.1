@@ -2,7 +2,7 @@ import type { NotificationKind } from '@/lib/db/domain-values';
 import { formatPaiseAsInr } from '@/lib/money';
 import { PLAN_CATALOG } from '@/lib/subscriptions/plan-catalog';
 import type { PlanTier } from '@/lib/subscriptions/entitlements';
-import { formatIsoDateShort } from './dates';
+import { diffDaysIso, formatIsoDateShort } from './dates';
 import type { GstDueItem } from './gst-calendar';
 
 /**
@@ -27,24 +27,46 @@ function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`;
 }
 
-export function invoicesOverdueDraft(todayIso: string, count: number, amountPaise: number): NotificationDraft {
+/**
+ * `dayIso` is the day the invoices became overdue (the de-duplication key). `todayIso` is when the person reads it:
+ * the same day normally, a later day when the daily job catches up on a day it missed (BUG-01).
+ */
+export function invoicesOverdueDraft(
+  dayIso: string,
+  count: number,
+  amountPaise: number,
+  todayIso: string = dayIso,
+): NotificationDraft {
+  const when = dayIso === todayIso ? 'today' : `on ${formatIsoDateShort(dayIso)}`;
   return {
     kind: 'invoices_overdue',
-    title: `${plural(count, 'invoice', 'invoices')} became overdue today`,
+    title: `${plural(count, 'invoice', 'invoices')} became overdue ${when}`,
     body: `${formatPaiseAsInr(amountPaise)} is still to be collected on ${count === 1 ? 'it' : 'them'}. Open the overdue list to send reminders or record payments.`,
     link: '/invoices?status=overdue',
-    dedupeKey: `invoices-overdue:${todayIso}`,
+    dedupeKey: `invoices-overdue:${dayIso}`,
     urgent: false,
   };
 }
 
-export function invoicesDueSoonDraft(todayIso: string, dueIso: string, count: number, amountPaise: number): NotificationDraft {
+/**
+ * `dayIso` is the day this reminder belongs to (the de-duplication key) and `dueIso` the invoices' due date. The title
+ * counts the days left from `todayIso`, so a reminder caught up after a missed day still reads true (BUG-01).
+ */
+export function invoicesDueSoonDraft(
+  dayIso: string,
+  dueIso: string,
+  count: number,
+  amountPaise: number,
+  todayIso: string = dayIso,
+): NotificationDraft {
+  const daysLeft = diffDaysIso(todayIso, dueIso);
+  const when = daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`;
   return {
     kind: 'invoices_due_soon',
-    title: `${plural(count, 'invoice', 'invoices')} due in 3 days`,
+    title: `${plural(count, 'invoice', 'invoices')} due ${when}`,
     body: `${formatPaiseAsInr(amountPaise)} falls due on ${formatIsoDateShort(dueIso)}. A gentle reminder now often gets you paid on time.`,
     link: '/invoices?status=sent',
-    dedupeKey: `invoices-due-soon:${todayIso}`,
+    dedupeKey: `invoices-due-soon:${dayIso}`,
     urgent: false,
   };
 }

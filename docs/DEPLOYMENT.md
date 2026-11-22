@@ -226,7 +226,7 @@ Configure the following 6 alert rules in the production Sentry project:
    - Trigger: Missed check-in or execution error / timeout. *(Note: Created automatically on the first check-in).*
 7. **Daily notifications cron missed or failed** (feature C):
    - No Sentry cron monitor (the free Sentry plan includes one, used by the archival job). Watched instead by cron-job.org failure e-mails (schedule `30 3 * * *` UTC = 09:00 IST, in `lib/cron/schedules.ts`) and by `notifications-cron` errors in Sentry.
-   - Trigger: failed call or execution error. A missed day means that day's reminders (overdue invoices, GST due dates, plan expiry) are not created; nothing wrong is ever sent. Urgent e-mails left pending are retried by the next run (up to 3 tries within 3 days).
+   - Trigger: failed call or execution error. A missed day is caught up by the next run (BUG-01): it also creates the missed days' overdue, due-soon, GST and 31 March reminders (up to 7 days back, never twice; reminders whose date has passed are dropped). The last finished day is stored in `platform_settings` key `daily_notifications_last_run`. Urgent e-mails left pending are retried by the next run (up to 3 tries within 3 days).
 
 > **Note**: These alert rules are configured on launch day with the new Sentry account (checklist 3.9); uptime monitors with UptimeRobot (3.13).
 
