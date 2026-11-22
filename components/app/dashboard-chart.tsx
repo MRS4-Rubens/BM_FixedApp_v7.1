@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import type { MonthlySalesData } from '@/lib/actions/reports/get-sales-by-period'
 import type { FinancialYearSalesData } from '@/lib/actions/reports/get-sales-by-financial-year'
+import { formatChartAxisCurrency, formatChartCurrency } from '@/lib/reports/chart-format'
 
 export interface DashboardChartProps {
   initialSalesData: MonthlySalesData[]
@@ -34,22 +35,6 @@ interface ChartDataItem {
 
 interface TooltipPayloadItem {
   payload: ChartDataItem
-}
-
-function formatCurrency(val: number) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(val)
-}
-
-function formatYAxisCurrency(val: number) {
-  if (val === 0) return '₹0'
-  if (val >= 10000000) return `₹${(val / 10000000).toFixed(1)}Cr`
-  if (val >= 100000) return `₹${(val / 100000).toFixed(val % 100000 === 0 ? 0 : 1)}L`
-  if (val >= 1000) return `₹${(val / 1000).toFixed(0)}k`
-  return `₹${val}`
 }
 
 function CustomTooltip({
@@ -121,7 +106,7 @@ function CustomTooltip({
       <div className="flex items-center justify-between gap-5 text-[11px]">
         <span className="font-medium text-slate-300">Total Sales:</span>
         <span className="font-bold text-white font-mono text-[12px]">
-          {formatCurrency(item.grand_total)}
+          {formatChartCurrency(item.grand_total)}
         </span>
       </div>
 
@@ -129,7 +114,7 @@ function CustomTooltip({
       <div className="flex items-center justify-between gap-5 text-[11px] mt-0.5">
         <span className="font-medium text-slate-300">GST Collected:</span>
         <span className="font-bold text-emerald-400 font-mono text-[12px]">
-          {formatCurrency(item.total_tax)}
+          {formatChartCurrency(item.total_tax)}
         </span>
       </div>
     </div>
@@ -228,7 +213,7 @@ export function DashboardChart({
               Revenue Overview
             </h3>
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-              {formatCurrency(totalRevenue)}
+              {formatChartCurrency(totalRevenue)}
             </span>
           </div>
           <p className="text-xs font-semibold text-muted-foreground mt-0.5">
@@ -310,7 +295,7 @@ export function DashboardChart({
                   fill: 'hsl(var(--muted-foreground))',
                   fontWeight: 500,
                 }}
-                tickFormatter={formatYAxisCurrency}
+                tickFormatter={formatChartAxisCurrency}
                 allowDecimals={false}
                 domain={[0, maxTotal > 0 ? 'auto' : 1000]}
               />

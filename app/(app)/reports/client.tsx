@@ -34,22 +34,7 @@ import type { MonthlySalesData } from '@/lib/actions/reports/get-sales-by-period
 import type { getTopCustomers } from '@/lib/actions/reports/get-top-customers'
 import type { getTopProducts } from '@/lib/actions/reports/get-top-products'
 import { reportRangeMessage, reportRangeProblem } from '@/lib/reports/date-range'
-
-function formatCurrency(val: number) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(val)
-}
-
-function formatYAxisCurrency(val: number) {
-  if (val === 0) return '₹0'
-  if (val >= 10000000) return `₹${(val / 10000000).toFixed(1)}Cr`
-  if (val >= 100000) return `₹${(val / 100000).toFixed(val % 100000 === 0 ? 0 : 1)}L`
-  if (val >= 1000) return `₹${(val / 1000).toFixed(0)}k`
-  return `₹${val}`
-}
+import { formatChartAxisCurrency, formatChartCurrency } from '@/lib/reports/chart-format'
 
 interface ReportsChartTooltipProps {
   active?: boolean
@@ -112,7 +97,7 @@ function ReportsChartTooltip({
               Taxable Turnover:
             </span>
             <span className="font-bold text-white font-mono text-[12px]">
-              {formatCurrency(item.subtotal)}
+              {formatChartCurrency(item.subtotal)}
             </span>
           </div>
 
@@ -122,14 +107,14 @@ function ReportsChartTooltip({
               Output GST:
             </span>
             <span className="font-bold text-emerald-400 font-mono text-[12px]">
-              {formatCurrency(item.total_tax)}
+              {formatChartCurrency(item.total_tax)}
             </span>
           </div>
 
           <div className="border-t border-slate-800/60 pt-1 mt-1 flex items-center justify-between gap-4 font-semibold">
             <span className="text-slate-200">Total Invoiced:</span>
             <span className="font-bold text-white font-mono text-[12px]">
-              {formatCurrency(item.grand_total)}
+              {formatChartCurrency(item.grand_total)}
             </span>
           </div>
         </div>
@@ -141,7 +126,7 @@ function ReportsChartTooltip({
               CGST:
             </span>
             <span className="font-bold text-sky-400 font-mono text-[12px]">
-              {formatCurrency(item.total_cgst)}
+              {formatChartCurrency(item.total_cgst)}
             </span>
           </div>
 
@@ -151,7 +136,7 @@ function ReportsChartTooltip({
               SGST/UTGST:
             </span>
             <span className="font-bold text-emerald-400 font-mono text-[12px]">
-              {formatCurrency(item.total_sgst)}
+              {formatChartCurrency(item.total_sgst)}
             </span>
           </div>
 
@@ -161,14 +146,14 @@ function ReportsChartTooltip({
               IGST:
             </span>
             <span className="font-bold text-purple-400 font-mono text-[12px]">
-              {formatCurrency(item.total_igst)}
+              {formatChartCurrency(item.total_igst)}
             </span>
           </div>
 
           <div className="border-t border-slate-800/60 pt-1 mt-1 flex items-center justify-between gap-4 font-semibold">
             <span className="text-slate-200">Total GST Liability:</span>
             <span className="font-bold text-white font-mono text-[12px]">
-              {formatCurrency(item.total_tax)}
+              {formatChartCurrency(item.total_tax)}
             </span>
           </div>
         </div>
@@ -492,7 +477,7 @@ export function ReportsClient({
                   Turnover &amp; GST Analytics
                 </h3>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                  {formatCurrency(totalGrand)}
+                  {formatChartCurrency(totalGrand)}
                 </span>
               </div>
               <p className="text-xs font-semibold text-muted-foreground mt-0.5">
@@ -595,7 +580,7 @@ export function ReportsClient({
                       fill: 'hsl(var(--muted-foreground))',
                       fontWeight: 500,
                     }}
-                    tickFormatter={formatYAxisCurrency}
+                    tickFormatter={formatChartAxisCurrency}
                     allowDecimals={false}
                     domain={[0, maxVal > 0 ? 'auto' : 1000]}
                   />
@@ -672,11 +657,11 @@ export function ReportsClient({
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="inline-flex items-center gap-1.5 font-medium">
                     <span className="size-2 rounded-full bg-indigo-500 shrink-0" />
-                    Taxable Turnover: <strong className="text-foreground font-mono">{formatCurrency(totalTurnover)}</strong>
+                    Taxable Turnover: <strong className="text-foreground font-mono">{formatChartCurrency(totalTurnover)}</strong>
                   </span>
                   <span className="inline-flex items-center gap-1.5 font-medium">
                     <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
-                    Output GST: <strong className="text-foreground font-mono">{formatCurrency(totalTax)}</strong>
+                    Output GST: <strong className="text-foreground font-mono">{formatChartCurrency(totalTax)}</strong>
                   </span>
                 </div>
                 <span className="text-[10px] text-muted-foreground italic font-sans hidden sm:inline">
@@ -687,15 +672,15 @@ export function ReportsClient({
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="inline-flex items-center gap-1.5 font-medium">
                   <span className="size-2 rounded-full bg-sky-500 shrink-0" />
-                  CGST: <strong className="text-foreground font-mono">{formatCurrency(totalCgst)}</strong>
+                  CGST: <strong className="text-foreground font-mono">{formatChartCurrency(totalCgst)}</strong>
                 </span>
                 <span className="inline-flex items-center gap-1.5 font-medium">
                   <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
-                  SGST/UTGST: <strong className="text-foreground font-mono">{formatCurrency(totalSgst)}</strong>
+                  SGST/UTGST: <strong className="text-foreground font-mono">{formatChartCurrency(totalSgst)}</strong>
                 </span>
                 <span className="inline-flex items-center gap-1.5 font-medium">
                   <span className="size-2 rounded-full bg-purple-500 shrink-0" />
-                  IGST: <strong className="text-foreground font-mono">{formatCurrency(totalIgst)}</strong>
+                  IGST: <strong className="text-foreground font-mono">{formatChartCurrency(totalIgst)}</strong>
                 </span>
               </div>
             )}
