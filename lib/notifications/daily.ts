@@ -106,7 +106,10 @@ async function loadMoney(dueDates: readonly string[]): Promise<Map<string, Map<s
 interface LastRunRecord {
   /** The last IST day the job finished for every business; null when there is no usable record. */
   readonly usableIso: string | null;
-  /** The stored "date" text exactly as read (null when there is no row or no text), for the compare-and-set save. */
+  /**
+   * The stored `value->>'date'` text exactly as read (null when there is no row or no "date"), taken with the SAME
+   * expression the compare-and-set save uses, so the two always agree (also for a non-string date such as 9999).
+   */
   readonly storedText: string | null;
 }
 
@@ -117,13 +120,11 @@ interface LastRunRecord {
  */
 async function loadLastRun(todayIso: string): Promise<LastRunRecord> {
   const [row] = await db
-    .select({ value: platformSettings.value })
+    .select({ storedText: sql<string | null>`${platformSettings.value}->>'date'` })
     .from(platformSettings)
     .where(eq(platformSettings.key, DAILY_RUN_MARKER_KEY))
     .limit(1);
-  const value: unknown = row?.value;
-  const date: unknown = typeof value === 'object' && value !== null && 'date' in value ? value.date : null;
-  const storedText = typeof date === 'string' ? date : null;
+  const storedText = typeof row?.storedText === 'string' ? row.storedText : null;
   const usableIso = storedText !== null && isIsoCalendarDate(storedText) && storedText <= todayIso ? storedText : null;
   return { usableIso, storedText };
 }

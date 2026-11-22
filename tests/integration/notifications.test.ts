@@ -578,6 +578,10 @@ describe('Feature C: notifications (PGlite)', () => {
     await runDailyNotifications({ now: NOW, send: sender });
     expect(await lastRun()).toBe('2026-12-08'); // a record without a date is replaced too
 
+    await pg.query(`UPDATE platform_settings SET value = '{"date":9999}'::jsonb WHERE key = $1`, [DAILY_RUN_MARKER_KEY]);
+    await runDailyNotifications({ now: NOW, send: sender });
+    expect(await lastRun()).toBe('2026-12-08'); // a non-string date is replaced too
+
     await setLastRun('2027-02-30'); // right shape, impossible date (and later than today as text)
     const impossible = await runDailyNotifications({ now: NOW, send: sender });
     expect(impossible.days).toEqual(['2026-12-08']);
