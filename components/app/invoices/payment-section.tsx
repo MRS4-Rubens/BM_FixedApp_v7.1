@@ -38,6 +38,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip';
 import { useIsOwner, useCanEdit } from '@/components/app/current-user-role';
+import { SERVER_UNREACHABLE_MESSAGE } from '@/lib/actions/_shared/client-errors';
 
 export interface PaymentItem {
   id: string;
@@ -166,22 +167,28 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
   const onSubmit = async (data: RecordPaymentInput) => {
     setIsSubmitting(true);
     setError(null);
-    const result = await recordPayment(data);
-    if (!result.success) {
-      setError(result.error.message || `Failed to record ${word.toLowerCase()}`);
-    } else {
-      const remainingPaise = data.kind === 'refund' ? result.data.refund_due_paise : result.data.remaining_balance_paise;
-      reset({
-        invoice_id: invoice.id,
-        kind: data.kind,
-        amount: remainingPaise > 0 ? paiseToRupees(remainingPaise) : 0,
-        payment_date: formatIstDateAsIso(new Date()),
-        payment_method: data.payment_method,
-        reference_number: '',
-        notes: ''
-      });
+    // BUG-05: a thrown call (network drop, old tab after a redeploy) must not leave the button on "Recording…".
+    try {
+      const result = await recordPayment(data);
+      if (!result.success) {
+        setError(result.error.message || `Failed to record ${word.toLowerCase()}`);
+      } else {
+        const remainingPaise = data.kind === 'refund' ? result.data.refund_due_paise : result.data.remaining_balance_paise;
+        reset({
+          invoice_id: invoice.id,
+          kind: data.kind,
+          amount: remainingPaise > 0 ? paiseToRupees(remainingPaise) : 0,
+          payment_date: formatIstDateAsIso(new Date()),
+          payment_method: data.payment_method,
+          reference_number: '',
+          notes: ''
+        });
+      }
+    } catch {
+      setError(SERVER_UNREACHABLE_MESSAGE);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleOpenVoidDialog = (payment: PaymentItem) => {

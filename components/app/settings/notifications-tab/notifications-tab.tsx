@@ -13,6 +13,7 @@ import {
   type NotificationSettings,
 } from '@/lib/actions/notifications/notification-settings';
 import { GstFrequencyCard } from './gst-frequency-card';
+import { SERVER_UNREACHABLE_MESSAGE } from '@/lib/actions/_shared/client-errors';
 
 /**
  * Feature C: Settings → Notifications. Every person (owner, staff, accountant) manages their OWN e-mail choices;
@@ -28,12 +29,17 @@ export function NotificationsTab() {
 
   const load = useCallback(async () => {
     setLoadError(null);
-    const result = await getNotificationSettings({});
-    if (result.success) {
-      setSettings(result.data);
-      setPrefs(result.data.prefs);
-    } else {
-      setLoadError(result.error.message);
+    // BUG-05: a thrown call shows the "Try again" box instead of an endless loading skeleton.
+    try {
+      const result = await getNotificationSettings({});
+      if (result.success) {
+        setSettings(result.data);
+        setPrefs(result.data.prefs);
+      } else {
+        setLoadError(result.error.message);
+      }
+    } catch {
+      setLoadError(SERVER_UNREACHABLE_MESSAGE);
     }
   }, []);
 
@@ -76,14 +82,19 @@ export function NotificationsTab() {
     if (!prefs || !settings) return;
     setSaving(true);
     setMessage(null);
-    const result = await saveNotificationPreferences({ email: { ...prefs.email }, digest: prefs.digest });
-    setSaving(false);
-    if (result.success) {
-      setSettings({ ...settings, prefs: result.data.prefs });
-      setPrefs(result.data.prefs);
-      setMessage({ ok: true, text: 'Your e-mail choices are saved.' });
-    } else {
-      setMessage({ ok: false, text: result.error.message });
+    try {
+      const result = await saveNotificationPreferences({ email: { ...prefs.email }, digest: prefs.digest });
+      if (result.success) {
+        setSettings({ ...settings, prefs: result.data.prefs });
+        setPrefs(result.data.prefs);
+        setMessage({ ok: true, text: 'Your e-mail choices are saved.' });
+      } else {
+        setMessage({ ok: false, text: result.error.message });
+      }
+    } catch {
+      setMessage({ ok: false, text: SERVER_UNREACHABLE_MESSAGE });
+    } finally {
+      setSaving(false); // BUG-05: never stuck on "Saving…"
     }
   }
 

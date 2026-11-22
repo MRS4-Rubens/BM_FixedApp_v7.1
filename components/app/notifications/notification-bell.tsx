@@ -145,7 +145,8 @@ export function NotificationBell() {
       setItems((current) => current.map((entry) => (entry.id === item.id ? { ...entry, read: true } : entry)));
       setUnread((count) => Math.max(0, count - 1));
       generation.current += 1; // discard any refresh already in flight
-      void markNotificationsRead({ ids: [item.id] }).then(() => refresh());
+      // BUG-05: refresh either way — after a failed call the server's real unread state comes back (no unhandled rejection).
+      void markNotificationsRead({ ids: [item.id] }).then(refresh, refresh);
     }
     const link = safeInternalLink(item.link);
     if (link) {
@@ -158,7 +159,11 @@ export function NotificationBell() {
     setItems((current) => current.map((entry) => ({ ...entry, read: true })));
     setUnread(0);
     generation.current += 1; // discard any refresh already in flight
-    await markNotificationsRead({ all: true });
+    try {
+      await markNotificationsRead({ all: true });
+    } catch {
+      // BUG-05: the refresh below restores the server's real unread state; nothing to show the user here.
+    }
     void refresh();
   }
 
