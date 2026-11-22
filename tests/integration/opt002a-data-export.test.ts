@@ -4,7 +4,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as schema from '@/lib/db/schema';
-import { loadDataExport } from '@/lib/account/data-export';
+import { collectDataExport } from '@/tests/helpers/collect-data-export';
 
 const DRIZZLE_DIR = join(process.cwd(), 'drizzle');
 
@@ -268,7 +268,7 @@ describe('OPT-002a: Data Export Integration Tests (PGlite)', () => {
   });
 
   it('exports complete, valid data isolated strictly to business A', async () => {
-    const exportData = await loadDataExport(db, bizAId);
+    const { data: exportData } = await collectDataExport(db, bizAId); // API-02: the streamed file, parsed
 
     // Format & metadata
     expect(exportData.format).toBe('bill-matrix-data-export');
@@ -328,8 +328,64 @@ describe('OPT-002a: Data Export Integration Tests (PGlite)', () => {
     expect(exportData.subscription_requests[0].id).toBe(subAId);
   });
 
+  it('API-02: pages hand over exactly (same-instant rows, ties broken by id); lines stay with their invoice', async () => {
+    // A separate business so the other tests' counts are untouched. Rows created in ONE statement share created_at,
+    // which is the case the (created_at, id) cursor must get right.
+    const bizC = await insertOne(
+      pg,
+      `INSERT INTO businesses (legal_name, gstin, address_line1, city, state_code, pincode)
+       VALUES ('Gamma Paging Co', '29AAGCG1234K1Z5', '1 Gamma Rd', 'Mysuru', '29', '570001') RETURNING id`,
+    );
+    const fyC = await insertOne(
+      pg,
+      `INSERT INTO financial_years (business_id, label, start_date, end_date, is_current)
+       VALUES ($1, '2026-27', '2026-04-01', '2027-03-31', true) RETURNING id`,
+      [bizC],
+    );
+    await pg.query(
+      `INSERT INTO customers (business_id, name, state_code) SELECT $1, 'Gamma Customer ' || n, '29' FROM generate_series(1, 5) n`,
+      [bizC],
+    );
+    await pg.query(
+      `INSERT INTO invoices (business_id, financial_year_id, invoice_number, lifecycle_status, place_of_supply_state_code,
+         subtotal_paise, total_tax_paise, grand_total_paise, invoice_date)
+       SELECT $1, $2, 'DRAFT-G-' || n, 'draft', '29', 1000 * n, 0, 1000 * n, '2026-04-10' FROM generate_series(1, 7) n`,
+      [bizC, fyC],
+    );
+    await pg.query(
+      `INSERT INTO invoice_line_items (invoice_id, description, hsn_sac_code, quantity, unit_of_measurement, unit_price_paise,
+         taxable_value_paise, tax_rate_percentage, line_total_paise, sort_order)
+       SELECT i.id, 'Line ' || k || ' of ' || i.invoice_number, '9965', 1, 'NOS', 1000, 1000, '0.00', 1000, k
+       FROM invoices i CROSS JOIN generate_series(0, 1) k WHERE i.business_id = $1`,
+      [bizC],
+    );
+
+    const expectedInvoiceIds = (
+      await pg.query<{ id: string }>('SELECT id FROM invoices WHERE business_id = $1 ORDER BY created_at, id', [bizC])
+    ).rows.map((row) => row.id);
+    const sameInstant = await pg.query<{ n: number }>(
+      'SELECT count(DISTINCT created_at)::int AS n FROM invoices WHERE business_id = $1',
+      [bizC],
+    );
+    expect(sameInstant.rows[0]?.n).toBe(1); // all 7 share one created_at
+
+    const paged = await collectDataExport(db, bizC, { pageSize: 2 });
+    expect(paged.data.invoices.map((inv) => inv.id)).toEqual(expectedInvoiceIds); // 4 pages, nothing lost or repeated
+    expect(paged.data.customers).toHaveLength(5);
+    for (const invoice of paged.data.invoices) {
+      expect(invoice.line_items.map((line) => line.description)).toEqual([
+        `Line 0 of ${String(invoice.invoice_number)}`,
+        `Line 1 of ${String(invoice.invoice_number)}`,
+      ]);
+    }
+    // One page of 500 gives the same file content (only the paging differs).
+    const whole = await collectDataExport(db, bizC, { now: new Date(paged.data.exported_at) });
+    expect(whole.text).toBe(paged.text);
+    expect(paged.chunks).toBeGreaterThan(whole.chunks);
+  });
+
   it('guarantees ZERO leakage of Business B identifiers or data', async () => {
-    const exportData = await loadDataExport(db, bizAId);
+    const { data: exportData } = await collectDataExport(db, bizAId); // API-02: the streamed file, parsed
     const serialized = JSON.stringify(exportData);
 
     const bIdentifiers = [
@@ -361,7 +417,7 @@ describe('OPT-002a: Data Export Integration Tests (PGlite)', () => {
   });
 
   it('guarantees sensitive infrastructure keys and internal columns are stripped', async () => {
-    const exportData = await loadDataExport(db, bizAId);
+    const { data: exportData } = await collectDataExport(db, bizAId); // API-02: the streamed file, parsed
     const serialized = JSON.stringify(exportData);
 
     const blockedKeys = [
@@ -384,7 +440,7 @@ describe('OPT-002a: Data Export Integration Tests (PGlite)', () => {
   });
 
   it('verifies amounts remain numbers/integers and dates are formatted as ISO strings', async () => {
-    const exportData = await loadDataExport(db, bizAId);
+    const { data: exportData } = await collectDataExport(db, bizAId); // API-02: the streamed file, parsed
 
     // Amounts
     expect(typeof exportData.invoices[0].subtotal_paise).toBe('number');
