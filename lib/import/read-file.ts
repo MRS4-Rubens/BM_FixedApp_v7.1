@@ -32,7 +32,14 @@ export type ReadFileResult =
   | { readonly ok: false; readonly code: ReadFileErrorCode; readonly message: string };
 
 const MAX_ZIP_ENTRIES = 200;
-const MAX_ZIP_UNCOMPRESSED_BYTES = 30 * 1024 * 1024;
+/**
+ * SVC-03: ExcelJS builds the whole workbook in memory (several times the XML size) before the row limit is checked,
+ * on a 512 MB Render instance that already uses ~160–220 MB. Real 1000-row files unpack to ~0.5 MB (customers 541 KB,
+ * products 464 KB, measured 2026-11-22); 1000 unique rows with every column at its maximum length in Indian-language
+ * text unpack to ~3.6 MB (products) / ~2.3 MB (customers), see tests/unit/bulk-import-reader.test.ts. 8 MB keeps more
+ * than twice that headroom and refuses anything bigger before a single byte is inflated (it was 30 MB).
+ */
+export const MAX_ZIP_UNCOMPRESSED_BYTES = 8 * 1024 * 1024;
 const BASE64_PATTERN = /^[A-Za-z0-9+/]*={0,2}$/;
 
 function fail(code: ReadFileErrorCode, message: string): ReadFileResult {
