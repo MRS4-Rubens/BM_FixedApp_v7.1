@@ -6,12 +6,15 @@ import { db } from '@/lib/db/client';
 import { invoices, customers, creditNotes } from '@/lib/db/schema';
 import { eq, and, between, sql } from 'drizzle-orm';
 import { z } from 'zod';
+import { checkReportRange, reportRangeShape } from '@/lib/validations/report-range';
 
-const getTopCustomersSchema = z.object({
-  startDate: z.string(),
-  endDate: z.string(),
-  limit: z.number().default(10)
-});
+// BUG-02: same date rule as the Reports page and the exports; a bounded list size.
+const getTopCustomersSchema = z
+  .object({
+    ...reportRangeShape,
+    limit: z.number().int().min(1).max(50).default(10),
+  })
+  .superRefine(checkReportRange);
 
 export const getTopCustomers = createAuthenticatedAction(getTopCustomersSchema, async (input, context) => {
   const businessId = context.appUser.business_id;

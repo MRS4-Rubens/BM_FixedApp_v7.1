@@ -33,6 +33,7 @@ import { useIsClient } from '@/lib/hooks/use-is-client'
 import type { MonthlySalesData } from '@/lib/actions/reports/get-sales-by-period'
 import type { getTopCustomers } from '@/lib/actions/reports/get-top-customers'
 import type { getTopProducts } from '@/lib/actions/reports/get-top-products'
+import { reportRangeMessage, reportRangeProblem } from '@/lib/reports/date-range'
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -188,6 +189,8 @@ interface ReportsClientProps {
   startDate: string
   endDate: string
   canExport?: boolean
+  /** BUG-02: set when the requested custom window could not be used and this month is shown instead. */
+  rangeNotice?: string | null
 }
 
 const statutoryCards = [
@@ -242,12 +245,14 @@ export function ReportsClient({
   startDate,
   endDate,
   canExport = true,
+  rangeNotice = null,
 }: ReportsClientProps) {
   const router = useRouter()
 
   const [selectedPreset, setSelectedPreset] = useState<string>(currentPeriod)
   const [customStart, setCustomStart] = useState<string>(startDate)
   const [customEnd, setCustomEnd] = useState<string>(endDate)
+  const [customError, setCustomError] = useState<string | null>(null)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const isMounted = useIsClient()
   const [chartMode, setChartMode] = useState<'turnover_tax' | 'tax_split'>('turnover_tax')
@@ -276,7 +281,15 @@ export function ReportsClient({
 
   const handleApplyCustom = () => {
     if (!customStart || !customEnd) return
-    router.push(`/reports?period=custom&startDate=${customStart}&endDate=${customEnd}`)
+    // BUG-02: same rule as the server (dates in the wrong order are swapped, as the page does).
+    const [from, to] = customStart <= customEnd ? [customStart, customEnd] : [customEnd, customStart]
+    const problem = reportRangeProblem(from, to)
+    if (problem !== null) {
+      setCustomError(reportRangeMessage(problem))
+      return
+    }
+    setCustomError(null)
+    router.push(`/reports?period=custom&startDate=${from}&endDate=${to}`)
   }
 
   const displayedCustomers = topCustomers.slice(0, 3)
@@ -310,6 +323,11 @@ export function ReportsClient({
               </span>
             </span>
           </div>
+          {(customError ?? rangeNotice) && (
+            <p role="status" className="text-xs sm:text-sm font-medium text-amber-700 dark:text-amber-400">
+              {customError ?? rangeNotice}
+            </p>
+          )}
         </div>
 
         {/* Right Side: Period & Custom Date Range Filter Card */}
