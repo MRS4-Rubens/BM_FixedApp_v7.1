@@ -1,15 +1,29 @@
 import type { Writable } from 'node:stream';
 import type ExcelJS from 'exceljs';
-import type { Gstr1ExportData } from '@/lib/actions/reports/get-gstr1-data';
+import type { Gstr1ExportData, Gstr1HsnRow } from '@/lib/actions/reports/get-gstr1-data';
 import { paiseToRupees } from '@/lib/money';
 import { columnsWithoutHeaders, commitDataRow, createStreamingWorkbook } from '@/lib/excel/streaming-workbook';
 
 const currencyFormat = '#,##0.00';
 
-/** Streams the HSN / SAC summary (GSTR-1 Table 12) workbook into `stream`. */
+/**
+ * Streams the HSN / SAC summary (GSTR-1 Table 12) workbook into `stream`. MONEY-05: one sheet per portal tab, since
+ * Table 12 has separate "B2B Supplies" and "B2C Supplies" tabs from the May 2025 return period.
+ */
 export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable): Promise<void> {
   const workbook = createStreamingWorkbook(stream);
+  await writeHsnSheet(workbook, data, 'HSN Summary (B2B)', 'B2B Supplies', data.hsnB2b);
+  await writeHsnSheet(workbook, data, 'HSN Summary (B2C)', 'B2C Supplies', data.hsnB2c);
+  await workbook.commit();
+}
 
+async function writeHsnSheet(
+  workbook: ReturnType<typeof createStreamingWorkbook>,
+  data: Gstr1ExportData,
+  sheetName: string,
+  tabLabel: string,
+  rowsData: readonly Gstr1HsnRow[],
+): Promise<void> {
   const HEADER_FILL: ExcelJS.Fill = {
     type: 'pattern',
     pattern: 'solid',
@@ -29,10 +43,7 @@ export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable):
     right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
   };
 
-  // ---------------------------------------------------------
-  // SHEET 1: HSN / SAC Summary (Table 12 Standard)
-  // ---------------------------------------------------------
-  const sheet = workbook.addWorksheet('HSN Summary', {
+  const sheet = workbook.addWorksheet(sheetName, {
     views: [{ state: 'frozen', ySplit: 6 }]
   });
 
@@ -49,7 +60,7 @@ export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable):
 
   sheet.mergeCells('A3:F3');
   const periodCell = sheet.getCell('A3');
-  periodCell.value = `HSN / SAC Outward Supplies Summary (Table 12) — ${data.label}`;
+  periodCell.value = `HSN / SAC Outward Supplies Summary (Table 12, ${tabLabel}) — ${data.label}`;
   periodCell.font = { name: 'Arial', bold: true, size: 11, color: { argb: 'FFB45309' } };
 
   sheet.mergeCells('A4:F4');
@@ -94,8 +105,8 @@ export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable):
   let tTax = 0;
   let tTotal = 0;
 
-  for (let index = 0; index < data.hsn.length; index++) {
-    const item = data.hsn[index];
+  for (let index = 0; index < rowsData.length; index++) {
+    const item = rowsData[index];
     const taxable = paiseToRupees(item.taxableValuePaise);
     const cgst = paiseToRupees(item.centralTaxPaise);
     const sgst = paiseToRupees(item.stateUtTaxPaise);
@@ -151,7 +162,7 @@ export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable):
   totalRow.values = {
     sno: '',
     hsn: 'TOTAL',
-    desc: `${data.hsn.length} Unique HSN/SAC Categories`,
+    desc: `${rowsData.length} Unique HSN/SAC Categories`,
     uqc: '',
     qty: tQtyThousandths / 1000,
     rate: '',
@@ -179,5 +190,4 @@ export async function writeHsnWorkbook(data: Gstr1ExportData, stream: Writable):
   });
 
   sheet.commit();
-  await workbook.commit();
 }

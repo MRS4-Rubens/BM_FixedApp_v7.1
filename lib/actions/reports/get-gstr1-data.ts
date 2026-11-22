@@ -123,7 +123,13 @@ export interface Gstr1ExportData {
   b2cs: Gstr1B2csRow[];
   cdnr: Gstr1CdnrRow[];
   cdnur: Gstr1CdnurRow[];
-  hsn: Gstr1HsnRow[];
+  /**
+   * GSTR-1 Table 12 is filed in two tabs since the May 2025 return period (GSTN Phase-3 advisory): "B2B Supplies"
+   * (recipient has a 15-character GSTIN, the same rule as Tables 4 / 9B-registered) and "B2C Supplies" (everyone else).
+   * MONEY-05. A credit note goes to the tab of its own recipient, as a negative row (MONEY-03).
+   */
+  hsnB2b: Gstr1HsnRow[];
+  hsnB2c: Gstr1HsnRow[];
   docs: Gstr1DocRow[];
   summary: {
     b2bCount: number;
@@ -379,9 +385,16 @@ export const getGstr1ExportData = createAuthenticatedAction(exportRangeSchema, a
   }
 
   // 5. HSN Summary (Table 12) from Invoice Line Items (MONEY-03: exact quantities, see lib/reports/hsn-summary.ts)
-  const hsnSummary = new HsnSummaryAccumulator();
+  // MONEY-05: one accumulator per Table 12 tab; an invoice line goes to the tab of its invoice's recipient.
+  const hsnB2bSummary = new HsnSummaryAccumulator();
+  const hsnB2cSummary = new HsnSummaryAccumulator();
+  const registeredInvoiceIds = new Set(
+    rawInvoices
+      .filter((inv) => Boolean(inv.customer_gstin && inv.customer_gstin.trim().length === 15))
+      .map((inv) => inv.id),
+  );
   for (const item of rawLineItems) {
-    hsnSummary.addInvoiceLine(item);
+    (registeredInvoiceIds.has(item.invoice_id) ? hsnB2bSummary : hsnB2cSummary).addInvoiceLine(item);
   }
 
   // 6. Fetch Credit Notes & Credit Note Line Items; Build CDNR (Table 9B) and Net B2CS (Table 7) & HSN (Table 12)
@@ -496,7 +509,7 @@ export const getGstr1ExportData = createAuthenticatedAction(exportRangeSchema, a
       rateGroups.set(rate, existing);
 
       // Net into the HSN summary (Table 12). MONEY-03: also when this HSN had no invoice sales in the period.
-      hsnSummary.subtractCreditNoteLine(item);
+      (isB2B ? hsnB2bSummary : hsnB2cSummary).subtractCreditNoteLine(item);
     }
 
     // Fallback if a credit note had no line items stored
@@ -595,7 +608,8 @@ export const getGstr1ExportData = createAuthenticatedAction(exportRangeSchema, a
     return a.ratePercentage - b.ratePercentage;
   });
 
-  const hsnRows: Gstr1HsnRow[] = hsnSummary.rows();
+  const hsnB2bRows: Gstr1HsnRow[] = hsnB2bSummary.rows();
+  const hsnB2cRows: Gstr1HsnRow[] = hsnB2cSummary.rows();
 
   // 7. Build Documents Issued (Table 13)
   const docRows: Gstr1DocRow[] = [];
@@ -665,7 +679,8 @@ export const getGstr1ExportData = createAuthenticatedAction(exportRangeSchema, a
     b2cs: b2csRows,
     cdnr: cdnrRows,
     cdnur: cdnurRows,
-    hsn: hsnRows,
+    hsnB2b: hsnB2bRows,
+    hsnB2c: hsnB2cRows,
     docs: docRows,
     summary: {
       b2bCount: b2bInvoiceNumbers.size,

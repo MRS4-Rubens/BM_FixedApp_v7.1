@@ -147,7 +147,9 @@ async function runBenchmark(): Promise<void> {
     b2cs: b2csRows,
     cdnr: cdnrRows,
     cdnur: [],
-    hsn: hsnRows,
+    // MONEY-05: Table 12 has B2B and B2C tabs; the benchmark load is all in one tab (same work as before).
+    hsnB2b: hsnRows,
+    hsnB2c: [],
     docs: [
       {
         natureOfDocument: 'Invoices for outward supply',
