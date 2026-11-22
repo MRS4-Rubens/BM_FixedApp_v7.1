@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { updateBusinessSubscription } from '@/lib/actions/subscriptions/update-business-subscription';
 import { getBusinessSubscriptions } from '@/lib/actions/subscriptions/get-business-subscriptions';
 import { computeGraceEndsAt } from '@/lib/subscriptions/grace-period';
-import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
+import { formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
+import { addMonthsClampedUtc } from '@/lib/subscriptions/billing-period';
 import { isOneOf } from '@/lib/db/domain-values';
 import { OVERRIDE_STATUSES, type OverrideStatus } from '@/lib/validations/admin-subscription';
 import type { BusinessItem, BizHistoryRow } from './types';
@@ -78,9 +79,9 @@ export function useManageSubscription({ startTransition }: { startTransition: Tr
 
   const handleSetPresetDate = (months: number) => {
     setGraceEndsAtIso(null);
-    const d = new Date();
-    d.setMonth(d.getMonth() + months);
-    setOverrideEndsAt(formatIstDateAsIso(d));
+    // BUG-03: from today's IST date, clamped to month end (31 Jan + 1 month = 28/29 Feb), as the server stores it.
+    const todayIst = parseIsoDateToIstDate(formatIstDateAsIso(new Date()));
+    setOverrideEndsAt(formatIstDateAsIso(addMonthsClampedUtc(todayIst, months)));
   };
 
   const handleSetGracePeriod = () => {

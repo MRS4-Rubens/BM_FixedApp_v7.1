@@ -11,6 +11,7 @@ import { isPurchasablePlan } from '@/lib/subscriptions/plan-catalog';
 import type { UpiPaymentsMap } from '@/lib/payments/types';
 
 import { PLANS, type PlanId, type BillingCycle, type PaymentMethod } from './checkout-form/plans';
+import { addBillingCycleUtc } from '@/lib/subscriptions/billing-period';
 import { PendingClaimScreen } from './checkout-form/pending-claim-screen';
 import { StatusNotices } from './checkout-form/status-notices';
 import { PlanPickerCard } from './checkout-form/plan-picker-card';
@@ -118,12 +119,7 @@ export function CheckoutForm({
     const baseDate = targetExpiry && new Date(targetExpiry).getTime() > nowTime
       ? new Date(targetExpiry)
       : new Date();
-    const futureDate = new Date(baseDate);
-    if (billingCycle === 'yearly') {
-      futureDate.setFullYear(futureDate.getFullYear() + 1);
-    } else {
-      futureDate.setMonth(futureDate.getMonth() + 1);
-    }
+    const futureDate = addBillingCycleUtc(baseDate, billingCycle); // BUG-03: same month-end clamp as the server
     return formatIstDate(futureDate, {
       day: 'numeric',
       month: 'short',

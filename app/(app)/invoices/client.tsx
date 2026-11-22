@@ -33,22 +33,26 @@ import { getDisplayInvoiceStatus, getDisplayStatusLabel } from '@/lib/invoices/s
 import type { Page } from '@/lib/pagination/keyset';
 import { buildListHref } from '@/lib/pagination/url';
 import { cn } from '@/lib/utils';
+import { getIstDateParts } from '@/lib/invoices/ist-date';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
-const CURRENT_YEAR = new Date().getFullYear();
+// BUG-03: IST year, so the server (UTC) and the browser agree around New Year's Eve.
+const CURRENT_YEAR = getIstDateParts(new Date()).year;
 const YEARS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2, CURRENT_YEAR - 3];
 
 function formatINR(amount: number): string {
   return '₹' + (amount / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** "07 Nov 2026" in India time. BUG-03: local getters on a timestamp printed different days on the server (UTC) and
+ * in the browser near midnight (hydration error). Plain dates ("2026-11-07") are calendar dates and print as-is. */
 function formatDate(dateInput: string | Date | null): string {
   if (!dateInput) return '—';
-  const date = new Date(dateInput);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = MONTHS[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+  const plain = typeof dateInput === 'string' ? /^(d{4})-(d{2})-(d{2})$/.exec(dateInput) : null;
+  const { year, month, day } = plain
+    ? { year: Number(plain[1]), month: Number(plain[2]), day: Number(plain[3]) }
+    : getIstDateParts(new Date(dateInput));
+  return `${String(day).padStart(2, '0')} ${MONTHS[month - 1]} ${year}`;
 }
 
 function getInitials(name: string): string {
