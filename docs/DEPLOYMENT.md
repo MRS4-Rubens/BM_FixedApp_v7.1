@@ -304,9 +304,14 @@ Follow this checklist when processing an account closure request:
 1. Download the newest file: `aws s3 cp --endpoint-url <BACKUP_S3_ENDPOINT> s3://bizfolio-backups/daily/<file>.dump.gpg .`
 2. Decrypt in a terminal: `gpg --pinentry-mode loopback --decrypt --output db.dump <file>.dump.gpg`. It asks for the passphrase (do **not** add `--batch`: batch mode never asks, so decryption would fail).
 3. In the **test** Neon project, create a new branch and an **empty** database in it (e.g. `restore_check`), then restore into that database and stop at the first error: `pg_restore --exit-on-error --no-owner --no-acl --dbname "<restore_check direct URL>" db.dump` (Postgres 17 client). Check the exit status is **0** (`echo $?`). Without `--exit-on-error`, `pg_restore` skips failed objects (for example a missing constraint or guard trigger) and still finishes, so the data checks below could pass on an incomplete copy. If it fails, drop and re-create the empty database and try again; never continue on a partial restore.
-4. Check with SQL, running the same queries on the **restored** database and on the **source** it was dumped from
-   (the numbers must match the source as it was at backup time). Signing in cannot test logins here: the Render app
-   and its Auth URL point at another database, so count the login rows instead.
+4. Check with SQL, running the same queries on the **restored** database and on a **frozen reference** of the source.
+   The live source keeps changing after the dump (new invoices, payments, sign-ups), so never compare with it directly.
+   **Reference:** in the source Neon project, create a branch **from a past time** = the start time of the backup run
+   (GitHub → Actions → the run's start time, in UTC). Neon's Free history covers **6 hours**, so restore and check
+   within 6 hours of the dump: for a drill, start the backup workflow by hand (Run workflow) and continue right away.
+   Run the queries on that reference branch and delete it afterwards; production is never paused for a drill.
+   Signing in cannot test logins here: the Render app and its Auth URL point at another database, so count the login
+   rows instead.
    ```sql
    -- Users and logins (Neon Auth lives in the same database), then the money tables.
    SELECT
