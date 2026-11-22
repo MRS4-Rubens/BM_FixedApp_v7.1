@@ -43,13 +43,28 @@ export async function claimDocumentById(db: SqlExecutor, kind: ArchivalKind, id:
   return toClaims(result.rows)[0] ?? null;
 }
 
-/** Claim up to `limit` documents for the sweep. SKIP LOCKED: busy rows are simply left for the next run. */
-export async function claimBatch(db: SqlExecutor, kind: ArchivalKind, limit: number): Promise<ClaimedDocument[]> {
+/**
+ * Claim up to `limit` documents for the sweep. SKIP LOCKED: busy rows are simply left for the next run.
+ * SVC-02: `excludeIds` = documents already claimed in THIS sweep run. Without it a document that just failed (status
+ * 'failed', lease released) was the oldest claimable row again, so one run re-claimed it until all 5 attempts were
+ * gone and a short outage at 01:30 IST left it permanently unarchived. Now each document gets at most one attempt per
+ * run, so the 5-attempt budget spans 5 nights.
+ */
+export async function claimBatch(
+  db: SqlExecutor,
+  kind: ArchivalKind,
+  limit: number,
+  excludeIds: readonly string[] = [],
+): Promise<ClaimedDocument[]> {
   if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new RangeError('limit must be an integer 1..50');
+  const notAlreadyTried =
+    excludeIds.length === 0
+      ? sql`TRUE`
+      : sql`id NOT IN (${sql.join(excludeIds.map((id) => sql`${id}::uuid`), sql`, `)})`;
   const result = await db.execute(sql`UPDATE ${table(kind)}
     SET archival_attempts = archival_attempts + 1, archival_claimed_at = now()
     WHERE id IN (
-      SELECT id FROM ${table(kind)} WHERE ${CLAIMABLE}
+      SELECT id FROM ${table(kind)} WHERE ${CLAIMABLE} AND ${notAlreadyTried}
       ORDER BY finalized_at ASC NULLS LAST, id ASC
       LIMIT ${limit} FOR UPDATE SKIP LOCKED)
     RETURNING id, archival_attempts`);
