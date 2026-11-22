@@ -145,10 +145,15 @@ describe('API-01: import template and notifications survive a session lookup fai
     expect(mocks.logError).toHaveBeenCalledWith('import-template', expect.any(Error), { kind: 'customers' });
   });
 
-  it('notifications: JSON 500 when the session lookup throws', async () => {
+  it('notifications: 401 with UNAUTHORIZED when signed out, JSON 500 with INTERNAL_ERROR when the session lookup throws', async () => {
+    mocks.session.mockResolvedValue(null);
+    const signedOut = await notifications();
+    expect(signedOut.status).toBe(401);
+    expect(await body(signedOut)).toEqual({ error: 'Unauthorized', code: 'UNAUTHORIZED' });
+
     mocks.session.mockRejectedValue(new Error('auth down'));
     const res = await notifications();
     expect(res.status).toBe(500);
-    expect(await body(res)).toEqual({ error: 'Could not load notifications.' });
+    expect(await body(res)).toEqual({ error: 'Could not load notifications.', code: 'INTERNAL_ERROR' });
   });
 });
