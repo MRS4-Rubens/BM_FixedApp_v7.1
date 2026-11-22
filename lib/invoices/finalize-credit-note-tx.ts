@@ -7,6 +7,7 @@ import { businesses, creditNoteLineItems, creditNotes } from '@/lib/db/schema';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
 import { lockDraftCreditNote, lockFinalizedInvoice } from '@/lib/invoices/document-locks';
 import { getNextCreditNoteNumber } from '@/lib/invoices/credit-note-numbering';
+import { evaluateCreditNoteDate } from '@/lib/invoices/credit-note-date-policy';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
 import { formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { recomputePaymentStatus } from '@/lib/invoices/payment-status';
@@ -177,8 +178,18 @@ export async function finalizeDraftCreditNoteInTransaction(
   );
   if (quantityProblem) throw new ActionError(quantityProblem, { code: 'QUANTITY_FORMAT' });
 
-  // 7. Get active financial year
-  const issueDateObj = creditNote.issue_date ? parseIsoDateToIstDate(creditNote.issue_date) : new Date();
+  // 7. MONEY-08: the date the credit note will carry (a stored draft date, else today) must pass the date rule again
+  //    now: time has moved since the draft was saved, and the date decides the financial year and number series.
+  const finalizedIssueDate = creditNote.issue_date || formatIstDateAsIso(new Date());
+  const dateDecision = evaluateCreditNoteDate({
+    issueDateIso: finalizedIssueDate,
+    todayIso: formatIstDateAsIso(new Date()),
+    originalInvoiceDateIso: originalInvoice.invoice_date,
+  });
+  if (!dateDecision.ok) throw new ActionError(dateDecision.message, { code: dateDecision.code });
+
+  // Get active financial year
+  const issueDateObj = parseIsoDateToIstDate(finalizedIssueDate);
   const activeFy = await getOrCreateCurrentFinancialYear(tx, params.businessId, issueDateObj);
 
   // 8. Generate official, sequential Credit Note Number
@@ -188,8 +199,6 @@ export async function finalizeDraftCreditNoteInTransaction(
     fyLabel: activeFy.label,
     prefix: business.credit_note_number_prefix || 'CN',
   });
-
-  const finalizedIssueDate = creditNote.issue_date || formatIstDateAsIso(new Date());
 
   // 9. Guarded update
   const updated = await tx

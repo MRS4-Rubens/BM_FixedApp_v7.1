@@ -19,7 +19,8 @@ import { db } from '@/lib/db/client';
 import { creditNoteLineItems, creditNotes, invoices } from '@/lib/db/schema';
 import { setLocalLockTimeout } from '@/lib/db/transaction';
 import { getOrCreateCurrentFinancialYear } from '@/lib/invoices/financial-year-rollover';
-import { parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
+import { evaluateCreditNoteDate } from '@/lib/invoices/credit-note-date-policy';
+import { formatIstDateAsIso, parseIsoDateToIstDate } from '@/lib/invoices/ist-date';
 import { creditNoteDraftSchema } from '@/lib/validations/credit-note';
 
 export const saveCreditNoteDraft = createAuthenticatedAction(
@@ -44,6 +45,21 @@ export const saveCreditNoteDraft = createAuthenticatedAction(
         if (!originalInvoice) throw new ActionError('Original invoice not found.', { code: 'NOT_FOUND' });
         if (originalInvoice.lifecycle_status !== 'finalized') {
           throw new ActionError('Credit notes can only be issued against finalized invoices.', { code: 'INVALID_STATUS' });
+        }
+        // MONEY-08: a date sent with the draft must pass the same rule finalize applies (never the future, never
+        // before the invoice, current financial year, at most 30 days back).
+        if (input.issue_date) {
+          const dateDecision = evaluateCreditNoteDate({
+            issueDateIso: input.issue_date,
+            todayIso: formatIstDateAsIso(new Date()),
+            originalInvoiceDateIso: originalInvoice.invoice_date,
+          });
+          if (!dateDecision.ok) {
+            throw new ActionError(dateDecision.message, {
+              code: dateDecision.code,
+              fieldErrors: { issue_date: [dateDecision.message] },
+            });
+          }
         }
 
         // 2. Updating an existing draft: lock it, scoped to this business AND this invoice.
