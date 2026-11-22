@@ -282,8 +282,8 @@ export function ReportsClient({
   }
 
   const handleApplyCustom = () => {
-    if (!customStart || !customEnd) return
-    // BUG-02: same rule as the server (dates in the wrong order are swapped, as the page does).
+    // BUG-02: same rule as the server (dates in the wrong order are swapped, as the page does). An empty date box is
+    // an invalid date too, so it gets the same inline message instead of a silent no-op.
     const [from, to] = customStart <= customEnd ? [customStart, customEnd] : [customEnd, customStart]
     const problem = reportRangeProblem(from, to)
     if (problem !== null) {
