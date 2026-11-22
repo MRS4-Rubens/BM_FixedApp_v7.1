@@ -1,14 +1,13 @@
 import { z } from 'zod';
-import { isoDate } from '@/lib/validations/common';
-import { EXPORT_LABEL_MAX_LENGTH, EXPORT_MAX_RANGE_DAYS } from '@/lib/validations/limits';
+import { EXPORT_LABEL_MAX_LENGTH } from '@/lib/validations/limits';
+import { checkReportRange, reportRangeShape } from '@/lib/validations/report-range';
 
 const EXPORT_REPORT_TYPES = ['sales_register', 'gstr1', 'itr_report', 'hsn_summary'] as const;
 export type ExportReportType = (typeof EXPORT_REPORT_TYPES)[number];
 
-const MS_PER_DAY = 86_400_000;
+// BUG-02: the date rule is shared with the Reports page and its actions (lib/validations/report-range.ts).
 const exportRangeShape = {
-  startDate: isoDate,
-  endDate: isoDate,
+  ...reportRangeShape,
   label: z
     .string()
     .trim()
@@ -17,21 +16,7 @@ const exportRangeShape = {
     .regex(/^[A-Za-z0-9 _/-]+$/, 'Label contains invalid characters'),
 };
 
-function checkRange(value: { startDate: string; endDate: string }, ctx: z.RefinementCtx): void {
-  const start = Date.parse(`${value.startDate}T00:00:00Z`);
-  const end = Date.parse(`${value.endDate}T00:00:00Z`);
-  if (end < start) {
-    ctx.addIssue({ code: 'custom', path: ['endDate'], message: 'End date cannot be before start date' });
-  } else if ((end - start) / MS_PER_DAY + 1 > EXPORT_MAX_RANGE_DAYS) {
-    ctx.addIssue({
-      code: 'custom',
-      path: ['endDate'],
-      message: `Date range cannot exceed ${EXPORT_MAX_RANGE_DAYS} days`,
-    });
-  }
-}
-
-export const exportRangeSchema = z.object(exportRangeShape).superRefine(checkRange);
+export const exportRangeSchema = z.object(exportRangeShape).superRefine(checkReportRange);
 export const exportQuerySchema = z
   .object({ ...exportRangeShape, type: z.enum(EXPORT_REPORT_TYPES).default('sales_register') })
-  .superRefine(checkRange);
+  .superRefine(checkReportRange);

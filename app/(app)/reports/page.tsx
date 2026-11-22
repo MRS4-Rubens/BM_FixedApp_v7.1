@@ -7,23 +7,39 @@ import { getTopCustomers } from '@/lib/actions/reports/get-top-customers'
 import { getTopProducts } from '@/lib/actions/reports/get-top-products'
 import { getCurrentBusiness } from '@/lib/auth/current-business'
 import { canExportStatutoryReport } from '@/lib/subscriptions/entitlements'
+import { reportRangeMessage, reportRangeProblem } from '@/lib/reports/date-range'
 
 export const metadata: Metadata = { title: 'Reports' }
 
 export default async function ReportsPage(props: { searchParams: Promise<{ period?: string; startDate?: string; endDate?: string }> }) {
   const searchParams = await props.searchParams
-  const period = searchParams.period || 'this_month'
-  
+  let period = searchParams.period || 'this_month'
+
   let startDate = ''
   let endDate = ''
   let periodLabel = ''
-  
-  const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+  // BUG-02: a custom window must be two real dates, at most 366 days apart (the export limit). Anything else (a bad
+  // bookmark, a typed URL) shows this month with a short notice instead of an error page or a runaway chart.
+  let rangeNotice: string | null = null
 
-  if (period === 'custom' && searchParams.startDate && searchParams.endDate && dateRegex.test(searchParams.startDate) && dateRegex.test(searchParams.endDate)) {
-    startDate = searchParams.startDate <= searchParams.endDate ? searchParams.startDate : searchParams.endDate
-    endDate = searchParams.startDate <= searchParams.endDate ? searchParams.endDate : searchParams.startDate
-    periodLabel = 'Custom'
+  if (period === 'custom') {
+    const rawStart = searchParams.startDate ?? ''
+    const rawEnd = searchParams.endDate ?? ''
+    // Dates typed in the wrong order are swapped, as before.
+    const [from, to] = rawStart <= rawEnd ? [rawStart, rawEnd] : [rawEnd, rawStart]
+    const problem = reportRangeProblem(from, to)
+    if (problem === null) {
+      startDate = from
+      endDate = to
+      periodLabel = 'Custom'
+    } else {
+      rangeNotice = `That date range could not be used. ${reportRangeMessage(problem)}. Showing this month instead.`
+      period = 'this_month'
+    }
+  }
+
+  if (period === 'custom') {
+    // The valid custom window was set above (an invalid one switched `period` to this_month).
   } else if (period === 'last_month') {
     const d = new Date()
     // Need to use IST date parts so it's consistent
@@ -87,6 +103,7 @@ export default async function ReportsPage(props: { searchParams: Promise<{ perio
       startDate={startDate}
       endDate={endDate}
       canExport={canExport}
+      rangeNotice={rangeNotice}
     />
   )
 }

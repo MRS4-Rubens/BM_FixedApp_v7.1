@@ -7,12 +7,16 @@ import { invoices, creditNotes } from '@/lib/db/schema';
 import { eq, and, between, sql } from 'drizzle-orm';
 import { paiseToRupees } from '@/lib/money';
 import { z } from 'zod';
+import { checkReportRange, reportRangeShape } from '@/lib/validations/report-range';
 
-const getSalesByPeriodSchema = z.object({
-  startDate: z.string().max(30),
-  endDate: z.string().max(30),
-  interval: z.enum(['auto', 'month', 'week']).optional(),
-});
+// BUG-02: real calendar dates and at most 366 days, so a bad URL can neither crash the query nor make the
+// month/week/day bucket loops below run for thousands of iterations.
+const getSalesByPeriodSchema = z
+  .object({
+    ...reportRangeShape,
+    interval: z.enum(['auto', 'month', 'week']).optional(),
+  })
+  .superRefine(checkReportRange);
 
 export type MonthlySalesData = {
   key: string;

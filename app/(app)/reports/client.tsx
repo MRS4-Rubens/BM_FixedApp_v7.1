@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   BarChart,
@@ -33,6 +33,7 @@ import { useIsClient } from '@/lib/hooks/use-is-client'
 import type { MonthlySalesData } from '@/lib/actions/reports/get-sales-by-period'
 import type { getTopCustomers } from '@/lib/actions/reports/get-top-customers'
 import type { getTopProducts } from '@/lib/actions/reports/get-top-products'
+import { reportRangeMessage, reportRangeProblem } from '@/lib/reports/date-range'
 
 function formatCurrency(val: number) {
   return new Intl.NumberFormat('en-IN', {
@@ -188,6 +189,8 @@ interface ReportsClientProps {
   startDate: string
   endDate: string
   canExport?: boolean
+  /** BUG-02: set when the requested custom window could not be used and this month is shown instead. */
+  rangeNotice?: string | null
 }
 
 const statutoryCards = [
@@ -242,12 +245,15 @@ export function ReportsClient({
   startDate,
   endDate,
   canExport = true,
+  rangeNotice = null,
 }: ReportsClientProps) {
   const router = useRouter()
 
   const [selectedPreset, setSelectedPreset] = useState<string>(currentPeriod)
   const [customStart, setCustomStart] = useState<string>(startDate)
   const [customEnd, setCustomEnd] = useState<string>(endDate)
+  const [customError, setCustomError] = useState<string | null>(null)
+  const rangeMessageId = useId()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const isMounted = useIsClient()
   const [chartMode, setChartMode] = useState<'turnover_tax' | 'tax_split'>('turnover_tax')
@@ -269,14 +275,23 @@ export function ReportsClient({
   const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value
     setSelectedPreset(val)
+    setCustomError(null)
     if (val !== 'custom') {
       router.push(`/reports?period=${val}`)
     }
   }
 
   const handleApplyCustom = () => {
-    if (!customStart || !customEnd) return
-    router.push(`/reports?period=custom&startDate=${customStart}&endDate=${customEnd}`)
+    // BUG-02: same rule as the server (dates in the wrong order are swapped, as the page does). An empty date box is
+    // an invalid date too, so it gets the same inline message instead of a silent no-op.
+    const [from, to] = customStart <= customEnd ? [customStart, customEnd] : [customEnd, customStart]
+    const problem = reportRangeProblem(from, to)
+    if (problem !== null) {
+      setCustomError(reportRangeMessage(problem))
+      return
+    }
+    setCustomError(null)
+    router.push(`/reports?period=custom&startDate=${from}&endDate=${to}`)
   }
 
   const displayedCustomers = topCustomers.slice(0, 3)
@@ -310,6 +325,11 @@ export function ReportsClient({
               </span>
             </span>
           </div>
+          {(customError ?? rangeNotice) && (
+            <p id={rangeMessageId} role="status" className="text-xs sm:text-sm font-medium text-amber-700 dark:text-amber-400">
+              {customError ?? rangeNotice}
+            </p>
+          )}
         </div>
 
         {/* Right Side: Period & Custom Date Range Filter Card */}
@@ -335,6 +355,8 @@ export function ReportsClient({
               <input
                 type="date"
                 aria-label="Start date"
+                aria-invalid={customError !== null}
+                aria-describedby={customError !== null ? rangeMessageId : undefined}
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
                 className="w-[130px] rounded-lg border border-border/80 bg-background px-2.5 py-1.5 h-9 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 shrink-0"
@@ -343,6 +365,8 @@ export function ReportsClient({
               <input
                 type="date"
                 aria-label="End date"
+                aria-invalid={customError !== null}
+                aria-describedby={customError !== null ? rangeMessageId : undefined}
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
                 className="w-[130px] rounded-lg border border-border/80 bg-background px-2.5 py-1.5 h-9 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:p-0 shrink-0"
