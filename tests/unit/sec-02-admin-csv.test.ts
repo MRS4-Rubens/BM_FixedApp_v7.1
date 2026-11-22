@@ -13,6 +13,10 @@ describe('SEC-02: admin businesses CSV is safe to open in Excel / Google Sheets'
     ['\t=cmd', `"'\t=cmd"`],
     ['\r=cmd', `"'\r=cmd"`],
     ['\n=cmd', `"'\n=cmd"`],
+    ['＝1+1', `"'＝1+1"`],
+    ['＋91 98765', `"'＋91 98765"`],
+    ['－2', `"'－2"`],
+    ['＠SUM(A1)', `"'＠SUM(A1)"`],
   ])('neutralises a formula-like value %j with a leading apostrophe', (value, expected) => {
     expect(csvCell(value)).toBe(expected);
   });
