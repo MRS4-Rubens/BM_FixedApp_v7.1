@@ -47,12 +47,15 @@ describe('BUG-06: one draft save at a time', () => {
     );
     // The lock is released on failure, but NOT on success (the page is navigating away); only a safety timer frees it.
     expect(onSaveDraft).toMatch(/finally \{\s*if \(!navigating\) \{\s*savingDraftRef\.current = false;/);
-    expect(onSaveDraft).toContain('navigating = true;');
-    expect(onSaveDraft).toContain('setTimeout(');
+    // The navigation lock (and its 15 s safety timer) applies only to a NEW draft, which moves to another page; an
+    // existing draft stays on its page, so `navigating` stays false and `finally` releases the lock straight away.
+    expect(onSaveDraft).toMatch(/if \(existingId === undefined\) \{\s*navigating = true;[\s\S]*?setTimeout\(/);
+    expect(onSaveDraft.match(/navigating = true;/g)).toHaveLength(1);
   });
 
   it('a later save reuses the id of the draft just created, so it updates instead of creating another', () => {
-    expect(onSaveDraft).toContain('saveInvoiceDraft({ ...data, id: data.id ?? pendingSavedInvoiceId ?? undefined })');
+    expect(onSaveDraft).toContain('const existingId = data.id ?? pendingSavedInvoiceId ?? undefined;');
+    expect(onSaveDraft).toContain('saveInvoiceDraft({ ...data, id: existingId })');
     expect(onSaveDraft).toContain('setPendingSavedInvoiceId(invoiceId);');
   });
 

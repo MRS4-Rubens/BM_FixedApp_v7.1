@@ -44,20 +44,25 @@ export function useInvoiceSubmit({
     setIsSavingDraft(true);
     setGlobalError(null);
     let navigating = false;
+    const existingId = data.id ?? pendingSavedInvoiceId ?? undefined;
     try {
-      const res = await saveInvoiceDraft({ ...data, id: data.id ?? pendingSavedInvoiceId ?? undefined });
+      const res = await saveInvoiceDraft({ ...data, id: existingId });
       if (res.success) {
         const invoiceId = res.data?.invoiceId ?? null;
         setPendingSavedInvoiceId(invoiceId);
         onDraftSaved?.();
-        navigating = true;
         router.push(`/invoices/${invoiceId}`);
-        // Safety net if the navigation never completes: unlock after a while (a further save then updates the same
-        // draft through pendingSavedInvoiceId, so it still cannot create a duplicate).
-        setTimeout(() => {
-          savingDraftRef.current = false;
-          setIsSavingDraft(false);
-        }, NAVIGATION_UNLOCK_MS);
+        // Only a NEW draft moves to another page (this one unmounts): keep the lock until then. Saving an existing
+        // draft stays on its own page, so the lock is released in `finally` as soon as the save is done.
+        if (existingId === undefined) {
+          navigating = true;
+          // Safety net if the navigation never completes: unlock after a while (a further save then updates the same
+          // draft through pendingSavedInvoiceId, so it still cannot create a duplicate).
+          setTimeout(() => {
+            savingDraftRef.current = false;
+            setIsSavingDraft(false);
+          }, NAVIGATION_UNLOCK_MS);
+        }
       } else {
         setGlobalError(res.error.message);
         if (res.error.code === 'INVOICE_QUOTA_EXCEEDED' || res.error.code === 'QUOTA_EXCEEDED') {
