@@ -1,10 +1,10 @@
 /**
  * Lint ratchet (ARCH-003).
  *
- * The codebase still carries lint debt (tracked as DEBT-001), so CI cannot demand zero problems yet.
- * Instead CI enforces a ratchet: the number of ESLint errors/warnings may NEVER increase above the
- * committed baseline in scripts/ci/lint-baseline.json. When debt is paid down, run
- * `pnpm lint:ratchet --update` to lower the baseline. The baseline can only be lowered by this script;
+ * The old lint debt (DEBT-001) is paid off: the committed baseline in scripts/ci/lint-baseline.json is
+ * 0 errors / 0 warnings, so any new ESLint problem fails CI. The ratchet stays as the mechanism: the
+ * count may NEVER increase above the baseline. If the baseline ever has to be lowered again, run
+ * `pnpm lint:ratchet --update`. The baseline can only be lowered by this script;
  * raising it requires a deliberate, reviewed edit of the JSON file.
  */
 import { spawnSync } from 'node:child_process';

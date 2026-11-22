@@ -16,8 +16,7 @@
     "scripts/ci/audit-gate-core.d.mts"
   ],
   "ignoreDependencies": [
-    "@tanstack/react-query",
-    "postcss-load-config"
+    "@tanstack/react-query"
   ],
   "rules": {
     "types": "off",
