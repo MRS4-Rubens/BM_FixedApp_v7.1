@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
-import { IMPORT_MAX_ROWS, CUSTOMER_COLUMNS, PRODUCT_COLUMNS } from '@/lib/import/columns';
-import { inspectZip, parseCsv, readImportFile } from '@/lib/import/read-file';
+import { IMPORT_MAX_BYTES, IMPORT_MAX_ROWS, CUSTOMER_COLUMNS, PRODUCT_COLUMNS } from '@/lib/import/columns';
+import { inspectZip, MAX_ZIP_UNCOMPRESSED_BYTES, parseCsv, readImportFile } from '@/lib/import/read-file';
 import { buildImportTemplate } from '@/lib/import/template';
 import { mapHeaders } from '@/lib/import/validate-rows';
 
@@ -64,6 +64,56 @@ describe('inspectZip (zip-bomb guard)', () => {
     expect(inspectZip(zipBombHeader())).toBeNull();
     expect(inspectZip(Buffer.from('PK\u0003\u0004 not really a zip'))).toBeNull();
   });
+
+  // SVC-03: the uncompressed cap protects the 512 MB server without refusing any real file.
+  const fill = (text: string, length: number) => text.repeat(Math.ceil(length / text.length)).slice(0, length);
+
+  it(
+    `accepts ${IMPORT_MAX_ROWS} rows with every column at its maximum length in Indian-language text`,
+    async () => {
+      expect(MAX_ZIP_UNCOMPRESSED_BYTES).toBe(8 * 1024 * 1024);
+      // Every long cell is unique per row (identical text would be stored only once and understate the size).
+      const hindi = 'शर्मा ट्रेडर्स उत्पाद विवरण ';
+      const products = await xlsxBase64([
+        PRODUCT_COLUMNS.map((column) => column.header),
+        ...Array.from({ length: IMPORT_MAX_ROWS }, (_, i) => [
+          `${i} ${fill(hindi, 190)}`, `${i} ${fill(hindi, 990)}`, '62059090', 'PCS', '1250000.50', '18', '9999999',
+        ]),
+      ]);
+      const customers = await xlsxBase64([
+        CUSTOMER_COLUMNS.map((column) => column.header),
+        ...Array.from({ length: IMPORT_MAX_ROWS }, (_, i) => [
+          `${i} ${fill(hindi, 190)}`, '29ABCDE1234F1ZW', `${fill('accounts', 240)}${i}@shop.in`, '+91987654321012',
+          `${i} ${fill(hindi, 290)}`, `${i} ${fill(hindi, 290)}`, `${i} ${fill(hindi, 90)}`, 'Karnataka', '560001',
+        ]),
+      ]);
+      for (const base64 of [products, customers]) {
+        const zip = inspectZip(Buffer.from(base64, 'base64'));
+        expect(zip).not.toBeNull();
+        expect(zip?.uncompressedBytes ?? Infinity).toBeLessThan(MAX_ZIP_UNCOMPRESSED_BYTES * 0.75);
+        const result = await readImportFile({ fileName: 'max.xlsx', base64 });
+        expect(result.ok ? result.rows.length : result.code).toBe(IMPORT_MAX_ROWS);
+      }
+    },
+    60_000,
+  );
+
+  it(
+    'refuses a small upload that would unpack to more than 8 MB, before ExcelJS reads it (30 MB was allowed before)',
+    async () => {
+      // ~9 MB of sheet XML that compresses to a few KB: valid, under the 2 MB upload limit and the row limit.
+      const base64 = await xlsxBase64([
+        ['Name', 'Description'],
+        // Each text unique: identical strings are stored once in the shared-strings part.
+        ...Array.from({ length: IMPORT_MAX_ROWS }, (_, i) => [`Item ${i}`, `${i} ${'x'.repeat(9_500)}`]),
+      ]);
+      const bytes = Buffer.from(base64, 'base64');
+      expect(bytes.length).toBeLessThan(IMPORT_MAX_BYTES);
+      const result = await readImportFile({ fileName: 'big.xlsx', base64 });
+      expect(result.ok ? 'OK' : result.code).toBe('UNSAFE_FILE');
+    },
+    60_000,
+  );
 });
 
 describe('readImportFile', () => {
