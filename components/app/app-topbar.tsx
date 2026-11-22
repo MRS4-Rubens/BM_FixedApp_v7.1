@@ -118,7 +118,7 @@ export function AppTopbar({ notificationsEnabled = false }: AppTopbarProps = {})
   }
 
   return (
-    <header className="relative z-40 flex h-14 landscape:max-md:h-11 shrink-0 items-center gap-2 sm:gap-4 border-b border-border/70 bg-card/90 backdrop-blur-md px-3 sm:px-6 shadow-[0_1px_3px_rgba(99,102,241,0.03),0_8px_16px_-8px_rgba(99,102,241,0.08)] print:hidden">
+    <header data-app-topbar className="relative z-40 flex h-14 landscape:max-md:h-11 shrink-0 items-center gap-2 sm:gap-4 border-b border-border/70 bg-card/90 backdrop-blur-md px-3 sm:px-6 shadow-[0_1px_3px_rgba(99,102,241,0.03),0_8px_16px_-8px_rgba(99,102,241,0.08)] print:hidden">
       {/* Mobile Hamburger Button (< 768px) */}
       <button
         type="button"
