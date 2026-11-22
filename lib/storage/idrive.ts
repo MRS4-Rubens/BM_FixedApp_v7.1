@@ -1,6 +1,48 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, type S3ClientConfig } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { getStorageEnv } from '@/lib/env';
+import { getStorageEnv, type StorageEnv } from '@/lib/env';
+
+/**
+ * SVC-01: without these the SDK waits forever on a hanging IDrive call (its default requestTimeout is 0, and a
+ * requestTimeout only LOGS a warning unless throwOnRequestTimeout is set), so uploads, the logo route, PDF building
+ * and archival uploads could hang past Render's proxy limit or the 300 s archival lease.
+ * requestTimeout stops at the response HEADERS; socketTimeout (idle socket) keeps watching while a response body is
+ * read, so a download that stalls halfway (getFileBuffer) also fails instead of hanging.
+ * Normal calls take well under a second (logo <= 30 KB, PDFs ~210 KB). Worst case per call:
+ * 2 attempts x (5 s connect + 20 s request) = 50 s, plus at most 20 s of silence while reading a body.
+ */
+export const STORAGE_CONNECTION_TIMEOUT_MS = 5_000;
+export const STORAGE_REQUEST_TIMEOUT_MS = 20_000;
+export const STORAGE_SOCKET_IDLE_TIMEOUT_MS = 20_000;
+export const STORAGE_MAX_ATTEMPTS = 2;
+
+export function buildStorageClientConfig(
+  env: StorageEnv,
+  timeouts: {
+    readonly connectionTimeoutMs: number;
+    readonly requestTimeoutMs: number;
+    readonly socketIdleTimeoutMs: number;
+  } = {
+    connectionTimeoutMs: STORAGE_CONNECTION_TIMEOUT_MS,
+    requestTimeoutMs: STORAGE_REQUEST_TIMEOUT_MS,
+    socketIdleTimeoutMs: STORAGE_SOCKET_IDLE_TIMEOUT_MS,
+  },
+): S3ClientConfig {
+  return {
+    endpoint: env.IDRIVE_E2_ENDPOINT,
+    region: env.IDRIVE_E2_REGION,
+    credentials: { accessKeyId: env.IDRIVE_E2_ACCESS_KEY, secretAccessKey: env.IDRIVE_E2_SECRET_KEY },
+    // forcePathStyle: often required by S3-compatible providers such as iDrive e2. Endpoint is normalised by lib/env.ts.
+    forcePathStyle: true,
+    maxAttempts: STORAGE_MAX_ATTEMPTS,
+    requestHandler: {
+      connectionTimeout: timeouts.connectionTimeoutMs,
+      requestTimeout: timeouts.requestTimeoutMs,
+      throwOnRequestTimeout: true,
+      socketTimeout: timeouts.socketIdleTimeoutMs,
+    },
+  };
+}
 
 interface StorageContext {
   readonly client: S3Client;
@@ -13,13 +55,7 @@ function getStorage(): StorageContext {
   if (context === undefined) {
     const env = getStorageEnv();
     context = {
-      // forcePathStyle: often required by S3-compatible providers such as iDrive e2. Endpoint is normalised by lib/env.ts.
-      client: new S3Client({
-        endpoint: env.IDRIVE_E2_ENDPOINT,
-        region: env.IDRIVE_E2_REGION,
-        credentials: { accessKeyId: env.IDRIVE_E2_ACCESS_KEY, secretAccessKey: env.IDRIVE_E2_SECRET_KEY },
-        forcePathStyle: true,
-      }),
+      client: new S3Client(buildStorageClientConfig(env)),
       bucket: env.IDRIVE_E2_BUCKET_NAME,
     };
   }
