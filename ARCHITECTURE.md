@@ -168,9 +168,11 @@ Actions with distinct risk profiles declare an explicit `rateLimit` option in `c
 
 ### 3. Client IP Trust & Determination
 `getClientIp(headersList)` resolves the real client IP using strict trust ordering:
-1. **`x-vercel-forwarded-for`**: Trusted platform header set by Vercel edge infrastructure. The first valid IP address is used. Cannot be spoofed by incoming clients.
-2. **`x-forwarded-for`**: If not running behind Vercel edge, extracts the **right-most** valid IP entry (nearest trusted reverse proxy), discarding client-supplied left-most entries.
+1. **`cf-connecting-ip`**: set by Cloudflare's edge (Render runs behind Cloudflare) to the visitor's address; a value sent by the visitor is overwritten, so it cannot be faked.
+2. **`x-forwarded-for`**: otherwise the **right-most public** entry. Internal hops (private, loopback, link-local, CGNAT, IPv6 ULA) such as Render's own `10.x` load balancer are skipped, and client-supplied left-most entries are never preferred over an address a proxy added. If every entry is internal (local development), the right-most one is used.
 3. **Fallback**: Returns `'unknown'` if no valid IP entry is found or headers are absent. Never throws.
+
+`x-vercel-forwarded-for` and `true-client-ip` are **not** trusted: on Render a visitor can send them unchanged (SEC-01). Measured 2026-11-22 on the Render TEST service: the right-most `x-forwarded-for` entry was Render's private proxy, so before SEC-01 every visitor shared one rate-limit bucket.
 
 ### 4. Unknown IP Rule
 Public endpoints rate-limited per IP (such as `/api/business/[id]/logo`) skip rate limiting when the IP resolves to `'unknown'`. This avoids grouping all unidentifiable clients into a single global bucket that could lead to accidental denial-of-service for legitimate users.
