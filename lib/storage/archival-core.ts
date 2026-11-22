@@ -4,7 +4,7 @@ import { db } from '@/lib/db/client';
 import { invoices, creditNotes, financialYears } from '@/lib/db/schema';
 import { isEnvConfigError } from '@/lib/env';
 import { buildArchivalHtml } from '@/lib/pdf/archival-document';
-import { renderHtmlToPdfBuffer } from '@/lib/pdf/html-to-pdf-provider';
+import { PdfRenderError, renderHtmlToPdfBuffer } from '@/lib/pdf/html-to-pdf-provider';
 import { uploadFileToStorage } from '@/lib/storage/idrive';
 import { logError } from '@/lib/actions/_shared/logger';
 import {
@@ -15,6 +15,7 @@ import {
   claimDocumentById,
   markArchived,
   markFailed,
+  refreshClaim,
   refundAttempt,
 } from './archival-claims';
 
@@ -82,7 +83,16 @@ export async function archiveClaimedDocument(
     }
 
     const { html } = await buildArchivalHtml(kind, id);
-    const pdfBuffer = await renderHtmlToPdfBuffer(html);
+    const pdfBuffer = await renderHtmlToPdfBuffer(html, {
+      // SVC-04: renew the lease when this document's turn in the render queue comes.
+      onTurn: async () => {
+        try {
+          await refreshClaim(db, kind, id);
+        } catch (refreshErr: unknown) {
+          logError('archival-refresh-claim-failed', refreshErr, { kind, documentId: id });
+        }
+      },
+    });
     const pathPrefix = kind === 'invoice' ? 'invoices' : 'credit-notes';
     const storageKey = `${pathPrefix}/${doc.businessId}/${fyLabel}/${id}.pdf`;
 
@@ -91,7 +101,8 @@ export async function archiveClaimedDocument(
 
     return { success: true };
   } catch (error: unknown) {
-    if (isEnvConfigError(error)) {
+    // Configuration problem or a full render queue (SVC-04): not the document's fault, give the attempt back.
+    if (isEnvConfigError(error) || (error instanceof PdfRenderError && error.kind === 'busy')) {
       try {
         await refundAttempt(db, kind, id);
       } catch (refundErr: unknown) {
