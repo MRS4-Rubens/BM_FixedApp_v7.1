@@ -14,6 +14,7 @@ import { eq, and, between, inArray, asc } from 'drizzle-orm';
 import { exportRangeSchema } from '@/lib/validations/export';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { isB2clLargeInvoice } from '@/lib/gst/thresholds';
+import { HsnSummaryAccumulator } from '@/lib/reports/hsn-summary';
 
 export interface Gstr1B2bRow {
   recipientGstin: string;
@@ -377,39 +378,10 @@ export const getGstr1ExportData = createAuthenticatedAction(exportRangeSchema, a
     }
   }
 
-  // 5. Initialize HSN Summary Map (Table 12) from Invoice Line Items
-  const hsnMap = new Map<string, Gstr1HsnRow>();
-
+  // 5. HSN Summary (Table 12) from Invoice Line Items (MONEY-03: exact quantities, see lib/reports/hsn-summary.ts)
+  const hsnSummary = new HsnSummaryAccumulator();
   for (const item of rawLineItems) {
-    const hsnCode = (item.hsn_sac_code || 'N/A').trim();
-    const rateNum = Number(item.tax_rate_percentage);
-    const uqc = item.unit_of_measurement ? `${item.unit_of_measurement.toUpperCase()}` : 'OTH';
-    const key = `${hsnCode}_${uqc}_${rateNum}`;
-
-    if (!hsnMap.has(key)) {
-      hsnMap.set(key, {
-        hsnSacCode: hsnCode,
-        description: item.description,
-        uqc,
-        totalQuantity: 0,
-        totalValuePaise: 0,
-        ratePercentage: rateNum,
-        taxableValuePaise: 0,
-        integratedTaxPaise: 0,
-        centralTaxPaise: 0,
-        stateUtTaxPaise: 0,
-        cessAmountPaise: 0,
-      });
-    }
-
-    const hsnRow = hsnMap.get(key)!;
-    hsnRow.totalQuantity += Number(item.quantity);
-    hsnRow.taxableValuePaise += item.taxable_value_paise;
-    hsnRow.integratedTaxPaise += item.igst_paise;
-    hsnRow.centralTaxPaise += item.cgst_paise;
-    hsnRow.stateUtTaxPaise += item.sgst_paise;
-    const itemTax = item.igst_paise + item.cgst_paise + item.sgst_paise;
-    hsnRow.totalValuePaise += item.taxable_value_paise + itemTax;
+    hsnSummary.addInvoiceLine(item);
   }
 
   // 6. Fetch Credit Notes & Credit Note Line Items; Build CDNR (Table 9B) and Net B2CS (Table 7) & HSN (Table 12)
@@ -523,20 +495,8 @@ export const getGstr1ExportData = createAuthenticatedAction(exportRangeSchema, a
       existing.igstPaise += item.igst_paise;
       rateGroups.set(rate, existing);
 
-      // Deduct from HSN summary (Table 12)
-      const hsnCode = (item.hsn_sac_code || 'N/A').trim();
-      const uqcCode = item.unit_of_measurement ? `${item.unit_of_measurement.toUpperCase()}` : 'OTH';
-      const hsnKey = `${hsnCode}_${uqcCode}_${rate}`;
-      const hsnEntry = hsnMap.get(hsnKey);
-      if (hsnEntry) {
-        hsnEntry.totalQuantity = Math.max(0, hsnEntry.totalQuantity - Number(item.quantity));
-        const itemTax = item.igst_paise + item.cgst_paise + item.sgst_paise;
-        hsnEntry.totalValuePaise -= item.taxable_value_paise + itemTax;
-        hsnEntry.taxableValuePaise -= item.taxable_value_paise;
-        hsnEntry.integratedTaxPaise -= item.igst_paise;
-        hsnEntry.centralTaxPaise -= item.cgst_paise;
-        hsnEntry.stateUtTaxPaise -= item.sgst_paise;
-      }
+      // Net into the HSN summary (Table 12). MONEY-03: also when this HSN had no invoice sales in the period.
+      hsnSummary.subtractCreditNoteLine(item);
     }
 
     // Fallback if a credit note had no line items stored
@@ -635,7 +595,7 @@ export const getGstr1ExportData = createAuthenticatedAction(exportRangeSchema, a
     return a.ratePercentage - b.ratePercentage;
   });
 
-  const hsnRows = Array.from(hsnMap.values()).sort((a, b) => a.hsnSacCode.localeCompare(b.hsnSacCode));
+  const hsnRows: Gstr1HsnRow[] = hsnSummary.rows();
 
   // 7. Build Documents Issued (Table 13)
   const docRows: Gstr1DocRow[] = [];
