@@ -74,10 +74,13 @@ describe('payment architectural lock order and invariant tests', () => {
       expect(src).toContain('withTransactionRetry');
 
       const txIdx = src.indexOf('db.transaction(');
-      const revalIdx = src.indexOf('revalidatePath(');
+      // BUG-05: record-payment revalidates through revalidateAfterCommit (same rule: only after the transaction).
+      const revalIdx = [src.indexOf('revalidatePath('), src.indexOf('revalidateAfterCommit(')]
+        .filter((index) => index > -1)
+        .reduce((first, index) => Math.min(first, index), Number.MAX_SAFE_INTEGER);
 
       expect(txIdx).toBeGreaterThan(-1);
-      expect(revalIdx).toBeGreaterThan(-1);
+      expect(revalIdx).toBeLessThan(Number.MAX_SAFE_INTEGER); // it revalidates at all
       expect(revalIdx).toBeGreaterThan(txIdx);
 
       // No ad-hoc sql sums or raw float conversion

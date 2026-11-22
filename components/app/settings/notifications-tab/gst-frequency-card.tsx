@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { GstFilingFrequency } from '@/lib/db/domain-values';
 import { saveGstFilingFrequency } from '@/lib/actions/notifications/save-gst-filing-frequency';
+import { SERVER_UNREACHABLE_MESSAGE } from '@/lib/actions/_shared/client-errors';
 
 const OPTIONS: readonly { value: GstFilingFrequency; label: string; hint: string }[] = [
   { value: 'monthly', label: 'Monthly', hint: 'GSTR-1 by the 11th and GSTR-3B by the 20th of every month.' },
@@ -42,13 +43,18 @@ export function GstFrequencyCard({ frequency, registrationType, canEdit, onSaved
     if (choice === null) return;
     setSaving(true);
     setMessage(null);
-    const result = await saveGstFilingFrequency({ frequency: choice });
-    setSaving(false);
-    if (result.success) {
-      onSaved(result.data.frequency);
-      setMessage({ ok: true, text: 'GST filing frequency saved.' });
-    } else {
-      setMessage({ ok: false, text: result.error.message });
+    try {
+      const result = await saveGstFilingFrequency({ frequency: choice });
+      if (result.success) {
+        onSaved(result.data.frequency);
+        setMessage({ ok: true, text: 'GST filing frequency saved.' });
+      } else {
+        setMessage({ ok: false, text: result.error.message });
+      }
+    } catch {
+      setMessage({ ok: false, text: SERVER_UNREACHABLE_MESSAGE });
+    } finally {
+      setSaving(false); // BUG-05: never stuck on "Saving…"
     }
   }
 

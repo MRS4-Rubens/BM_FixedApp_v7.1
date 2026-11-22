@@ -38,6 +38,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider } from '@/components/ui/tooltip';
 import { useIsOwner, useCanEdit } from '@/components/app/current-user-role';
+import { SERVER_UNREACHABLE_MESSAGE } from '@/lib/actions/_shared/client-errors';
 
 export interface PaymentItem {
   id: string;
@@ -82,6 +83,9 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
   const canEdit = useCanEdit();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // BUG-05: after a call that THREW we cannot know whether the payment was saved (the reply may have been lost after
+  // the server committed). Recording stays locked until a reload shows the real history, so it is never saved twice.
+  const [mustReload, setMustReload] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
   const [paymentToVoid, setPaymentToVoid] = useState<VoidablePayment | null>(null);
@@ -164,24 +168,37 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
   }, [isDropdownOpen]);
 
   const onSubmit = async (data: RecordPaymentInput) => {
+    if (mustReload) return; // also blocks Enter in a field (see mustReload)
     setIsSubmitting(true);
     setError(null);
-    const result = await recordPayment(data);
-    if (!result.success) {
-      setError(result.error.message || `Failed to record ${word.toLowerCase()}`);
-    } else {
-      const remainingPaise = data.kind === 'refund' ? result.data.refund_due_paise : result.data.remaining_balance_paise;
-      reset({
-        invoice_id: invoice.id,
-        kind: data.kind,
-        amount: remainingPaise > 0 ? paiseToRupees(remainingPaise) : 0,
-        payment_date: formatIstDateAsIso(new Date()),
-        payment_method: data.payment_method,
-        reference_number: '',
-        notes: ''
-      });
+    // BUG-05: a thrown call (network drop, old tab after a redeploy) must not leave the button on "Recording…".
+    try {
+      const result = await recordPayment(data);
+      if (!result.success && result.error.code === 'INTERNAL_ERROR') {
+        // An unexpected server error: we cannot be sure nothing was saved, so lock like a lost reply (see mustReload).
+        setMustReload(true);
+        setError(`${result.error.message} Reload the page and check the payment history before you record it again — it may already have been saved.`);
+      } else if (!result.success) {
+        // A known business error (validation, over-payment, plan, ...): nothing was saved, so the user may fix and retry.
+        setError(result.error.message || `Failed to record ${word.toLowerCase()}`);
+      } else {
+        const remainingPaise = data.kind === 'refund' ? result.data.refund_due_paise : result.data.remaining_balance_paise;
+        reset({
+          invoice_id: invoice.id,
+          kind: data.kind,
+          amount: remainingPaise > 0 ? paiseToRupees(remainingPaise) : 0,
+          payment_date: formatIstDateAsIso(new Date()),
+          payment_method: data.payment_method,
+          reference_number: '',
+          notes: ''
+        });
+      }
+    } catch {
+      setMustReload(true);
+      setError(`${SERVER_UNREACHABLE_MESSAGE} Check the payment history after reloading before you record it again — it may already have been saved.`);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
   const handleOpenVoidDialog = (payment: PaymentItem) => {
@@ -414,9 +431,9 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
                 <Button
                   type="submit"
                   className={cn("w-full h-8 px-3 py-1 font-bold shadow-xs cursor-pointer text-sm whitespace-nowrap", isRefundMode && "bg-amber-600 hover:bg-amber-700 text-white")}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || mustReload}
                 >
-                  {isSubmitting ? 'Recording...' : `Record ${word}`}
+                  {isSubmitting ? 'Recording...' : mustReload ? 'Reload to continue' : `Record ${word}`}
                 </Button>
               </div>
             </div>
