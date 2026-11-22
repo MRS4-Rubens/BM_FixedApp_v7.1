@@ -51,6 +51,28 @@ describe('RealDB Suite Integrity Guard (TEST-002)', () => {
     expect(violations).toEqual([]);
   });
 
+  it('TEST-02: tests/integration has no silently skipped suites (real-DB tests belong in tests/realdb)', () => {
+    // Opt-in benchmarks that are skipped ON PURPOSE unless explicitly enabled. Never add a real-database test here:
+    // it would be skipped in every CI run, as api010/api011/auth004 were until TEST-02.
+    const allowedOptIn: Record<string, string> = {
+      'perf001-list-performance.test.ts': 'benchmark, runs only with RUN_PERF_TESTS=1',
+    };
+    const files = getAllFiles(join(projectRoot, 'tests', 'integration'));
+    const forbidden = [/\.skip\(/, /\.only\(/, /\.todo\(/, /skipIf\(/, /runIf\(/, /TEST_DATABASE_URL/];
+
+    const violations: string[] = [];
+    for (const file of files) {
+      const name = file.split(/[\\/]/).pop() ?? file;
+      if (name in allowedOptIn) continue;
+      const content = readFileSync(file, 'utf8');
+      for (const pattern of forbidden) {
+        if (pattern.test(content)) violations.push(`${name} contains ${pattern}`);
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+
   it('verifies package.json contains test:realdb script', () => {
     const packageJsonPath = join(projectRoot, 'package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));

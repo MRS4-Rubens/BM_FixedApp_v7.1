@@ -19,9 +19,8 @@ import {
   cleanupTestBusiness,
 } from './helpers/db';
 
-const testDbUrl = getTestDatabaseUrl();
-
-describe.skipIf(!testDbUrl)('API-011: Outbound email claim concurrency (REAL Postgres)', () => {
+// TEST-02: moved from tests/integration, where a "skip when no test database" guard silently skipped it in every CI run.
+describe('API-011: Outbound email claim concurrency (REAL Postgres)', () => {
   let testDb: TestDb;
   let testBusiness: TestBusiness;
   let defaultFyId: string;
@@ -29,7 +28,7 @@ describe.skipIf(!testDbUrl)('API-011: Outbound email claim concurrency (REAL Pos
   let seqCounter = 5000;
 
   beforeAll(async () => {
-    const validUrl = validateTestDatabaseUrl(testDbUrl);
+    const validUrl = validateTestDatabaseUrl(getTestDatabaseUrl());
     testDb = createTestDbClient(validUrl);
     testBusiness = await createTestBusiness(testDb);
 
