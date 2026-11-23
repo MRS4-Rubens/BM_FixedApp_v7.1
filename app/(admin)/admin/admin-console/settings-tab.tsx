@@ -219,7 +219,7 @@ export function SettingsTab({
           </div>
 
           <p className="text-sm text-muted-foreground leading-relaxed">
-            When users submit bug reports or feedback via the topbar or settings form, the payload and screenshots are packaged in-memory and delivered via Resend directly to your inbox. You can reply directly to the submitting user from Gmail.
+            When users submit bug reports or feedback via the topbar or settings form, the payload and screenshots are packaged in-memory and delivered via Brevo directly to your inbox. You can reply directly to the submitting user from Gmail.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2 pt-1">

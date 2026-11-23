@@ -56,7 +56,7 @@ export default async function globalSetup(): Promise<void> {
     if (!loggedIn) {
       // Credentials rejected, account missing, or account exists but is unverified. Signing up an existing
       // account is rejected by the auth service and is harmless; the verification step below handles both.
-      console.log(`[E2E Global Setup] Admin login failed. Signing up admin (no-op if it already exists): ${env.E2E_ADMIN_EMAIL}`);
+      console.log(`[E2E Global Setup] Admin login failed. Signing up the E2E admin (no-op if it already exists).`);
       await gotoApp(page, '/?auth=signup');
       await page.locator('#signup-owner').fill('Platform Super Admin');
       await page.locator('#signup-email').fill(env.E2E_ADMIN_EMAIL);
@@ -87,7 +87,7 @@ export default async function globalSetup(): Promise<void> {
 
     if (adminStatus === 403 || !currentUrl.includes('/admin')) {
       throw new Error(
-        `Admin account logged in successfully, but access to /admin was forbidden (HTTP ${adminStatus}, URL: ${currentUrl}). Action required: add the admin email (${env.E2E_ADMIN_EMAIL}) to PLATFORM_ADMIN_EMAILS in the Vercel Preview environment variables and redeploy.`,
+        `Admin account logged in successfully, but access to /admin was forbidden (HTTP ${adminStatus}, URL: ${currentUrl}). Action required: the app under test must list the E2E admin email (the E2E_ADMIN_EMAIL value) in PLATFORM_ADMIN_EMAILS. In CI, .github/workflows/e2e.yml sets it from the E2E_ADMIN_EMAIL secret; when running locally, add it to the app's environment and restart the app.`,
       );
     }
 
