@@ -18,6 +18,8 @@ import { formatIstDate } from '@/lib/invoices/ist-date';
 import { TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements';
 import type { businesses } from '@/lib/db/schema';
 import type { PlanDefinition } from './plan-configs';
+import { BillingSectionBadge } from './billing-section-badge';
+import { PLAN_NOTICE_TONE, type PlanNotice } from './plan-notice';
 
 interface PlanOverviewCardProps {
   business: typeof businesses.$inferSelect | null;
@@ -31,6 +33,8 @@ interface PlanOverviewCardProps {
   lifecycleProgress: number | null;
   copiedUtr: string | null;
   onCopy: (text: string) => void;
+  /** UI stage 1: the coloured line under the validity bar (see plan-notice.ts). */
+  notice: PlanNotice;
 }
 
 export function PlanOverviewCard({
@@ -45,16 +49,23 @@ export function PlanOverviewCard({
   lifecycleProgress,
   copiedUtr,
   onCopy,
+  notice,
 }: PlanOverviewCardProps) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-white via-white to-indigo-50/20 p-4.5 sm:p-5 shadow-xs">
-      <div className="absolute -right-20 -top-20 size-60 rounded-full bg-indigo-500/8 blur-3xl pointer-events-none" />
-      <div className="absolute -left-20 -bottom-20 size-60 rounded-full bg-purple-500/8 blur-3xl pointer-events-none" />
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-5 shadow-xs">
+      {/* UI stage 1: numbered section header (read by the Settings side panel's "On this page"). */}
+      <div className="flex items-center gap-2 pb-2.5 mb-3.5 border-b border-slate-100">
+        <BillingSectionBadge number={1} tone="emerald" />
+        <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+          <Crown className="size-4 text-emerald-800" />
+          Current Plan
+        </h3>
+      </div>
 
-      <div className="relative flex flex-col gap-4.5 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-row items-start justify-between gap-4.5">
         <div className="space-y-3.5">
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-200/80 px-3 py-1 text-sm font-bold text-indigo-700 shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-sm font-bold text-slate-700 shadow-2xs">
               <Crown className="size-4" />
               Current Tier
             </span>
@@ -85,21 +96,19 @@ export function PlanOverviewCard({
             )}
           </div>
 
-          <div>
+          {/* UI stage 1: the price sits beside the plan name. */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-heading">
               {planConfig.name}
             </h2>
-            <p className="text-sm sm:text-base text-slate-500 mt-1 flex items-center gap-2">
-              <span>Pricing:</span>
-              <span className="font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-md">{planConfig.price}</span>
-            </p>
+            <span className="text-sm sm:text-base font-bold text-slate-900 bg-slate-100 px-2.5 py-0.5 rounded-md">{planConfig.price}</span>
           </div>
         </div>
 
         {/* Action CTAs */}
-        <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0 w-full lg:w-auto">
+        <div className="flex flex-col gap-2.5 shrink-0 w-auto">
           <Link href="/checkout?action=upgrade">
-            <Button className="w-full h-10 gap-2 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white shadow-md hover:shadow-lg text-sm font-bold cursor-pointer rounded-xl transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap shrink-0">
+            <Button className="btn-shine-navy w-full h-10 gap-2 text-sm font-bold cursor-pointer rounded-xl whitespace-nowrap shrink-0">
               <Sparkles className="size-4 shrink-0" />
               <span className="whitespace-nowrap">Upgrade / Change Plan</span>
             </Button>
@@ -118,13 +127,13 @@ export function PlanOverviewCard({
       </div>
 
       {/* -- Subscription Validity & Payment Settlement Lockup (Option B Hybrid) -- */}
-      <div className="mt-3.5 grid grid-cols-1 md:grid-cols-2 gap-3 border-t border-slate-100 pt-3.5">
+      <div className="mt-3.5 grid grid-cols-[3fr_2fr] gap-3 border-t border-slate-100 pt-3.5">
         {/* Card 1: Subscription Validity */}
         <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
               <div className="flex items-center gap-1.5 text-slate-600 font-bold uppercase tracking-wider">
-                <Clock className="size-4 text-indigo-500 shrink-0" />
+                <Clock className="size-4 text-slate-700 shrink-0" />
                 <span>Subscription Validity :</span>
                 {daysRemaining !== null ? (
                   isExpired ? (
@@ -190,13 +199,18 @@ export function PlanOverviewCard({
                         ? 'bg-rose-500 w-full'
                         : isExpiringSoon
                         ? 'bg-amber-500'
-                        : 'bg-indigo-600'
+                        : 'bg-emerald-600'
                     )}
                     style={{ width: `${Math.min(100, Math.max(4, lifecycleProgress))}%` }}
                   />
                 </div>
               </div>
             )}
+
+            {/* UI stage 1: plain coloured notice under the validity bar. */}
+            <p role="status" className={cn('mt-2.5 text-xs leading-relaxed', PLAN_NOTICE_TONE[notice.tone])}>
+              <strong className="font-bold">{notice.title}</strong> {notice.body}
+            </p>
           </div>
         </div>
 
@@ -205,7 +219,7 @@ export function PlanOverviewCard({
           <div>
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-600">
               <span className="flex items-center gap-1.5">
-                <CreditCard className="size-4 text-indigo-500 shrink-0" />
+                <CreditCard className="size-4 text-slate-700 shrink-0" />
                 Payment Settlement
               </span>
               {business?.active_utr_no ? (
@@ -226,12 +240,12 @@ export function PlanOverviewCard({
               </span>
 
               {business?.active_utr_no ? (
-                <div className="inline-flex items-center gap-1.5 font-mono text-sm font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 pl-2.5 pr-1.5 py-0.5 rounded-lg shadow-2xs">
+                <div className="inline-flex items-center gap-1.5 font-mono text-sm font-bold text-slate-800 bg-slate-50 border border-slate-200 pl-2.5 pr-1.5 py-0.5 rounded-lg shadow-2xs">
                   <span>{business.active_utr_no}</span>
                   <button
                     type="button"
                     onClick={() => onCopy(business.active_utr_no!)}
-                    className="rounded p-1 text-indigo-400 hover:bg-indigo-100/80 hover:text-indigo-800 transition-colors cursor-pointer"
+                    className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
                     title="Copy UTR Reference"
                   >
                     {copiedUtr === business.active_utr_no ? (
@@ -244,7 +258,7 @@ export function PlanOverviewCard({
                   </button>
                 </div>
               ) : (
-                <span className="font-mono text-sm font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-1 rounded-lg shadow-2xs">
+                <span className="font-mono text-sm font-bold text-slate-800 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
                   Free / Trial Tier
                 </span>
               )}

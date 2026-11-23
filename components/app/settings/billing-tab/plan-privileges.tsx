@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { formatPlanPrice } from '@/lib/subscriptions/plan-catalog';
 import { useIsOwner } from '@/components/app/current-user-role';
 import { PLAN_CONFIGS, type PlanDefinition } from './plan-configs';
+import { BillingSectionBadge } from './billing-section-badge';
 
 interface PlanPrivilegesProps {
   planConfig: PlanDefinition;
@@ -20,18 +21,21 @@ export function PlanPrivileges({ planConfig, currentPlanKey }: PlanPrivilegesPro
 
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-5 shadow-xs">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+      <div className="flex flex-row items-start justify-between gap-3 mb-3">
         <div>
-          <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <BillingSectionBadge number={3} tone="rose" />
+            <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <ShieldCheck className="size-4 text-emerald-600" />
             Availed Services & Tier Privileges
           </h3>
+          </div>
           <p className="text-sm text-slate-500 mt-0.5">
             Service levels, automation privileges, and compliance features unlocked for your business account.
           </p>
         </div>
 
-        <div className="flex rounded-lg bg-slate-100 p-1 self-start sm:self-auto">
+        <div className="flex rounded-lg bg-slate-100 p-1 shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('current')}
@@ -191,7 +195,7 @@ export function PlanPrivileges({ planConfig, currentPlanKey }: PlanPrivilegesPro
             </p>
           </div>
           <Link href="/checkout?plan=essentials">
-            <Button size="sm" className="h-8 text-xs font-bold gap-1 bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shrink-0 shadow-xs">
+            <Button size="sm" className="btn-shine-navy h-8 text-xs font-bold gap-1 cursor-pointer shrink-0">
               Upgrade to Essentials Pro <ArrowRight className="size-3.5" />
             </Button>
           </Link>

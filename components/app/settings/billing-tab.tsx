@@ -7,6 +7,7 @@ import {
 import { PLAN_CONFIGS } from './billing-tab/plan-configs';
 import { useClaimsLedger } from './billing-tab/use-claims-ledger';
 import { PlanOverviewCard } from './billing-tab/plan-overview-card';
+import { getPlanNotice } from './billing-tab/plan-notice';
 import { UsageMeters } from './billing-tab/usage-meters';
 import { PlanPrivileges } from './billing-tab/plan-privileges';
 import { ClaimsLedger } from './billing-tab/claims-ledger';
@@ -62,6 +63,23 @@ export function BillingTab({
     return Math.round((elapsed / total) * 100);
   })();
 
+  // UI stage 1: the coloured notice under the validity bar; the newest claim decides "under review" / "rejected".
+  const latestClaim =
+    [...ledger.subscriptions].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )[0] ?? null;
+  const notice = getPlanNotice({
+    planKey: currentPlanKey,
+    status,
+    isActive,
+    isExpired,
+    isExpiringSoon,
+    daysRemaining,
+    targetExpiry,
+    activatedAt: business?.subscription_activated_at,
+    latestClaim,
+  });
+
   return (
     <div className="space-y-5">
       {/* -- 1. Plan Overview Hero Card -------------------------------------- */}
@@ -77,6 +95,7 @@ export function BillingTab({
         lifecycleProgress={lifecycleProgress}
         copiedUtr={ledger.copiedUtr}
         onCopy={ledger.handleCopy}
+        notice={notice}
       />
 
       {/* -- 2. Live Resource Consumption & Quotas --------------------------- */}
