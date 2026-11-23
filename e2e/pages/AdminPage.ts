@@ -90,7 +90,10 @@ export class AdminPage {
       await presetBtn.click();
     }
 
+    // BR-01: a manual change needs a reason; Save stays disabled until one is typed.
     const saveBtn = dialog.getByRole('button', { name: 'Save Subscription Changes', exact: true });
+    await expect(saveBtn).toBeDisabled();
+    await dialog.getByLabel(/Reason for this change/).fill(`E2E plan change to ${plan}`);
     await expect(saveBtn).toBeEnabled({ timeout: 5_000 });
     await saveBtn.click();
 
