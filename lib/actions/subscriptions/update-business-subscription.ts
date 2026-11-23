@@ -84,6 +84,7 @@ export const updateBusinessSubscription = createAuthenticatedAction(
           requestContext,
           metadata: {
             updated_by: adminEmail,
+            reason: input.reason,
             previous: {
               subscription_plan: business.subscription_plan,
               subscription_status: business.subscription_status,
@@ -107,7 +108,8 @@ export const updateBusinessSubscription = createAuthenticatedAction(
           payment_method: 'manual_override',
           payment_reference: `MANUAL-${randomUUID()}`,
           status: 'approved',
-          reject_reason: `Manual Override by Platform Admin (${adminEmail})`,
+          // BR-01: the admin's reason goes in admin_note; reject_reason stays empty (this row is approved).
+          admin_note: input.reason,
           approved_at: now,
           subscription_ends_at: endsAt,
         });

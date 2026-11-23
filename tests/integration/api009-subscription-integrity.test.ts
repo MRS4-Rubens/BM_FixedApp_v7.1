@@ -507,6 +507,7 @@ describe('API-009: Subscription approval race and manual override integrity', ()
       subscription_plan: 'professional',
       subscription_status: 'active',
       subscription_ends_at: futureExpiry,
+      reason: 'Test override',
     });
 
     expect(overrideRes.success).toBe(true);
@@ -552,6 +553,7 @@ describe('API-009: Subscription approval race and manual override integrity', ()
         subscription_plan: 'essentials',
         subscription_status: 'active',
         subscription_ends_at: futureExpiry,
+        reason: 'Test override',
       }),
     );
     const parallelResults = await Promise.all(parallelOverrides);
@@ -587,6 +589,7 @@ describe('API-009: Subscription approval race and manual override integrity', ()
         subscription_plan: inc.plan,
         subscription_status: inc.status,
         subscription_ends_at: inc.date,
+        reason: 'Test override',
       });
       expect(failRes.success).toBe(false);
       if (!failRes.success) {
@@ -599,6 +602,7 @@ describe('API-009: Subscription approval race and manual override integrity', ()
       subscription_plan: 'essentials',
       subscription_status: 'active',
       subscription_ends_at: futureExpiry,
+      reason: 'Test override',
     });
     expect(unknownBizRes.success).toBe(false);
     if (!unknownBizRes.success) {
@@ -618,6 +622,7 @@ describe('API-009: Subscription approval race and manual override integrity', ()
       subscription_plan: 'essentials',
       subscription_status: 'active',
       subscription_ends_at: futureExpiry,
+      reason: 'Test override',
     });
     expect(noOwnerRes.success).toBe(false);
     if (!noOwnerRes.success) {

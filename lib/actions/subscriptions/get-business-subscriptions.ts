@@ -43,6 +43,7 @@ export const getBusinessSubscriptions = createAuthenticatedAction(
         hasScreenshot: sql<boolean>`${subscriptionRequests.screenshot_storage_key} IS NOT NULL`.mapWith(Boolean),
         status: subscriptionRequests.status,
         rejectReason: subscriptionRequests.reject_reason,
+        adminNote: subscriptionRequests.admin_note,
         approvedAt: subscriptionRequests.approved_at,
         subscriptionEndsAt: subscriptionRequests.subscription_ends_at,
         createdAt: subscriptionRequests.created_at,

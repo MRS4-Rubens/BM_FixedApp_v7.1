@@ -385,6 +385,7 @@ describe('ADMIN-PAYEE-FIX: Admin payee hardening and immutability', () => {
       subscription_plan: 'essentials',
       subscription_status: 'active',
       subscription_ends_at: futureDateIso,
+      reason: 'Test override',
     });
     expect(overrideRes.success).toBe(true);
 

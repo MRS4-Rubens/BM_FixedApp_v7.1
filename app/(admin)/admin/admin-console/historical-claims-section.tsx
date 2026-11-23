@@ -254,7 +254,9 @@ export function HistoricalClaimsSection({
                                 </div>
 
                                 {/* Note box */}
-                                {item.rejectReason && (
+                                {/* BR-01: rejected → the rejection reason; manual override → the admin's note (older overrides kept
+                                    their automatic text in reject_reason). */}
+                                {(item.status === 'rejected' ? item.rejectReason : (item.adminNote ?? item.rejectReason)) && (
                                   <div
                                     className={cn(
                                       "rounded-lg border p-2.5 text-xs font-semibold leading-relaxed",
@@ -281,7 +283,7 @@ export function HistoricalClaimsSection({
                                           ? 'Override Note:'
                                           : 'Note:'}
                                     </span>
-                                    <span>{item.rejectReason}</span>
+                                    <span>{item.status === 'rejected' ? item.rejectReason : (item.adminNote ?? item.rejectReason)}</span>
                                   </div>
                                 )}
 

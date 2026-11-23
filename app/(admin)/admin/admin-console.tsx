@@ -211,6 +211,8 @@ export function AdminConsole({
         overridePlan={manageSub.overridePlan}
         overrideStatus={manageSub.overrideStatus}
         overrideEndsAt={manageSub.overrideEndsAt}
+        overrideReason={manageSub.overrideReason}
+        onChangeReason={manageSub.setOverrideReason}
         overrideError={manageSub.overrideError}
         isSaveDisabled={manageSub.isSaveDisabled}
         onChangePlan={manageSub.setOverridePlan}

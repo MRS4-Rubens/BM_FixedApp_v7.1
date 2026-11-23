@@ -3,7 +3,8 @@
 import { createAuthenticatedAction } from '@/lib/actions/_shared/create-action';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests, businesses, invoices } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, ne, or, sql } from 'drizzle-orm';
+import { PAID_PLAN_NAMES } from '@/lib/db/domain-values';
 import { z } from 'zod';
 import { getIstDateParts } from '@/lib/invoices/ist-date';
 
@@ -12,10 +13,19 @@ export const getAdminDashboardStats = createAuthenticatedAction(
   async () => {
     // 1. Query aggregate stats
     const totalBusinessesResult = await db.select({ count: sql<number>`count(*)` }).from(businesses);
+    // BR-01: "active subscriptions" = PAYING businesses now: status active, a paid plan, and an end date that has not
+    // passed (or none). A Free business can carry status 'active', and a lapsed paid plan stays 'active' until the
+    // daily job expires it; neither is a paying customer.
     const activeSubsResult = await db
       .select({ count: sql<number>`count(*)` })
       .from(businesses)
-      .where(eq(businesses.subscription_status, 'active'));
+      .where(
+        and(
+          eq(businesses.subscription_status, 'active'),
+          inArray(businesses.subscription_plan, [...PAID_PLAN_NAMES]),
+          or(isNull(businesses.subscription_ends_at), gt(businesses.subscription_ends_at, new Date())),
+        ),
+      );
 
     const totalRevenueResult = await db
       .select({ total: sql<number>`coalesce(sum(${subscriptionRequests.amount_paise}), 0)` })
@@ -62,7 +72,9 @@ export const getAdminDashboardStats = createAuthenticatedAction(
         claimCount: sql<number>`count(*)`,
       })
       .from(subscriptionRequests)
-      .where(eq(subscriptionRequests.status, 'approved'))
+      // BR-01: a manual plan override is saved as a ₹0 'approved' row; it is not a payment claim, so it must not
+      // raise the monthly claim count (its ₹0 never changed the revenue).
+      .where(and(eq(subscriptionRequests.status, 'approved'), ne(subscriptionRequests.payment_method, 'manual_override')))
       .groupBy(sql`to_char(${subscriptionRequests.created_at} AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM')`);
 
     const revenueByMonthSort = new Map<string, { revenuePaise: number; claimCount: number }>();

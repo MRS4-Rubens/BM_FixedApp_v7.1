@@ -427,6 +427,7 @@ describe('DB-007: Audit log integrity, append-only triggers, and coverage', () =
       subscription_plan: 'professional',
       subscription_status: 'active',
       subscription_ends_at: new Date('2027-12-31').toISOString(),
+      reason: 'Test override',
     });
     expect(overrideRes.success).toBe(true);
 
