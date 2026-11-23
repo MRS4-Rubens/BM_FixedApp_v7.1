@@ -20,6 +20,7 @@ export function useManageSubscription({ startTransition }: { startTransition: Tr
   const [overridePlan, setOverridePlan] = useState('essentials');
   const [overrideStatus, setOverrideStatus] = useState<OverrideStatus>('active');
   const [overrideEndsAt, setOverrideEndsAt] = useState('');
+  const [overrideReason, setOverrideReason] = useState('');
   const [overrideError, setOverrideError] = useState<string | null>(null);
   const [openedAtMs, setOpenedAtMs] = useState(0);
   const [graceEndsAtIso, setGraceEndsAtIso] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export function useManageSubscription({ startTransition }: { startTransition: Tr
     setSelectedBiz(biz);
     setOverrideError(null);
     setGraceEndsAtIso(null);
+    setOverrideReason('');
     setOverridePlan(biz.subscriptionPlan);
     setOverrideStatus(isOneOf(OVERRIDE_STATUSES, biz.subscriptionStatus) ? biz.subscriptionStatus : 'active');
     setOverrideEndsAt(
@@ -66,6 +68,7 @@ export function useManageSubscription({ startTransition }: { startTransition: Tr
         subscription_plan: overridePlan,
         subscription_status: overrideStatus,
         subscription_ends_at: graceEndsAtIso ?? (overrideEndsAt ? new Date(overrideEndsAt).toISOString() : ''),
+        reason: overrideReason,
       });
 
       if (result.success) {
@@ -105,7 +108,8 @@ export function useManageSubscription({ startTransition }: { startTransition: Tr
     overrideEndsAt !== '' &&
     !Number.isNaN(new Date(overrideEndsAt).getTime()) &&
     new Date(overrideEndsAt).getTime() > openedAtMs;
-  const isSaveDisabled = isDateRequired && !isDateValid;
+  // BR-01: a manual change always needs a reason (the server enforces it too).
+  const isSaveDisabled = (isDateRequired && !isDateValid) || overrideReason.trim() === '';
 
   return {
     selectedBiz,
@@ -121,6 +125,8 @@ export function useManageSubscription({ startTransition }: { startTransition: Tr
     setOverrideStatus,
     overrideEndsAt,
     setOverrideEndsAt: changeEndsAt,
+    overrideReason,
+    setOverrideReason,
     changeEndsAt,
     overrideError,
     setOverrideError,

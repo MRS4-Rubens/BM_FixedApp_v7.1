@@ -142,6 +142,7 @@ describe('lib/db/domain-values (DB-004 unit tests)', () => {
       subscription_plan: 'free',
       subscription_status: 'expired',
       subscription_ends_at: '',
+      reason: 'Test override',
     });
     expect(freeOverride.success).toBe(true);
 
@@ -150,6 +151,7 @@ describe('lib/db/domain-values (DB-004 unit tests)', () => {
       subscription_plan: 'trial',
       subscription_status: 'trial',
       subscription_ends_at: '',
+      reason: 'Test override',
     });
     expect(trialOverride.success).toBe(true);
 
@@ -158,6 +160,7 @@ describe('lib/db/domain-values (DB-004 unit tests)', () => {
       subscription_plan: 'enterprise',
       subscription_status: 'active',
       subscription_ends_at: '',
+      reason: 'Test override',
     });
     expect(invalidOverride.success).toBe(false);
   });

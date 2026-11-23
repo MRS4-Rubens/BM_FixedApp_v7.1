@@ -6,7 +6,7 @@ import { Building2, Settings, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { isOneOf } from '@/lib/db/domain-values';
-import { OVERRIDE_STATUSES, type OverrideStatus } from '@/lib/validations/admin-subscription';
+import { OVERRIDE_REASON_MAX_LENGTH, OVERRIDE_STATUSES, type OverrideStatus } from '@/lib/validations/admin-subscription';
 import { HistoricalClaimsSection } from './historical-claims-section';
 import type { BusinessItem, BizHistoryRow } from './types';
 
@@ -20,11 +20,13 @@ interface ManageSubscriptionDialogProps {
   overridePlan: string;
   overrideStatus: OverrideStatus;
   overrideEndsAt: string;
+  overrideReason: string;
   overrideError: string | null;
   isSaveDisabled?: boolean;
   onChangePlan: (plan: string) => void;
   onChangeStatus: (status: OverrideStatus) => void;
   onChangeEndsAt: (date: string) => void;
+  onChangeReason: (reason: string) => void;
   onSetPresetDate: (months: number) => void;
   onSetGracePeriod?: () => void;
   onSaveOverride: () => void;
@@ -44,11 +46,13 @@ export function ManageSubscriptionDialog({
   overridePlan,
   overrideStatus,
   overrideEndsAt,
+  overrideReason,
   overrideError,
   isSaveDisabled = false,
   onChangePlan,
   onChangeStatus,
   onChangeEndsAt,
+  onChangeReason,
   onSetPresetDate,
   onSetGracePeriod,
   onSaveOverride,
@@ -149,6 +153,23 @@ export function ManageSubscriptionDialog({
                       )}
                     />
                   </div>
+                </div>
+
+                {/* BR-01: why the plan is changed by hand (required; shown as the Override Note in the history below) */}
+                <div className="space-y-1">
+                  <label htmlFor="override-reason" className="text-xs font-bold text-muted-foreground uppercase">
+                    Reason for this change <span className="text-destructive">*</span>
+                  </label>
+                  <textarea
+                    id="override-reason"
+                    required
+                    rows={2}
+                    maxLength={OVERRIDE_REASON_MAX_LENGTH}
+                    value={overrideReason}
+                    onChange={(e) => onChangeReason(e.target.value)}
+                    placeholder="e.g. Free month for pilot feedback"
+                    className="w-full rounded-lg border border-border bg-background text-sm px-2.5 py-1.5 outline-none focus:border-indigo-500 resize-y"
+                  />
                 </div>
 
                 {/* Validation hint if date is missing */}

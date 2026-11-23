@@ -29,6 +29,9 @@ export const subscriptionRequests = pgTable('subscription_requests', {
   screenshot_storage_key: text('screenshot_storage_key'), // S3 Storage key
   status: text('status').$type<RequestStatus>().notNull().default('pending'),
   reject_reason: text('reject_reason'),
+  // BR-01: the platform admin's own reason for a manual plan override (payment_method 'manual_override').
+  // reject_reason is only for rejected claims.
+  admin_note: text('admin_note'),
   approved_at: timestamp('approved_at', { withTimezone: true }),
   subscription_ends_at: timestamp('subscription_ends_at', { withTimezone: true }),
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

@@ -6,6 +6,7 @@ export const OVERRIDE_STATUSES = SUBSCRIPTION_STATUSES;
 export type OverridePlan = (typeof OVERRIDE_PLANS)[number];
 export type OverrideStatus = (typeof OVERRIDE_STATUSES)[number];
 const REJECT_REASON_MAX_LENGTH = 500;
+export const OVERRIDE_REASON_MAX_LENGTH = 500;
 export const MAX_OVERRIDE_HORIZON_DAYS = 3660; // ~10 years; documented policy constant
 
 export const processSubscriptionRequestSchema = z.object({
@@ -26,6 +27,12 @@ export const updateBusinessSubscriptionSchema = z.object({
   subscription_ends_at: z
     .union([z.literal(''), z.null(), z.iso.datetime({ offset: true })])
     .transform((value): string | null => (value === '' || value === null ? null : value)),
+  // BR-01: why the admin changed the plan by hand (saved on the ledger row and in the audit log).
+  reason: z
+    .string()
+    .trim()
+    .min(1, 'Enter a reason for this subscription change.')
+    .max(OVERRIDE_REASON_MAX_LENGTH, `The reason must be ${OVERRIDE_REASON_MAX_LENGTH} characters or fewer.`),
 });
 
 export class OverrideRuleError extends Error {

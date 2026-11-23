@@ -22,6 +22,7 @@ describe('admin-subscription-rules (API-009)', () => {
         subscription_plan: 'platinum',
         subscription_status: 'active',
         subscription_ends_at: null,
+        reason: 'Test override',
       }).success,
     ).toBe(false);
 
@@ -31,6 +32,7 @@ describe('admin-subscription-rules (API-009)', () => {
         subscription_plan: 'essentials',
         subscription_status: 'bogus',
         subscription_ends_at: null,
+        reason: 'Test override',
       }).success,
     ).toBe(false);
 
@@ -40,6 +42,7 @@ describe('admin-subscription-rules (API-009)', () => {
         subscription_plan: 'essentials',
         subscription_status: 'active',
         subscription_ends_at: 'garbage',
+        reason: 'Test override',
       }).success,
     ).toBe(false);
 
@@ -49,6 +52,7 @@ describe('admin-subscription-rules (API-009)', () => {
         subscription_plan: 'essentials',
         subscription_status: 'active',
         subscription_ends_at: '2026-13-45T00:00:00Z',
+        reason: 'Test override',
       }).success,
     ).toBe(false);
   });
@@ -59,6 +63,7 @@ describe('admin-subscription-rules (API-009)', () => {
       subscription_plan: 'essentials',
       subscription_status: 'active',
       subscription_ends_at: '',
+      reason: 'Test override',
     });
     expect(emptyRes.success).toBe(true);
     if (emptyRes.success) expect(emptyRes.data.subscription_ends_at).toBeNull();
@@ -68,6 +73,7 @@ describe('admin-subscription-rules (API-009)', () => {
       subscription_plan: 'essentials',
       subscription_status: 'active',
       subscription_ends_at: null,
+      reason: 'Test override',
     });
     expect(nullRes.success).toBe(true);
     if (nullRes.success) expect(nullRes.data.subscription_ends_at).toBeNull();
@@ -77,6 +83,7 @@ describe('admin-subscription-rules (API-009)', () => {
       subscription_plan: 'essentials',
       subscription_status: 'active',
       subscription_ends_at: '2026-10-29T10:00:00.000Z',
+      reason: 'Test override',
     });
     expect(isoRes.success).toBe(true);
     if (isoRes.success) expect(isoRes.data.subscription_ends_at).toBe('2026-10-29T10:00:00.000Z');
