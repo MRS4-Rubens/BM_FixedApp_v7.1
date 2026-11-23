@@ -205,7 +205,7 @@ Operational procedures in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md):
 - [Monitoring & Alerting](docs/DEPLOYMENT.md#monitoring--alerting-opt-001): UptimeRobot checks, request ID correlation, and Sentry production alert rules.
 - [Data Requests & Account Closure](docs/DEPLOYMENT.md#data-requests-export-and-account-closure-opt-002a): DPDP self-serve JSON export, owner verification, account closure workflow, and statutory 8-year record retention under Section 36 of the CGST Act.
 - [Backup & Restore](docs/DEPLOYMENT.md#backup-and-restore-opt-002): Neon's 6-hour history, the nightly encrypted dump (7 daily + 4 weekly), the quarterly restore drill, and honest recovery targets.
-- *Launch-Day Note*: All external provider accounts (Neon, Render, Upstash, IDrive e2, Brevo, Sentry, CustomJS, cron-job.org, UptimeRobot) are created fresh on launch day; nothing from development is reused.
+- *Launch-Day Note*: All external provider accounts (Neon, Render, Upstash, IDrive e2, Brevo, Sentry, Cloudflare Browser Rendering, cron-job.org, UptimeRobot) are created fresh on launch day; nothing from development is reused.
 
 ## Documentation Map
 

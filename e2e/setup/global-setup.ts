@@ -87,7 +87,7 @@ export default async function globalSetup(): Promise<void> {
 
     if (adminStatus === 403 || !currentUrl.includes('/admin')) {
       throw new Error(
-        `Admin account logged in successfully, but access to /admin was forbidden (HTTP ${adminStatus}, URL: ${currentUrl}). Action required: add the admin email (${env.E2E_ADMIN_EMAIL}) to PLATFORM_ADMIN_EMAILS in the Vercel Preview environment variables and redeploy.`,
+        `Admin account logged in successfully, but access to /admin was forbidden (HTTP ${adminStatus}, URL: ${currentUrl}). Action required: the app under test must list this admin email (${env.E2E_ADMIN_EMAIL}) in PLATFORM_ADMIN_EMAILS. In CI, .github/workflows/e2e.yml sets it from the E2E_ADMIN_EMAIL secret; when running locally, add it to the app's environment and restart the app.`,
       );
     }
 

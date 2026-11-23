@@ -4,7 +4,7 @@ This document defines where code lives in this project. Every future feature sho
 
 ## Core principle: Server Actions first, Route Handlers only for true external HTTP
 
-This app uses Next.js Server Actions as the default way pages talk to the backend (form submissions, button clicks, data mutations). A Route Handler (`app/api/.../route.ts`) is only created when something outside a browser session needs to hit an HTTP endpoint directly — for example, a webhook from Resend or a future payment provider. If you're unsure which to use: if a logged-in user triggers it from the UI, it's a Server Action in `lib/actions/`. If an external service calls it, it's a Route Handler in `app/api/`.
+This app uses Next.js Server Actions as the default way pages talk to the backend (form submissions, button clicks, data mutations). A Route Handler (`app/api/.../route.ts`) is only created when something outside a browser session needs to hit an HTTP endpoint directly — for example, a scheduled job from cron-job.org (`/api/cron/*`), the uptime checks, or a future payment provider's webhook. If you're unsure which to use: if a logged-in user triggers it from the UI, it's a Server Action in `lib/actions/`. If an external service calls it, it's a Route Handler in `app/api/`.
 
 ## Folder reference
 
@@ -38,7 +38,7 @@ This app uses Next.js Server Actions as the default way pages talk to the backen
 | `lib/security/` | Upload validation with magic-byte checks and storage keys (`upload.ts`, server-only: uses `node:crypto`), the browser-safe size helper (`upload-limits.ts`), and signed tokens. | Phase 11 / Phase 4 (SEC-002, PERF-005) |
 | `lib/security/signature-image.ts` | Pure server-side authorised signature PNG validation (8-byte PNG header, RGBA colour type 6, exact 3:1 ratio, 300-1500px width). | SIG-A |
 | `lib/excel/` | ExcelJS-based export logic for the monthly ITR/GST export. Populates Sales Register and GSTR-1 CDNR sheets with finalized credit notes. | Phase 15 & Phase 12 |
-| `lib/email/` | Resend client (`lib/email/`) and email templates (`lib/email/templates/`). Note that email attachments always come from Phase 11's archived PDF (never generated fresh). This makes the archival step in Phase 11 a hard dependency for emailing invoices. | Phase 16 |
+| `lib/email/` | Mailer backed by the Brevo HTTPS API (`lib/email/mailer.ts`; Render Free blocks SMTP ports) and email templates (`lib/email/templates/`). Customer e-mails (invoices, reminders) are switched off for the pilot (`CUSTOMER_EMAILS_ENABLED` in `lib/config/features.ts`). Note that email attachments always come from Phase 11's archived PDF (never generated fresh). This makes the archival step in Phase 11 a hard dependency for emailing invoices. | Phase 16 |
 | `lib/rate-limit/` | Upstash Redis-based rate limiting, applied to sensitive Server Actions and export routes. | Phase 17 |
 | `lib/money.ts` | Shared money utilities: paise↔rupee conversion (rupeesToPaise, paiseToRupees) and Indian currency formatting (formatPaiseAsInr). All monetary amounts in this app are stored as integer paise — this file is the single source of truth for converting between storage and display. Used by product pricing (Phase 7) and will be used by the GST tax engine and invoice line items (Phase 8+). | Phase 7 |
 | `lib/observability/` | Observability utilities: request context via `AsyncLocalStorage` (`request-context.ts`), shallow health probe (`health.ts`), Sentry runtime config (`sentry-config.ts`), and PII/data redaction (`sentry-redaction.ts`). | Phase 18 / Phase 4 (OPT-001) |
@@ -147,7 +147,7 @@ Actions with distinct risk profiles declare an explicit `rateLimit` option in `c
 
 | Action Scope | Limiter | Window / Cap | Key Prefix / Scheme | Outage Policy | Reasoning |
 |---|---|---|---|---|---|
-| `email-invoice` | `emailBurstLimiter` | 5 req / 60 s | `email-invoice:<userId>` | `fail-closed` | Third-party cost amplification (Resend email quota) |
+| `email-invoice` | `emailBurstLimiter` | 5 req / 60 s | `email-invoice:<userId>` | `fail-closed` | Third-party cost amplification (Brevo daily e-mail quota) |
 | `send-payment-reminder` | `emailBurstLimiter` | 5 req / 60 s | `payment-reminder:<userId>` | `fail-closed` | Outbound external communication; prevents spam |
 | `send-feedback` | `sensitiveActionLimiter` | 20 req / 60 s | `feedback:<userId>` | `fail-closed` | External support webhook / email integration |
 | `submit-payment-claim` | `sensitiveActionLimiter` | 20 req / 60 s | `submit-payment-claim:<userId>` | `fail-closed` | Prevents administrative spam & screenshot processing |
@@ -198,19 +198,19 @@ The public logo image route is protected by `publicAssetLimiter`:
 ## Monitoring & Logging (established Phase 18, hardened ARCH-005, extended OPT-001)
 
 Sentry is the live observability implementation behind `lib/actions/_shared/logger.ts`'s `logError()` function and application request monitoring.
-- **Request IDs (`AsyncLocalStorage`)**: `lib/observability/request-context.ts` exports `runWithRequestId`, `currentRequestId` and `requestIdFromHeaders` (Vercel's `x-vercel-id` if it matches `^[A-Za-z0-9:_-]{1,128}$`, else a valid `x-request-id`, else `randomUUID()`). Every server action runs inside it via `runValidatedHandler` (`lib/actions/_shared/create-action.ts`), and so do our API routes (`/api/health`, `/api/cron/retry-invoice-archival`, `/api/cron/daily-notifications`, `/api/reports/export`, `/api/account/export`, `/api/business/[id]/logo`). The library-owned `/api/auth/**` routes are not wrapped.
+- **Request IDs (`AsyncLocalStorage`)**: `lib/observability/request-context.ts` exports `runWithRequestId`, `currentRequestId` and `requestIdFromHeaders` (`x-vercel-id`, a Vercel-only header that Render never sends, if it matches `^[A-Za-z0-9:_-]{1,128}$`, else a valid `x-request-id`, else `randomUUID()`). Every server action runs inside it via `runValidatedHandler` (`lib/actions/_shared/create-action.ts`), and so do our API routes (`/api/health`, `/api/cron/retry-invoice-archival`, `/api/cron/daily-notifications`, `/api/reports/export`, `/api/account/export`, `/api/business/[id]/logo`). The library-owned `/api/auth/**` routes are not wrapped.
 - **Structured server logging**: `logError` / `logWarn` in `lib/actions/_shared/logger.ts` write one JSON line per event with a `requestId` field when a request context exists.
 - **Sentry tagging**: `logError` adds the tag `request_id` to captured events; `logWarn` adds `requestId` to the breadcrumb data.
 - **Health endpoint**: `GET /api/health` (`app/api/health/route.ts`, logic in `lib/observability/health.ts` -> `getHealthStatus()`) is private (SVC-05: `Authorization: Bearer <CRON_SECRET>`, else 401, checked by `verifyCronRequest`), runs `select 1` and an Upstash `ping` in parallel with 10 s timeouts (a cold Neon wake takes ~2.3 s), caches the result for 10 s, and returns 200 `{"status":"ok","checks":{"database":"ok","redis":"ok"}}` or 503 with `"status":"error"` and the failing check marked `"error"`. No error text, hostnames or versions are exposed. Uptime monitors use the public `GET /ping` (no database) and `GET /health-db` (`getDatabaseHealth()`: database only, 10 s timeout, a real check at most every 10 minutes per instance, 1 minute after a failure, concurrent requests share one check), so public polling cannot keep Neon awake.
 - **Cron monitoring**: the archival cron wraps the sweep in `Sentry.withMonitor(ARCHIVAL_CRON_MONITOR_SLUG, ..., ARCHIVAL_CRON_MONITOR_CONFIG)` (`lib/storage/archival-monitor.ts`; slug `retry-invoice-archival`, crontab `0 20 * * *` UTC, check-in margin 30 min, max runtime 10 min). It only checks in after the `CRON_SECRET` check passes; `tests/unit/opt001-cron-monitor.test.ts` keeps the schedule equal to `lib/cron/schedules.ts` (the job list cron-job.org follows). The route replies 202 at once and runs the sweep in the background (`lib/cron/run-in-background.ts`).
 - **Stale-archive warning**: at the end of each sweep, `lib/storage/archival-sweep.ts` counts finalized documents still pending/failed (under the attempt limit) more than `ARCHIVAL_STALE_PENDING_MINUTES` (60) after finalization and sends a Sentry warning tagged `scope: archival-stale-pending`. It runs once a day with the cron; it is not a real-time alarm.
 - **Request Error Capture (`onRequestError`)**: `instrumentation.ts` exports `onRequestError = Sentry.captureRequestError`, automatically capturing unhandled errors from React Server Components (RSC) rendering, Route Handlers, and proxy routing into Sentry.
-- **Per-Runtime Initialization**: Sentry configuration is resolved via `lib/observability/sentry-config.ts` separately for each runtime (`nodejs`, `edge`, and `client`). Server runtimes prefer `SENTRY_DSN` with a fallback to `NEXT_PUBLIC_SENTRY_DSN`; the client uses `NEXT_PUBLIC_SENTRY_DSN` exclusively. Each runtime attaches a runtime tag (`initialScope: { tags: { runtime } }`). `environment` and `release` are resolved from Vercel metadata (`VERCEL_ENV`, `VERCEL_GIT_COMMIT_SHA`) or fallback to `NODE_ENV`.
+- **Per-Runtime Initialization**: Sentry configuration is resolved via `lib/observability/sentry-config.ts` separately for each runtime (`nodejs`, `edge`, and `client`). Server runtimes prefer `SENTRY_DSN` with a fallback to `NEXT_PUBLIC_SENTRY_DSN`; the client uses `NEXT_PUBLIC_SENTRY_DSN` exclusively. Each runtime attaches a runtime tag (`initialScope: { tags: { runtime } }`). `environment` comes from `NEXT_PUBLIC_SENTRY_ENVIRONMENT` (`test` / `production` on Render; build time), then the Vercel variables, then `NODE_ENV`. `release` is the commit SHA that `next.config.mjs` inlines (`RENDER_GIT_COMMIT` on Render). The Vercel fallbacks stay until Vercel is removed (CLEAN-02).
 - **Sensitive Data Scrubber (Edge-Safe)**: All events pass through `beforeSend` and `beforeSendTransaction` using `scrubSentryEvent` from `lib/observability/sentry-redaction.ts`. It performs case-insensitive key-based redaction for PII/secrets (GSTIN, email, phone, account numbers, IFSC, UTR, PAN, UPI, passwords, tokens, auth headers) and ordered value-based pattern replacement on free text (emails, GSTIN, IFSC, PAN, Bearer tokens, query param secrets). It features ancestor-based cycle detection, depth capping (12), and fails closed (drops the event on scrubber failure rather than throwing into the request path). Structural Sentry fields and numeric business fields (e.g. `*_paise`) survive unscrubbed.
 - **Expected Error Breadcrumbs**: Expected business errors (`ActionError`s where `meta.expected === true`) represent normal, user-recoverable domain conditions. `lib/actions/_shared/logger.ts` records them as info breadcrumbs (`category: 'expected-error'`) rather than capturing Sentry exception issues, preventing issues and alerts from being flooded.
 - **Client Initialization & Idempotency**: Due to a Next.js 16 + Turbopack auto-import issue, `<SentryInit />` (`components/sentry-init.tsx`) is mounted in `app/layout.tsx` to dynamically import `instrumentation-client.ts`. To prevent double initialization when loaded both by Next's loader and `<SentryInit />`, client initialization is guarded with `Sentry.getClient() === undefined`.
 - **Direct `process.env` Exception (ARCH-002 / ARCH-005)**: Direct reads of `process.env` are restricted across the codebase to `lib/env.ts` (validated at boot). As an explicit exception, configuration entry points that execute during framework bootstrap before standard modules load are permitted to read `process.env` directly: `next.config.mjs`, `instrumentation.ts`, and `instrumentation-client.ts`. The helper modules under `lib/observability/*` remain pure functions and never access `process.env`.
-- **Build-Time Source Map Uploads**: `next.config.mjs` configures `withSentryConfig` using environment variables (`SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`, `VERCEL_GIT_COMMIT_SHA`). If required variables are absent in production, a build-time warning is logged while preserving the build.
+- **Build-Time Source Map Uploads**: `next.config.mjs` configures `withSentryConfig` using environment variables (`SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`; release = `VERCEL_GIT_COMMIT_SHA` or Render's `RENDER_GIT_COMMIT`). If the upload variables are missing on a Render build (`RENDER=true`) or a Vercel production build, a build-time warning is logged and the build continues without source maps.
 - **Global Error Boundary**: `app/global-error.tsx` captures top-level React rendering errors and reports them via `Sentry.captureException`.
 - **Alerting**: Alerting rules are configured directly in the Sentry dashboard, not in code.
 
@@ -305,7 +305,7 @@ To prevent duplicate or gapped statutory sequence numbers (CGST Rule 46/53), rac
 
 ## Outbound customer e-mail (API-011)
 
-- **Claim-First / Send-Second / Compensate-on-Failure**: E-mail sending is non-idempotent and external. Actions acquire an invoice row lock in PostgreSQL (`claimInvoiceEmailInTransaction` / `claimReminderInTransaction`), validate eligibility and cooldowns, atomically advance counters/timestamps, and commit before initiating outbound HTTP requests. If subsequent daily-cap checks, storage fetches, or Resend dispatches fail, compensating release transactions (`releaseInvoiceEmailClaim` / `releaseReminderClaim`) safely restore timestamps and decrement counters.
+- **Claim-First / Send-Second / Compensate-on-Failure**: E-mail sending is non-idempotent and external. Actions acquire an invoice row lock in PostgreSQL (`claimInvoiceEmailInTransaction` / `claimReminderInTransaction`), validate eligibility and cooldowns, atomically advance counters/timestamps, and commit before initiating outbound HTTP requests. If subsequent daily-cap checks, storage fetches, or the mailer (Brevo) dispatch fail, compensating release transactions (`releaseInvoiceEmailClaim` / `releaseReminderClaim`) safely restore timestamps and decrement counters.
 - **Lock-Order Conformance**: Email and reminder transactions acquire locks exclusively on the invoice row (`invoices FOR UPDATE`). They introduce no new lock tiers and never acquire subsequent-tier locks (no `credit_notes`, `payments`, or `businesses FOR UPDATE`).
 - **Separation of Semantics**: Document delivery and payment follow-ups are tracked distinctly. Invoice deliveries mutate only `emailed_at` and `email_send_count`. Payment reminders mutate only `last_reminder_at` and `reminder_count`.
 - **Layered Abuse Controls**:
@@ -601,7 +601,7 @@ All Server Actions must adhere to the standardized error handling contract to gu
    - Caught exclusively at the top level by `createAuthenticatedAction` in `lib/actions/_shared/create-action.ts`, which logs it once via `logError(scope, error, { expected: false })` (with Sentry capture in production) and returns a generic fallback response with code `'INTERNAL_ERROR'` to the client.
 
 5. **Third-party / external service failures**:
-   - Failures communicating with external services (e.g., Resend email provider) must be logged once at the callsite via `logError(scope, toLoggableError(err), context)`.
+   - Failures communicating with external services (e.g., the Brevo e-mail API, Cloudflare Browser Rendering, IDrive e2) must be logged once at the callsite via `logError(scope, toLoggableError(err), context)`.
    - Throw a static, user-safe `ActionError('We could not send the email. Please try again.', { code: 'EMAIL_SEND_FAILED' })`. Never interpolate `err.message` or vendor payloads into the user-facing message.
 
 6. **Forbidden practices**:
@@ -778,24 +778,26 @@ Bill Matrix separates integration testing into two complementary layers:
 
 ## End-to-end testing (TEST-003)
 
-Bill Matrix maintains an automated end-to-end regression and compliance suite using Playwright (`@playwright/test` ^1.64) executed against isolated Vercel preview deployments backed by disposable Neon database branches.
+Bill Matrix maintains an automated end-to-end regression and compliance suite using Playwright (`@playwright/test` ^1.64) executed against the pull request built and started on the GitHub runner (`next start`, `http://localhost:3000`), connected to the **test** Neon project and a local Redis. Cloudflare and Brevo get fake keys, so no real PDF or e-mail is sent. Setup: `docs/e2e-staging-setup.md`; overview: `e2e/README.md`.
 
 - **Non-Negotiable Safety Guardrails**:
   The suite enforces fail-closed safety pre-checks (`assertSafeTarget`) executed prior to launching browsers:
-  - Aborts immediately if the target host matches production (`app.billmatrix.in`, `billmatrix.in`) or if database URIs point to production/main database branches.
-  - Requires explicit confirmation via `E2E_CONFIRM_STAGING="yes-this-is-not-production"` and `E2E_TARGET="staging"`.
-  - Cleans only auth-specific rate limiting keys matching `@upstash/ratelimit:auth*` on Upstash Redis staging.
+  - Requires `E2E_CONFIRM_STAGING="yes-this-is-not-production"`.
+  - Aborts if the app host is in `E2E_FORBIDDEN_HOSTS` (the production address), or if the pooled or direct database host is in `E2E_FORBIDDEN_DB_HOSTS` (production Neon) or missing from `E2E_DB_HOST_ALLOWLIST` (test Neon).
+  - Cleans only the auth rate-limit keys (`@upstash/ratelimit:auth…`), and only when `E2E_UPSTASH_ALLOW_FLUSH` is on and the Redis host is in `E2E_UPSTASH_HOST_ALLOWLIST` (CI: the local Redis on the runner).
 - **Independent Money & Statutory Oracle**:
   E2E assertions use a completely independent integer-paise tax engine (`e2e/support/money.ts`) rather than importing production helpers from `lib/gst/*`, eliminating circular test errors.
 - **Test Projects & Coverage Matrix**:
-  - `journey`: Serial execution of the end-to-end customer journey from user registration, business onboarding, customer & item creation, statutory numbering, draft tax calculation, invoice preview verification, finalization, partial credit note issuance, subscription upgrade claim submission, platform admin review & approval, to multi-tab GSTR-1 Excel export.
-  - `security`: Cross-tenant data isolation, invoice PDF/print unauthorized IDOR denial, archival token signing & replay rejection, unauthenticated route redirection, and platform admin privilege barriers.
-  - `boundaries`: Branded 404 views for missing entities and non-existent URLs; production/preview suppression of internal development boundary harnesses.
+  - `journey` (specs 01–03, runs first): Serial execution of the end-to-end customer journey from user registration, business onboarding, customer & item creation, statutory numbering, draft tax calculation, invoice preview verification, finalization, partial credit note issuance, subscription upgrade claim submission, platform admin review & approval, to multi-tab GSTR-1 Excel export.
+  - Inside `journey`, `02-security-isolation`: cross-tenant data isolation, invoice PDF/print unauthorized IDOR denial, archival token signing & replay rejection, unauthenticated route redirection, and platform admin privilege barriers.
+  - Inside `journey`, `03-not-found-and-boundaries`: branded 404 views for missing entities and non-existent URLs; production/preview suppression of internal development boundary harnesses.
   - `mobile`: Mobile viewport (375x667) smoke tests ensuring clean console output and zero horizontal layout overflow (`scrollWidth <= clientWidth + 1`).
   - `quality`:
     - **Accessibility Ratchet**: Automated WCAG 2.1 AA audits across 11 core routes using `@axe-core/playwright`. A recorded baseline (`e2e/a11y-baseline.json`) fails on regressions while allowing tracked improvements.
     - **Print & PDF Integrity**: CSS `@media print` layout validation ensuring navigation chrome suppression, A4 container width bounds (≤ 794px), and valid `%PDF-` generation.
-  - `mailbox`: Live email verification via Mailosaur sink when live mailbox credentials are provided.
+  - `team` (08): invite → sign-up through the link → staff view → removal. `ca` (09, after `team`): the read-only accountant role.
+  - `import` (10): bulk customer/product import behind the Professional plan. `notifications` (11): the bell and preferences. `checkout` (12): Professional checkout screens.
+  - Sign-up confirmation: the tests mark the test address verified in the test database (`E2E_VERIFY_MODE=db`, the only mode; the Mailosaur mailbox mode was removed in LAUNCH-L5).
 - **CI/CD Integration**:
   Automated GitHub Actions workflow (`.github/workflows/e2e.yml`) triggered on pull requests: executes staging migrations (`pnpm e2e:migrate-staging`), builds the pull request and starts it with `next start` on the runner (`http://localhost:3000`), runs the tests in Chromium, and persisting 7-day trace and report artifacts.
 
@@ -925,7 +927,7 @@ Email and password are the available authentication method. Enable social authen
     - `PUBLIC_MARKETING_PATHS` = `/`, `/privacy`, `/terms`;
     - `PRIVATE_PATH_PREFIXES` = every `proxy.ts` matcher prefix plus `/api`, `/login`, `/signup`;
     - `siteOrigin()`, which reads `NEXT_PUBLIC_APP_URL`;
-    - `isIndexableDeployment()`, true only when `VERCEL_ENV === 'production'`.
+    - `isIndexableDeployment()`, true only when `VERCEL_ENV === 'production'`. Render never sets it, so the pilot on Render is **not indexed** (`Disallow: /`) on purpose; CLEAN-02 revisits this when Vercel is removed.
   - `app/robots.ts` and `app/sitemap.ts`. On production they allow only the public paths and list them in the sitemap. On every other deployment they return `Disallow: /` and an empty sitemap.
   - `app/manifest.ts`.
   - `app/opengraph-image.tsx` and `app/twitter-image.tsx`: 1200×630 preview images with no external fonts.
@@ -1039,7 +1041,7 @@ The details are in "Monitoring & Logging" above. The alert rules and uptime moni
 - `tsconfig.json` targets ES2022. This affects type-checking only; browser output is controlled by Next.js/SWC.
 - Node is pinned in two places:
   - `.nvmrc` has the exact version;
-  - `package.json` engines is `24.x`, which is what Vercel uses.
+  - `package.json` engines is `24.x`, which Render reads for the Node version.
 - The rationale and the deliberately unused options are in `docs/DEPLOYMENT.md` ("Build configuration decisions (OPT-003)").
 - `tests/unit/opt003-build-hygiene.test.ts` keeps these settings in place.
 
@@ -1080,7 +1082,7 @@ The details are in "Monitoring & Logging" above. The alert rules and uptime moni
 - **Rules**:
   - Never told twice: every event has a stable `dedupe_key`; re-running the job or retrying a transaction is a no-op.
   - Missed days are caught up (BUG-01): `platform_settings` key `daily_notifications_last_run` (`{ "date": "YYYY-MM-DD" }`, IST) holds the last day the job finished for every business. The next run also covers each day after it, at most 7 days including today (`catchUpDaysIso` in `lib/notifications/dates.ts`), with the same dedupe keys that day would have used, worded for today ("became overdue on 6 Dec", "due tomorrow"). "Due soon" items for invoices already due and GST reminders whose due date has passed are skipped. The first run ever covers today only. A usable record only moves forward; an unusable one (unreadable, an impossible date, or a future date after a clock change) is replaced by compare-and-set. When a business fails, the record becomes the day before the first covered day instead of today, so the next run retries those days, also after a failed first-ever run. Trial/plan reminders need no catch-up (the next reminder still comes; "has ended" shows for 3 days).
-  - E-mail queue: rows are claimed with `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED)` (state `sending`, attempts + 1); success → `sent`; failure → `pending` again, `failed` after 3 tries; a claim older than 15 minutes is re-taken; nothing older than 3 days is e-mailed. At send time the person's current address, membership and choices are re-checked (otherwise `skipped`). Resend idempotency key = hash of the row ids.
+  - E-mail queue: rows are claimed with `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED)` (state `sending`, attempts + 1); success → `sent`; failure → `pending` again, `failed` after 3 tries; a claim older than 15 minutes is re-taken; nothing older than 3 days is e-mailed. At send time the person's current address, membership and choices are re-checked (otherwise `skipped`). The mailer still receives an idempotency key (hash of the row ids), but Brevo has no documented equivalent, so it is not sent (`lib/email/mailer.ts`); the row claim above is what prevents double sends.
   - Event notifications are created INSIDE the business transaction (so a rolled-back approval tells no one) and e-mailed only after commit.
   - GST reminders only for `registration_type = 'regular'`; composition dealers get none. Government date extensions are not known (the normal date is shown). Suspended businesses get nothing from the daily job.
   - Retention: rows older than 90 days are deleted by the daily job.
