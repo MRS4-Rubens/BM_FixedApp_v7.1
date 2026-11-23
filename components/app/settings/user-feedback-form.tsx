@@ -378,9 +378,10 @@ export function UserFeedbackForm() {
   return (
     <div className="rounded-xl border border-border bg-card px-4 py-3 sm:px-5 sm:py-3.5 shadow-xs">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-border/60">
-        <div>
-          <div className="flex items-center gap-2.5">
+      {/* UI stage 1: the draft badge sits on the heading's line (tops aligned), so the tagline gets the full width. */}
+      <div className="pb-2.5 border-b border-border/60">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
               <MessageSquare className="size-5" />
             </div>
@@ -388,25 +389,25 @@ export function UserFeedbackForm() {
               User Feedback &amp; Suggestions
             </h2>
           </div>
-          <p className="mt-0.5 text-sm sm:text-[15px] text-muted-foreground font-medium">
-            Report bugs, request modern capabilities, or propose UI/UX enhancements. Sent directly to the founder inbox.
-          </p>
-        </div>
 
-        {restoredDraft && (
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-500/20">
-              <RotateCcw className="size-3.5" /> Draft Restored
-            </span>
-            <button
-              type="button"
-              onClick={handleDiscardDraft}
-              className="text-xs text-muted-foreground hover:text-rose-600 font-bold cursor-pointer underline"
-            >
-              Discard
-            </button>
-          </div>
-        )}
+          {restoredDraft && (
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold border border-indigo-500/20">
+                <RotateCcw className="size-3.5" /> Draft Restored
+              </span>
+              <button
+                type="button"
+                onClick={handleDiscardDraft}
+                className="text-xs text-muted-foreground hover:text-rose-600 font-bold cursor-pointer underline"
+              >
+                Discard
+              </button>
+            </div>
+          )}
+        </div>
+        <p className="mt-0.5 text-sm sm:text-[15px] text-muted-foreground font-medium">
+          Report bugs, request modern capabilities, or propose UI/UX enhancements. Sent directly to the founder inbox.
+        </p>
       </div>
 
       {globalError && (

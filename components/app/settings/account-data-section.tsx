@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
 import { ModalHeader } from '@/components/ui/modal-header';
-import { AlertTriangle, CheckCircle2, DoorClosed, Loader2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, DoorClosed, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { requestAccountClosureAction } from '@/lib/actions/account/request-account-closure';
 import { SettingsSectionBadge } from './settings-section-badge';
@@ -54,23 +54,30 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
     <>
     {/* Download your data card */}
     <div className="rounded-xl border border-border bg-card px-5 py-4 sm:px-6 sm:py-5">
-      <div className="mb-1 flex items-center gap-2">
-        <SettingsSectionBadge number={2} tone="amber" />
-        <h3 className="text-xl font-bold font-heading text-foreground uppercase">Download your data</h3>
+      {/* UI stage 1: the action sits beside the heading it belongs to, top-aligned, instead of on its own line. */}
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="mb-1 flex items-center gap-2">
+            <SettingsSectionBadge number={2} tone="amber" />
+            <h3 className="text-xl font-bold font-heading text-foreground uppercase">Download your data</h3>
+          </div>
+          <p className="text-sm sm:text-base text-muted-foreground font-medium">
+            A JSON file with your business profile, customers, products, invoices, credit notes, payments and subscription history.
+          </p>
+        </div>
+        {isOwner && (
+          <a
+            href="/api/account/export"
+            download
+            className="btn-shine-navy inline-flex shrink-0 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold whitespace-nowrap cursor-pointer"
+          >
+            <Download className="size-4 shrink-0" aria-hidden="true" />
+            Download your data
+          </a>
+        )}
       </div>
-      <p className="mb-4 text-sm sm:text-base text-muted-foreground font-medium">
-        A JSON file with your business profile, customers, products, invoices, credit notes, payments and subscription history.
-      </p>
-      {isOwner ? (
-        <a
-          href="/api/account/export"
-          download
-          className="btn-shine-navy inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer"
-        >
-          Download your data
-        </a>
-      ) : (
-        <p className="text-sm text-muted-foreground italic">
+      {!isOwner && (
+        <p className="mt-3 text-sm text-muted-foreground italic">
           Only the business owner can download the account data.
         </p>
       )}
@@ -79,13 +86,10 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
     {/* Danger Zone card (owner only) */}
     {isOwner && (
       <div className="rounded-xl border border-border bg-card px-5 py-4 sm:px-6 sm:py-5">
-        <div className="mb-1 flex items-center gap-2">
+        <div className="mb-3 flex items-center gap-2">
           <SettingsSectionBadge number={3} tone="rose" />
           <h3 className="text-xl font-bold font-heading text-foreground uppercase">Close account</h3>
         </div>
-        <p className="mb-4 text-sm sm:text-base text-muted-foreground font-medium">
-          Ask us to close this workspace.
-        </p>
 
         {closureSuccessDate && (
           <div
@@ -99,9 +103,6 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
         )}
 
         <div>
-          <h3 className="mb-2 text-base font-bold text-foreground uppercase tracking-wide">
-            Danger Zone
-          </h3>
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
             <p className="text-base font-bold text-foreground">Close Business Account</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -147,7 +148,14 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
               closeDisabled={isClosurePending}
               className="-mx-5 -mt-5 shrink-0 -top-5"
             />
-            <p className="mt-3 mb-4 text-sm text-muted-foreground leading-relaxed">
+            {/* UI stage 1: the danger warning lives in the dialog, right before the details it asks you to read. */}
+            <p className="mt-3 flex items-center gap-1.5 text-[13px] text-red-700 whitespace-nowrap">
+              <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
+              <strong className="font-bold uppercase tracking-wide">Danger Zone</strong>
+              <span aria-hidden="true">·</span>
+              <span>Please read this before sending a closure request.</span>
+            </p>
+            <p className="mt-2 mb-4 text-sm text-muted-foreground leading-relaxed">
                     We will close your workspace within 30 days and erase data we are not required to keep. Invoices, credit notes, payment records and the business and customer details on them must be kept for 8 years after the end of their financial year under Indian GST and tax law; they stay locked in our archive and are deleted after that period. Download your data first if you need a copy.
                   </p>
 
