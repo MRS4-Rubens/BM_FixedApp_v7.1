@@ -18,7 +18,7 @@ import { formatIstDate } from '@/lib/invoices/ist-date';
 import { TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements';
 import type { businesses } from '@/lib/db/schema';
 import type { PlanDefinition } from './plan-configs';
-import { BillingSectionBadge } from './billing-section-badge';
+import { SettingsSectionBadge } from '../settings-section-badge';
 import { PLAN_NOTICE_TONE, type PlanNotice } from './plan-notice';
 
 interface PlanOverviewCardProps {
@@ -55,7 +55,7 @@ export function PlanOverviewCard({
     <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-5 shadow-xs">
       {/* UI stage 1: numbered section header (read by the Settings side panel's "On this page"). */}
       <div className="flex items-center gap-2 pb-2.5 mb-3.5 border-b border-slate-100">
-        <BillingSectionBadge number={1} tone="emerald" />
+        <SettingsSectionBadge number={1} tone="emerald" />
         <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
           <Crown className="size-4 text-emerald-800" />
           Current Plan

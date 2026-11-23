@@ -46,8 +46,13 @@ interface SettingsSidePanelProps<T extends string> {
 function readPageSections(root: HTMLElement): PageSection[] {
   const sections: PageSection[] = [];
   root.querySelectorAll('h3').forEach((heading, index) => {
-    const row = heading.parentElement;
-    const badge = row?.querySelector<HTMLElement>(':scope > .rounded-full');
+    // The badge is the heading's sibling, or one level up when an icon tile sits between them.
+    let row = heading.parentElement;
+    let badge = row?.querySelector<HTMLElement>(':scope > .rounded-full');
+    if (!badge && row?.parentElement) {
+      badge = row.parentElement.querySelector<HTMLElement>(':scope > .rounded-full');
+      if (badge) row = row.parentElement;
+    }
     const number = badge?.textContent?.trim() ?? '';
     if (!badge || !/^\d+$/.test(number)) return;
     const element = row?.parentElement?.parentElement ?? heading;

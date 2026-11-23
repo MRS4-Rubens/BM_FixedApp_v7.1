@@ -21,7 +21,7 @@ import { formatIstDate } from '@/lib/invoices/ist-date';
 import { formatPaiseAsInr } from '@/lib/money';
 import { ITEMS_PER_PAGE, type StatusFilter } from './plan-configs';
 import type { SubscriptionHistoryItem } from './types';
-import { BillingSectionBadge } from './billing-section-badge';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 interface ClaimsLedgerProps {
   searchQuery: string;
@@ -61,7 +61,7 @@ export function ClaimsLedger({
       <div className="flex flex-row items-start justify-between gap-3 mb-3.5">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <BillingSectionBadge number={4} tone="blue" />
+            <SettingsSectionBadge number={4} tone="blue" />
             <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <Layers className="size-4 text-indigo-500" />
             Payment & Subscription History

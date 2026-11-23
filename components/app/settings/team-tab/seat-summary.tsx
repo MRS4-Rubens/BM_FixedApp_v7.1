@@ -4,6 +4,7 @@ import { Users, AlertTriangle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { TeamSeats } from './types';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 export interface SeatSummaryProps {
   seats: TeamSeats;
@@ -28,6 +29,7 @@ export function SeatSummary({ seats, onSwitchTab, className, embedded = false }:
     <div className={cn(embedded ? 'space-y-3' : 'rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4', className)}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-2">
+          {embedded && <SettingsSectionBadge number={1} tone="emerald" />}
           <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
             <Users className="size-4" />
           </div>
@@ -37,8 +39,12 @@ export function SeatSummary({ seats, onSwitchTab, className, embedded = false }:
           </div>
         </div>
 
+        {/* UI stage 1: the seat rule sits with the seat count it explains. */}
         <div className="text-left sm:text-right">
-          <span className="text-sm font-extrabold text-foreground">{userText}</span>
+          <span className="block text-sm font-extrabold text-foreground">{userText}</span>
+          <span className="block text-[11px] text-muted-foreground">
+            {isUnlimited ? 'Unlimited on your plan. ' : ''}Open invitations reserve seats.
+          </span>
         </div>
       </div>
 
@@ -61,10 +67,6 @@ export function SeatSummary({ seats, onSwitchTab, className, embedded = false }:
           />
         </div>
       )}
-
-      <p className="text-[11px] text-muted-foreground">
-        {isUnlimited ? 'Unlimited team members on your plan. ' : ''}Open invitations reserve seats.
-      </p>
 
       {seats.overLimit && (
         <div

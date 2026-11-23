@@ -6,6 +6,7 @@ import { ModalHeader } from '@/components/ui/modal-header';
 import { AlertTriangle, CheckCircle2, DoorClosed, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { requestAccountClosureAction } from '@/lib/actions/account/request-account-closure';
+import { SettingsSectionBadge } from './settings-section-badge';
 
 /**
  * OPT-002a: General-tab account section — DPDP data export and the recorded account-closure request.
@@ -53,9 +54,10 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
     <>
     {/* Download your data card */}
     <div className="rounded-xl border border-border bg-card px-5 py-4 sm:px-6 sm:py-5">
-      <h2 className="mb-1 text-xl font-bold font-heading text-foreground uppercase">
-        Download your data
-      </h2>
+      <div className="mb-1 flex items-center gap-2">
+        <SettingsSectionBadge number={2} tone="amber" />
+        <h3 className="text-xl font-bold font-heading text-foreground uppercase">Download your data</h3>
+      </div>
       <p className="mb-4 text-sm sm:text-base text-muted-foreground font-medium">
         A JSON file with your business profile, customers, products, invoices, credit notes, payments and subscription history.
       </p>
@@ -63,7 +65,7 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
         <a
           href="/api/account/export"
           download
-          className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-xs transition-colors hover:bg-primary/90 cursor-pointer"
+          className="btn-shine-navy inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer"
         >
           Download your data
         </a>
@@ -77,7 +79,10 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
     {/* Danger Zone card (owner only) */}
     {isOwner && (
       <div className="rounded-xl border border-border bg-card px-5 py-4 sm:px-6 sm:py-5">
-        <h2 className="mb-1 text-xl font-bold font-heading text-foreground uppercase">Close account</h2>
+        <div className="mb-1 flex items-center gap-2">
+          <SettingsSectionBadge number={3} tone="rose" />
+          <h3 className="text-xl font-bold font-heading text-foreground uppercase">Close account</h3>
+        </div>
         <p className="mb-4 text-sm sm:text-base text-muted-foreground font-medium">
           Ask us to close this workspace.
         </p>

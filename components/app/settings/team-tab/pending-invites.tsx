@@ -9,6 +9,7 @@ import { resendTeamInvite } from '@/lib/actions/team/resend-team-invite';
 import { revokeTeamInvite } from '@/lib/actions/team/revoke-team-invite';
 import { roleLabel } from '@/components/app/current-user-role';
 import type { TeamInvite, InviteLinkResult } from './types';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 export interface PendingInvitesProps {
   invites: TeamInvite[];
@@ -56,6 +57,7 @@ export function PendingInvites({
   return (
     <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-3">
       <div className="flex items-center gap-2">
+        <SettingsSectionBadge number={3} tone="rose" />
         <Mail className="size-4 text-primary shrink-0" />
         <h3 className="text-sm font-bold text-foreground">Pending Invitations ({invites.length})</h3>
       </div>

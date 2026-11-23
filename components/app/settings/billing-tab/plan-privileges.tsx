@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { formatPlanPrice } from '@/lib/subscriptions/plan-catalog';
 import { useIsOwner } from '@/components/app/current-user-role';
 import { PLAN_CONFIGS, type PlanDefinition } from './plan-configs';
-import { BillingSectionBadge } from './billing-section-badge';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 interface PlanPrivilegesProps {
   planConfig: PlanDefinition;
@@ -24,7 +24,7 @@ export function PlanPrivileges({ planConfig, currentPlanKey }: PlanPrivilegesPro
       <div className="flex flex-row items-start justify-between gap-3 mb-3">
         <div>
           <div className="flex items-center gap-2">
-            <BillingSectionBadge number={3} tone="rose" />
+            <SettingsSectionBadge number={3} tone="rose" />
             <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <ShieldCheck className="size-4 text-emerald-600" />
             Availed Services & Tier Privileges

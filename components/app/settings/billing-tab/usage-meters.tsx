@@ -4,7 +4,7 @@ import { TrendingUp, FileText, CheckCircle2, Package, Check, ShieldCheck, Zap } 
 import { cn } from '@/lib/utils';
 import { formatShortMonth, type PlanDefinition } from './plan-configs';
 import type { UsageStats } from './types';
-import { BillingSectionBadge } from './billing-section-badge';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 interface UsageMetersProps {
   usageStats: UsageStats;
@@ -26,7 +26,7 @@ export function UsageMeters({
       <div className="flex flex-row items-start justify-between gap-2 mb-3.5">
         <div>
           <div className="flex items-center gap-2">
-            <BillingSectionBadge number={2} tone="amber" />
+            <SettingsSectionBadge number={2} tone="amber" />
             <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <TrendingUp className="size-4 text-indigo-500" />
             Live Resource Consumption & Quotas

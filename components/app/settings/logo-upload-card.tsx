@@ -13,6 +13,7 @@ import { buildLogoUrl } from '@/lib/storage/logo-url';
 import { IMAGE_PICK_MAX_BYTES, LOGO_MAX_BYTES } from '@/lib/security/upload-limits';
 import { formatBytes, shrinkImage } from '@/lib/images/shrink-image';
 import { createLatestPick } from '@/lib/images/latest-pick';
+import { SettingsSectionBadge } from './settings-section-badge';
 
 interface LogoUploadCardProps {
   business: {
@@ -199,12 +200,13 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-border/60">
         <div>
           <div className="flex items-center gap-2">
+            <SettingsSectionBadge number={1} tone="emerald" />
             <div className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
               <ImageIcon className="size-4" />
             </div>
-            <h2 className="text-lg font-bold font-heading text-foreground tracking-tight uppercase">
+            <h3 className="text-lg font-bold font-heading text-foreground tracking-tight uppercase">
               Business Logo &amp; Brand Assets
-            </h2>
+            </h3>
           </div>
           <p className="mt-1 text-xs sm:text-sm text-muted-foreground font-medium">
             Your official business logo will automatically appear on printed invoices, tax templates, and PDFs.
@@ -411,7 +413,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
                     onClick={handleSaveUpload}
                     disabled={isPending}
                     size="sm"
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs h-7.5 px-3 shadow-xs cursor-pointer"
+                    className="btn-shine-navy font-bold text-xs h-7.5 px-3 cursor-pointer"
                   >
                     {isPending ? (
                       <>

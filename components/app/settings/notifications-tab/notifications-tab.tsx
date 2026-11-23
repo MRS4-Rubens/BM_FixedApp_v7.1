@@ -14,6 +14,7 @@ import {
 } from '@/lib/actions/notifications/notification-settings';
 import { GstFrequencyCard } from './gst-frequency-card';
 import { SERVER_UNREACHABLE_MESSAGE } from '@/lib/actions/_shared/client-errors';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 /**
  * Feature C: Settings → Notifications. Every person (owner, staff, accountant) manages their OWN e-mail choices;
@@ -112,6 +113,7 @@ export function NotificationsTab() {
 
       <section className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
         <div className="flex items-center gap-2">
+          <SettingsSectionBadge number={1} tone="emerald" />
           <div className="flex size-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
             <Mail className="size-4" />
           </div>
@@ -194,7 +196,7 @@ export function NotificationsTab() {
               {message.text}
             </p>
           )}
-          <Button type="button" onClick={() => void save()} disabled={saving || !dirty} className="ml-auto h-9 px-4 font-bold">
+          <Button type="button" onClick={() => void save()} disabled={saving || !dirty} className="btn-shine-navy ml-auto h-9 px-4 font-bold">
             {saving && <Loader2 className="mr-1.5 size-4 animate-spin" />}
             Save e-mail choices
           </Button>

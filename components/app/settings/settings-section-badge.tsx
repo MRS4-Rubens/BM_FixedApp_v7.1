@@ -12,7 +12,7 @@ const TONES = {
   blue: 'bg-blue-900',
 } as const;
 
-export function BillingSectionBadge({ number, tone }: { number: number; tone: keyof typeof TONES }) {
+export function SettingsSectionBadge({ number, tone }: { number: number; tone: keyof typeof TONES }) {
   return (
     <div
       className={cn(

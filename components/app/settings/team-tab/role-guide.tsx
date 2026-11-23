@@ -1,12 +1,16 @@
 import Link from 'next/link';
 import { Shield, ShieldAlert, Eye } from 'lucide-react';
 import { useIsOwner } from '@/components/app/current-user-role';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 export function RoleGuide() {
   const isOwner = useIsOwner();
   return (
     <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-3">
-      <h3 className="text-sm font-bold text-foreground">Role Permissions Guide</h3>
+      <div className="flex items-center gap-2">
+        <SettingsSectionBadge number={4} tone="blue" />
+        <h3 className="text-sm font-bold text-foreground">Role Permissions Guide</h3>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
         <div className="rounded-lg border border-indigo-200/60 bg-indigo-50/40 dark:border-indigo-900/40 dark:bg-indigo-950/20 p-3.5 space-y-1.5">
