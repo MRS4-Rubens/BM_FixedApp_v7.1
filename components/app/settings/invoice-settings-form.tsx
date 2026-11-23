@@ -58,6 +58,10 @@ interface InvoiceSettingsFormProps {
   currentFyLabel: string;
   signatureDataUri?: string | null;
   isOwner?: boolean;
+  /** UI stage 1: lets the Settings side panel's Save button submit this form. */
+  formId?: string;
+  /** UI stage 1: tells the side panel whether a save worked (false also for client-side validation errors). */
+  onSaveResult?: (ok: boolean) => void;
 }
 
 // -- Styling Constants (Strict Floor-Integer Tailwind Classes) -----------------
@@ -115,6 +119,8 @@ export function InvoiceSettingsForm({
   currentFyLabel,
   signatureDataUri = null,
   isOwner = true,
+  formId,
+  onSaveResult,
 }: InvoiceSettingsFormProps) {
   const [success, setSuccess] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -242,6 +248,7 @@ export function InvoiceSettingsForm({
 
     // 1. Persist database-backed fields & display prefs via Server Action
     const result = await saveInvoiceSettings(payload);
+    onSaveResult?.(result.success);
     if (!result.success) {
       if (result.error.fieldErrors) {
         Object.entries(result.error.fieldErrors).forEach(([field, messages]) => {
@@ -282,7 +289,7 @@ export function InvoiceSettingsForm({
 
       {isOwner && <LegacyDisplayPrefsImport />}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form id={formId} onSubmit={handleSubmit(onSubmit, () => onSaveResult?.(false))} className="space-y-4">
         <fieldset disabled={!isOwner} className="space-y-4 border-0 p-0 m-0">
         {/* -- SECTION 1: Invoice & Credit Note Numbering (Dark Navy / Blue - blue-900) -- */}
         <div className={sectionClass}>

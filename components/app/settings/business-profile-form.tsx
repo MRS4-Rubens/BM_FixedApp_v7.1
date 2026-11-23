@@ -29,6 +29,10 @@ export interface BusinessProfileFormProps {
   onSwitchTab?: (tab: string) => void;
   identityLocked?: boolean;
   readOnly?: boolean;
+  /** UI stage 1: lets the Settings side panel's Save button submit this form. */
+  formId?: string;
+  /** UI stage 1: tells the side panel whether a save worked (false also for client-side validation errors). */
+  onSaveResult?: (ok: boolean) => void;
 }
 
 export function BusinessProfileForm({
@@ -37,6 +41,8 @@ export function BusinessProfileForm({
   onSwitchTab,
   identityLocked = false,
   readOnly = false,
+  formId,
+  onSaveResult,
 }: BusinessProfileFormProps) {
   const isNewBusiness = !business || !business.id;
   const id = useId();
@@ -132,6 +138,7 @@ export function BusinessProfileForm({
     setGlobalError(null);
     const result = await saveBusinessProfile(data);
 
+    onSaveResult?.(result.success);
     if (result.success) {
       setSuccess(true);
       if (isNewBusiness) {
@@ -212,7 +219,7 @@ export function BusinessProfileForm({
         </div>
       ) : null}
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form id={formId} onSubmit={handleSubmit(onSubmit, () => onSaveResult?.(false))}>
         <fieldset disabled={readOnly} className="space-y-4 border-0 p-0 m-0">
           {/* SECTION 1: General Details */}
           <GeneralDetailsSection
