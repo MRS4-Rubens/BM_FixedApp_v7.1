@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import type { GstFilingFrequency } from '@/lib/db/domain-values';
 import { saveGstFilingFrequency } from '@/lib/actions/notifications/save-gst-filing-frequency';
 import { SERVER_UNREACHABLE_MESSAGE } from '@/lib/actions/_shared/client-errors';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 const OPTIONS: readonly { value: GstFilingFrequency; label: string; hint: string }[] = [
   { value: 'monthly', label: 'Monthly', hint: 'GSTR-1 by the 11th and GSTR-3B by the 20th of every month.' },
@@ -110,7 +111,7 @@ export function GstFrequencyCard({ frequency, registrationType, canEdit, onSaved
             type="button"
             onClick={() => void save()}
             disabled={saving || choice === null || choice === frequency}
-            className="ml-auto h-9 px-4 font-bold"
+            className="btn-shine-navy ml-auto h-9 px-4 font-bold"
           >
             {saving && <Loader2 className="mr-1.5 size-4 animate-spin" />}
             Save filing frequency
@@ -124,6 +125,7 @@ export function GstFrequencyCard({ frequency, registrationType, canEdit, onSaved
 function Header() {
   return (
     <div className="flex items-center gap-2">
+      <SettingsSectionBadge number={2} tone="amber" />
       <div className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-400">
         <CalendarClock className="size-4" />
       </div>

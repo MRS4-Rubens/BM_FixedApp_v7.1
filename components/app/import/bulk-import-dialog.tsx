@@ -130,7 +130,7 @@ export function BulkImportDialog({
                     <Link
                       href="/checkout?plan=professional"
                       onClick={() => handleOpenChange(false)}
-                      className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
+                      className="btn-shine-indigo inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
                     >
                       See Professional
                     </Link>

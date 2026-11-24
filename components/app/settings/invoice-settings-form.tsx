@@ -58,6 +58,12 @@ interface InvoiceSettingsFormProps {
   currentFyLabel: string;
   signatureDataUri?: string | null;
   isOwner?: boolean;
+  /** UI stage 1: lets the Settings side panel's Save button submit this form. */
+  formId?: string;
+  /** UI stage 1: tells the side panel whether a save worked (false also for client-side validation errors). */
+  onProgrammaticEdit?: () => void;
+  onSaveStart?: () => void;
+  onSaveResult?: (ok: boolean) => void;
 }
 
 // -- Styling Constants (Strict Floor-Integer Tailwind Classes) -----------------
@@ -72,7 +78,7 @@ const baseTextareaClass =
 const textareaRoseClass = `${baseTextareaClass} focus:ring-rose-900/15 focus:border-rose-900`;
 
 const labelClass = 'mb-1 flex items-center gap-2 text-sm font-semibold text-slate-700';
-const sectionClass = 'border-b border-border pb-4 mb-4 last:border-0 last:mb-0 last:pb-0';
+const sectionClass = 'border-b border-[oklch(0.82_0.015_255)] pb-4 mb-4 last:border-0 last:mb-0 last:pb-0';
 const errorClass = 'mt-1 text-xs font-semibold text-destructive';
 
 const DEFAULT_TERMS =
@@ -115,6 +121,10 @@ export function InvoiceSettingsForm({
   currentFyLabel,
   signatureDataUri = null,
   isOwner = true,
+  formId,
+  onProgrammaticEdit,
+  onSaveStart,
+  onSaveResult,
 }: InvoiceSettingsFormProps) {
   const [success, setSuccess] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -161,7 +171,7 @@ export function InvoiceSettingsForm({
     control,
     setValue,
     setError,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<InvoiceSettingsInput>({
     resolver: zodResolver(invoiceSettingsSchema as never),
     defaultValues: {
@@ -212,6 +222,7 @@ export function InvoiceSettingsForm({
       setShowFormatUpgradeModal(true);
       return;
     }
+    onProgrammaticEdit?.();
     setValue('invoice_number_format', selectedFormat.toUpperCase(), {
       shouldValidate: true,
       shouldDirty: true,
@@ -242,6 +253,7 @@ export function InvoiceSettingsForm({
 
     // 1. Persist database-backed fields & display prefs via Server Action
     const result = await saveInvoiceSettings(payload);
+    onSaveResult?.(result.success);
     if (!result.success) {
       if (result.error.fieldErrors) {
         Object.entries(result.error.fieldErrors).forEach(([field, messages]) => {
@@ -269,7 +281,7 @@ export function InvoiceSettingsForm({
         <ReceiptText className="size-5 text-slate-800 shrink-0" />
         <h2 className="text-xl font-bold font-heading text-slate-900 uppercase">Invoice Settings</h2>
       </div>
-      <p className="mb-4 text-sm sm:text-base text-muted-foreground font-medium">
+      <p className="mb-4 text-sm text-muted-foreground font-semibold">
         Configure statutory invoice numbering, credit note prefixes, default templates, GST calculation rules, and terms.
       </p>
 
@@ -282,11 +294,22 @@ export function InvoiceSettingsForm({
 
       {isOwner && <LegacyDisplayPrefsImport />}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form id={formId} onInvalidCapture={() => onSaveResult?.(false)}
+        onSubmit={(event) => {
+          if (!isOwner) {
+            event.preventDefault();
+            return;
+          }
+          onSaveStart?.();
+          void handleSubmit(onSubmit, () => onSaveResult?.(false))(event).catch(() => {
+            setGlobalError('Could not save your changes. Please try again.');
+            onSaveResult?.(false);
+          });
+        }} className="space-y-4">
         <fieldset disabled={!isOwner} className="space-y-4 border-0 p-0 m-0">
         {/* -- SECTION 1: Invoice & Credit Note Numbering (Dark Navy / Blue - blue-900) -- */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+          <div className="flex items-center justify-between pb-2 border-b border-[oklch(0.82_0.015_255)] mb-3">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-900 text-[11px] font-black text-white shadow-xs">
                 1
@@ -470,7 +493,7 @@ export function InvoiceSettingsForm({
 
         {/* -- SECTION 2: Template & Calculation Preferences (Teal - teal-900) -- */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+          <div className="flex items-center justify-between pb-2 border-b border-[oklch(0.82_0.015_255)] mb-3">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-teal-900 text-[11px] font-black text-white shadow-xs">
                 2
@@ -496,12 +519,14 @@ export function InvoiceSettingsForm({
                 business={business}
                 buttonClassName={inputTealClass}
                 onChange={(chosen) => {
+                  onProgrammaticEdit?.();
                   setValue('default_invoice_template', chosen as 'template_1' | 'template_2' | 'template_3' | 'template_4', {
                     shouldValidate: true,
                     shouldDirty: true,
                   });
                 }}
                 onUpgradeClick={() => {
+                  onProgrammaticEdit?.();
                   setValue('default_invoice_template', 'template_1');
                   setShowTemplateUpgradeModal(true);
                 }}
@@ -536,7 +561,7 @@ export function InvoiceSettingsForm({
           </div>
 
           {/* Row 2: Full-Width Interactive Card Selectors for GST Calculation Scheme */}
-          <div className="mt-4 pt-3 border-t border-border/40">
+          <div className="mt-4 pt-3 border-t border-[oklch(0.82_0.015_255)]">
             <div className={labelClass}>
               <Calculator className="size-3.5 text-teal-900 shrink-0" />
               <span>Tax Calculation Scheme (Default Mode)</span>
@@ -546,7 +571,7 @@ export function InvoiceSettingsForm({
               {/* GST Exclusive Option Card selector */}
               <button
                 type="button"
-                onClick={() => setValue('default_gst_rate_type', 'exclusive', { shouldValidate: true })}
+                onClick={() => { setValue('default_gst_rate_type', 'exclusive', { shouldValidate: true }); onProgrammaticEdit?.(); }}
                 className={cn(
                   'flex flex-col text-left p-3 sm:px-4 sm:py-3 rounded-xl border-2 transition-all cursor-pointer shadow-xs',
                   watchedGstRateType === 'exclusive'
@@ -572,7 +597,7 @@ export function InvoiceSettingsForm({
               {/* GST Inclusive Option Card selector */}
               <button
                 type="button"
-                onClick={() => setValue('default_gst_rate_type', 'inclusive', { shouldValidate: true })}
+                onClick={() => { setValue('default_gst_rate_type', 'inclusive', { shouldValidate: true }); onProgrammaticEdit?.(); }}
                 className={cn(
                   'flex flex-col text-left p-3 sm:px-4 sm:py-3 rounded-xl border-2 transition-all cursor-pointer shadow-xs',
                   watchedGstRateType === 'inclusive'
@@ -603,7 +628,7 @@ export function InvoiceSettingsForm({
 
         {/* -- SECTION 3: Line Item Columns (Dark Green - emerald-800) -- */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+          <div className="flex items-center justify-between pb-2 border-b border-[oklch(0.82_0.015_255)] mb-3">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-[11px] font-black text-white shadow-xs">
                 3
@@ -619,7 +644,7 @@ export function InvoiceSettingsForm({
             Configure which input columns appear in the line items table when composing a new invoice.
           </p>
 
-          <div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden shadow-xs">
+          <div className="flex flex-col divide-y divide-[oklch(0.82_0.015_255)] rounded-xl border border-border overflow-hidden shadow-xs">
             {/* HSN / SAC Code */}
             <div className="flex items-center justify-between gap-4 px-4 py-3 bg-background">
               <div className="flex items-start gap-3">
@@ -631,7 +656,7 @@ export function InvoiceSettingsForm({
                   </p>
                 </div>
               </div>
-              <Toggle checked={showHsn} onChange={setShowHsn} id="toggle-hsn" />
+              <Toggle checked={showHsn} onChange={(checked) => { setShowHsn(checked); onProgrammaticEdit?.(); }} id="toggle-hsn" />
             </div>
 
             {/* Discount % Column */}
@@ -660,7 +685,7 @@ export function InvoiceSettingsForm({
                   </p>
                 </div>
               </div>
-              <Toggle checked={discEnabled} onChange={setDiscEnabled} id="toggle-disc" />
+              <Toggle checked={discEnabled} onChange={(checked) => { setDiscEnabled(checked); onProgrammaticEdit?.(); }} id="toggle-disc" />
             </div>
           </div>
 
@@ -676,7 +701,7 @@ export function InvoiceSettingsForm({
 
         {/* -- SECTION 4: Print & PDF Options (Dark Amber - amber-800) -- */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+          <div className="flex items-center justify-between pb-2 border-b border-[oklch(0.82_0.015_255)] mb-3">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-800 text-[11px] font-black text-white shadow-xs">
                 4
@@ -692,7 +717,7 @@ export function InvoiceSettingsForm({
             Control visual elements rendered on printed physical bills or exported PDF invoices.
           </p>
 
-          <div className="flex flex-col divide-y divide-border rounded-xl border border-border overflow-hidden shadow-xs">
+          <div className="flex flex-col divide-y divide-[oklch(0.82_0.015_255)] rounded-xl border border-border overflow-hidden shadow-xs">
             <div className="flex items-center justify-between gap-4 px-4 py-3 bg-background">
               <div className="flex items-start gap-3">
                 <Hash className="size-4 text-amber-800 shrink-0 mt-0.5" />
@@ -703,7 +728,7 @@ export function InvoiceSettingsForm({
                   </p>
                 </div>
               </div>
-              <Toggle checked={showNextNo} onChange={setShowNextNo} id="toggle-nextno" />
+              <Toggle checked={showNextNo} onChange={(checked) => { setShowNextNo(checked); onProgrammaticEdit?.(); }} id="toggle-nextno" />
             </div>
 
             <div className="px-4 py-3 bg-background">
@@ -717,7 +742,7 @@ export function InvoiceSettingsForm({
                     </p>
                   </div>
                 </div>
-                <Toggle checked={enableFixedRows} onChange={setEnableFixedRows} id="toggle-fixed-rows" />
+                <Toggle checked={enableFixedRows} onChange={(checked) => { setEnableFixedRows(checked); onProgrammaticEdit?.(); }} id="toggle-fixed-rows" />
               </div>
 
               {enableFixedRows && (
@@ -755,7 +780,7 @@ export function InvoiceSettingsForm({
                     </p>
                   </div>
                 </div>
-                <Toggle checked={showSignatory} onChange={setShowSignatory} id="toggle-sig" />
+                <Toggle checked={showSignatory} onChange={(checked) => { setShowSignatory(checked); onProgrammaticEdit?.(); }} id="toggle-sig" />
               </div>
 
               {showSignatory ? (
@@ -786,7 +811,7 @@ export function InvoiceSettingsForm({
 
         {/* -- SECTION 5: Default Terms & Conditions (Maroon - rose-900) -- */}
         <div className={sectionClass}>
-          <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+          <div className="flex items-center justify-between pb-2 border-b border-[oklch(0.82_0.015_255)] mb-3">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center rounded-full bg-rose-900 text-[11px] font-black text-white shadow-xs">
                 5
@@ -832,16 +857,6 @@ export function InvoiceSettingsForm({
             )}
           </div>
 
-          {isOwner && (
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-lg bg-emerald-800 px-4 py-2 h-9 text-sm font-bold text-white transition-all hover:bg-emerald-900 disabled:opacity-50 shadow-xs hover:shadow-sm cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0"
-            >
-              <Check className="size-4 shrink-0" />
-              <span className="whitespace-nowrap">{isSubmitting ? 'Saving...' : 'Save Invoice Settings'}</span>
-            </button>
-          )}
         </div>
       </form>
 

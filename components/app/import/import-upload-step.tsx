@@ -107,7 +107,7 @@ export function ImportUploadStep({
             <a
               href={`/api/import/template?kind=${kind}`}
               download
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
+              className="btn-shine-indigo inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
             >
               <Download className="size-3.5" />
               Download template
@@ -227,7 +227,7 @@ export function ImportUploadStep({
           type="button"
           disabled={!canCheck}
           onClick={handleCheck}
-          className="shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold h-9 px-5 rounded-lg cursor-pointer"
+          className="btn-shine-violet shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold h-9 px-5 rounded-lg cursor-pointer"
         >
           {isRunning && <Loader2 className="mr-1.5 size-4 animate-spin" />}
           {isRunning ? 'Checking…' : 'Check file'}

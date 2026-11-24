@@ -4,6 +4,7 @@ import { TrendingUp, FileText, CheckCircle2, Package, Check, ShieldCheck, Zap } 
 import { cn } from '@/lib/utils';
 import { formatShortMonth, type PlanDefinition } from './plan-configs';
 import type { UsageStats } from './types';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 interface UsageMetersProps {
   usageStats: UsageStats;
@@ -22,12 +23,15 @@ export function UsageMeters({
 }: UsageMetersProps) {
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-5 shadow-xs">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3.5">
+      <div className="flex flex-row items-start justify-between gap-2 mb-3.5">
         <div>
-          <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <SettingsSectionBadge number={2} tone="amber" />
+            <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <TrendingUp className="size-4 text-indigo-500" />
             Live Resource Consumption & Quotas
           </h3>
+          </div>
           <p className="text-sm text-slate-500 mt-0.5">
             Your usage this month and your catalogue size.
           </p>
@@ -80,7 +84,7 @@ export function UsageMeters({
               </div>
             )}
           </div>
-          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-slate-200/60">
+          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-[oklch(0.82_0.015_255)]">
             Total lifetime invoices: <strong className="text-slate-800">{usageStats.invoicesTotal}</strong>
           </p>
         </div>
@@ -128,7 +132,7 @@ export function UsageMeters({
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-slate-200/60">
+          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-[oklch(0.82_0.015_255)]">
             Search products by name or HSN/SAC
           </p>
         </div>
@@ -167,7 +171,7 @@ export function UsageMeters({
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-slate-200/60">
+          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-[oklch(0.82_0.015_255)]">
             Audit log immutability active
           </p>
         </div>

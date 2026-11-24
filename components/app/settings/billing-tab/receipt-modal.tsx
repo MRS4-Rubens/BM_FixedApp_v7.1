@@ -50,7 +50,7 @@ export function ReceiptModal({
 
         {/* Receipt Content */}
         <div className="space-y-4">
-          <div className="border-b border-slate-100 pb-4 text-center">
+          <div className="border-b border-[oklch(0.82_0.015_255)] pb-4 text-center">
             <div className="inline-flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white font-extrabold text-lg mb-2 shadow-xs">
               B
             </div>
@@ -61,21 +61,21 @@ export function ReceiptModal({
           </div>
 
           <div className="space-y-2.5 text-sm">
-            <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+            <div className="flex justify-between py-1 border-b border-dashed border-[oklch(0.82_0.015_255)]">
               <span className="text-slate-500">Transaction ID:</span>
               <span className="font-mono font-bold text-slate-900">{selectedReceipt.id.slice(0, 8)}...</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+            <div className="flex justify-between py-1 border-b border-dashed border-[oklch(0.82_0.015_255)]">
               <span className="text-slate-500">Business:</span>
               <span className="font-bold text-slate-900">{businessLegalName || 'Account Holder'}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+            <div className="flex justify-between py-1 border-b border-dashed border-[oklch(0.82_0.015_255)]">
               <span className="text-slate-500">Subscription Plan:</span>
               <span className="font-bold text-slate-900 capitalize">
                 {selectedReceipt.planName} ({selectedReceipt.billingCycle})
               </span>
             </div>
-            <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+            <div className="flex justify-between py-1 border-b border-dashed border-[oklch(0.82_0.015_255)]">
               <span className="text-slate-500">Claimed Date:</span>
               <span className="font-semibold text-slate-900">
                 {formatIstDate(selectedReceipt.createdAt, {
@@ -87,11 +87,11 @@ export function ReceiptModal({
                 })}
               </span>
             </div>
-            <div className="flex justify-between py-1 border-b border-dashed border-slate-200">
+            <div className="flex justify-between py-1 border-b border-dashed border-[oklch(0.82_0.015_255)]">
               <span className="text-slate-500">Payment Reference (UTR):</span>
               <span className="font-mono font-bold text-indigo-600">{selectedReceipt.paymentReference}</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-dashed border-slate-200 items-center">
+            <div className="flex justify-between py-1 border-b border-dashed border-[oklch(0.82_0.015_255)] items-center">
               <span className="text-slate-500">Status:</span>
               <div className="flex items-center flex-wrap justify-end gap-1.5">
                 {selectedReceipt.status === 'approved' ? (
@@ -136,7 +136,7 @@ export function ReceiptModal({
             </Button>
             <Button
               onClick={onClose}
-              className="flex-1 h-9 text-sm font-bold cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="btn-shine-indigo flex-1 h-9 text-sm font-bold cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               Done
             </Button>

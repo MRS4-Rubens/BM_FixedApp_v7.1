@@ -229,7 +229,7 @@ export function ManageSubscriptionDialog({
                   <Button
                     disabled={isPending || isSaveDisabled}
                     onClick={onSaveOverride}
-                    className="max-xl:hidden h-8 px-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap"
+                    className="btn-shine-indigo max-xl:hidden h-8 px-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap"
                   >
                     {isPending ? <Loader2 className="size-3.5 animate-spin" /> : 'Save Subscription Changes'}
                   </Button>
@@ -252,7 +252,7 @@ export function ManageSubscriptionDialog({
                   <Button
                     disabled={isPending || isSaveDisabled}
                     onClick={onSaveOverride}
-                    className="h-8 px-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap"
+                    className="btn-shine-indigo h-8 px-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-45 text-white text-xs font-bold cursor-pointer shrink-0 whitespace-nowrap"
                   >
                     {isPending ? <Loader2 className="size-3.5 animate-spin" /> : 'Save Subscription Changes'}
                   </Button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Building2,
   FileSpreadsheet,
@@ -11,7 +11,7 @@ import {
   SlidersHorizontal,
   type LucideIcon,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { SettingsSidePanel, type SettingsNavGroup, type SettingsSaveState } from './settings-side-panel';
 import { BusinessProfileForm } from './business-profile-form';
 import { InvoiceSettingsForm } from './invoice-settings-form';
 import { BillingTab, type SubscriptionHistoryItem } from './billing-tab';
@@ -55,6 +55,34 @@ const navItems = [
 ] as const;
 
 type NavItem = (typeof navItems)[number];
+
+interface TabSaveStatus {
+  saveState: SettingsSaveState;
+  dirty: boolean;
+  editRevision: number;
+  submittedRevision: number;
+}
+
+const INITIAL_SAVE_STATUS: TabSaveStatus = {
+  saveState: 'idle',
+  dirty: false,
+  editRevision: 0,
+  submittedRevision: 0,
+};
+
+// UI stage 1: the right panel groups the same sections (labels unchanged).
+const NAV_GROUPS: readonly SettingsNavGroup<NavItem>[] = [
+  { label: 'Business', items: ['Business Profile', 'Invoice Settings'] },
+  { label: 'Team', items: ['Users & Roles'] },
+  { label: 'Account', items: ['Billing & Usage', 'Notifications', 'General'] },
+  { label: 'Support', items: ['User Feedback'] },
+];
+
+/** Sections whose page-wide form the panel's Save button submits. */
+const SAVE_FORM_IDS: Partial<Record<NavItem, string>> = {
+  'Business Profile': 'settings-business-profile-form',
+  'Invoice Settings': 'settings-invoice-settings-form',
+};
 
 const STAFF_HIDDEN_TABS: readonly NavItem[] = ['Users & Roles', 'Billing & Usage', 'General'];
 
@@ -119,83 +147,74 @@ export function SettingsClient({
     return resolved;
   };
 
-  const [active, setActive] = useState<NavItem>(resolveInitialTab);
+  const [active, setActiveTab] = useState<NavItem>(resolveInitialTab);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [tabSaveStatuses, setTabSaveStatuses] = useState<Partial<Record<NavItem, TabSaveStatus>>>({});
+  const { dirty, saveState } = tabSaveStatuses[active] ?? INITIAL_SAVE_STATUS;
+
+  const updateSaveStatus = (tab: NavItem, update: (status: TabSaveStatus) => TabSaveStatus) => {
+    setTabSaveStatuses((statuses) => ({
+      ...statuses,
+      [tab]: update(statuses[tab] ?? INITIAL_SAVE_STATUS),
+    }));
+  };
+
+  const setActive = (tab: NavItem) => {
+    if (tab === active) return;
+    // The form unmounts, but its in-flight save or last error belongs to this tab.
+    if (dirty) updateSaveStatus(active, (status) => ({ ...status, dirty: false }));
+    setActiveTab(tab);
+    // The panel stays in view while scrolling, so a newly opened section must start at its top.
+    requestAnimationFrame(() => contentRef.current?.scrollIntoView({ block: 'start' }));
+  };
+
+  const markDirty = () => {
+    updateSaveStatus(active, (status) => ({ ...status, dirty: true, editRevision: status.editRevision + 1 }));
+  };
+
+  const handleSaveStart = () => {
+    updateSaveStatus(active, (status) => ({
+      ...status,
+      saveState: 'saving',
+      submittedRevision: status.editRevision,
+    }));
+  };
+
+  const handleSaveResult = (ok: boolean) => {
+    updateSaveStatus(active, (status) => ({
+      ...status,
+      saveState: ok ? 'idle' : 'error',
+      dirty: status.dirty && (!ok || status.submittedRevision !== status.editRevision),
+    }));
+  };
+
+  const saveFormId = isOwner ? (SAVE_FORM_IDS[active] ?? null) : null;
 
   const visibleNavItems = navItems.filter((item) => isOwner || !STAFF_HIDDEN_TABS.includes(item));
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1 shrink-0 mb-4">
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground font-heading uppercase">
+        <h1 className="text-[28px] leading-9 font-bold tracking-tight text-foreground font-heading uppercase">
           SETTINGS
         </h1>
         <p
-          className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px]"
-          style={{ textAlign: 'justify', textAlignLast: 'justify' }}
+          className="text-base font-semibold text-muted-foreground leading-relaxed text-left"
         >
-          Effortlessly Track, Organize, Maintain, and <br />
+          Effortlessly Track, Organize, Maintain, and
           Manage Your Business Account Configurations
         </p>
       </div>
 
-      <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-start sm:gap-6">
-        {/* -- Mobile Horizontal Tab Bar (< 640px) --------------------------- */}
-        <div className="-mx-3 overflow-x-auto px-3 sm:hidden">
-          <nav
-            aria-label="Settings sections"
-            className="flex w-max min-w-full gap-1.5 rounded-lg border border-border bg-card p-1 shadow-xs"
-          >
-            {visibleNavItems.map((item) => {
-              const Icon = NAV_ICONS[item];
-              const isActive = active === item;
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setActive(item)}
-                  className={cn(
-                    'flex min-h-[40px] items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors cursor-pointer',
-                    isActive
-                      ? 'bg-emerald-50/80 font-bold text-emerald-900 shadow-2xs dark:bg-emerald-950/50 dark:text-emerald-300'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
-                  )}
-                >
-                  <Icon
-                    className={cn(
-                      'size-3.5 shrink-0',
-                      isActive ? 'text-emerald-800 dark:text-emerald-400' : 'text-muted-foreground'
-                    )}
-                  />
-                  <span>{item}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* -- Settings Navigation Sidebar (Desktop >= 640px) ---------------- */}
-        <aside className="hidden w-[168px] shrink-0 sm:block">
-          <nav aria-label="Settings sections" className="flex flex-col gap-1">
-            {visibleNavItems.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setActive(item)}
-                className={cn(
-                  'rounded-lg px-3 py-2 text-left text-sm transition-colors cursor-pointer flex items-center justify-between gap-1.5',
-                  active === item
-                    ? 'bg-emerald-50/80 font-bold text-emerald-900 border-l-2 border-emerald-800 pl-2.5 shadow-xs'
-                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground font-medium'
-                )}
-              >
-                <span>{item}</span>
-              </button>
-            ))}
-          </nav>
-        </aside>
-
+      {/* UI stage 1: content on the left, the settings panel on the right (same on every screen size: phones use
+          the desktop canvas). */}
+      <div className="flex items-start gap-4">
         {/* -- Content Panel -------------------------------------------------- */}
-        <div className="flex-1 min-w-0">
+        <div
+          ref={contentRef}
+          className="flex-1 min-w-0"
+          onChange={saveFormId ? markDirty : undefined}
+        >
           {/* -- INVOICE SETTINGS TAB ---------------------------------------- */}
           {active === 'Invoice Settings' && (
             <InvoiceSettingsForm
@@ -203,6 +222,10 @@ export function SettingsClient({
               currentFyLabel={currentFyLabel}
               signatureDataUri={signatureDataUri}
               isOwner={isOwner}
+              formId={SAVE_FORM_IDS['Invoice Settings']}
+              onSaveStart={handleSaveStart}
+              onProgrammaticEdit={markDirty}
+              onSaveResult={handleSaveResult}
             />
           )}
 
@@ -214,6 +237,10 @@ export function SettingsClient({
               onSwitchTab={(tab) => setActive(tab as NavItem)}
               identityLocked={identityLocked}
               readOnly={!isOwner}
+              formId={SAVE_FORM_IDS['Business Profile']}
+              onSaveStart={handleSaveStart}
+              onProgrammaticEdit={markDirty}
+              onSaveResult={handleSaveResult}
             />
           )}
 
@@ -250,6 +277,18 @@ export function SettingsClient({
           {/* -- NOTIFICATIONS TAB (feature C): every role manages their own e-mail choices -- */}
           {active === 'Notifications' && <NotificationsTab />}
         </div>
+
+        <SettingsSidePanel
+          groups={NAV_GROUPS}
+          visibleItems={visibleNavItems}
+          active={active}
+          icons={NAV_ICONS}
+          onSelect={setActive}
+          contentRef={contentRef}
+          saveFormId={saveFormId}
+          dirty={dirty}
+          saveState={saveState}
+        />
       </div>
     </div>
   );

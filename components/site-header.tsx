@@ -87,7 +87,7 @@ export function SiteHeader({ scrolled }: SiteHeaderProps) {
           </button>
           <button
             onClick={openSignup}
-            className="group inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg border border-indigo-800/20 bg-indigo-700 px-3.5 text-base font-semibold text-white shadow-[inset_0_1px_0_#ffffff26,0_3px_8px_#3730a325] transition-colors hover:bg-indigo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer"
+            className="btn-shine-indigo group inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg border border-indigo-800/20 bg-indigo-700 px-3.5 text-base font-semibold text-white shadow-[inset_0_1px_0_#ffffff26,0_3px_8px_#3730a325] transition-colors hover:bg-indigo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 cursor-pointer"
           >
             <span>Start free</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -174,7 +174,7 @@ export function SiteHeader({ scrolled }: SiteHeaderProps) {
                 setMobileMenuOpen(false)
                 openSignup()
               }}
-              className="w-full text-center py-3.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-base shadow-sm cursor-pointer flex items-center justify-center gap-2"
+              className="btn-shine-indigo w-full text-center py-3.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-base shadow-sm cursor-pointer flex items-center justify-center gap-2"
             >
               <span>Start free</span>
               <ArrowRight className="w-4 h-4" />

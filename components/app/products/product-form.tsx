@@ -550,7 +550,7 @@ export function ProductForm({
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="h-9 px-4 rounded-lg font-bold text-sm bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-md hover:shadow-lg cursor-pointer transition-all hover:-translate-y-px active:translate-y-px disabled:opacity-50 whitespace-nowrap shrink-0"
+                    className="btn-shine-violet h-9 px-4 rounded-lg font-bold text-sm bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-md hover:shadow-lg cursor-pointer transition-all hover:-translate-y-px active:translate-y-px disabled:opacity-50 whitespace-nowrap shrink-0"
                   >
                     {isSubmitting ? (
                       'Saving...'

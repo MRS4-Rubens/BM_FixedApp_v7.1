@@ -8,6 +8,7 @@ import { inviteTeamMember } from '@/lib/actions/team/invite-team-member';
 import { cn } from '@/lib/utils';
 import { useIsOwner } from '@/components/app/current-user-role';
 import type { InviteLinkResult } from './types';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 export interface InviteFormProps {
   canInvite: boolean;
@@ -62,6 +63,7 @@ export function InviteForm({
   return (
     <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs">
       <div className="flex items-center gap-2 mb-1">
+        <SettingsSectionBadge number={2} tone="amber" />
         <UserPlus className="size-4 text-primary shrink-0" />
         <h3 className="text-sm font-bold text-foreground">Invite a Team Member</h3>
       </div>
@@ -171,7 +173,7 @@ export function InviteForm({
             <Button
               type="submit"
               disabled={!canInvite || isPending}
-              className="h-9 font-bold text-xs sm:text-sm gap-1.5 shrink-0"
+              className="btn-shine-navy h-9 font-bold text-xs sm:text-sm gap-1.5 shrink-0"
             >
               {isPending ? (
                 <>

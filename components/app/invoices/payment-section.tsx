@@ -430,7 +430,7 @@ export function PaymentSection({ invoice, payments, totalCreditedPaise = 0, refu
                 </div>
                 <Button
                   type="submit"
-                  className={cn("w-full h-8 px-3 py-1 font-bold shadow-xs cursor-pointer text-sm whitespace-nowrap", isRefundMode && "bg-amber-600 hover:bg-amber-700 text-white")}
+                  className={cn("w-full h-8 px-3 py-1 font-bold shadow-xs cursor-pointer text-sm whitespace-nowrap", isRefundMode ? "btn-shine-amber" : "btn-shine-navy")}
                   disabled={isSubmitting || mustReload}
                 >
                   {isSubmitting ? 'Recording...' : mustReload ? 'Reload to continue' : `Record ${word}`}

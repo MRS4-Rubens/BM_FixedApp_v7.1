@@ -146,7 +146,7 @@ export function RejectClaimDialog({
                 <Button
                   disabled={isPending}
                   onClick={handleRejectSubmit}
-                  className="bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold"
+                  className="btn-shine-rose bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold"
                 >
                   {isPending ? <Loader2 className="size-4 animate-spin" /> : 'Confirm Rejection'}
                 </Button>

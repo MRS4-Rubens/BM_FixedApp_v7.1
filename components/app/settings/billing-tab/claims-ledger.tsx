@@ -21,6 +21,7 @@ import { formatIstDate } from '@/lib/invoices/ist-date';
 import { formatPaiseAsInr } from '@/lib/money';
 import { ITEMS_PER_PAGE, type StatusFilter } from './plan-configs';
 import type { SubscriptionHistoryItem } from './types';
+import { SettingsSectionBadge } from '../settings-section-badge';
 
 interface ClaimsLedgerProps {
   searchQuery: string;
@@ -57,18 +58,21 @@ export function ClaimsLedger({
 }: ClaimsLedgerProps) {
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-5 shadow-xs">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between mb-3.5">
-        <div>
-          <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+      <div className="flex flex-row items-start justify-between gap-3 mb-3.5">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <SettingsSectionBadge number={4} tone="blue" />
+            <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <Layers className="size-4 text-indigo-500" />
             Payment & Subscription History
           </h3>
+          </div>
           <p className="text-sm text-slate-500 mt-0.5">
             Historical ledger of all manual UPI / NEFT payment claims submitted by your business.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+        <div className="flex flex-nowrap items-center gap-2 shrink-0">
           {/* Search Input */}
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
@@ -77,7 +81,7 @@ export function ClaimsLedger({
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search UTR / Plan..."
-              className="h-8 w-44 sm:w-52 rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 text-sm placeholder:text-slate-400 outline-none focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500/20"
+              className="h-8 w-40 rounded-lg border border-slate-200 bg-slate-50 pl-8 pr-3 text-sm placeholder:text-slate-400 outline-none focus:border-indigo-500 focus:bg-white focus:ring-1 focus:ring-indigo-500/20"
             />
           </div>
 
@@ -117,7 +121,7 @@ export function ClaimsLedger({
               : "You haven't submitted any manual payment claims yet. When you upgrade via UPI or bank transfer, your transaction will appear here."}
           </p>
           <Link href="/checkout" className="mt-4">
-            <Button size="sm" className="h-8 text-sm font-bold cursor-pointer">
+            <Button size="sm" className="btn-shine-navy h-8 text-sm font-bold cursor-pointer">
               Upgrade Account Now
             </Button>
           </Link>
@@ -127,7 +131,7 @@ export function ClaimsLedger({
           <div className="overflow-x-auto rounded-xl border border-slate-200">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/80 font-bold text-slate-600">
+                <tr className="border-b border-[oklch(0.82_0.015_255)] bg-slate-50/80 font-bold text-slate-600">
                   <th className="px-3.5 py-2">Date</th>
                   <th className="px-3.5 py-2">Plan & Cycle</th>
                   <th className="px-3.5 py-2">Amount</th>
@@ -137,7 +141,7 @@ export function ClaimsLedger({
                   <th className="px-3.5 py-2 text-right">Voucher</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[oklch(0.82_0.015_255)]">
                 {paginatedSubscriptions.map((sub) => (
                   <tr key={sub.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-3.5 py-2 whitespace-nowrap font-medium text-slate-800">

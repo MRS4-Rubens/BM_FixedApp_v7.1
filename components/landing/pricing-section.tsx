@@ -163,7 +163,7 @@ export function PricingSection() {
             </div>
             <button
               type="button" onClick={() => void handlePlanSelect('essentials')}
-              className="block w-full text-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base glow-btn cursor-pointer"
+              className="btn-shine-violet block w-full text-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base glow-btn cursor-pointer"
             >
               Get Started →
             </button>
@@ -207,7 +207,7 @@ export function PricingSection() {
             </div>
             <button
               type="button" onClick={() => void handlePlanSelect('professional')}
-              className="block w-full text-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base glow-btn cursor-pointer"
+              className="btn-shine-violet block w-full text-center bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold min-h-11 px-2 py-2 rounded-xl transition-colors mt-4 text-base glow-btn cursor-pointer"
             >
               Get Started →
             </button>

@@ -107,7 +107,7 @@ export function PendingClaimsTab({
                     size="sm"
                     disabled={isPending}
                     onClick={() => onApprove(req.id)}
-                    className="h-8 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+                    className="btn-shine-indigo h-8 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
                   >
                     Approve Claim
                   </Button>

@@ -26,7 +26,7 @@ const inputAmberClass = `${baseInputClass} focus:ring-amber-800/15 focus:border-
 const inputRoseClass = `${baseInputClass} focus:ring-rose-900/15 focus:border-rose-900`;
 
 const labelClass = 'mb-1 flex items-center gap-1.5 text-sm font-semibold text-slate-700';
-const sectionClass = 'border-b border-border pb-4 mb-4 sm:pb-4.5 sm:mb-4.5 last:border-0 last:mb-0 last:pb-0';
+const sectionClass = 'border-b border-[oklch(0.82_0.015_255)] pb-4 mb-4 sm:pb-4.5 sm:mb-4.5 last:border-0 last:mb-0 last:pb-0';
 const errorClass = 'mt-1 text-xs font-semibold text-destructive';
 
 export interface AddressSectionProps {
@@ -46,7 +46,7 @@ export function AddressSection({
 }: AddressSectionProps) {
   return (
     <div className={sectionClass}>
-      <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+      <div className="flex items-center justify-between pb-2 border-b border-[oklch(0.82_0.015_255)] mb-3">
         <div className="flex items-center gap-2">
           <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-amber-800 text-[11px] font-black text-white shadow-xs">
             2
@@ -167,7 +167,7 @@ export function BankDetailsSection({
 }: BankDetailsSectionProps) {
   return (
     <div className={sectionClass}>
-      <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+      <div className="flex items-center justify-between pb-2 border-b border-[oklch(0.82_0.015_255)] mb-3">
         <div className="flex items-center gap-2">
           <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-rose-900 text-[11px] font-black text-white shadow-xs">
             3

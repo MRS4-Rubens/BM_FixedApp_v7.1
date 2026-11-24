@@ -72,7 +72,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <div className="grid gap-2 sm:grid-cols-2">
           <Link
             href={`/invite/${token}/continue?mode=login`}
-            className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:bg-primary/90"
+            className="btn-shine-navy inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:bg-primary/90"
           >
             Log in to accept
           </Link>
@@ -209,12 +209,12 @@ function Notice({
       <h1 className="text-lg font-bold text-foreground font-heading">{title}</h1>
       <p className="text-sm text-muted-foreground">{body}</p>
       {dashboard && (
-        <Link href="/dashboard" className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:bg-primary/90">
+        <Link href="/dashboard" className="btn-shine-navy inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:bg-primary/90">
           Go to dashboard
         </Link>
       )}
       {showLogin && (
-        <Link href="/login" className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:bg-primary/90">
+        <Link href="/login" className="btn-shine-navy inline-flex h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-primary-foreground hover:bg-primary/90">
           Log in
         </Link>
       )}

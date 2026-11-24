@@ -103,7 +103,7 @@ export function TotalsSummaryCard({
             <Button variant="outline" size="sm" type="button" className="flex-1 shadow-sm font-bold text-sm whitespace-nowrap" disabled={isSubmitting || isFinalizing || isSavingDraft} onClick={handleSubmit(onSaveDraft)}>
               {isSavingDraft ? 'Saving...' : 'Save Draft'}
             </Button>
-            <Button type="button" size="sm" className="flex-1 shadow-sm font-bold text-sm hover:glow-btn whitespace-nowrap" disabled={isSubmitting || isFinalizing || isSavingDraft} onClick={handleSubmit(onFinalizeClick)}>
+            <Button type="button" size="sm" className="btn-shine-navy flex-1 shadow-sm font-bold text-sm hover:glow-btn whitespace-nowrap" disabled={isSubmitting || isFinalizing || isSavingDraft} onClick={handleSubmit(onFinalizeClick)}>
               <Send className="size-4 shrink-0" /> <span className="whitespace-nowrap">{isFinalizing ? 'Finalizing...' : 'Finalize Invoice'}</span>
             </Button>
           </div>

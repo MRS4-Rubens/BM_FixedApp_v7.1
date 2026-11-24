@@ -360,7 +360,7 @@ export function InvoiceFormatGuideModal({
               <span className="text-[10px] text-muted-foreground font-medium">Click &quot;Use This Format&quot; to apply instantly</span>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-card overflow-x-auto shadow-2xs divide-y divide-border/60">
+            <div className="rounded-xl border border-slate-200 bg-card overflow-x-auto shadow-2xs divide-y divide-[oklch(0.82_0.015_255)]">
               {PRESETS.map((preset) => {
                 const effectiveFormat = !canCustomize && preset.id === 'standard-b2b'
                   ? 'BMA/{FY}/{SEQ:4}'
@@ -473,7 +473,7 @@ export function InvoiceFormatGuideModal({
                             onSelectPreset(effectiveFormat);
                             onClose();
                           }}
-                          className="inline-flex items-center justify-center gap-1 h-7 px-2 rounded-md bg-blue-900 text-[11px] font-bold text-white hover:bg-blue-800 shadow-xs transition-colors cursor-pointer whitespace-nowrap w-full"
+                          className="btn-shine-navy inline-flex items-center justify-center gap-1 h-7 px-2 rounded-md bg-blue-900 text-[11px] font-bold text-white hover:bg-blue-800 shadow-xs transition-colors cursor-pointer whitespace-nowrap w-full"
                         >
                           <span>Use This Format</span>
                           <ArrowRight className="size-3" />

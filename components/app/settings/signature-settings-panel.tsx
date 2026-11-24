@@ -200,7 +200,7 @@ export function SignatureSettingsPanel({
                   size="sm"
                   disabled={!canManage || isPending}
                   onClick={() => setModalOpen(true)}
-                  className="cursor-pointer gap-1.5 text-xs font-semibold bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs"
+                  className="btn-shine-emerald cursor-pointer gap-1.5 text-xs font-semibold bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs"
                 >
                   <Upload className="size-3.5" />
                   <span>Upload signature</span>

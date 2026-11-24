@@ -293,7 +293,7 @@ export function CreditNoteForm({
                   type="button"
                   disabled={isPending || !preview.ok}
                   onClick={() => handleSave(true)}
-                  className="h-9 px-4 flex items-center gap-2 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors"
+                  className="btn-shine-red h-9 px-4 flex items-center gap-2 text-sm font-semibold bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors"
                 >
                   <CheckCircle className="size-4" />
                   Finalize & Issue

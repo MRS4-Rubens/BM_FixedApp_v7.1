@@ -359,7 +359,7 @@ export function ReportsClient({
               <Button
                 size="sm"
                 onClick={handleApplyCustom}
-                className="h-9 px-3.5 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs cursor-pointer shrink-0 whitespace-nowrap"
+                className="btn-shine-indigo h-9 px-3.5 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs cursor-pointer shrink-0 whitespace-nowrap"
               >
                 Apply
               </Button>

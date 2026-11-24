@@ -188,7 +188,7 @@ export function HeroSection() {
             <button
               type="button"
               onClick={openSignup}
-              className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-indigo-700 px-4 text-base font-semibold text-white shadow-sm transition-colors hover:bg-indigo-800 ${focusRing}`}
+              className={`btn-shine-indigo inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-indigo-700 px-4 text-base font-semibold text-white shadow-sm transition-colors hover:bg-indigo-800 ${focusRing}`}
             >
               Start free
               <ArrowRight aria-hidden="true" className="size-4" />

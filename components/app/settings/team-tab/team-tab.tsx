@@ -128,7 +128,7 @@ export function TeamTab({
           <Users className="size-5 text-foreground shrink-0" aria-hidden="true" />
           <h2 className="text-xl font-bold font-heading text-foreground uppercase">Users &amp; Roles</h2>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm font-semibold text-muted-foreground">
           Manage team members, invitations, and role assignments for your business.
         </p>
       </div>
@@ -136,7 +136,7 @@ export function TeamTab({
       {/* One card owns both capacity and the member list. */}
       <section aria-label="Team overview" className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5 shadow-xs space-y-4">
         <SeatSummary seats={data.seats} onSwitchTab={onSwitchTab} embedded />
-        <div className="min-w-0 border-t border-border/60 pt-1">
+        <div className="min-w-0 border-t border-[oklch(0.82_0.015_255)] pt-1">
           <MembersList
             members={data.members}
             canInviteAccountant={data.canInviteAccountant}

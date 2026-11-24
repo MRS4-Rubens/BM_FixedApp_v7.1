@@ -29,6 +29,12 @@ export interface BusinessProfileFormProps {
   onSwitchTab?: (tab: string) => void;
   identityLocked?: boolean;
   readOnly?: boolean;
+  /** UI stage 1: lets the Settings side panel's Save button submit this form. */
+  formId?: string;
+  /** UI stage 1: tells the side panel whether a save worked (false also for client-side validation errors). */
+  onProgrammaticEdit?: () => void;
+  onSaveStart?: () => void;
+  onSaveResult?: (ok: boolean) => void;
 }
 
 export function BusinessProfileForm({
@@ -37,6 +43,10 @@ export function BusinessProfileForm({
   onSwitchTab,
   identityLocked = false,
   readOnly = false,
+  formId,
+  onProgrammaticEdit,
+  onSaveStart,
+  onSaveResult,
 }: BusinessProfileFormProps) {
   const isNewBusiness = !business || !business.id;
   const id = useId();
@@ -48,7 +58,7 @@ export function BusinessProfileForm({
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     setError,
     control,
     setValue,
@@ -132,6 +142,7 @@ export function BusinessProfileForm({
     setGlobalError(null);
     const result = await saveBusinessProfile(data);
 
+    onSaveResult?.(result.success);
     if (result.success) {
       setSuccess(true);
       if (isNewBusiness) {
@@ -180,7 +191,7 @@ export function BusinessProfileForm({
           </button>
         )}
       </div>
-      <p className="mb-3.5 text-sm sm:text-base text-muted-foreground font-medium">Manage your business information and tax details.</p>
+      <p className="mb-3.5 text-sm text-muted-foreground font-semibold">Manage your business information and tax details.</p>
 
       {globalError && (
         <div role="alert" className="mb-3.5 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive flex items-center gap-2">
@@ -192,7 +203,7 @@ export function BusinessProfileForm({
       {!isNewBusiness ? (
         <div className="mb-3.5 rounded-lg bg-emerald-50/60 px-3.5 py-2.5 border border-emerald-200/80 flex items-center gap-2.5">
           <Calendar className="size-4 text-emerald-800 shrink-0" />
-          <p className="text-sm sm:text-base font-semibold text-emerald-950">Current Financial Year: {currentFyLabel}</p>
+          <p className="text-sm font-semibold text-emerald-950">Current Financial Year: {currentFyLabel}</p>
         </div>
       ) : isNewBusiness && !readOnly ? (
         <div className="mb-3.5 rounded-lg bg-emerald-50/80 px-3.5 py-2.5 border border-emerald-200 flex items-center justify-between gap-2.5">
@@ -212,10 +223,22 @@ export function BusinessProfileForm({
         </div>
       ) : null}
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form id={formId} onInvalidCapture={() => onSaveResult?.(false)}
+        onSubmit={(event) => {
+          if (readOnly) {
+            event.preventDefault();
+            return;
+          }
+          onSaveStart?.();
+          void handleSubmit(onSubmit, () => onSaveResult?.(false))(event).catch(() => {
+            setGlobalError('Could not save your changes. Please try again.');
+            onSaveResult?.(false);
+          });
+        }}>
         <fieldset disabled={readOnly} className="space-y-4 border-0 p-0 m-0">
           {/* SECTION 1: General Details */}
           <GeneralDetailsSection
+            onProgrammaticEdit={onProgrammaticEdit}
             id={id}
             register={register}
             errors={errors}
@@ -262,15 +285,15 @@ export function BusinessProfileForm({
             <button
               type="button"
               onClick={() => onSwitchTab('Invoice Settings')}
-              className="shrink-0 rounded-lg bg-blue-900 px-3 py-2 text-xs sm:text-sm font-bold text-white transition-all hover:bg-blue-950 cursor-pointer shadow-xs flex items-center gap-1.5 whitespace-nowrap"
+              className="btn-shine-navy shrink-0 rounded-lg h-8 px-2.5 text-sm font-bold cursor-pointer flex items-center gap-1 whitespace-nowrap"
             >
               <span className="whitespace-nowrap">Go to Invoice Settings</span>
-              <ArrowRight className="size-4 shrink-0" />
+              <ArrowRight className="size-3.5 shrink-0" />
             </button>
           )}
         </div>
 
-        {/* Form Footer Actions & Save Profile Button */}
+        {/* Save confirmation */}
         <div className="flex items-center justify-between pt-4 gap-2">
           <div>
             {success && (
@@ -279,17 +302,6 @@ export function BusinessProfileForm({
               </span>
             )}
           </div>
-          {!readOnly && (
-            <button
-              data-tour-step="11"
-              type="submit"
-              disabled={isSubmitting}
-              className="relative scroll-mt-28 rounded-lg bg-emerald-800 px-4 py-2 h-9 text-sm font-bold text-white transition-all hover:bg-emerald-900 disabled:opacity-50 shadow-xs hover:shadow-sm cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
-            >
-              <Check className="size-4 shrink-0" />
-              <span className="whitespace-nowrap">{isSubmitting ? 'Saving...' : 'Save Profile'}</span>
-            </button>
-          )}
         </div>
       </form>
 

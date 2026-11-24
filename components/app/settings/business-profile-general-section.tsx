@@ -21,7 +21,7 @@ const baseInputClass =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 h-9 text-sm text-slate-900 font-medium placeholder:text-slate-400 hover:border-slate-400 focus:outline-none focus:ring-2 shadow-2xs transition-all';
 const inputGreenClass = `${baseInputClass} focus:ring-emerald-800/15 focus:border-emerald-800`;
 const labelClass = 'mb-1 flex items-center gap-1.5 text-sm font-semibold text-slate-700';
-const sectionClass = 'border-b border-border pb-4 mb-4 sm:pb-4.5 sm:mb-4.5 last:border-0 last:mb-0 last:pb-0';
+const sectionClass = 'border-b border-[oklch(0.82_0.015_255)] pb-4 mb-4 sm:pb-4.5 sm:mb-4.5 last:border-0 last:mb-0 last:pb-0';
 const errorClass = 'mt-1 text-xs font-semibold text-destructive';
 
 export interface GeneralDetailsSectionProps {
@@ -29,6 +29,7 @@ export interface GeneralDetailsSectionProps {
   register: UseFormRegister<BusinessProfileInput>;
   errors: FieldErrors<BusinessProfileInput>;
   identityLocked?: boolean;
+  onProgrammaticEdit?: () => void;
   watchedTagline?: string;
   setValue: UseFormSetValue<BusinessProfileInput>;
   readOnly?: boolean;
@@ -39,13 +40,14 @@ export function GeneralDetailsSection({
   register,
   errors,
   identityLocked = false,
+  onProgrammaticEdit,
   watchedTagline = '',
   setValue,
   readOnly = false,
 }: GeneralDetailsSectionProps) {
   return (
     <div className={sectionClass}>
-      <div className="flex items-center justify-between pb-2 border-b border-border/50 mb-3">
+      <div className="flex items-center justify-between pb-2 border-b border-[oklch(0.82_0.015_255)] mb-3">
         <div className="flex items-center gap-2">
           <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-[11px] font-black text-white shadow-xs">
             1
@@ -236,6 +238,7 @@ export function GeneralDetailsSection({
             value={watchedTagline}
             error={errors.invoice_tagline?.message}
             onUseExample={(text: string) => {
+              onProgrammaticEdit?.();
               setValue('invoice_tagline', text, { shouldDirty: true, shouldValidate: true });
             }}
           />
