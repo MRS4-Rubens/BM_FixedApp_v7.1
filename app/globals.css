@@ -548,6 +548,11 @@
   --shine-border: #78350f;
   --shine-glow: #78350f30;
 }
+:is(.btn-shine-navy, .btn-shine-indigo, .btn-shine-violet, .btn-shine-red, .btn-shine-rose, .btn-shine-amber, .btn-shine-emerald):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .btn-shine-navy:hover,
 .btn-shine-indigo:hover,
 .btn-shine-violet:hover,

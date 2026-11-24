@@ -56,6 +56,20 @@ const navItems = [
 
 type NavItem = (typeof navItems)[number];
 
+interface TabSaveStatus {
+  saveState: SettingsSaveState;
+  dirty: boolean;
+  editRevision: number;
+  submittedRevision: number;
+}
+
+const INITIAL_SAVE_STATUS: TabSaveStatus = {
+  saveState: 'idle',
+  dirty: false,
+  editRevision: 0,
+  submittedRevision: 0,
+};
+
 // UI stage 1: the right panel groups the same sections (labels unchanged).
 const NAV_GROUPS: readonly SettingsNavGroup<NavItem>[] = [
   { label: 'Business', items: ['Business Profile', 'Invoice Settings'] },
@@ -135,38 +149,43 @@ export function SettingsClient({
 
   const [active, setActiveTab] = useState<NavItem>(resolveInitialTab);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [visit, setVisit] = useState(0);
-  const activeVisit = useRef(0);
-  const editRevision = useRef(0);
-  const submittedRevision = useRef(0);
-  const [dirty, setDirty] = useState(false);
-  const [saveState, setSaveState] = useState<SettingsSaveState>('idle');
+  const [tabSaveStatuses, setTabSaveStatuses] = useState<Partial<Record<NavItem, TabSaveStatus>>>({});
+  const { dirty, saveState } = tabSaveStatuses[active] ?? INITIAL_SAVE_STATUS;
+
+  const updateSaveStatus = (tab: NavItem, update: (status: TabSaveStatus) => TabSaveStatus) => {
+    setTabSaveStatuses((statuses) => ({
+      ...statuses,
+      [tab]: update(statuses[tab] ?? INITIAL_SAVE_STATUS),
+    }));
+  };
 
   const setActive = (tab: NavItem) => {
     if (tab === active) return;
-    activeVisit.current += 1;
-    setVisit(activeVisit.current);
+    // The form unmounts, but its in-flight save or last error belongs to this tab.
+    if (dirty) updateSaveStatus(active, (status) => ({ ...status, dirty: false }));
     setActiveTab(tab);
-    setDirty(false);
-    setSaveState('idle');
     // The panel stays in view while scrolling, so a newly opened section must start at its top.
     requestAnimationFrame(() => contentRef.current?.scrollIntoView({ block: 'start' }));
   };
 
   const markDirty = () => {
-    editRevision.current += 1;
-    setDirty(true);
+    updateSaveStatus(active, (status) => ({ ...status, dirty: true, editRevision: status.editRevision + 1 }));
   };
 
   const handleSaveStart = () => {
-    submittedRevision.current = editRevision.current;
-    setSaveState('saving');
+    updateSaveStatus(active, (status) => ({
+      ...status,
+      saveState: 'saving',
+      submittedRevision: status.editRevision,
+    }));
   };
 
   const handleSaveResult = (ok: boolean) => {
-    if (visit !== activeVisit.current) return;
-    setSaveState(ok ? 'idle' : 'error');
-    if (ok && submittedRevision.current === editRevision.current) setDirty(false);
+    updateSaveStatus(active, (status) => ({
+      ...status,
+      saveState: ok ? 'idle' : 'error',
+      dirty: status.dirty && (!ok || status.submittedRevision !== status.editRevision),
+    }));
   };
 
   const saveFormId = isOwner ? (SAVE_FORM_IDS[active] ?? null) : null;
