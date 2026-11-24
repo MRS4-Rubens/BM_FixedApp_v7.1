@@ -109,7 +109,7 @@ export function MembersList({
       <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
-            <tr className="border-b border-border text-muted-foreground font-semibold">
+            <tr className="border-b border-[oklch(0.82_0.015_255)] text-muted-foreground font-semibold">
               <th className="py-2.5 pr-3">Name</th>
               <th className="py-2.5 pr-3">E-mail</th>
               <th className="py-2.5 pr-3">Role</th>
@@ -117,7 +117,7 @@ export function MembersList({
               <th className="py-2.5 text-right w-24">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-border/60">
+          <tbody className="divide-y divide-[oklch(0.82_0.015_255)]">
             {members.map((member) => {
               const displayName = member.name || member.email || 'Team member';
               const canManage = member.role !== 'owner' && !member.isYou;
@@ -243,7 +243,7 @@ export function MembersList({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-1 border-t border-border/40 text-[11px] text-muted-foreground">
+              <div className="flex items-center justify-between pt-1 border-t border-[oklch(0.82_0.015_255)] text-[11px] text-muted-foreground">
                 <span>Joined {joinedText}</span>
                 {canManage && (
                   <Button

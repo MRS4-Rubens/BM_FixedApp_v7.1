@@ -106,7 +106,7 @@ export function NotificationsTab() {
           <Bell className="size-5 text-foreground shrink-0" aria-hidden="true" />
           <h2 className="text-xl font-bold font-heading text-foreground uppercase">Notifications</h2>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm font-semibold text-muted-foreground">
           The bell at the top of every page always shows your notifications. Choose which ones also come by e-mail.
         </p>
       </div>

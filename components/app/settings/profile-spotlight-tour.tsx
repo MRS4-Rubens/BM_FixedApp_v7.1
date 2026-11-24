@@ -492,7 +492,7 @@ export function ProfileSpotlightTour({
                 router.push('/dashboard')
                 router.refresh()
               }}
-              className="w-full rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-sm py-2.5 px-4 shadow-sm hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="btn-shine-emerald w-full rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-sm py-2.5 px-4 shadow-sm hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <span>Go to Dashboard Now</span>
               <ArrowRight className="size-4" />
@@ -573,7 +573,7 @@ export function ProfileSpotlightTour({
             <button
               type="button"
               onClick={() => setStepIndex(1)}
-              className="w-full sm:w-auto rounded-lg bg-emerald-800 hover:bg-emerald-900 px-4 py-1.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:shadow transition-all cursor-pointer flex items-center justify-center gap-1.5"
+              className="btn-shine-emerald w-full sm:w-auto rounded-lg bg-emerald-800 hover:bg-emerald-900 px-4 py-1.5 text-xs sm:text-sm font-bold text-white shadow-sm hover:shadow transition-all cursor-pointer flex items-center justify-center gap-1.5"
             >
               <span>Start Guided Tour (11 Steps)</span>
               <ArrowRight className="size-3.5" />
@@ -747,7 +747,7 @@ export function ProfileSpotlightTour({
         </p>
 
         {/* Footer (Number 5: pt-2.5) */}
-        <div className="flex items-center justify-between pt-2.5 border-t border-slate-100">
+        <div className="flex items-center justify-between pt-2.5 border-t border-[oklch(0.82_0.015_255)]">
           <span className="text-xs font-semibold text-slate-500">
             Step {currentStep.id} of {TOUR_STEPS.length}
           </span>
@@ -779,7 +779,7 @@ export function ProfileSpotlightTour({
                   onClose()
                 }
               }}
-              className="rounded-lg bg-emerald-800 hover:bg-emerald-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-1"
+              className="btn-shine-emerald rounded-lg bg-emerald-800 hover:bg-emerald-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs hover:shadow transition-all cursor-pointer flex items-center gap-1"
             >
               <span>{stepIndex === TOUR_STEPS.length ? 'Got it (Save Now)' : 'Next Step'}</span>
               <ArrowRight className="size-3.5" />

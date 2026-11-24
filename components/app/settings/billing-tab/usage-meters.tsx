@@ -84,7 +84,7 @@ export function UsageMeters({
               </div>
             )}
           </div>
-          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-slate-200/60">
+          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-[oklch(0.82_0.015_255)]">
             Total lifetime invoices: <strong className="text-slate-800">{usageStats.invoicesTotal}</strong>
           </p>
         </div>
@@ -132,7 +132,7 @@ export function UsageMeters({
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-slate-200/60">
+          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-[oklch(0.82_0.015_255)]">
             Search products by name or HSN/SAC
           </p>
         </div>
@@ -171,7 +171,7 @@ export function UsageMeters({
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-slate-200/60">
+          <p className="text-xs text-slate-500 mt-2 pt-1.5 border-t border-[oklch(0.82_0.015_255)]">
             Audit log immutability active
           </p>
         </div>

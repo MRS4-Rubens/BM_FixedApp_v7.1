@@ -109,7 +109,7 @@ export function InviteLinkPanel({ result, businessName, role = 'staff', onDone }
             href={whatsappHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 text-xs font-bold text-white shadow-xs transition-colors"
+            className="btn-shine-emerald inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 text-xs font-bold text-white shadow-xs transition-colors"
           >
             <MessageCircle className="size-3.5" />
             <span>Share on WhatsApp</span>

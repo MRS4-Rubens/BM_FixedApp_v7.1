@@ -72,7 +72,7 @@ export function RouteErrorView({ error, reset, scope }: RouteErrorViewProps): JS
           <Link href={home.href} className={cn(buttonVariants({ variant: 'outline' }))}>
             {home.label}
           </Link>
-          <Button type="button" onClick={handleRetry} disabled={isPending} aria-busy={isPending}>
+          <Button className="btn-shine-navy" type="button" onClick={handleRetry} disabled={isPending} aria-busy={isPending}>
             {isPending ? 'Retrying…' : 'Try again'}
           </Button>
         </div>

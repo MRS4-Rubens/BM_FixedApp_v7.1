@@ -144,7 +144,7 @@ export function PendingInvites({
                 </div>
 
                 {cooldownMessage && cooldownMessage.id === invite.id && (
-                  <div role="alert" className="flex items-center gap-1.5 text-xs font-semibold text-destructive pt-1 border-t border-border/40">
+                  <div role="alert" className="flex items-center gap-1.5 text-xs font-semibold text-destructive pt-1 border-t border-[oklch(0.82_0.015_255)]">
                     <AlertCircle className="size-3.5 shrink-0" />
                     <span>{cooldownMessage.text}</span>
                   </div>

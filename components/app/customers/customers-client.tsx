@@ -128,12 +128,12 @@ export function CustomersClient({
                   size="sm"
                   nativeButton={false}
                   render={
-                    <Link href="/customers/new" className="flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0">
+                    <Link href="/customers/new" className="btn-shine-violet flex items-center gap-1.5 font-bold whitespace-nowrap shrink-0">
                       <Plus className="size-4 shrink-0" />
                       Add Customer
                     </Link>
                   }
-                  className="shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[15px] font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0"
+                  className="btn-shine-violet shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[15px] font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0"
                 />
               </>
             )}

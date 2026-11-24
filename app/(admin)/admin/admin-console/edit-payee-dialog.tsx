@@ -244,7 +244,7 @@ export function EditPayeeDialog({
                 <Button
                   type="submit"
                   disabled={isBusy}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold gap-1.5 cursor-pointer"
+                  className="btn-shine-indigo bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold gap-1.5 cursor-pointer"
                 >
                   {isBusy ? (
                     <>

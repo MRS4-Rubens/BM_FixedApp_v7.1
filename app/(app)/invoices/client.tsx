@@ -277,7 +277,7 @@ export function InvoicesClient({
 
             <Button
               onClick={handleApply}
-              className="w-full sm:w-auto h-9 px-4 text-[13px] sm:text-sm font-bold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer"
+              className="btn-shine-navy w-full sm:w-auto h-9 px-4 text-[13px] sm:text-sm font-bold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-all cursor-pointer"
             >
               Apply
             </Button>
@@ -334,7 +334,7 @@ export function InvoicesClient({
         {canEdit && (
           <Link href="/invoices/new" className="w-full sm:w-auto">
             <Button
-              className="w-full sm:w-auto shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[13px] sm:text-sm font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px flex items-center justify-center gap-1.5"
+              className="btn-shine-violet w-full sm:w-auto shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white text-[13px] sm:text-sm font-bold h-9 px-4 rounded-lg cursor-pointer transition-all hover:shadow-lg hover:-translate-y-px active:translate-y-px flex items-center justify-center gap-1.5"
             >
               <Plus className="size-4" />
               New Invoice

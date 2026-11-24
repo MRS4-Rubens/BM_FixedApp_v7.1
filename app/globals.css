@@ -484,6 +484,11 @@
    border, small shadow; brighter on hover, pressed 1px on click). Unlayered on purpose so it wins over the Button
    component's own background and border utilities. */
 .btn-shine-navy,
+.btn-shine-indigo,
+.btn-shine-violet,
+.btn-shine-red,
+.btn-shine-rose,
+.btn-shine-amber,
 .btn-shine-emerald {
   color: #fff;
   border: 1px solid var(--shine-border);
@@ -508,11 +513,56 @@
   --shine-border: #054d39;
   --shine-glow: rgb(6 95 70 / 0.22);
 }
+.btn-shine-indigo {
+  --shine-top: #555cda;
+  --shine-mid: #464bd0;
+  --shine-bottom: #3730a3;
+  --shine-border: #3730a3;
+  --shine-glow: #3730a330;
+}
+.btn-shine-violet {
+  --shine-top: #6366f1;
+  --shine-mid: #5945ed;
+  --shine-bottom: #5524bf;
+  --shine-border: #4c26ae;
+  --shine-glow: #4c26ae30;
+}
+.btn-shine-red {
+  --shine-top: #dc4040;
+  --shine-mid: #ce2929;
+  --shine-bottom: #b91c1c;
+  --shine-border: #991b1b;
+  --shine-glow: #991b1b30;
+}
+.btn-shine-rose {
+  --shine-top: #df3860;
+  --shine-mid: #cf214c;
+  --shine-bottom: #be123c;
+  --shine-border: #9f1239;
+  --shine-glow: #9f123930;
+}
+.btn-shine-amber {
+  --shine-top: #ab6009;
+  --shine-mid: #995009;
+  --shine-bottom: #854409;
+  --shine-border: #78350f;
+  --shine-glow: #78350f30;
+}
 .btn-shine-navy:hover,
+.btn-shine-indigo:hover,
+.btn-shine-violet:hover,
+.btn-shine-red:hover,
+.btn-shine-rose:hover,
+.btn-shine-amber:hover,
 .btn-shine-emerald:hover {
   filter: brightness(1.08);
 }
 .btn-shine-navy:active,
+.btn-shine-indigo:active,
+.btn-shine-violet:active,
+.btn-shine-red:active,
+.btn-shine-rose:active,
+.btn-shine-amber:active,
 .btn-shine-emerald:active {
   transform: translateY(1px);
   box-shadow:
@@ -520,6 +570,11 @@
     0 1px 1px rgb(16 24 40 / 0.2);
 }
 .btn-shine-navy:disabled,
+.btn-shine-indigo:disabled,
+.btn-shine-violet:disabled,
+.btn-shine-red:disabled,
+.btn-shine-rose:disabled,
+.btn-shine-amber:disabled,
 .btn-shine-emerald:disabled {
   filter: none;
   transform: none;

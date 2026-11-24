@@ -197,7 +197,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 sm:p-6 mb-6 shadow-xs transition-all">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-border/60">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-[oklch(0.82_0.015_255)]">
         <div>
           <div className="flex items-center gap-2">
             <SettingsSectionBadge number={1} tone="emerald" />
@@ -356,7 +356,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
           {/* Mini Simulated Invoice Card */}
           <div className="flex-1 flex flex-col justify-between rounded-xl border border-slate-300 bg-white p-3 sm:p-3.5 shadow-sm text-slate-900">
             {/* Checkerboard container for logo */}
-            <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-1.5">
+            <div className="flex items-center justify-between border-b border-[oklch(0.82_0.015_255)] pb-2 mb-1.5">
               <div className="flex items-center gap-3.5 min-w-0 flex-1">
                 <div 
                   className="size-20 sm:size-[92px] shrink-0 rounded border border-slate-200 flex items-center justify-center p-1 overflow-hidden"
@@ -402,7 +402,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
 
             {/* Bottom Section: Action Bar or Status Caption */}
             {selectedFile ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-[oklch(0.82_0.015_255)]">
                 <span className="text-[11px] font-semibold text-amber-600 flex items-center gap-1.5">
                   <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
                   Unsaved Preview
@@ -440,7 +440,7 @@ export function LogoUploadCard({ business }: LogoUploadCardProps) {
                 </div>
               </div>
             ) : hasSavedLogo ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-slate-100">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-[oklch(0.82_0.015_255)]">
                 <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
                   <span className="size-1.5 rounded-full bg-emerald-500" />
                   <span>Active on Invoices</span>

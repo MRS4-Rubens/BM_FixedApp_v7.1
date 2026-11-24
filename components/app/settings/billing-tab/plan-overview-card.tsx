@@ -54,7 +54,7 @@ export function PlanOverviewCard({
   return (
     <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 sm:p-5 shadow-xs">
       {/* UI stage 1: numbered section header (read by the Settings side panel's "On this page"). */}
-      <div className="flex items-center gap-2 pb-2.5 mb-3.5 border-b border-slate-100">
+      <div className="flex items-center gap-2 pb-2.5 mb-3.5 border-b border-[oklch(0.82_0.015_255)]">
         <SettingsSectionBadge number={1} tone="emerald" />
         <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
           <Crown className="size-4 text-emerald-800" />
@@ -127,7 +127,7 @@ export function PlanOverviewCard({
       </div>
 
       {/* -- Subscription Validity & Payment Settlement Lockup (Option B Hybrid) -- */}
-      <div className="mt-3.5 grid grid-cols-[3fr_2fr] gap-3 border-t border-slate-100 pt-3.5">
+      <div className="mt-3.5 grid grid-cols-[3fr_2fr] gap-3 border-t border-[oklch(0.82_0.015_255)] pt-3.5">
         {/* Card 1: Subscription Validity */}
         <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 shadow-xs flex flex-col justify-between">
           <div>
@@ -169,7 +169,7 @@ export function PlanOverviewCard({
 
             {/* Lifecycle Progress Bar (Reference Image 2 Style) */}
             {lifecycleProgress !== null && (
-              <div className="mt-3 pt-2.5 border-t border-slate-200/60">
+              <div className="mt-3 pt-2.5 border-t border-[oklch(0.82_0.015_255)]">
                 <div className="flex justify-between items-center text-xs text-slate-500 mb-1.5 font-medium">
                   <span>
                     Days Elapsed: <strong className="text-slate-800 font-semibold">{lifecycleProgress}%</strong>
@@ -234,7 +234,7 @@ export function PlanOverviewCard({
               )}
             </div>
 
-            <div className="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center gap-2.5 flex-wrap">
+            <div className="mt-3 pt-2.5 border-t border-[oklch(0.82_0.015_255)] flex items-center gap-2.5 flex-wrap">
               <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">
                 {business?.active_utr_no ? 'Active UTR:' : 'Plan Mode:'}
               </span>

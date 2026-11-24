@@ -177,7 +177,7 @@ export function UpgradePromptModal({
                     onClick={onClose}
                   >
                     <Button
-                      className="w-full h-10 gap-2 text-white font-bold text-xs sm:text-[13px] shadow-md cursor-pointer rounded-xl transition-all px-3 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600"
+                      className="btn-shine-violet w-full h-10 gap-2 text-white font-bold text-xs sm:text-[13px] shadow-md cursor-pointer rounded-xl transition-all px-3 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600"
                     >
                       <Sparkles className="size-3.5 sm:size-4 text-amber-300 shrink-0" />
                       <span className="truncate">

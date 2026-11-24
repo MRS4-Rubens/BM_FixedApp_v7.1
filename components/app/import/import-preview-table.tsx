@@ -254,7 +254,7 @@ export function ImportPreviewTable({
           type="button"
           disabled={isImportDisabled}
           onClick={handleImport}
-          className="shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold h-9 px-5 rounded-lg cursor-pointer"
+          className="btn-shine-violet shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold h-9 px-5 rounded-lg cursor-pointer"
         >
           {isRunning && <Loader2 className="mr-1.5 size-4 animate-spin" />}
           {isRunning ? 'Importing…' : importButtonLabel(preview.kind, readyCount)}

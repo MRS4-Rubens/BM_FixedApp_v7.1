@@ -89,7 +89,7 @@ export function ConfirmDialog({
                 size="sm"
                 disabled={isPending}
                 onClick={handleConfirm}
-                className={tone === 'destructive' ? 'bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700' : ''}
+                className={tone === 'destructive' ? 'btn-shine-red' : 'btn-shine-navy'}
               >
                 {isPending && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
                 {confirmLabel}

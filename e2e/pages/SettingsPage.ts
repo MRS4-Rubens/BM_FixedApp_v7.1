@@ -25,7 +25,8 @@ export class SettingsPage {
     this.addressLine1Input = page.locator('input[name="address_line1"]');
     this.cityInput = page.locator('input[name="city"]');
     this.pincodeInput = page.locator('input[name="pincode"]');
-    this.saveProfileButton = page.locator('button[type="submit"]:has-text("Save Profile")');
+    this.saveProfileButton = page.getByRole('complementary', { name: 'Settings panel' })
+      .getByRole('button', { name: 'Save Profile', exact: true });
     this.successMessage = page.locator('text=Profile saved successfully');
 
     this.skipTourButton = page.locator('button:has-text("I\'ll do it myself (Skip)")');
@@ -83,10 +84,7 @@ export class SettingsPage {
     const celebration = this.celebrationDismissButton;
     const toast = this.successMessage;
 
-    await Promise.race([
-      expect(celebration).toBeVisible().catch(() => {}),
-      expect(toast).toBeVisible().catch(() => {}),
-    ]);
+    await expect(celebration.or(toast).first()).toBeVisible();
 
     if (await celebration.isVisible().catch(() => false)) {
       await celebration.click();

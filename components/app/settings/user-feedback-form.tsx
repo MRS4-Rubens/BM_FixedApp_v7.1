@@ -366,7 +366,7 @@ export function UserFeedbackForm() {
           <Button
             type="button"
             onClick={() => setSubmittedSuccess(false)}
-            className="h-10 px-5 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-sm"
+            className="btn-shine-indigo h-10 px-5 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-sm"
           >
             Submit Another Feedback
           </Button>
@@ -379,7 +379,7 @@ export function UserFeedbackForm() {
     <div className="rounded-xl border border-border bg-card px-4 py-3 sm:px-5 sm:py-3.5 shadow-xs">
       {/* Header */}
       {/* UI stage 1: the draft badge sits on the heading's line (tops aligned), so the tagline gets the full width. */}
-      <div className="pb-2.5 border-b border-border/60">
+      <div className="pb-2.5 border-b border-[oklch(0.82_0.015_255)]">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
@@ -405,7 +405,7 @@ export function UserFeedbackForm() {
             </div>
           )}
         </div>
-        <p className="mt-0.5 text-sm sm:text-[15px] text-muted-foreground font-medium">
+        <p className="mt-0.5 text-sm text-muted-foreground font-semibold">
           Report bugs, request modern capabilities, or propose UI/UX enhancements. Sent directly to the founder inbox.
         </p>
       </div>
@@ -721,7 +721,7 @@ export function UserFeedbackForm() {
         </div>
 
         {/* Submit Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-border/60 flex-wrap gap-2">
+        <div className="flex items-center justify-between pt-2 border-t border-[oklch(0.82_0.015_255)] flex-wrap gap-2">
           <button
             type="button"
             onClick={handleDiscardDraft}
@@ -733,7 +733,7 @@ export function UserFeedbackForm() {
           <Button
             type="submit"
             disabled={isSubmitting || title.trim().length < 3 || description.trim().length < 10}
-            className="h-10 px-6 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-sm flex items-center gap-2 whitespace-nowrap shrink-0"
+            className="btn-shine-indigo h-10 px-6 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer shadow-sm flex items-center gap-2 whitespace-nowrap shrink-0"
           >
             {isSubmitting ? (
               <>

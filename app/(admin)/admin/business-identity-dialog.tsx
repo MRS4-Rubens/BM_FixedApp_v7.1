@@ -215,7 +215,7 @@ export function BusinessIdentityDialog({
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                  className="btn-shine-indigo px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isPending ? 'Saving…' : 'Save correction'}
                 </button>

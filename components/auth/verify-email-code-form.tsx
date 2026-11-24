@@ -58,7 +58,7 @@ export function VerifyEmailCodeForm({ email, initialNotice, onChangeEmail, onGoT
         <button
           type="button"
           onClick={onGoToSignIn}
-          className="w-full h-11 inline-flex justify-center items-center rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-base transition-all shadow-sm cursor-pointer"
+          className="btn-shine-indigo w-full h-11 inline-flex justify-center items-center rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-base transition-all shadow-sm cursor-pointer"
         >
           Go to sign in
         </button>
@@ -118,7 +118,7 @@ export function VerifyEmailCodeForm({ email, initialNotice, onChangeEmail, onGoT
         <button
           type="submit"
           disabled={verifyPending || code.length !== 6}
-          className="w-full h-11 sm:h-12 inline-flex justify-center items-center rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-base transition-all shadow-sm disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99] cursor-pointer"
+          className="btn-shine-indigo w-full h-11 sm:h-12 inline-flex justify-center items-center rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-base transition-all shadow-sm disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99] cursor-pointer"
         >
           {verifyPending ? 'Checking…' : 'Confirm e-mail'}
         </button>

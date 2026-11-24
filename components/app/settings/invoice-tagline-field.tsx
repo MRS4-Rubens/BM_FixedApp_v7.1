@@ -58,7 +58,7 @@ export function InvoiceTaglineField({
             {/* z-index on the Positioner (the fixed layer), so the list sits above the sticky app header */}
             <Popover.Positioner side="bottom" align="end" sideOffset={6} className="z-[70]">
               <Popover.Popup className="w-[min(340px,calc(100vw-2rem))] sm:w-[420px] rounded-xl bg-white p-3.5 shadow-xl border border-slate-200 text-slate-900 focus:outline-none animate-in fade-in zoom-in-95 duration-150">
-                <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
+                <div className="flex items-start justify-between gap-2 pb-2 border-b border-[oklch(0.82_0.015_255)]">
                   <p className="text-xs font-medium text-slate-600">
                     Tap Use to fill the field, then edit it to match your shop.
                   </p>
@@ -70,7 +70,7 @@ export function InvoiceTaglineField({
                     <X className="size-3.5 text-red-500 dark:text-red-400" />
                   </Popover.Close>
                 </div>
-                <div className="mt-2.5 space-y-2 max-h-72 overflow-y-auto divide-y divide-slate-100">
+                <div className="mt-2.5 space-y-2 max-h-72 overflow-y-auto divide-y divide-[oklch(0.82_0.015_255)]">
                   {INVOICE_TAGLINE_EXAMPLES.map((example, idx) => (
                     <div key={idx} className="pt-2 first:pt-0 flex items-center justify-between gap-3">
                       <span className="text-xs font-medium text-slate-800 leading-snug">{example}</span>

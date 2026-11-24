@@ -135,10 +135,17 @@ export function SettingsClient({
 
   const [active, setActiveTab] = useState<NavItem>(resolveInitialTab);
   const contentRef = useRef<HTMLDivElement>(null);
+  const [visit, setVisit] = useState(0);
+  const activeVisit = useRef(0);
+  const editRevision = useRef(0);
+  const submittedRevision = useRef(0);
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<SettingsSaveState>('idle');
 
   const setActive = (tab: NavItem) => {
+    if (tab === active) return;
+    activeVisit.current += 1;
+    setVisit(activeVisit.current);
     setActiveTab(tab);
     setDirty(false);
     setSaveState('idle');
@@ -146,9 +153,20 @@ export function SettingsClient({
     requestAnimationFrame(() => contentRef.current?.scrollIntoView({ block: 'start' }));
   };
 
+  const markDirty = () => {
+    editRevision.current += 1;
+    setDirty(true);
+  };
+
+  const handleSaveStart = () => {
+    submittedRevision.current = editRevision.current;
+    setSaveState('saving');
+  };
+
   const handleSaveResult = (ok: boolean) => {
+    if (visit !== activeVisit.current) return;
     setSaveState(ok ? 'idle' : 'error');
-    if (ok) setDirty(false);
+    if (ok && submittedRevision.current === editRevision.current) setDirty(false);
   };
 
   const saveFormId = isOwner ? (SAVE_FORM_IDS[active] ?? null) : null;
@@ -158,27 +176,25 @@ export function SettingsClient({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1 shrink-0 mb-4">
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground font-heading uppercase">
+        <h1 className="text-[28px] leading-9 font-bold tracking-tight text-foreground font-heading uppercase">
           SETTINGS
         </h1>
         <p
-          className="text-sm font-semibold text-muted-foreground leading-relaxed max-w-[315px]"
-          style={{ textAlign: 'justify', textAlignLast: 'justify' }}
+          className="text-base font-semibold text-muted-foreground leading-relaxed text-left"
         >
-          Effortlessly Track, Organize, Maintain, and <br />
+          Effortlessly Track, Organize, Maintain, and
           Manage Your Business Account Configurations
         </p>
       </div>
 
       {/* UI stage 1: content on the left, the settings panel on the right (same on every screen size: phones use
           the desktop canvas). */}
-      <div className="flex items-start gap-6">
+      <div className="flex items-start gap-4">
         {/* -- Content Panel -------------------------------------------------- */}
         <div
           ref={contentRef}
           className="flex-1 min-w-0"
-          onInput={() => setDirty(true)}
-          onChange={() => setDirty(true)}
+          onChange={saveFormId ? markDirty : undefined}
         >
           {/* -- INVOICE SETTINGS TAB ---------------------------------------- */}
           {active === 'Invoice Settings' && (
@@ -188,6 +204,8 @@ export function SettingsClient({
               signatureDataUri={signatureDataUri}
               isOwner={isOwner}
               formId={SAVE_FORM_IDS['Invoice Settings']}
+              onSaveStart={handleSaveStart}
+              onProgrammaticEdit={markDirty}
               onSaveResult={handleSaveResult}
             />
           )}
@@ -201,6 +219,8 @@ export function SettingsClient({
               identityLocked={identityLocked}
               readOnly={!isOwner}
               formId={SAVE_FORM_IDS['Business Profile']}
+              onSaveStart={handleSaveStart}
+              onProgrammaticEdit={markDirty}
               onSaveResult={handleSaveResult}
             />
           )}
@@ -249,7 +269,6 @@ export function SettingsClient({
           saveFormId={saveFormId}
           dirty={dirty}
           saveState={saveState}
-          onSaveClick={() => setSaveState('saving')}
         />
       </div>
     </div>

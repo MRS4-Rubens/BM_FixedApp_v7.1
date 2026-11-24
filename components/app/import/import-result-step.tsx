@@ -50,7 +50,7 @@ export function ImportResultStep({ result, onDone }: ImportResultStepProps) {
         <Button
           type="button"
           onClick={onDone}
-          className="shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold h-9 px-6 rounded-lg cursor-pointer"
+          className="btn-shine-violet shadow-md bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold h-9 px-6 rounded-lg cursor-pointer"
         >
           Done
         </Button>

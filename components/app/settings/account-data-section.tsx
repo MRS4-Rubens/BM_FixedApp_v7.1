@@ -214,7 +214,7 @@ export function AccountDataSection({ isOwner }: { isOwner: boolean }) {
 
               
 </div></div>
-<div data-modal-footer className="flex items-center justify-end gap-2.5 pt-3 border-t border-border">
+<div data-modal-footer className="flex items-center justify-end gap-2.5 pt-3 border-t border-[oklch(0.82_0.015_255)]">
                 <Button
                   type="button"
                   variant="outline"

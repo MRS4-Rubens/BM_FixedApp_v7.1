@@ -159,7 +159,7 @@ export function ClaimSubmitCard({
         <Button
           type="submit"
           disabled={isPending || isPreparingScreenshot}
-          className="mt-3 w-full h-10 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 text-base"
+          className="btn-shine-violet mt-3 w-full h-10 bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:to-violet-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg cursor-pointer transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 text-base"
         >
           {isPending ? (
             <>

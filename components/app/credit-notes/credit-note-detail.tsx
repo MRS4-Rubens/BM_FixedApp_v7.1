@@ -267,7 +267,7 @@ export function CreditNoteDetail({ creditNote }: CreditNoteDetailProps) {
                       size="sm"
                       disabled={isPending}
                       onClick={handleFinalize}
-                      className="h-7 text-xs flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white"
+                      className="btn-shine-red h-7 text-xs flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white"
                     >
                       <CheckCircle className="size-3.5" />
                       Finalize & Lock

@@ -194,7 +194,7 @@ export function CalculatorSection() {
 
             <button
               onClick={openSignup}
-              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-base glow-btn transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+              className="btn-shine-indigo w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-base glow-btn transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
             >
               <span>Claim Your Free Account</span>
               <ArrowRight className="w-4 h-4" />

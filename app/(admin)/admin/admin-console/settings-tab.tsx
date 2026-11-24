@@ -53,7 +53,7 @@ export function SettingsTab({
             setPayeeDialogKey((k) => k + 1);
             setEditPayeeOpen(true);
           }}
-          className="h-8.5 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold gap-1.5 shadow-xs cursor-pointer self-start sm:self-auto"
+          className="btn-shine-indigo h-8.5 px-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold gap-1.5 shadow-xs cursor-pointer self-start sm:self-auto"
         >
           <Edit3 className="size-3.5" />
           Edit Payment Details

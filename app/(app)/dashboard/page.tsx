@@ -106,7 +106,7 @@ export default async function DashboardPage() {
                 </Button>
               </Link>
               <Link href="/invoices/new" className="shrink-0">
-                <Button className="h-8.5 px-3 rounded-lg font-bold text-sm bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-md hover:shadow-lg cursor-pointer transition-all hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0">
+                <Button className="btn-shine-violet h-8.5 px-3 rounded-lg font-bold text-sm bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-md hover:shadow-lg cursor-pointer transition-all hover:-translate-y-px active:translate-y-px whitespace-nowrap shrink-0">
                   <Plus className="size-3.5 shrink-0" strokeWidth={2} /> <span className="whitespace-nowrap">New Invoice</span>
                 </Button>
               </Link>

@@ -33,7 +33,7 @@ export function AcceptInviteButton({ token, businessName }: { token: string; bus
           {error}
         </p>
       )}
-      <Button type="button" onClick={handleAccept} disabled={isPending} className="w-full h-10 font-bold">
+      <Button type="button" onClick={handleAccept} disabled={isPending} className="btn-shine-navy w-full h-10 font-bold">
         {isPending ? (
           <>
             <Loader2 className="size-4 animate-spin" aria-hidden="true" /> Joining…

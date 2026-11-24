@@ -339,7 +339,7 @@ export function AuthenticationModal() {
             <button
               type="submit"
               disabled={loginPending}
-              className="w-full h-11 sm:h-12 inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-base transition-all shadow-sm disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99] cursor-pointer mt-1"
+              className="btn-shine-indigo w-full h-11 sm:h-12 inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-base transition-all shadow-sm disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99] cursor-pointer mt-1"
             >
               {loginPending ? (
                 <span className="flex items-center gap-2">
@@ -549,7 +549,7 @@ export function AuthenticationModal() {
             <button
               type="submit"
               disabled={signupPending}
-              className="w-full h-10.5 sm:h-11 inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-sm sm:text-base transition-all shadow-sm disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99] cursor-pointer mt-1"
+              className="btn-shine-indigo w-full h-10.5 sm:h-11 inline-flex justify-center items-center gap-2 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white font-semibold text-sm sm:text-base transition-all shadow-sm disabled:opacity-50 disabled:pointer-events-none active:scale-[0.99] cursor-pointer mt-1"
             >
               {signupPending ? (
                 <span className="flex items-center gap-2">

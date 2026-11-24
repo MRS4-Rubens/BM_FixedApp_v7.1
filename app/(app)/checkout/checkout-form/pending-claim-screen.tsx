@@ -117,7 +117,7 @@ export function PendingClaimScreen({
             Back to Dashboard
           </Button>
           <Link href="/settings?tab=Billing & Usage">
-            <Button className="w-full sm:w-auto font-bold text-sm cursor-pointer h-9.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs">
+            <Button className="btn-shine-indigo w-full sm:w-auto font-bold text-sm cursor-pointer h-9.5 px-5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs">
               View Billing Settings
             </Button>
           </Link>

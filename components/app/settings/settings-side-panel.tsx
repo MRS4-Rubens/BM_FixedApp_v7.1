@@ -39,7 +39,6 @@ interface SettingsSidePanelProps<T extends string> {
   saveFormId: string | null;
   dirty: boolean;
   saveState: SettingsSaveState;
-  onSaveClick: () => void;
 }
 
 /** Numbered section headers inside the content: a round badge holding a number, next to an <h3>. */
@@ -77,7 +76,6 @@ export function SettingsSidePanel<T extends string>({
   saveFormId,
   dirty,
   saveState,
-  onSaveClick,
 }: SettingsSidePanelProps<T>) {
   const [sections, setSections] = useState<PageSection[]>([]);
   const [current, setCurrent] = useState<string | null>(null);
@@ -120,7 +118,7 @@ export function SettingsSidePanel<T extends string>({
     saveState === 'saving'
       ? 'Saving...'
       : saveState === 'error'
-        ? "Couldn't save. Check the highlighted fields."
+        ? "Couldn't save. Check the form for details."
         : dirty
           ? 'Unsaved changes'
           : 'All changes saved';
@@ -128,7 +126,7 @@ export function SettingsSidePanel<T extends string>({
   return (
     <aside
       aria-label="Settings panel"
-      className="sticky top-4 w-[236px] shrink-0 self-start border-l border-border pl-5 max-h-[calc(100vh-2rem)] overflow-y-auto"
+      className="sticky top-4 w-[236px] shrink-0 self-start border-l border-[oklch(0.82_0.015_255)] pl-4 max-h-[calc(100vh-2rem)] overflow-y-auto"
     >
       <nav aria-label="Settings sections" className="flex flex-col">
         {groups.map((group) => {
@@ -169,7 +167,7 @@ export function SettingsSidePanel<T extends string>({
       </nav>
 
       {sections.length > 1 && (
-        <nav aria-label="On this page" className="mt-2.5 border-t border-dashed border-border pt-2.5">
+        <nav aria-label="On this page" className="mt-2.5 border-t border-dashed border-[oklch(0.82_0.015_255)] pt-2.5">
           <p className="mb-0.5 px-3 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">On this page</p>
           <div className="flex flex-col gap-0.5">
             {sections.map((section) => (
@@ -216,12 +214,12 @@ export function SettingsSidePanel<T extends string>({
           <button
             type="submit"
             form={saveFormId}
-            onClick={onSaveClick}
+            data-tour-step={active === 'Business Profile' ? '11' : undefined}
             disabled={saveState === 'saving'}
-            className="w-full rounded-lg bg-emerald-800 px-4 py-2 h-9 text-sm font-bold text-white transition-all hover:bg-emerald-900 disabled:opacity-50 shadow-xs hover:shadow-sm cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
+            className="btn-shine-emerald w-full rounded-lg bg-emerald-800 px-4 py-2 h-9 text-sm font-bold text-white transition-all hover:bg-emerald-900 disabled:opacity-50 shadow-xs hover:shadow-sm cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
           >
             <Check className="size-4 shrink-0" aria-hidden="true" />
-            <span>{saveState === 'saving' ? 'Saving...' : 'Save changes'}</span>
+            <span>{saveState === 'saving' ? 'Saving...' : active === 'Business Profile' ? 'Save Profile' : 'Save Invoice Settings'}</span>
           </button>
         </div>
       )}

@@ -361,7 +361,7 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
             </div>
 
             {/* Modal Footer Controls */}
-            <div data-modal-footer className="flex items-center justify-between gap-3 pt-3.5 mt-3.5 border-t border-slate-200">
+            <div data-modal-footer className="flex items-center justify-between gap-3 pt-3.5 mt-3.5 border-t border-[oklch(0.82_0.015_255)]">
               {phase === 'ready' ? (
                 <Button type="button" variant="outline" size="sm" disabled={isPending} onClick={handleChooseAnother} className="cursor-pointer">
                   Choose another
@@ -379,7 +379,7 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
                   size="sm"
                   disabled={!isConfirmed || isPending}
                   onClick={handleSaveSignature}
-                  className="cursor-pointer bg-emerald-800 hover:bg-emerald-900 text-white gap-1.5"
+                  className="btn-shine-emerald cursor-pointer bg-emerald-800 hover:bg-emerald-900 text-white gap-1.5"
                 >
                   {isPending ? (
                     <>
@@ -393,7 +393,7 @@ export function SignatureUploadModal({ open, onOpenChange, businessName, onSaved
               )}
 
               {phase === 'rejected' && (
-                <Button type="button" variant="default" size="sm" disabled={isPending} onClick={handleChooseAnother} className="cursor-pointer bg-emerald-800 hover:bg-emerald-900 text-white">
+                <Button type="button" variant="default" size="sm" disabled={isPending} onClick={handleChooseAnother} className="btn-shine-emerald cursor-pointer bg-emerald-800 hover:bg-emerald-900 text-white">
                   Choose another
                 </Button>
               )}

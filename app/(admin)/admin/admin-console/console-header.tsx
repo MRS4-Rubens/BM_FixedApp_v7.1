@@ -67,8 +67,8 @@ export function ConsoleHeader({
           className={cn(
             'h-8.5 gap-1.5 text-sm font-bold transition-all shadow-xs',
             pendingCount > 0
-              ? 'bg-amber-700 hover:bg-amber-800 text-white'
-              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+              ? 'btn-shine-amber'
+              : 'btn-shine-indigo'
           )}
         >
           <Clock className="size-4" />

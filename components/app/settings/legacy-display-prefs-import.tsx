@@ -92,7 +92,7 @@ export function LegacyDisplayPrefsImport() {
             type="button"
             onClick={handleSave}
             disabled={isPending}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-900 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-800 transition-colors disabled:opacity-50"
+            className="btn-shine-navy inline-flex items-center gap-1.5 rounded-lg bg-blue-900 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-800 transition-colors disabled:opacity-50"
           >
             {isPending && <Loader2 className="size-3 animate-spin shrink-0" />}
             Save to account
