@@ -9,6 +9,10 @@ const nextConfig = {
   // Inlined into browser code so client-side Sentry events carry the same release as the server.
   env: { NEXT_PUBLIC_SENTRY_RELEASE: releaseName },
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
+  logging: {
+    // Reset callbacks can carry a live credential in the URL.
+    incomingRequests: { ignore: [/^\/(?:api\/auth\/)?reset-password(?:[/?]|$)/] },
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '6mb',

@@ -144,6 +144,13 @@ export function buildSecurityHeaderRules(options, mode = CSP_MODE) {
         ...cspHeaders(buildAppCspPolicy(options), mode, true),
       ],
     },
+    {
+      source: '/reset-password',
+      headers: [
+        { key: 'Referrer-Policy', value: 'no-referrer' },
+        { key: 'Cache-Control', value: 'private, no-store' },
+      ],
+    },
   ];
 }
 

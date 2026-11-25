@@ -250,7 +250,7 @@ Configure the following 6 alert rules in the production Sentry project:
 - **Self-Serve**: The business owner downloads their complete JSON export directly from workspace Settings.
 - **Support-Assisted**: If a business owner cannot access their account and requests an export via support:
   - Verify identity out-of-band via registered email and GSTIN certificate.
-  - There is no operator export command. Preferred: help the owner regain access (password reset to the verified login email), then they use Settings → General → Download your data. If that is impossible, a developer can produce the identical file by calling `loadDataExport(db, businessId)` from `lib/account/data-export.ts` in a one-off, read-only script, and send it only to the verified owner.
+  - There is no operator export command. First, direct the owner to **Forgot password?** on the sign-in screen. Neon Auth sends a reset link to the login email. Once signed in, the owner can use Settings → General → Download your data. If that is impossible, a developer can produce the identical file by calling `loadDataExport(db, businessId)` from `lib/account/data-export.ts` in a one-off, read-only script, and send it only to the verified owner.
 
 #### 2. Account closure
 Follow this checklist when processing an account closure request:

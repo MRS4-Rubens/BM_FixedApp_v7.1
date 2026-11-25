@@ -270,6 +270,7 @@ Render is on "During testing" values. Finalizing invoices and recording payments
 - [ ] **Speed:** dashboard, invoice list, new invoice; acceptable on 0.1 CPU? (if not → Starter $7)
 - [ ] **Memory:** a bulk Excel import, a report export **and** an account data export (Settings → General → **Download your data**) finish without a crash (Render logs)
 - [ ] **Sign-up:** code e-mail arrives (check spam), code works, wrong/expired code rejected, resend works
+- [ ] **Password reset:** verify the TEST Render origin is trusted in the TEST Neon Auth branch and enable **Revoke sessions on password reset** there. With a test account and inbox, request a link and confirm it lands on the TEST Render reset screen. Verify the old password fails, the new one works, a used link is rejected, and an earlier session requires sign-in again after its local cache expires (up to five minutes). Confirm the production branch's revocation setting before switch-over.
 - [ ] **Rate limits per person (SEC-01):** two sign-ups or sign-ins within the hour from **two different networks** (phone on mobile data + laptop on Wi-Fi) → neither is rate-limited because of the other
 - [ ] **Admin:** set `PLATFORM_ADMIN_USER_IDS` to your test user ID → admin pages open
 - [ ] **Team invite:** invite e-mail arrives; accepting requires a verified e-mail

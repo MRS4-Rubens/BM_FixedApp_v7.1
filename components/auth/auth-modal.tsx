@@ -21,7 +21,6 @@ import { loginAction } from '@/app/(auth)/login/actions'
 import { signupAction } from '@/app/(auth)/signup/actions'
 import { VerifyEmailCodeForm } from './verify-email-code-form'
 import type { AuthActionState } from '@/lib/validations/auth'
-import { SUPPORT_EMAIL } from '@/lib/config/contact'
 import { useIsClient } from '@/lib/hooks/use-is-client'
 import { TRIAL_DURATION_DAYS } from '@/lib/subscriptions/entitlements'
 
@@ -313,12 +312,12 @@ export function AuthenticationModal() {
                 </button>
               </div>
               <div className="mt-1.5 flex justify-end">
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}?subject=Password%20Reset%20Request%20-%20Invoice%20BizFolio`}
+                <Link
+                  href="/forgot-password"
                   className="text-sm font-medium text-indigo-700 hover:text-indigo-900 hover:underline transition"
                 >
                   Forgot password?
-                </a>
+                </Link>
               </div>
             </div>
 

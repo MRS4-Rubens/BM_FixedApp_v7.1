@@ -12,14 +12,21 @@ const MOCK_DSN = 'https://abc123def456@o999999.ingest.sentry.io/1234567';
 const MOCK_STORAGE = 'https://s3.ap-northeast-1.idrivee2.com';
 
 describe('Security Headers & CSP (SEC-001)', () => {
-  it('(1) buildSecurityHeaderRules in production returns 1 rule with expected global headers', () => {
+  it('(1) sets the global headers and disables referrers from the password reset page', () => {
     const rules = buildSecurityHeaderRules({
       isProduction: true,
       sentryDsn: MOCK_DSN,
       storageEndpoint: MOCK_STORAGE,
     });
 
-    expect(rules).toHaveLength(1);
+    expect(rules).toHaveLength(2);
+    expect(rules[1]).toEqual({
+      source: '/reset-password',
+      headers: [
+        { key: 'Referrer-Policy', value: 'no-referrer' },
+        { key: 'Cache-Control', value: 'private, no-store' },
+      ],
+    });
     const globalRule = rules[0];
     expect(globalRule.source).toBe('/:path*');
 

@@ -16,6 +16,8 @@ export const PRIVATE_PATH_PREFIXES = [
   '/api',
   '/login',
   '/signup',
+  '/forgot-password',
+  '/reset-password',
 ] as const;
 
 export function siteOrigin(): string {
