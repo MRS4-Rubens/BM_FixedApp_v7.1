@@ -91,7 +91,7 @@ export const adminUpdateBusinessIdentity = createAuthenticatedAction(
               reason: input.reason,
               fields,
               previous: Object.fromEntries(auditValueFields.map((field) => [field, business[field]])),
-              next: Object.fromEntries(auditValueFields.map((field) => [field, updates[field]])),
+              next: Object.fromEntries(auditValueFields.map((field) => [field, updates[field] ?? null])),
               had_finalized_invoices: hadFinalizedInvoices,
             },
           });
