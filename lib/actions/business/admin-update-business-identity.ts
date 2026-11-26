@@ -78,6 +78,7 @@ export const adminUpdateBusinessIdentity = createAuthenticatedAction(
             })
             .where(eq(businesses.id, input.business_id));
 
+          const auditValueFields = fields.filter((field) => field !== 'pan');
           await writeAudit(tx, {
             businessId: input.business_id,
             actorUserId: context.appUser.id,
@@ -89,8 +90,8 @@ export const adminUpdateBusinessIdentity = createAuthenticatedAction(
               source: 'platform_admin',
               reason: input.reason,
               fields,
-              previous: Object.fromEntries(fields.map((field) => [field, business[field]])),
-              next: updates,
+              previous: Object.fromEntries(auditValueFields.map((field) => [field, business[field]])),
+              next: Object.fromEntries(auditValueFields.map((field) => [field, updates[field]])),
               had_finalized_invoices: hadFinalizedInvoices,
             },
           });

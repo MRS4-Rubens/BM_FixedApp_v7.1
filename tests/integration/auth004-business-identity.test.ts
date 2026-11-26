@@ -631,7 +631,7 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     expect(adminAudit.rows[0]?.metadata).toMatchObject({
       source: 'platform_admin',
       reason: 'Platform support correcting legally updated state registration.',
-      next: { gstin: GSTIN_ADMIN_TARGET, state_code: '27', pan: 'XYZAB6789C' },
+      next: { gstin: GSTIN_ADMIN_TARGET, state_code: '27' },
       had_finalized_invoices: true,
     });
 
@@ -661,9 +661,10 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
       [businessEId, 'Reconcile registered state and PAN with the verified GSTIN.'],
     );
     expect(repairAudit.rows[0]?.metadata).toMatchObject({
-      previous: { state_code: '29', pan: null },
-      next: { state_code: '27', pan: 'XYZAB6789C' },
+      fields: expect.arrayContaining(['state_code', 'pan']),
     });
+    expect(repairAudit.rows[0]?.metadata.previous).toEqual({ state_code: '29' });
+    expect(repairAudit.rows[0]?.metadata.next).toEqual({ state_code: '27' });
 
     const staleName = await adminUpdateBusinessIdentity({
       business_id: businessEId,
