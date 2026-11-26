@@ -63,6 +63,7 @@ describe('AUTH-004: identity change waits for an in-flight finalize, then is ref
   const profile = (legalName: string, gstin: string) =>
     businessProfileSchema.parse({
       legal_name: legalName,
+      phone: '9876543210',
       gstin,
       state_code: '29',
       registration_type: 'regular' as const,

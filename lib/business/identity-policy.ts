@@ -44,6 +44,6 @@ export function buildGstinTakenMessage(): string {
 }
 
 export function buildIdentityLockedMessage(supportEmail: string): string {
-  return `GSTIN and registered state cannot be changed after invoices have been finalized. Please contact ${supportEmail} to request a change.`;
+  return `Legal name, GSTIN and registered state cannot be changed after invoices have been finalized. Please contact ${supportEmail} to request a change.`;
 }
 

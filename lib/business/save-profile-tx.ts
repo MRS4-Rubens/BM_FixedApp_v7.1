@@ -17,7 +17,7 @@ import { getIndianFinancialYearForDate } from '@/lib/invoices/financial-year';
 import { formatIstDateAsIso } from '@/lib/invoices/ist-date';
 import { DEFAULT_INVOICE_TEMPLATE_ID } from '@/lib/invoices/template-ids';
 import { checkInvoiceSettingsEntitlement } from '@/lib/subscriptions/invoice-settings-gate';
-import type { businessProfileSchema } from '@/lib/validations/business';
+import { primaryPhoneError, type businessProfileSchema } from '@/lib/validations/business';
 import { normaliseInvoiceTagline } from '@/lib/business/invoice-tagline';
 import { diffBusinessIdentity, buildIdentityLockedMessage } from './identity-policy';
 import { hasFinalizedInvoices } from './identity-lock';
@@ -67,14 +67,14 @@ export async function saveBusinessProfileInTransaction(
     legal_name: params.profile.legal_name,
     trade_name: params.profile.trade_name || null,
     gstin: params.profile.gstin,
-    pan: params.profile.pan || null,
+    pan: params.profile.gstin.slice(2, 12),
     registration_type: params.profile.registration_type,
     address_line1: params.profile.address_line1,
     address_line2: params.profile.address_line2 || null,
     city: params.profile.city,
     state_code: params.profile.state_code,
     pincode: params.profile.pincode,
-    phone: params.profile.phone || null,
+    phone: params.profile.phone?.trim() || null,
     email: params.profile.email || null,
     bank_account_name: params.profile.bank_account_name || null,
     bank_account_number: params.profile.bank_account_number || null,
@@ -87,6 +87,11 @@ export async function saveBusinessProfileInTransaction(
 
   // 4. If user.business_id === null -> CREATE
   if (user.business_id === null) {
+    const phoneError = primaryPhoneError(profileData.phone ?? '', true);
+    if (phoneError) {
+      throw new ActionError(phoneError, { code: 'VALIDATION_ERROR', fieldErrors: { phone: [phoneError] } });
+    }
+
     const trialEndsAt = new Date(now.getTime() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000);
     const subscription = {
       subscription_plan: 'trial' as const,
@@ -197,19 +202,41 @@ export async function saveBusinessProfileInTransaction(
     throw new ActionError('Business profile not found.', { code: 'NOT_FOUND' });
   }
 
+  const expectedIdentity = params.profile.expected_identity;
+  if (expectedIdentity && (
+    expectedIdentity.legal_name !== current.legal_name.trim() ||
+    diffBusinessIdentity(current, expectedIdentity).kind === 'changed'
+  )) {
+    throw new ActionError('Business identity changed while this form was open. Refresh Settings and reapply your edits.', {
+      code: 'STALE_IDENTITY',
+    });
+  }
+
   const businessId = user.business_id;
+  if (params.profile.phone === undefined || params.profile.phone.trim() === (current.phone ?? '').trim()) {
+    profileData.phone = current.phone;
+  } else {
+    const phoneError = primaryPhoneError(profileData.phone ?? '', false);
+    if (phoneError) {
+      throw new ActionError(phoneError, { code: 'VALIDATION_ERROR', fieldErrors: { phone: [phoneError] } });
+    }
+  }
   const change = diffBusinessIdentity(current, {
     gstin: params.profile.gstin,
     state_code: params.profile.state_code,
   });
 
-  if (change.kind === 'changed') {
+  const lockedFields: string[] = change.kind === 'changed' ? [...change.fields] : [];
+  if (current.legal_name.trim() !== profileData.legal_name) lockedFields.push('legal_name');
+  else profileData.legal_name = current.legal_name;
+
+  if (lockedFields.length > 0) {
     if (await hasFinalizedInvoices(tx, businessId)) {
       const lockedMessage = buildIdentityLockedMessage(SUPPORT_EMAIL);
       throw new ActionError(lockedMessage, {
         code: 'IDENTITY_LOCKED',
         fieldErrors: Object.fromEntries(
-          change.fields.map((f) => [f, [lockedMessage]]),
+          lockedFields.map((f) => [f, [lockedMessage]]),
         ),
       });
     }

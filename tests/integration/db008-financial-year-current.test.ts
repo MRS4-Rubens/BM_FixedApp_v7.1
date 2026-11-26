@@ -276,6 +276,7 @@ describe('DB-008: financial-year "current" flag invariants and dynamic resolutio
 
     const res = await saveBusinessProfile({
       legal_name: 'IST Boundary Enterprise',
+      phone: '9876543210',
       gstin: '29BOUND1234F1Z5',
       registration_type: 'regular',
       address_line1: 'Boundary Road',

@@ -69,10 +69,12 @@ describe('ARCH-PDF Architectural Guards', () => {
     expect(violations).toEqual([]);
   });
 
-  it('Guard 3: buildSecurityHeaderRules returns a 1-element array with source: "/:path*"', () => {
+  it('Guard 3: CSP is global with a reporting exception for the reset route', () => {
     const rules = buildSecurityHeaderRules({ isProduction: true });
-    expect(rules).toHaveLength(1);
-    expect(rules[0].source).toBe('/:path*');
+    const cspRules = rules.filter((rule) =>
+      rule.headers.some(({ key }) => /^Content-Security-Policy(?:-Report-Only)?$/i.test(key)),
+    );
+    expect(cspRules.map(({ source }) => source)).toEqual(['/:path*', '/reset-password']);
   });
 
   it('Guard 4: The 5 print components do not contain "use client"', () => {

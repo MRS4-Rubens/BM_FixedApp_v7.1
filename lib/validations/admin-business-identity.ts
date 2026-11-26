@@ -1,16 +1,19 @@
 import { z } from 'zod';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { GSTIN_REGEX } from '@/lib/validations/patterns';
+import { legalBusinessNameSchema } from '@/lib/validations/business';
 
-/** Input for the platform-admin GSTIN/state correction action (AUTH-004). */
+export const correctedGstinSchema = z.string().trim().toUpperCase()
+  .regex(GSTIN_REGEX, 'Enter a valid 15-character GSTIN.')
+  .refine((value) => INDIAN_GST_STATES.some(({ code }) => code === value.slice(0, 2)), {
+    message: 'Enter a GSTIN with a valid registered state code.',
+  });
+
 export const adminUpdateBusinessIdentitySchema = z
   .object({
     business_id: z.string().uuid(),
-    gstin: z
-      .string()
-      .transform((v) => v.toUpperCase())
-      .pipe(z.string().regex(GSTIN_REGEX, 'Enter a valid 15-character GSTIN')),
-    state_code: z.string().length(2),
+    gstin: z.object({ previous: z.string().max(15), value: correctedGstinSchema }).strict().optional(),
+    legal_name: z.object({ previous: z.string().max(200), value: legalBusinessNameSchema }).strict().optional(),
     reason: z
       .string()
       .trim()
@@ -18,13 +21,8 @@ export const adminUpdateBusinessIdentitySchema = z
       .max(500),
   })
   .strict()
-  .refine((d) => INDIAN_GST_STATES.some((s) => s.code === d.state_code), {
-    message: 'Select a valid state',
-    path: ['state_code'],
-  })
-  .refine((d) => d.gstin.slice(0, 2) === d.state_code, {
-    message: "The GSTIN's state code does not match the selected state",
-    path: ['gstin'],
+  .refine((d) => d.gstin !== undefined || d.legal_name !== undefined, {
+    message: 'Select at least one field to correct.',
   });
 
 export type AdminUpdateBusinessIdentityInput = z.infer<typeof adminUpdateBusinessIdentitySchema>;

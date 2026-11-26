@@ -132,6 +132,7 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
   const GSTIN_A = '29AABCT1332L1ZV';
   const GSTIN_D = '29XYZAB1234C1Z1';
   const GSTIN_E = '29ABCDE1234F1Z5';
+  const GSTIN_E_NEW = '29ABCDE1234F1Z6';
 
   beforeAll(async () => {
     pg = new PGlite();
@@ -171,15 +172,20 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
   it('1. Two users, same GSTIN: user A succeeds; user B gets GSTIN_ALREADY_REGISTERED with rollback', async () => {
     loginAs(userAId, null);
 
-    const resA = await saveBusinessProfile({
+    const profile = {
       legal_name: 'Tenant Alpha',
       gstin: GSTIN_A,
       state_code: '29',
-      registration_type: 'regular',
+      registration_type: 'regular' as const,
       address_line1: '123 Market Road',
       city: 'Bengaluru',
       pincode: '560001',
+    };
+    const missingPhone = await saveBusinessProfile(profile);
+    expect(missingPhone).toMatchObject({
+      success: false, error: { code: 'VALIDATION_ERROR', fieldErrors: { phone: ['Primary phone is required.'] } },
     });
+    const resA = await saveBusinessProfile({ ...profile, phone: '(022) 2345-6789' });
     expect(resA.success).toBe(true);
     if (!resA.success) return;
     const businessAId = resA.data.businessId;
@@ -195,6 +201,7 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     loginAs(userBId, null);
     const resB = await saveBusinessProfile({
       legal_name: 'Tenant Beta Imposter',
+      phone: '9876543210',
       gstin: GSTIN_A,
       state_code: '29',
       registration_type: 'regular',
@@ -235,6 +242,7 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
 
     const resC = await saveBusinessProfile({
       legal_name: 'Tenant Charlie',
+      phone: '9876543210',
       gstin: GSTIN_A.toLowerCase(), // lowercase input
       state_code: '29',
       registration_type: 'regular',
@@ -262,6 +270,7 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     // First, user D creates Business X
     const resD = await saveBusinessProfile({
       legal_name: 'Tenant Delta',
+      phone: '9876543210',
       gstin: GSTIN_D,
       state_code: '29',
       registration_type: 'regular',
@@ -304,6 +313,7 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
   it('4. Idempotent first-time: sequential calls for same user produce created then updated, same businessId, exactly 1 business and 1 FY row', async () => {
     const payload = businessProfileSchema.parse({
       legal_name: 'Tenant Echo',
+      phone: '9876543210',
       gstin: GSTIN_E,
       state_code: '29',
       registration_type: 'regular' as const,
@@ -353,6 +363,43 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     expect(userERow.rows[0]?.business_id).toBe(createdBusinessId);
   });
 
+  it('rejects an owner form opened before an admin identity correction, then accepts refreshed edits', async () => {
+    const owner = await pg.query<{ business_id: string }>('SELECT business_id FROM users WHERE id = $1', [userDId]);
+    const businessId = owner.rows[0]!.business_id;
+    const previous = { legal_name: 'Tenant Delta', gstin: GSTIN_D, state_code: '29' };
+    const correctedName = 'Corrected Tenant Delta';
+
+    loginAs(adminUserId, null);
+    state.isPlatformAdmin = true;
+    expect(await adminUpdateBusinessIdentity({
+      business_id: businessId,
+      legal_name: { previous: previous.legal_name, value: correctedName },
+      reason: 'Correct the registered legal name.',
+    })).toMatchObject({ success: true });
+
+    state.isPlatformAdmin = false;
+    loginAs(userDId, businessId);
+    const payload = {
+      ...previous,
+      expected_identity: previous,
+      registration_type: 'regular',
+      address_line1: '200 Delta Blvd',
+      city: 'Bengaluru',
+      pincode: '560001',
+    } as const;
+    expect(await saveBusinessProfile(payload)).toMatchObject({ success: false, error: { code: 'STALE_IDENTITY' } });
+    const afterStaleAttempt = await pg.query('SELECT legal_name, address_line1 FROM businesses WHERE id = $1', [businessId]);
+    expect(afterStaleAttempt.rows[0]).toEqual({ legal_name: correctedName, address_line1: '100 Delta Blvd' });
+
+    expect(await saveBusinessProfile({
+      ...payload,
+      legal_name: correctedName,
+      expected_identity: { ...previous, legal_name: correctedName },
+    })).toMatchObject({ success: true });
+    const afterRefresh = await pg.query('SELECT legal_name, address_line1 FROM businesses WHERE id = $1', [businessId]);
+    expect(afterRefresh.rows[0]).toEqual({ legal_name: correctedName, address_line1: '200 Delta Blvd' });
+  });
+
   it('5. Identity lock: draft invoice allows GSTIN change + audit; finalized invoice rejects with IDENTITY_LOCKED', async () => {
     // User E's business
     const userERow = await pg.query<{ business_id: string }>(
@@ -386,7 +433,6 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     const draftInvoiceId = draftInvRes.rows[0]?.id;
 
     // GSTIN change allowed when only draft exists
-    const GSTIN_E_NEW = '29ABCDE1234F1Z6';
     const resAllow = await saveBusinessProfile({
       legal_name: 'Tenant Echo (Renamed)',
       gstin: GSTIN_E_NEW,
@@ -477,8 +523,9 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     );
 
     // 5e. Payload with SAME gstin/state but different address is allowed
+    await pg.query('UPDATE businesses SET phone = NULL WHERE id = $1', [businessEId]);
     const resAllowAddress = await saveBusinessProfile({
-      legal_name: 'Tenant Echo (Address Edit)',
+      legal_name: 'Tenant Echo (Renamed)',
       gstin: GSTIN_E_NEW,
       state_code: '29',
       registration_type: 'regular',
@@ -504,7 +551,7 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     const businessEId = userERow.rows[0]?.business_id;
     if (!businessEId) throw new Error('user E business not found');
 
-    const GSTIN_ADMIN_TARGET = '27ABCDE1234F1Z8';
+    const GSTIN_ADMIN_TARGET = '27XYZAB6789C1Z8';
 
     // 6a. Non-admin caller -> UNAUTHORIZED_ACCESS
     loginAs(userEId, businessEId);
@@ -512,8 +559,7 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
 
     const nonAdminRes = await adminUpdateBusinessIdentity({
       business_id: businessEId,
-      gstin: GSTIN_ADMIN_TARGET,
-      state_code: '27',
+      gstin: { previous: GSTIN_E_NEW, value: GSTIN_ADMIN_TARGET },
       reason: 'Platform support correcting legally updated state registration.',
     });
     expect(nonAdminRes.success).toBe(false);
@@ -527,8 +573,7 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
 
     const shortReasonRes = await adminUpdateBusinessIdentity({
       business_id: businessEId,
-      gstin: GSTIN_ADMIN_TARGET,
-      state_code: '27',
+      gstin: { previous: GSTIN_E_NEW, value: GSTIN_ADMIN_TARGET },
       reason: 'Too short', // 9 characters
     });
     expect(shortReasonRes.success).toBe(false);
@@ -536,11 +581,10 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
       expect(shortReasonRes.error.code).toBe('VALIDATION_ERROR');
     }
 
-    // 6c. Admin caller with GSTIN/state prefix mismatch -> validation error
+    // 6c. Admin caller with unknown GSTIN state prefix -> validation error
     const mismatchRes = await adminUpdateBusinessIdentity({
       business_id: businessEId,
-      gstin: '29ABCDE1234F1Z8', // prefix 29
-      state_code: '27', // state 27
+      gstin: { previous: GSTIN_E_NEW, value: '99ABCDE1234F1Z8' },
       reason: 'Platform support correcting legally updated state registration.',
     });
     expect(mismatchRes.success).toBe(false);
@@ -551,8 +595,7 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     // 6d. Duplicate GSTIN -> GSTIN_ALREADY_REGISTERED
     const dupRes = await adminUpdateBusinessIdentity({
       business_id: businessEId,
-      gstin: GSTIN_A, // already registered by Business A
-      state_code: '29',
+      gstin: { previous: GSTIN_E_NEW, value: GSTIN_A },
       reason: 'Attempting to assign duplicate GSTIN across tenants.',
     });
     expect(dupRes.success).toBe(false);
@@ -563,19 +606,19 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     // 6e. Valid Admin override on business WITH finalized invoices -> SUCCESS
     const validAdminRes = await adminUpdateBusinessIdentity({
       business_id: businessEId,
-      gstin: GSTIN_ADMIN_TARGET,
-      state_code: '27',
+      gstin: { previous: GSTIN_E_NEW, value: GSTIN_ADMIN_TARGET },
       reason: 'Platform support correcting legally updated state registration.',
     });
     expect(validAdminRes.success).toBe(true);
 
     // Verify row updated in DB
-    const updatedRow = await pg.query<{ gstin: string; state_code: string }>(
-      'SELECT gstin, state_code FROM businesses WHERE id = $1',
+    const updatedRow = await pg.query<{ gstin: string; state_code: string; pan: string }>(
+      'SELECT gstin, state_code, pan FROM businesses WHERE id = $1',
       [businessEId]
     );
     expect(updatedRow.rows[0]?.gstin).toBe(GSTIN_ADMIN_TARGET);
     expect(updatedRow.rows[0]?.state_code).toBe('27');
+    expect(updatedRow.rows[0]?.pan).toBe('XYZAB6789C');
 
     // Verify audit entry
     const adminAudit = await pg.query<{ action: string; metadata: Record<string, unknown> }>(
@@ -595,14 +638,69 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     // 6f. Identical values -> NO_CHANGE
     const noChangeRes = await adminUpdateBusinessIdentity({
       business_id: businessEId,
-      gstin: GSTIN_ADMIN_TARGET,
-      state_code: '27',
+      gstin: { previous: GSTIN_ADMIN_TARGET, value: GSTIN_ADMIN_TARGET },
       reason: 'Repeated platform support override request.',
     });
     expect(noChangeRes.success).toBe(false);
     if (!noChangeRes.success) {
       expect(noChangeRes.error.code).toBe('NO_CHANGE');
     }
+
+    await pg.query("UPDATE businesses SET state_code = '29', pan = NULL WHERE id = $1", [businessEId]);
+    const repair = await adminUpdateBusinessIdentity({
+      business_id: businessEId,
+      gstin: { previous: GSTIN_ADMIN_TARGET, value: GSTIN_ADMIN_TARGET },
+      reason: 'Reconcile registered state and PAN with the verified GSTIN.',
+    });
+    expect(repair.success).toBe(true);
+    const afterRepair = await pg.query('SELECT gstin, state_code, pan FROM businesses WHERE id = $1', [businessEId]);
+    expect(afterRepair.rows[0]).toEqual({ gstin: GSTIN_ADMIN_TARGET, state_code: '27', pan: 'XYZAB6789C' });
+    const repairAudit = await pg.query<{ metadata: Record<string, unknown> }>(
+      `SELECT metadata FROM audit_log WHERE business_id = $1
+       AND action = 'business_identity_changed_by_admin' AND metadata->>'reason' = $2`,
+      [businessEId, 'Reconcile registered state and PAN with the verified GSTIN.'],
+    );
+    expect(repairAudit.rows[0]?.metadata).toMatchObject({
+      fields: expect.arrayContaining(['state_code', 'pan']),
+    });
+    expect(repairAudit.rows[0]?.metadata.previous).toEqual({ state_code: '29' });
+    expect(repairAudit.rows[0]?.metadata.next).toEqual({ state_code: '27' });
+
+    const staleName = await adminUpdateBusinessIdentity({
+      business_id: businessEId,
+      legal_name: { previous: 'Outdated name', value: 'Corrected Tenant Echo' },
+      reason: 'Correct registered legal name.',
+    });
+    expect(staleName).toMatchObject({ success: false, error: { code: 'STALE_IDENTITY' } });
+
+    const correctedName = await adminUpdateBusinessIdentity({
+      business_id: businessEId,
+      legal_name: { previous: 'Tenant Echo (Renamed)', value: 'Corrected Tenant Echo' },
+      reason: 'Correct registered legal name.',
+    });
+    expect(correctedName.success).toBe(true);
+    const afterName = await pg.query(
+      'SELECT legal_name, gstin, state_code, pan FROM businesses WHERE id = $1',
+      [businessEId],
+    );
+    expect(afterName.rows[0]).toEqual({
+      legal_name: 'Corrected Tenant Echo', gstin: GSTIN_ADMIN_TARGET, state_code: '27', pan: 'XYZAB6789C',
+    });
+
+    loginAs(userEId, businessEId);
+    const ownerRename = await saveBusinessProfile({
+      legal_name: 'Owner name change attempt',
+      gstin: GSTIN_ADMIN_TARGET,
+      state_code: '27',
+      registration_type: 'regular',
+      address_line1: '999 New Street Road',
+      city: 'Mumbai',
+      pincode: '400001',
+    });
+    expect(ownerRename).toMatchObject({
+      success: false,
+      error: { code: 'IDENTITY_LOCKED', fieldErrors: { legal_name: [buildIdentityLockedMessage(SUPPORT_EMAIL)] } },
+    });
   });
 
   it('7. Static guard test: finalize-invoice-tx.ts locks the business row via lockBusinessRow (FOR NO KEY UPDATE)', () => {

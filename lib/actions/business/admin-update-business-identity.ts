@@ -8,7 +8,6 @@ import { logError } from '@/lib/actions/_shared/logger';
 import { getAuditRequestContext } from '@/lib/audit/request-context';
 import { writeAudit } from '@/lib/audit/log';
 import {
-  diffBusinessIdentity,
   isGstinUniqueViolation,
   buildGstinTakenMessage,
 } from '@/lib/business/identity-policy';
@@ -33,6 +32,8 @@ export const adminUpdateBusinessIdentity = createAuthenticatedAction(
               id: businesses.id,
               gstin: businesses.gstin,
               state_code: businesses.state_code,
+              legal_name: businesses.legal_name,
+              pan: businesses.pan,
             })
             .from(businesses)
             .where(eq(businesses.id, input.business_id))
@@ -42,14 +43,27 @@ export const adminUpdateBusinessIdentity = createAuthenticatedAction(
             throw new ActionError('Business not found.', { code: 'NOT_FOUND' });
           }
 
-          const change = diffBusinessIdentity(business, {
-            gstin: input.gstin,
-            state_code: input.state_code,
-          });
-
-          if (change.kind === 'unchanged') {
+          const { gstin, legal_name: legalName } = input;
+          if ((gstin && gstin.previous !== business.gstin) ||
+              (legalName && legalName.previous !== business.legal_name)) {
             throw new ActionError(
-              'Nothing to change: the GSTIN and state already have these values.',
+              'A selected field changed since you opened this dialog. Reload the business and try again.',
+              { code: 'STALE_IDENTITY' },
+            );
+          }
+
+          const stateCode = gstin?.value.slice(0, 2);
+          const pan = gstin?.value.slice(2, 12);
+          const updates = {
+            ...(gstin && gstin.value !== business.gstin ? { gstin: gstin.value } : {}),
+            ...(stateCode && stateCode !== business.state_code ? { state_code: stateCode } : {}),
+            ...(pan && pan !== business.pan ? { pan } : {}),
+            ...(legalName && legalName.value !== business.legal_name.trim() ? { legal_name: legalName.value } : {}),
+          };
+          const fields = Object.keys(updates) as (keyof typeof updates)[];
+          if (fields.length === 0) {
+            throw new ActionError(
+              'The selected fields already have these values.',
               { code: 'NO_CHANGE' },
             );
           }
@@ -59,12 +73,12 @@ export const adminUpdateBusinessIdentity = createAuthenticatedAction(
           await tx
             .update(businesses)
             .set({
-              gstin: input.gstin,
-              state_code: input.state_code,
+              ...updates,
               updated_at: new Date(),
             })
             .where(eq(businesses.id, input.business_id));
 
+          const auditValueFields = fields.filter((field) => field !== 'pan');
           await writeAudit(tx, {
             businessId: input.business_id,
             actorUserId: context.appUser.id,
@@ -75,8 +89,9 @@ export const adminUpdateBusinessIdentity = createAuthenticatedAction(
             metadata: {
               source: 'platform_admin',
               reason: input.reason,
-              previous: { gstin: business.gstin, state_code: business.state_code },
-              next: { gstin: input.gstin, state_code: input.state_code },
+              fields,
+              previous: Object.fromEntries(auditValueFields.map((field) => [field, business[field]])),
+              next: Object.fromEntries(auditValueFields.map((field) => [field, updates[field] ?? null])),
               had_finalized_invoices: hadFinalizedInvoices,
             },
           });

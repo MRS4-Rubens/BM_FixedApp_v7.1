@@ -108,7 +108,7 @@ describe('AUTH-004: Business Identity Policy Unit Tests', () => {
 
     it('builds canonical identity locked message with support email', () => {
       expect(buildIdentityLockedMessage('support@billmatrix.in')).toBe(
-        'GSTIN and registered state cannot be changed after invoices have been finalized. Please contact support@billmatrix.in to request a change.',
+        'Legal name, GSTIN and registered state cannot be changed after invoices have been finalized. Please contact support@billmatrix.in to request a change.',
       );
     });
   });

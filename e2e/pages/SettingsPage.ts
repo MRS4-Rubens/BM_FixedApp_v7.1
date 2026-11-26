@@ -65,6 +65,7 @@ export class SettingsPage {
     addressLine1: string;
     city: string;
     pincode: string;
+    phone: string;
   }): Promise<void> {
     await this.dismissTourIfPresent();
     await this.legalNameInput.fill(data.legalName);
@@ -73,6 +74,7 @@ export class SettingsPage {
     await this.addressLine1Input.fill(data.addressLine1);
     await this.cityInput.fill(data.city);
     await this.pincodeInput.fill(data.pincode);
+    await this.page.getByRole('textbox', { name: /Primary Phone/i }).fill(data.phone);
   }
 
   async saveProfile(): Promise<void> {

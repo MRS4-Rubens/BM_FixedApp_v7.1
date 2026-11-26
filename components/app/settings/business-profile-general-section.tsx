@@ -29,6 +29,9 @@ export interface GeneralDetailsSectionProps {
   register: UseFormRegister<BusinessProfileInput>;
   errors: FieldErrors<BusinessProfileInput>;
   identityLocked?: boolean;
+  signInEmail?: string | null;
+  primaryPhoneRequired?: boolean;
+  showPrimaryPhonePrompt?: boolean;
   onProgrammaticEdit?: () => void;
   watchedTagline?: string;
   setValue: UseFormSetValue<BusinessProfileInput>;
@@ -40,6 +43,9 @@ export function GeneralDetailsSection({
   register,
   errors,
   identityLocked = false,
+  signInEmail,
+  primaryPhoneRequired = false,
+  showPrimaryPhonePrompt = false,
   onProgrammaticEdit,
   watchedTagline = '',
   setValue,
@@ -47,7 +53,7 @@ export function GeneralDetailsSection({
 }: GeneralDetailsSectionProps) {
   return (
     <div className={sectionClass}>
-      <div className="flex items-center justify-between pb-2 border-b border-[oklch(0.82_0.015_255)] mb-3">
+      <div className="flex items-center justify-between pb-2 border-b border-[oklch(0.82_0.015_255)] mb-4">
         <div className="flex items-center gap-2">
           <div className="flex size-5.5 shrink-0 items-center justify-center rounded-full bg-emerald-800 text-[11px] font-black text-white shadow-xs">
             1
@@ -58,8 +64,8 @@ export function GeneralDetailsSection({
         <span className="text-xs font-medium text-muted-foreground">Appears on invoices</span>
       </div>
 
-      <div className="space-y-3">
-        <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2">
+      <div className="space-y-4">
+        <div className="grid gap-2.5 sm:gap-4 sm:grid-cols-2">
           <div data-tour-step="1" className="relative scroll-mt-28">
             <label htmlFor={`${id}-legal-name`} className={labelClass}>
               <Building2 className="size-3.5 text-emerald-800 shrink-0" />
@@ -81,7 +87,7 @@ export function GeneralDetailsSection({
             />
             {identityLocked && (
               <p className="mt-1 text-xs text-muted-foreground">
-                Verified on active subscription. Contact{' '}
+                Locked after invoice finalization. Contact{' '}
                 <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-primary underline">
                   {SUPPORT_EMAIL}
                 </a>{' '}
@@ -107,7 +113,7 @@ export function GeneralDetailsSection({
           </div>
         </div>
 
-        <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2">
+        <div className="grid gap-2.5 sm:gap-4 sm:grid-cols-3">
           <div data-tour-step="3" className="relative scroll-mt-28">
             <label htmlFor={`${id}-gstin`} className={labelClass}>
               <FileSpreadsheet className="size-3.5 text-emerald-800 shrink-0" />
@@ -146,9 +152,24 @@ export function GeneralDetailsSection({
               {...register('pan')}
             />
           </div>
+          <div className="min-w-0">
+            <div id={`${id}-sign-in-email-label`} className={labelClass}>
+              <Mail aria-hidden="true" className="size-3.5 shrink-0 text-emerald-800" />
+              Sign-in Email
+            </div>
+            <div
+              role="textbox"
+              aria-readonly="true"
+              aria-labelledby={`${id}-sign-in-email-label`}
+              tabIndex={0}
+              className={cn(inputGreenClass, 'select-text overflow-x-auto whitespace-nowrap bg-slate-50 text-slate-600')}
+            >
+              {signInEmail || 'Unavailable'}
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2">
+        <div className="grid gap-2.5 sm:gap-4 sm:grid-cols-2">
           <div data-tour-step="4" className="relative scroll-mt-28">
             <label htmlFor={`${id}-registration-type`} className={labelClass}>
               <ShieldCheck className="size-3.5 text-emerald-800 shrink-0" />
@@ -183,7 +204,7 @@ export function GeneralDetailsSection({
           </div>
         </div>
 
-        <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-3">
+        <div className="grid gap-2.5 sm:gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor={`${id}-email`} className={labelClass}>
               <Mail className="size-3.5 text-emerald-800 shrink-0" />
@@ -202,16 +223,25 @@ export function GeneralDetailsSection({
           <div data-tour-step="5" className="relative scroll-mt-28">
             <label htmlFor={`${id}-phone`} className={labelClass}>
               <Phone className="size-3.5 text-emerald-800 shrink-0" />
-              <span>Primary Phone</span>
+              <span>Primary Phone {primaryPhoneRequired && <span className="text-destructive">*</span>}</span>
             </label>
             <input
               id={`${id}-phone`}
               type="tel"
+              autoComplete="tel"
+              maxLength={24}
+              required={primaryPhoneRequired}
+              aria-invalid={Boolean(errors.phone)}
+              aria-describedby={errors.phone || showPrimaryPhonePrompt ? `${id}-phone-message` : undefined}
               disabled={readOnly}
               className={cn(inputGreenClass, errors.phone && 'border-destructive focus:ring-destructive/20')}
               {...register('phone')}
             />
-            {errors.phone && <p className={errorClass}>{errors.phone.message}</p>}
+            {errors.phone ? (
+              <p id={`${id}-phone-message`} className={errorClass}>{errors.phone.message}</p>
+            ) : showPrimaryPhonePrompt && (
+              <p id={`${id}-phone-message`} className="mt-1 text-xs text-muted-foreground">Add a primary contact number for your business.</p>
+            )}
           </div>
 
           <div>

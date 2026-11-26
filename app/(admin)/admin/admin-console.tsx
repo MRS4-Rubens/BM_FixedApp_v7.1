@@ -240,6 +240,7 @@ export function AdminConsole({
                 legalName: identityBusiness.legalName,
                 gstin: identityBusiness.gstin,
                 stateCode: identityBusiness.stateCode,
+                panNeedsCorrection: identityBusiness.panNeedsCorrection,
               }
             : null
         }

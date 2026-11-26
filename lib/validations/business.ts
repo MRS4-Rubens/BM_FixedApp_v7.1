@@ -14,8 +14,23 @@ import {
   normaliseInvoiceTagline,
 } from '@/lib/business/invoice-tagline';
 
+export const legalBusinessNameSchema = z.string().trim().min(1, 'Legal business name is required').max(200);
+
+export function primaryPhoneError(value: string, required: boolean): string | undefined {
+  const phone = value.trim();
+  if (!phone) return required ? 'Primary phone is required.' : undefined;
+  if (!/^(?:\+91|0)?[1-9]\d{9}$/.test(phone.replace(/[\s()-]/g, ''))) {
+    return 'Enter a valid Indian mobile or landline number, including the area code for a landline.';
+  }
+}
+
 export const businessProfileSchema = z.object({
-  legal_name: z.string().min(1, 'Legal business name is required').max(200),
+  legal_name: legalBusinessNameSchema,
+  expected_identity: z.object({
+    legal_name: legalBusinessNameSchema,
+    gstin: z.string().max(15),
+    state_code: z.string().length(2),
+  }).optional(),
   trade_name: z.string().max(200).optional().or(z.literal('')),
   gstin: z.string().transform((v) => v.toUpperCase()).pipe(z.string().regex(GSTIN_REGEX, 'Enter a valid 15-character GSTIN')),
   pan: z.string().transform((v) => v.toUpperCase()).pipe(z.string().regex(PAN_REGEX, 'Enter a valid 10-character PAN')).optional().or(z.literal('')),
@@ -25,7 +40,7 @@ export const businessProfileSchema = z.object({
   city: z.string().min(1, 'City is required').max(100),
   state_code: z.string().min(2).max(2),
   pincode: z.string().regex(PINCODE_REGEX, 'Enter a valid 6-digit pincode'),
-  phone: z.string().max(15).optional().or(z.literal('')),
+  phone: z.string().max(24).optional(),
   email: z.string().email('Enter a valid email').optional().or(z.literal('')),
   bank_account_name: z.string().max(200).optional().or(z.literal('')),
   bank_account_number: z.string().max(30).optional().or(z.literal('')),

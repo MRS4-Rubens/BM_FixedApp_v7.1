@@ -12,14 +12,17 @@ const MOCK_DSN = 'https://abc123def456@o999999.ingest.sentry.io/1234567';
 const MOCK_STORAGE = 'https://s3.ap-northeast-1.idrivee2.com';
 
 describe('Security Headers & CSP (SEC-001)', () => {
-  it('(1) buildSecurityHeaderRules in production returns 1 rule with expected global headers', () => {
+  it('(1) sets the global headers and disables referrers from the password reset page', () => {
     const rules = buildSecurityHeaderRules({
       isProduction: true,
       sentryDsn: MOCK_DSN,
       storageEndpoint: MOCK_STORAGE,
     });
 
-    expect(rules).toHaveLength(1);
+    expect(rules).toHaveLength(2);
+    expect(rules[1]).toMatchObject({
+      source: '/reset-password',
+    });
     const globalRule = rules[0];
     expect(globalRule.source).toBe('/:path*');
 
@@ -37,6 +40,13 @@ describe('Security Headers & CSP (SEC-001)', () => {
       "frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
     );
     expect(headerMap.get('Content-Security-Policy-Report-Only')).toBeTruthy();
+    const resetHeaders = new Map(rules[1].headers.map(({ key, value }) => [key, value]));
+    expect(resetHeaders.get('Referrer-Policy')).toBe('no-referrer');
+    expect(resetHeaders.get('Cache-Control')).toBe('private, no-store');
+    expect(resetHeaders.get('Content-Security-Policy')).toBe(headerMap.get('Content-Security-Policy'));
+    const globalReportPolicy = headerMap.get('Content-Security-Policy-Report-Only');
+    expect(globalReportPolicy).toContain('report-uri');
+    expect(resetHeaders.get('Content-Security-Policy-Report-Only')).toBe(globalReportPolicy?.split('; report-uri ')[0]);
   });
 
   it('(2) isProduction: false omits HSTS and report-uri, and includes unsafe-eval and dev websockets', () => {
@@ -193,6 +203,9 @@ describe('Security Headers & CSP (SEC-001)', () => {
     expect(reportOnlyHeaders).toHaveLength(0);
     expect(cspHeaders[0].value).toContain("default-src 'self'");
     expect(cspHeaders[0].value).toContain("frame-ancestors 'none'");
+    expect(enforceRules[1].headers.filter(({ key }) => key.startsWith('Content-Security-Policy'))).toEqual([
+      { key: 'Content-Security-Policy', value: cspHeaders[0].value.split('; report-uri ')[0] },
+    ]);
   });
 
   it('(7) No header value contains newlines or non-ASCII characters', () => {

@@ -334,9 +334,9 @@ describe('DB-007: Audit log integrity, append-only triggers, and coverage', () =
     expect(cnAudit.rows).toHaveLength(1);
     expect(cnAudit.rows[0].metadata.original_invoice_id).toBe(invId);
 
-    // 5d. saveBusinessProfile edit with bank account change (GSTIN preserved because invoice finalized in 5b)
+    // 5d. Bank account changes stay available after finalization locks business identity.
     const profRes = await saveBusinessProfile({
-      legal_name: 'Audit Test Corp Updated',
+      legal_name: 'Audit Test Corp',
       trade_name: 'Audit Corp',
       gstin: '29ABCDE1234F1Z5',
       registration_type: 'regular',
@@ -362,7 +362,7 @@ describe('DB-007: Audit log integrity, append-only triggers, and coverage', () =
     // 5e. No-op profile edit writes NO audit row
     const countBefore = await pg.query<{ c: number }>(`SELECT count(*)::int as c FROM audit_log WHERE action = 'profile_update'`);
     const noopRes = await saveBusinessProfile({
-      legal_name: 'Audit Test Corp Updated',
+      legal_name: 'Audit Test Corp',
       trade_name: 'Audit Corp',
       gstin: '29ABCDE1234F1Z5',
       registration_type: 'regular',

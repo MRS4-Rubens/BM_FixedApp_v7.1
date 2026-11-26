@@ -198,10 +198,10 @@ export function UsersTab({
                               if (u.businessId) onEditIdentity(u.businessId);
                             }}
                             className="inline-flex items-center gap-1 rounded-md border border-indigo-300 bg-background hover:bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-400 transition cursor-pointer"
-                            title="Correct GSTIN / State for affiliated business"
+                            title="Correct identity for affiliated business"
                           >
                             <Edit3 className="size-3.5 shrink-0" />
-                            <span>Correct GSTIN / State</span>
+                            <span>Correct Business Identity</span>
                           </button>
                         ) : (
                           <span className="text-xs text-muted-foreground select-none">—</span>

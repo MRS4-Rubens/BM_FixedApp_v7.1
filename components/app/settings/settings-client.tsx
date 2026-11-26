@@ -38,6 +38,7 @@ interface SettingsClientProps {
     currentMonthLabel: string;
   };
   identityLocked?: boolean;
+  signInEmail?: string | null;
   /** Request render time from the server page, forwarded to BillingTab. */
   nowMs: number;
   userRole?: AppRole;
@@ -103,6 +104,7 @@ export function SettingsClient({
   initialSubscriptions,
   usageStats,
   identityLocked = false,
+  signInEmail,
   nowMs,
   userRole,
   signatureDataUri,
@@ -236,6 +238,7 @@ export function SettingsClient({
               currentFyLabel={currentFyLabel}
               onSwitchTab={(tab) => setActive(tab as NavItem)}
               identityLocked={identityLocked}
+              signInEmail={signInEmail}
               readOnly={!isOwner}
               formId={SAVE_FORM_IDS['Business Profile']}
               onSaveStart={handleSaveStart}
