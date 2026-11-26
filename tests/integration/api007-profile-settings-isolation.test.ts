@@ -426,6 +426,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
 
     const res1 = await saveBusinessProfile({
       legal_name: 'Brand New Startup 1',
+      phone: '9876543210',
       gstin: '29DDDDD1111D1Z5',
       registration_type: 'regular',
       address_line1: '1 Startup Lane',
@@ -489,6 +490,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
 
     const res2 = await saveBusinessProfile({
       legal_name: 'Brand New Startup 2',
+      phone: '9876543210',
       gstin: '29EEEEE2222E1Z5',
       registration_type: 'regular',
       address_line1: '2 Startup Lane',
@@ -528,6 +530,7 @@ describe('API-007: Profile settings isolation and plan gating', () => {
     const targetGstin = '29FFFFF3333F1Z5';
     const res = await saveBusinessProfile({
       legal_name: 'Failing Startup',
+      phone: '9876543210',
       gstin: targetGstin,
       registration_type: 'regular',
       address_line1: '3 Startup Lane',

@@ -83,6 +83,7 @@ test.describe('01 - Full Core Journey (Serial Desktop)', () => {
         addressLine1: '123 Tech Park',
         city: 'Mumbai',
         pincode: '400001',
+        phone: '9876543210',
       });
       await settingsPage.saveProfile();
       await settingsPage.expectSaved();

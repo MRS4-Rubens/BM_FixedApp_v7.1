@@ -13,7 +13,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import type { businesses } from '@/lib/db/schema';
-import { businessProfileSchema, BusinessProfileInput } from '@/lib/validations/business';
+import { businessProfileSchema, primaryPhoneError, type BusinessProfileInput } from '@/lib/validations/business';
 import { saveBusinessProfile } from '@/lib/actions/business/save-business-profile';
 import { INDIAN_GST_STATES } from '@/lib/gst/indian-states';
 import { ProfileSpotlightTour } from './profile-spotlight-tour';
@@ -28,6 +28,7 @@ export interface BusinessProfileFormProps {
   currentFyLabel: string;
   onSwitchTab?: (tab: string) => void;
   identityLocked?: boolean;
+  signInEmail?: string | null;
   readOnly?: boolean;
   /** UI stage 1: lets the Settings side panel's Save button submit this form. */
   formId?: string;
@@ -42,6 +43,7 @@ export function BusinessProfileForm({
   currentFyLabel,
   onSwitchTab,
   identityLocked = false,
+  signInEmail,
   readOnly = false,
   formId,
   onProgrammaticEdit,
@@ -117,6 +119,7 @@ export function BusinessProfileForm({
   // Smart Auto-fill: When GSTIN is typed, automatically extract PAN and pre-fill State code
   const watchedGstin = useWatch({ control, name: 'gstin' });
   const watchedTagline = useWatch({ control, name: 'invoice_tagline' });
+  const watchedPhone = useWatch({ control, name: 'phone' });
   useEffect(() => {
     if (!watchedGstin || readOnly) return;
     const clean = watchedGstin.trim().toUpperCase();
@@ -138,6 +141,14 @@ export function BusinessProfileForm({
 
   const onSubmit = async (data: BusinessProfileInput) => {
     if (readOnly) return;
+    if (isNewBusiness || (data.phone ?? '').trim() !== (business?.phone ?? '').trim()) {
+      const phoneError = primaryPhoneError(data.phone ?? '', isNewBusiness);
+      if (phoneError) {
+        setError('phone', { type: 'validate', message: phoneError }, { shouldFocus: true });
+        onSaveResult?.(false);
+        return;
+      }
+    }
     setSuccess(false);
     setGlobalError(null);
     const result = await saveBusinessProfile(data);
@@ -243,6 +254,9 @@ export function BusinessProfileForm({
             register={register}
             errors={errors}
             identityLocked={identityLocked}
+            signInEmail={signInEmail}
+            primaryPhoneRequired={isNewBusiness}
+            showPrimaryPhonePrompt={!isNewBusiness && !readOnly && !watchedPhone?.trim()}
             watchedTagline={watchedTagline}
             setValue={setValue}
             readOnly={readOnly}

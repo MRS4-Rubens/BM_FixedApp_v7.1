@@ -1,4 +1,5 @@
 import { getCurrentAppUser } from '@/lib/auth/session';
+import { getRequestSession } from '@/lib/auth/request-session';
 import { getCurrentBusiness } from '@/lib/auth/current-business';
 import { db } from '@/lib/db/client';
 import { subscriptionRequests, users, invoices, customers, products } from '@/lib/db/schema';
@@ -140,6 +141,7 @@ export default async function SettingsPage({
       identityLocked={identityLocked}
       nowMs={nowMs}
       userRole={appUser.role}
+      signInEmail={(await getRequestSession())?.data?.user?.email ?? null}
       signatureDataUri={signatureDataUri}
     />
   );

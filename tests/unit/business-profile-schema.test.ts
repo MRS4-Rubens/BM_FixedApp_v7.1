@@ -1,7 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { businessProfileSchema } from '@/lib/validations/business';
+import { businessProfileSchema, primaryPhoneError } from '@/lib/validations/business';
 import { invoiceSettingsSchema } from '@/lib/validations/invoice-settings';
 import { INVOICE_TEMPLATE_IDS } from '@/lib/invoices/template-ids';
+
+describe('Primary phone', () => {
+  it.each(['9876543210', '+91 98765-43210', '(022) 2345-6789'])('accepts %s', (phone) => {
+    expect(primaryPhoneError(phone, true)).toBeUndefined();
+  });
+
+  it('allows legacy blank values and rejects malformed numbers', () => {
+    expect(primaryPhoneError('', false)).toBeUndefined();
+    expect(primaryPhoneError('', true)).toBe('Primary phone is required.');
+    expect(primaryPhoneError('not a number', false)).toContain('valid Indian');
+  });
+});
 
 describe('businessProfileSchema & invoiceSettingsSchema (API-007)', () => {
   const formShapedProfile = {
