@@ -69,12 +69,12 @@ describe('ARCH-PDF Architectural Guards', () => {
     expect(violations).toEqual([]);
   });
 
-  it('Guard 3: only the global rule sets a Content Security Policy', () => {
+  it('Guard 3: CSP is global with a reporting exception for the reset route', () => {
     const rules = buildSecurityHeaderRules({ isProduction: true });
     const cspRules = rules.filter((rule) =>
       rule.headers.some(({ key }) => /^Content-Security-Policy(?:-Report-Only)?$/i.test(key)),
     );
-    expect(cspRules.map(({ source }) => source)).toEqual(['/:path*']);
+    expect(cspRules.map(({ source }) => source)).toEqual(['/:path*', '/reset-password']);
   });
 
   it('Guard 4: The 5 print components do not contain "use client"', () => {

@@ -46,6 +46,7 @@ export interface BusinessItem {
   tradeName: string | null;
   gstin: string;
   stateCode: string;
+  panNeedsCorrection?: boolean;
   email: string | null;
   phone: string | null;
   subscriptionPlan: string;

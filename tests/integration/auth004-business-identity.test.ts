@@ -609,6 +609,25 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
       expect(noChangeRes.error.code).toBe('NO_CHANGE');
     }
 
+    await pg.query("UPDATE businesses SET state_code = '29', pan = NULL WHERE id = $1", [businessEId]);
+    const repair = await adminUpdateBusinessIdentity({
+      business_id: businessEId,
+      gstin: { previous: GSTIN_ADMIN_TARGET, value: GSTIN_ADMIN_TARGET },
+      reason: 'Reconcile registered state and PAN with the verified GSTIN.',
+    });
+    expect(repair.success).toBe(true);
+    const afterRepair = await pg.query('SELECT gstin, state_code, pan FROM businesses WHERE id = $1', [businessEId]);
+    expect(afterRepair.rows[0]).toEqual({ gstin: GSTIN_ADMIN_TARGET, state_code: '27', pan: 'XYZAB6789C' });
+    const repairAudit = await pg.query<{ metadata: Record<string, unknown> }>(
+      `SELECT metadata FROM audit_log WHERE business_id = $1
+       AND action = 'business_identity_changed_by_admin' AND metadata->>'reason' = $2`,
+      [businessEId, 'Reconcile registered state and PAN with the verified GSTIN.'],
+    );
+    expect(repairAudit.rows[0]?.metadata).toMatchObject({
+      previous: { state_code: '29', pan: null },
+      next: { state_code: '27', pan: 'XYZAB6789C' },
+    });
+
     const staleName = await adminUpdateBusinessIdentity({
       business_id: businessEId,
       legal_name: { previous: 'Outdated name', value: 'Corrected Tenant Echo' },

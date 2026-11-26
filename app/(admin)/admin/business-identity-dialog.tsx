@@ -11,7 +11,7 @@ import { correctedGstinSchema } from '@/lib/validations/admin-business-identity'
 const inputClass = 'h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-sm font-medium text-slate-900 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 read-only:bg-slate-50 read-only:text-slate-600';
 
 export interface BusinessIdentityDialogProps {
-  business: { id: string; legalName: string; gstin: string; stateCode: string } | null;
+  business: { id: string; legalName: string; gstin: string; stateCode: string; panNeedsCorrection?: boolean } | null;
   open: boolean;
   onOpenChange(open: boolean): void;
   onSaved(): void;
@@ -48,13 +48,16 @@ export function BusinessIdentityDialog({
 
   if (!business) return null;
 
-  const gstinChanged = editGstin && gstin.trim() !== business.gstin;
   const legalNameChanged = editLegalName && legalName.trim() !== business.legalName.trim();
   const parsedGstin = correctedGstinSchema.safeParse(gstin);
-  const stateCode = gstinChanged && parsedGstin.success ? parsedGstin.data.slice(0, 2) : business.stateCode;
+  const derivedState = parsedGstin.success ? parsedGstin.data.slice(0, 2) : null;
+  const storedTaxDetailsNeedCorrection = Boolean(business.panNeedsCorrection) ||
+    (derivedState !== null && derivedState !== business.stateCode);
+  const gstinChanged = editGstin && (gstin.trim() !== business.gstin || storedTaxDetailsNeedCorrection);
+  const stateCode = editGstin && derivedState ? derivedState : business.stateCode;
   const stateName = INDIAN_GST_STATES.find(({ code }) => code === stateCode)?.name ?? stateCode;
   const canSave = !isPending && !stale && (gstinChanged || legalNameChanged) &&
-    (!gstinChanged || parsedGstin.success) &&
+    (!editGstin || parsedGstin.success) &&
     (!legalNameChanged || legalName.trim().length > 0) && reason.trim().length >= 10;
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -197,6 +200,9 @@ export function BusinessIdentityDialog({
                     {fieldErrors.gstin?.[0] ?? parsedGstin.error?.issues[0]?.message}
                   </p>
                 ) : null}
+                {editGstin && parsedGstin.success && parsedGstin.data === business.gstin && storedTaxDetailsNeedCorrection && (
+                  <p className="text-xs text-slate-600">Saving will sync the registered state and PAN with this GSTIN.</p>
+                )}
               </div>
 
               <div className="min-w-0 space-y-1">

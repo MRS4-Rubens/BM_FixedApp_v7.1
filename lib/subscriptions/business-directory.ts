@@ -34,6 +34,7 @@ export async function listBusinessesWithCounts() {
       tradeName: businesses.trade_name,
       gstin: businesses.gstin,
       stateCode: businesses.state_code,
+      panNeedsCorrection: sql<boolean>`${businesses.pan} is distinct from substring(${businesses.gstin} from 3 for 10)`,
       email: businesses.email,
       phone: businesses.phone,
       subscriptionPlan: businesses.subscription_plan,

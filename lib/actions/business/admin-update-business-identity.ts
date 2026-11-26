@@ -52,12 +52,12 @@ export const adminUpdateBusinessIdentity = createAuthenticatedAction(
             );
           }
 
+          const stateCode = gstin?.value.slice(0, 2);
+          const pan = gstin?.value.slice(2, 12);
           const updates = {
-            ...(gstin && gstin.value !== business.gstin ? {
-              gstin: gstin.value,
-              state_code: gstin.value.slice(0, 2),
-              pan: gstin.value.slice(2, 12),
-            } : {}),
+            ...(gstin && gstin.value !== business.gstin ? { gstin: gstin.value } : {}),
+            ...(stateCode && stateCode !== business.state_code ? { state_code: stateCode } : {}),
+            ...(pan && pan !== business.pan ? { pan } : {}),
             ...(legalName && legalName.value !== business.legal_name.trim() ? { legal_name: legalName.value } : {}),
           };
           const fields = Object.keys(updates) as (keyof typeof updates)[];

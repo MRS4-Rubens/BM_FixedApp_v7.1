@@ -20,12 +20,8 @@ describe('Security Headers & CSP (SEC-001)', () => {
     });
 
     expect(rules).toHaveLength(2);
-    expect(rules[1]).toEqual({
+    expect(rules[1]).toMatchObject({
       source: '/reset-password',
-      headers: [
-        { key: 'Referrer-Policy', value: 'no-referrer' },
-        { key: 'Cache-Control', value: 'private, no-store' },
-      ],
     });
     const globalRule = rules[0];
     expect(globalRule.source).toBe('/:path*');
@@ -44,6 +40,13 @@ describe('Security Headers & CSP (SEC-001)', () => {
       "frame-ancestors 'none'; base-uri 'self'; object-src 'none'"
     );
     expect(headerMap.get('Content-Security-Policy-Report-Only')).toBeTruthy();
+    const resetHeaders = new Map(rules[1].headers.map(({ key, value }) => [key, value]));
+    expect(resetHeaders.get('Referrer-Policy')).toBe('no-referrer');
+    expect(resetHeaders.get('Cache-Control')).toBe('private, no-store');
+    expect(resetHeaders.get('Content-Security-Policy')).toBe(headerMap.get('Content-Security-Policy'));
+    const globalReportPolicy = headerMap.get('Content-Security-Policy-Report-Only');
+    expect(globalReportPolicy).toContain('report-uri');
+    expect(resetHeaders.get('Content-Security-Policy-Report-Only')).toBe(globalReportPolicy?.split('; report-uri ')[0]);
   });
 
   it('(2) isProduction: false omits HSTS and report-uri, and includes unsafe-eval and dev websockets', () => {
@@ -200,6 +203,9 @@ describe('Security Headers & CSP (SEC-001)', () => {
     expect(reportOnlyHeaders).toHaveLength(0);
     expect(cspHeaders[0].value).toContain("default-src 'self'");
     expect(cspHeaders[0].value).toContain("frame-ancestors 'none'");
+    expect(enforceRules[1].headers.filter(({ key }) => key.startsWith('Content-Security-Policy'))).toEqual([
+      { key: 'Content-Security-Policy', value: cspHeaders[0].value.split('; report-uri ')[0] },
+    ]);
   });
 
   it('(7) No header value contains newlines or non-ASCII characters', () => {

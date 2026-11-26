@@ -80,9 +80,11 @@ function buildEnforcedCspBaseline() {
   ]);
 }
 
-/** Full application policy (report-only for now). @param {SecurityHeaderOptions} options */
-export function buildAppCspPolicy(options) {
-  const reportUri = options.isProduction ? buildSentryCspReportUri(options.sentryDsn, 'production') : null;
+/** Full application policy (report-only for now). @param {SecurityHeaderOptions} options @param {boolean} reportViolations */
+export function buildAppCspPolicy(options, reportViolations = true) {
+  const reportUri = options.isProduction && reportViolations
+    ? buildSentryCspReportUri(options.sentryDsn, 'production')
+    : null;
   const sentry = parseSentryDsn(options.sentryDsn);
   const storageOrigins = parseStorageOrigins(options.storageEndpoint);
   /** @type {(readonly [string, readonly string[]])[]} */
@@ -149,6 +151,8 @@ export function buildSecurityHeaderRules(options, mode = CSP_MODE) {
       headers: [
         { key: 'Referrer-Policy', value: 'no-referrer' },
         { key: 'Cache-Control', value: 'private, no-store' },
+        // A browser CSP report can include the reset URL and its token.
+        ...cspHeaders(buildAppCspPolicy(options, false), mode, true),
       ],
     },
   ];
