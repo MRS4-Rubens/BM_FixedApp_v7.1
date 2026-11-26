@@ -202,6 +202,16 @@ export async function saveBusinessProfileInTransaction(
     throw new ActionError('Business profile not found.', { code: 'NOT_FOUND' });
   }
 
+  const expectedIdentity = params.profile.expected_identity;
+  if (expectedIdentity && (
+    expectedIdentity.legal_name !== current.legal_name.trim() ||
+    diffBusinessIdentity(current, expectedIdentity).kind === 'changed'
+  )) {
+    throw new ActionError('Business identity changed while this form was open. Refresh Settings and reapply your edits.', {
+      code: 'STALE_IDENTITY',
+    });
+  }
+
   const businessId = user.business_id;
   if (params.profile.phone === undefined || params.profile.phone.trim() === (current.phone ?? '').trim()) {
     profileData.phone = current.phone;

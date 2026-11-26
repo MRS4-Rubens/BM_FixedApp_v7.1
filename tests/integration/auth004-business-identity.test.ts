@@ -363,6 +363,43 @@ describe('AUTH-004: GSTIN Squatting, Idempotent First-Time Setup & Identity Lock
     expect(userERow.rows[0]?.business_id).toBe(createdBusinessId);
   });
 
+  it('rejects an owner form opened before an admin identity correction, then accepts refreshed edits', async () => {
+    const owner = await pg.query<{ business_id: string }>('SELECT business_id FROM users WHERE id = $1', [userDId]);
+    const businessId = owner.rows[0]!.business_id;
+    const previous = { legal_name: 'Tenant Delta', gstin: GSTIN_D, state_code: '29' };
+    const correctedName = 'Corrected Tenant Delta';
+
+    loginAs(adminUserId, null);
+    state.isPlatformAdmin = true;
+    expect(await adminUpdateBusinessIdentity({
+      business_id: businessId,
+      legal_name: { previous: previous.legal_name, value: correctedName },
+      reason: 'Correct the registered legal name.',
+    })).toMatchObject({ success: true });
+
+    state.isPlatformAdmin = false;
+    loginAs(userDId, businessId);
+    const payload = {
+      ...previous,
+      expected_identity: previous,
+      registration_type: 'regular',
+      address_line1: '200 Delta Blvd',
+      city: 'Bengaluru',
+      pincode: '560001',
+    } as const;
+    expect(await saveBusinessProfile(payload)).toMatchObject({ success: false, error: { code: 'STALE_IDENTITY' } });
+    const afterStaleAttempt = await pg.query('SELECT legal_name, address_line1 FROM businesses WHERE id = $1', [businessId]);
+    expect(afterStaleAttempt.rows[0]).toEqual({ legal_name: correctedName, address_line1: '100 Delta Blvd' });
+
+    expect(await saveBusinessProfile({
+      ...payload,
+      legal_name: correctedName,
+      expected_identity: { ...previous, legal_name: correctedName },
+    })).toMatchObject({ success: true });
+    const afterRefresh = await pg.query('SELECT legal_name, address_line1 FROM businesses WHERE id = $1', [businessId]);
+    expect(afterRefresh.rows[0]).toEqual({ legal_name: correctedName, address_line1: '200 Delta Blvd' });
+  });
+
   it('5. Identity lock: draft invoice allows GSTIN change + audit; finalized invoice rejects with IDENTITY_LOCKED', async () => {
     // User E's business
     const userERow = await pg.query<{ business_id: string }>(

@@ -26,6 +26,11 @@ export function primaryPhoneError(value: string, required: boolean): string | un
 
 export const businessProfileSchema = z.object({
   legal_name: legalBusinessNameSchema,
+  expected_identity: z.object({
+    legal_name: legalBusinessNameSchema,
+    gstin: z.string().max(15),
+    state_code: z.string().length(2),
+  }).optional(),
   trade_name: z.string().max(200).optional().or(z.literal('')),
   gstin: z.string().transform((v) => v.toUpperCase()).pipe(z.string().regex(GSTIN_REGEX, 'Enter a valid 15-character GSTIN')),
   pan: z.string().transform((v) => v.toUpperCase()).pipe(z.string().regex(PAN_REGEX, 'Enter a valid 10-character PAN')).optional().or(z.literal('')),

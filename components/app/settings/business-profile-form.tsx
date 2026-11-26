@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useId } from 'react';
+import { useState, useEffect, useId, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -51,6 +51,11 @@ export function BusinessProfileForm({
   onSaveResult,
 }: BusinessProfileFormProps) {
   const isNewBusiness = !business || !business.id;
+  const expectedIdentity = useRef(business ? {
+    legal_name: business.legal_name,
+    gstin: business.gstin,
+    state_code: business.state_code,
+  } : undefined);
   const id = useId();
   const [success, setSuccess] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -151,10 +156,11 @@ export function BusinessProfileForm({
     }
     setSuccess(false);
     setGlobalError(null);
-    const result = await saveBusinessProfile(data);
+    const result = await saveBusinessProfile({ ...data, expected_identity: expectedIdentity.current });
 
     onSaveResult?.(result.success);
     if (result.success) {
+      expectedIdentity.current = { legal_name: data.legal_name, gstin: data.gstin, state_code: data.state_code };
       setSuccess(true);
       if (isNewBusiness) {
         setShowCelebration(true);
