@@ -43,8 +43,8 @@ jobs:
       AWS_DEFAULT_REGION: ${{ secrets.BACKUP_S3_REGION }}
       S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
       S3_BUCKET: ${{ vars.BACKUP_S3_BUCKET || 'bizfolio-backups' }}
-      # Postgres 17 client tools (must be >= the Neon server version).
-      PG_IMAGE: postgres:17
+      # Postgres 18 client tools (must be >= the Neon server version).
+      PG_IMAGE: postgres:18
     steps:
       - name: Check configuration
         run: |
