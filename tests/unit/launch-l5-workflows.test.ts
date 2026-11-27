@@ -26,6 +26,7 @@ describe('LAUNCH-L5 nightly backup workflow', () => {
 
   it('dumps with Postgres 18, checks the dump, encrypts with AES-256 and shreds the plain copy before upload', () => {
     expect(wf).toContain('PG_IMAGE: postgres:18');
+    expect(wf).toContain('docker run --rm --user "$(id -u):$(id -g)" -e PGURL=');
     expect(wf).toContain("grep -q 'TABLE public invoices'");
     expect(wf).toContain('--symmetric --cipher-algo AES256');
     expect(wf).toContain('shred -u "$RUNNER_TEMP/backup/db.dump"');
